@@ -43,3 +43,5 @@ Something else: graphics should go through DirectX, not OpenGL - we aren't devel
 http://www.directxtutorial.com
 
 Before we start working on rendering, we need to decide whether this will be for Windows 10-style apps, Universal Apps, or traditional Windows 7-style desktop applications. That'll change who can use our product, whether it's compatible with Steam, and which version of DirectX we end up using.
+
+I should really clean this up and swap it out for a [readme.md] instead - there's a weird mixture of automade library creation comments and development notes here, and they should probably be split up and differentiated.
