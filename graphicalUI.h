@@ -16,6 +16,9 @@ class zPlane;
 // max y, and be projected 0 points away from the
 // player camera
 
+// zPlanes should contain [Stacks] for easier menu
+// management
+
 class GraphicalUI {
 	public:
 		void drawBox(float floatWidthPercentage, float floatHeightPercentage, char * stringSVGSource, float xPositionOnZPlane, float yPositionOnZPlane, zPlane projectionPlane);

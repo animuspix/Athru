@@ -11,4 +11,6 @@
 
 // TODO: reference additional headers your program requires here
 
+// TODO: Implement DirectX graphics
+
 // TODO: Populate classes, expand system to functional prototype; test when possible
