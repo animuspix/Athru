@@ -38,8 +38,7 @@ should add to or customize.
 
 Just something to notate before I forget: there should be 10 major steps between the start of the game and the final outcome: 10 halves gives a final voxel size of just under one millimetre (1/(2^10) metres) (assuming a starting size of one meter), which is more than enough for reasonably-realistic presentation without breaking the user's system. It also feels like the maximum number of significant moments in human history that you can tie the game into before the whole thing begins to feel contrived.
 
-Something else: graphics should go through DirectX, not OpenGL - we aren't developing outside of Windows at the moment, and Visual Studio supports DirectX by default. There's some excellent DirectX 11 tutorials over here (there's a DirectX 9 tute over there as 
-well)
+Something else: graphics should go through DirectX, not OpenGL - we aren't developing outside of Windows at the moment, and Visual Studio supports DirectX by default. There's some excellent DirectX 11 tutorials over here (there's a DirectX 9 tute over there as well)
 
 http://www.directxtutorial.com
 
