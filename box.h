@@ -1,8 +1,8 @@
 #pragma once
 
-class Face;
+#include "materials.h"
 
-class Box {
+class Box : Material {
 	// One Box is a single voxel
 	// Each box is 1M^3 at the start of the game, and has 
 	// 16-bit colour (RGBA) on each side (only one side is 
@@ -18,9 +18,9 @@ class Box {
 	// getters/setters for each property
 
 	public:
-		void destroy();
 		void create();
+		void destroy();
 
-	private:
-		Face * boxFaces[6];
+		Box();
+		~Box();
 };

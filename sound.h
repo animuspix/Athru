@@ -1,3 +1,5 @@
 #pragma once
 
-// Sound class declares here
+class Sound {
+
+};
