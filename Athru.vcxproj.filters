@@ -13,69 +13,93 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Rendering and Procedural Generation">
+      <UniqueIdentifier>{04b975f5-2f6f-4084-ac4b-35efc5838421}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Maths">
+      <UniqueIdentifier>{3cf2c613-a046-40bd-b5ab-6723ae316214}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Light and Particle Effects">
+      <UniqueIdentifier>{c7cd7aee-50c1-4bfe-9ef0-74967ed4ad8e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Sound">
+      <UniqueIdentifier>{43d04a75-1413-4b8a-8000-75dee557bb1a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\User Interface">
+      <UniqueIdentifier>{3cba1f1a-a676-4309-a958-0a87f84b907b}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Characters and Animals">
+      <UniqueIdentifier>{98b1ee80-f3b9-490d-a0c1-176e1b20dcab}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <Text Include="ReadMe.txt" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="stdafx.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Characters and Animals\AICharacters.h">
+      <Filter>Header Files\Characters and Animals</Filter>
+    </ClInclude>
+    <ClInclude Include="Characters and Animals\critters.h">
+      <Filter>Header Files\Characters and Animals</Filter>
+    </ClInclude>
+    <ClInclude Include="Characters and Animals\gameCharacters.h">
+      <Filter>Header Files\Characters and Animals</Filter>
+    </ClInclude>
+    <ClInclude Include="Characters and Animals\playerCharacter.h">
+      <Filter>Header Files\Characters and Animals</Filter>
+    </ClInclude>
+    <ClInclude Include="Light and Particle Effects\focussedLightSource.h">
+      <Filter>Header Files\Light and Particle Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Light and Particle Effects\lightSource.h">
+      <Filter>Header Files\Light and Particle Effects</Filter>
+    </ClInclude>
+    <ClInclude Include="Maths\vectors.h">
+      <Filter>Header Files\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="User Interface\graphicalUI.h">
+      <Filter>Header Files\User Interface</Filter>
+    </ClInclude>
+    <ClInclude Include="Sound\sound.h">
+      <Filter>Header Files\Sound</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\box.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\camera.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\chunkHandler.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\colourMap.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\face.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\materials.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\pixel.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\world.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="abstractEntity.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="stdafx.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="sound.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="gameCharacters.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="graphicalUI.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="critters.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AICharacters.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="playerCharacter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="box.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="face.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="colourMap.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="pixel.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="camera.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="chunkHandler.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="world.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="materials.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="lightSource.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="vectors.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
 </Project>
