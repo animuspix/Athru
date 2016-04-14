@@ -74,9 +74,6 @@
     <ClInclude Include="Rendering and Terrain Generation\camera.h">
       <Filter>Header Files\Rendering and Procedural Generation</Filter>
     </ClInclude>
-    <ClInclude Include="Rendering and Terrain Generation\chunkHandler.h">
-      <Filter>Header Files\Rendering and Procedural Generation</Filter>
-    </ClInclude>
     <ClInclude Include="Rendering and Terrain Generation\colourMap.h">
       <Filter>Header Files\Rendering and Procedural Generation</Filter>
     </ClInclude>
@@ -89,9 +86,6 @@
     <ClInclude Include="Rendering and Terrain Generation\pixel.h">
       <Filter>Header Files\Rendering and Procedural Generation</Filter>
     </ClInclude>
-    <ClInclude Include="Rendering and Terrain Generation\world.h">
-      <Filter>Header Files\Rendering and Procedural Generation</Filter>
-    </ClInclude>
     <ClInclude Include="abstractEntity.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -100,6 +94,30 @@
     </ClInclude>
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Maths\fancyFractalMath.h">
+      <Filter>Header Files\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Maths\fractalPlane.h">
+      <Filter>Header Files\Maths</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\renderSegment.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\renderDisc.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\segmentHandler.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\renderShell.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\planet.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
+    </ClInclude>
+    <ClInclude Include="Rendering and Terrain Generation\localSystem.h">
+      <Filter>Header Files\Rendering and Procedural Generation</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

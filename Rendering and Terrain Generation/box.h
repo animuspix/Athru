@@ -17,6 +17,13 @@ class Box : Material {
 	// Methods include destroy, create, and 
 	// getters/setters for each property
 
+	// [Box] is a cipher, designed to handle individual 
+	// voxels within the player's view cone; all of it's
+	// properties are inherited from [Material], and the
+	// above documentation is a little bit outdated but
+	// still mostly applicable; just for [Material] 
+	// instead of [Box]
+
 	public:
 		void create();
 		void destroy();
