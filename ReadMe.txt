@@ -40,6 +40,6 @@ Just something to notate before I forget: there should be 10 major steps between
 
 Development is confirmed for DirectX/Win7+ Desktop; there's some excellent DirectX 11 tutorials over here (there's a DirectX 9 tute over there as well)
 
-http://www.directxtutorial.com
+http://www.rastertek.com/tutindex.html
 
 I should really clean this up and swap it out for a [readme.md] instead - there's a weird mixture of automade library creation comments and development notes here, and they should probably be split up and differentiated.
