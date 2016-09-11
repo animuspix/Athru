@@ -1,15 +1,18 @@
 #pragma once
-class Input
+
+#include "Service.h"
+
+class Input : public Service
 {
-public:
-	Input();
-	~Input();
+	public:
+		Input();
+		~Input();
 
-	void KeyDown(unsigned int);
-	void KeyUp(unsigned int);
-	bool IsKeyDown(unsigned int);
+		void KeyDown(unsigned int);
+		void KeyUp(unsigned int);
+		bool IsKeyDown(unsigned int);
 
-private:
-	bool m_keys[256];
+	private:
+		bool keys[256];
 };
 

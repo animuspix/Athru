@@ -1,28 +1,24 @@
-#include "engine.h"
+#include "ServiceCentre.h"
+#include "Application.h"
 
-// Consider remaking Engine/Input/Graphics as singleton services accessed through a
-// Service Locator
-
-// ...yuck. There's a LOT of refactorable gunk in here that should be cleaned out :|
+#include "leakChecker.h"
 
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR pScmdline, int iCmdshow)
 {
-	// Create the engine
-	Engine* Athru = new Engine;
+	// Flag used to track memory leaks
+	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
-	if (Athru == false)
-	{
-		// Abandon ship if creation fails
-		return 0;
-	}
+	// Create service centre here
+	ServiceCentre::Create();
 
-	// Start the engine
-	Athru->Run();
+	// Fetch the engine from the service centre, then start
+	// it
+	((Application*)ServiceCentre::Instance().Fetch("Application"))->Run();
 
 	// When the engine stops running, wind everything down
-	// and send the pointer accessing the engine to [nullptr]
-	delete Athru;
-	Athru = nullptr;
+	// by destroying the service centre
+	ServiceCentre::Destroy();
 
+	// Exit the application
 	return 0;
 }

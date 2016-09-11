@@ -2,16 +2,18 @@
 
 #include <windows.h>
 
-const bool FULL_SCREEN = true;
-const bool VSYNC_ENABLED = true;
-const float SCREEN_DEPTH = 1000.0f;
-const float SCREEN_NEAR = 0.1f;
+#define FULL_SCREEN false
+#define VSYNC_ENABLED true
+#define SCREEN_DEPTH 1000.0f
+#define SCREEN_NEAR 0.1f
 
-class Graphics
+#include "Service.h"
+
+class Graphics : public Service
 {
 	public:
 		Graphics();
-		Graphics(int, int, HWND);
+		//Graphics(int, int, HWND);
 		~Graphics();
 
 		bool Frame();

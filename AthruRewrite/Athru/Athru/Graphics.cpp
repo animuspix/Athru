@@ -1,7 +1,9 @@
+#include "ServiceCentre.h"
 #include "Graphics.h"
 
-Graphics::Graphics()
+Graphics::Graphics() : Service("Graphics")
 {
+
 }
 
 Graphics::~Graphics()

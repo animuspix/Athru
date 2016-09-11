@@ -147,14 +147,27 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Athru.cpp" />
-    <ClCompile Include="Engine.cpp" />
+    <ClCompile Include="Application.cpp" />
     <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
+    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="MemoryManager.cpp" />
+    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="ServiceCentre.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Engine.h" />
+    <ClInclude Include="Constants.h" />
+    <ClInclude Include="leakChecker.h" />
+    <ClInclude Include="Logger.h" />
+    <ClInclude Include="Map.h" />
+    <ClInclude Include="Application.h" />
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Input.h" />
+    <ClInclude Include="KnownLengthArray.h" />
+    <ClInclude Include="MemoryManager.h" />
+    <ClInclude Include="Service.h" />
+    <ClInclude Include="ServiceCentre.h" />
+    <ClInclude Include="Typedefs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
