@@ -1,4 +1,5 @@
 #include "Application.h"
+#include "Logger.h"
 #include "Input.h"
 #include "Graphics.h"
 #include "ServiceCentre.h"
@@ -13,6 +14,16 @@ ServiceCentre::ServiceCentre()
 	// Create and register memory manager + logger
 	// here, along with any supporting services
 	// accessed by the input service
+
+	// Create and register logging service here
+
+	// Attempt to create and register the logging
+	// service, then abandon ship if creation fails
+	ServiceCentre::Register(new Logger("log.txt"));
+	if (ServiceCentre::Fetch("Logger") == false)
+	{
+		return;
+	}
 
 	// Attempt to create and register the primary input service,
 	// then abandon ship if creation fails

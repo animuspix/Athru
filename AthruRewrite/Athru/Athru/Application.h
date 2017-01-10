@@ -6,6 +6,7 @@
 
 class Input;
 class Graphics;
+class Logger;
 
 class Application : public Service
 {
@@ -29,10 +30,11 @@ class Application : public Service
 		// Close game window
 		void CloseWindow();
 
-		// Stored pointers to input and graphics, removing the
+		// Stored pointers to input, graphics, and the logger, removing the
 		// need to repeatedly fetch them from the service centre
 		Input* athruInput;
 		Graphics* athruGraphics;
+		Logger* athruLogger;
 
 		// Name of the application
 		LPCWSTR appName;

@@ -1,4 +1,5 @@
 #include "ServiceCentre.h"
+#include "Logger.h"
 #include "Input.h"
 #include "Graphics.h"
 #include "Application.h"
@@ -46,6 +47,7 @@ void Application::Run()
 	// is a guaranteed way to create a dependency loop :P)
 	athruInput = ((Input*)(ServiceCentre::Instance().Fetch("Input")));
 	athruGraphics = ((Graphics*)(ServiceCentre::Instance().Fetch("Graphics")));
+	athruLogger = ((Logger*)(ServiceCentre::Instance().Fetch("Logger")));
 
 	// Loop until there is a quit message from the window or the user.
 	done = false;

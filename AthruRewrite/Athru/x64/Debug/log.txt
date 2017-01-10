@@ -1,0 +1,1701 @@
+Note:
+Unions + structs/classes are too complicated to easily log members,
+and it's impossible to easily log the names of enum values without
+lots of boilerplate code. This has resulted in the following: 
+- Athru will only ever log the address + current type of unions and 
+  avoid describing their members
+- Athru will only ever log the address + type-name of structs/classes 
+  and avoid describing their members
+
+Thank you for reading :)
+
+logging int with value 5
+c-style string at 000000B4E155E918:
+chickens
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E918
+no further details available
+
+
+logging class with type-id class Input
+logging class stack-address 000000B4E155F470
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1
+logging class stack-address 000000B4E155E918
+no further details available
+
+logging int at 000000B4E155E918 with value 888
+logging int with value 0
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E918
+no further details available
+
+logging class Input at 000000B4E155E918
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1 at 000000B4E155E918
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool (__cdecl*)(void)
+logging function stack-address 00007FF7223F8A14
+no further details available
+
+logging int with value 0
+logging int with value 1
+logging int with value 2
+logging int with value 3
+logging int with value 4
+logging int with value 5
+logging int with value 6
+logging int with value 7
+logging int with value 8
+logging int with value 9
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+logging int at 000000B4E155E7F8 with value 18467
+logging int at 000000B4E155E7F8 with value 19169
+logging int at 000000B4E155E7F8 with value 29358
+logging int at 000000B4E155E7F8 with value 5705
+logging int at 000000B4E155E7F8 with value 16827
+logging int at 000000B4E155E7F8 with value 2995
+logging int at 000000B4E155E7F8 with value 5436
+logging int at 000000B4E155E7F8 with value 3902
+logging int at 000000B4E155E7F8 with value 12382
+logging int at 000000B4E155E7F8 with value 19718
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+c-style string at 000000B4E155E7F8:
+cat
+c-style string at 000000B4E155E7F8:
+gazelle
+c-style string at 000000B4E155E7F8:
+fish
+c-style string at 000000B4E155E7F8:
+flunkle
+c-style string at 000000B4E155E7F8:
+oliphant
+c-style string at 000000B4E155E7F8:
+eeblefleeble
+c-style string at 000000B4E155E7F8:
+eggleweggle
+c-style string at 000000B4E155E7F8:
+ogglewaggle
+c-style string at 000000B4E155E7F8:
+zebrakkle
+c-style string at 000000B4E155E7F8:
+zobrikkle
+logging int with value 5
+c-style string at 000000B4E155E918:
+chickens
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E918
+no further details available
+
+
+logging class with type-id class Input
+logging class stack-address 000000B4E155F470
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1
+logging class stack-address 000000B4E155E918
+no further details available
+
+logging int at 000000B4E155E918 with value 888
+logging int with value 0
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E918
+no further details available
+
+logging class Input at 000000B4E155E918
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1 at 000000B4E155E918
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool (__cdecl*)(void)
+logging function stack-address 00007FF7223F8A14
+no further details available
+
+logging int with value 0
+logging int with value 1
+logging int with value 2
+logging int with value 3
+logging int with value 4
+logging int with value 5
+logging int with value 6
+logging int with value 7
+logging int with value 8
+logging int with value 9
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+logging int at 000000B4E155E7F8 with value 21726
+logging int at 000000B4E155E7F8 with value 1869
+logging int at 000000B4E155E7F8 with value 26299
+logging int at 000000B4E155E7F8 with value 28703
+logging int at 000000B4E155E7F8 with value 30333
+logging int at 000000B4E155E7F8 with value 15141
+logging int at 000000B4E155E7F8 with value 6868
+logging int at 000000B4E155E7F8 with value 32662
+logging int at 000000B4E155E7F8 with value 12859
+logging int at 000000B4E155E7F8 with value 27529
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+c-style string at 000000B4E155E7F8:
+cat
+c-style string at 000000B4E155E7F8:
+gazelle
+c-style string at 000000B4E155E7F8:
+fish
+c-style string at 000000B4E155E7F8:
+flunkle
+c-style string at 000000B4E155E7F8:
+oliphant
+c-style string at 000000B4E155E7F8:
+eeblefleeble
+c-style string at 000000B4E155E7F8:
+eggleweggle
+c-style string at 000000B4E155E7F8:
+ogglewaggle
+c-style string at 000000B4E155E7F8:
+zebrakkle
+c-style string at 000000B4E155E7F8:
+zobrikkle
+logging int with value 5
+c-style string at 000000B4E155E918:
+chickens
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E918
+no further details available
+
+
+logging class with type-id class Input
+logging class stack-address 000000B4E155F470
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1
+logging class stack-address 000000B4E155E918
+no further details available
+
+logging int at 000000B4E155E918 with value 888
+logging int with value 0
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E918
+no further details available
+
+logging class Input at 000000B4E155E918
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1 at 000000B4E155E918
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool (__cdecl*)(void)
+logging function stack-address 00007FF7223F8A14
+no further details available
+
+logging int with value 0
+logging int with value 1
+logging int with value 2
+logging int with value 3
+logging int with value 4
+logging int with value 5
+logging int with value 6
+logging int with value 7
+logging int with value 8
+logging int with value 9
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+logging int at 000000B4E155E7F8 with value 3035
+logging int at 000000B4E155E7F8 with value 288
+logging int at 000000B4E155E7F8 with value 8942
+logging int at 000000B4E155E7F8 with value 27446
+logging int at 000000B4E155E7F8 with value 6729
+logging int at 000000B4E155E7F8 with value 15006
+logging int at 000000B4E155E7F8 with value 3548
+logging int at 000000B4E155E7F8 with value 24084
+logging int at 000000B4E155E7F8 with value 11840
+logging int at 000000B4E155E7F8 with value 13931
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+c-style string at 000000B4E155E7F8:
+cat
+c-style string at 000000B4E155E7F8:
+gazelle
+c-style string at 000000B4E155E7F8:
+fish
+c-style string at 000000B4E155E7F8:
+flunkle
+c-style string at 000000B4E155E7F8:
+oliphant
+c-style string at 000000B4E155E7F8:
+eeblefleeble
+c-style string at 000000B4E155E7F8:
+eggleweggle
+c-style string at 000000B4E155E7F8:
+ogglewaggle
+c-style string at 000000B4E155E7F8:
+zebrakkle
+c-style string at 000000B4E155E7F8:
+zobrikkle
+logging int with value 5
+c-style string at 000000B4E155E918:
+chickens
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E918
+no further details available
+
+
+logging class with type-id class Input
+logging class stack-address 000000B4E155F470
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1
+logging class stack-address 000000B4E155E918
+no further details available
+
+logging int at 000000B4E155E918 with value 888
+logging int with value 0
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E918
+no further details available
+
+logging class Input at 000000B4E155E918
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1 at 000000B4E155E918
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool (__cdecl*)(void)
+logging function stack-address 00007FF7223F8A14
+no further details available
+
+logging int with value 0
+logging int with value 1
+logging int with value 2
+logging int with value 3
+logging int with value 4
+logging int with value 5
+logging int with value 6
+logging int with value 7
+logging int with value 8
+logging int with value 9
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+logging int at 000000B4E155E7F8 with value 32439
+logging int at 000000B4E155E7F8 with value 5537
+logging int at 000000B4E155E7F8 with value 2082
+logging int at 000000B4E155E7F8 with value 4833
+logging int at 000000B4E155E7F8 with value 29658
+logging int at 000000B4E155E7F8 with value 13977
+logging int at 000000B4E155E7F8 with value 22386
+logging int at 000000B4E155E7F8 with value 26924
+logging int at 000000B4E155E7F8 with value 5829
+logging int at 000000B4E155E7F8 with value 5097
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+c-style string at 000000B4E155E7F8:
+cat
+c-style string at 000000B4E155E7F8:
+gazelle
+c-style string at 000000B4E155E7F8:
+fish
+c-style string at 000000B4E155E7F8:
+flunkle
+c-style string at 000000B4E155E7F8:
+oliphant
+c-style string at 000000B4E155E7F8:
+eeblefleeble
+c-style string at 000000B4E155E7F8:
+eggleweggle
+c-style string at 000000B4E155E7F8:
+ogglewaggle
+c-style string at 000000B4E155E7F8:
+zebrakkle
+c-style string at 000000B4E155E7F8:
+zobrikkle
+logging int with value 5
+c-style string at 000000B4E155E918:
+chickens
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E918
+no further details available
+
+
+logging class with type-id class Input
+logging class stack-address 000000B4E155F470
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1
+logging class stack-address 000000B4E155E918
+no further details available
+
+logging int at 000000B4E155E918 with value 888
+logging int with value 0
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E918
+no further details available
+
+logging class Input at 000000B4E155E918
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClassNo1 at 000000B4E155E918
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool (__cdecl*)(void)
+logging function stack-address 00007FF7223F8A14
+no further details available
+
+logging int with value 0
+logging int with value 1
+logging int with value 2
+logging int with value 3
+logging int with value 4
+logging int with value 5
+logging int with value 6
+logging int with value 7
+logging int with value 8
+logging int with value 9
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+logging union with type-id union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion
+logging union stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+
+logging class with type-id class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass
+logging class stack-address 000000B4E155E7F8
+no further details available
+
+logging int at 000000B4E155E7F8 with value 13290
+logging int at 000000B4E155E7F8 with value 22355
+logging int at 000000B4E155E7F8 with value 15574
+logging int at 000000B4E155E7F8 with value 27350
+logging int at 000000B4E155E7F8 with value 21724
+logging int at 000000B4E155E7F8 with value 31107
+logging int at 000000B4E155E7F8 with value 11337
+logging int at 000000B4E155E7F8 with value 27753
+logging int at 000000B4E155E7F8 with value 8909
+logging int at 000000B4E155E7F8 with value 24221
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging union `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestUnion at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class `public: void __cdecl Application::Run(void) __ptr64'::`12'::logTestClass at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging class Input at 000000B4E155E7F8
+no further details available
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging member function with type-id void (__cdecl Application::*)(void) __ptr64
+logging function stack-address 1
+no further details available
+
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+
+logging global function with type-id bool __cdecl(void) at 000000B4E155E7F8
+no further details available
+c-style string at 000000B4E155E7F8:
+cat
+c-style string at 000000B4E155E7F8:
+gazelle
+c-style string at 000000B4E155E7F8:
+fish
+c-style string at 000000B4E155E7F8:
+flunkle
+c-style string at 000000B4E155E7F8:
+oliphant
+c-style string at 000000B4E155E7F8:
+eeblefleeble
+c-style string at 000000B4E155E7F8:
+eggleweggle
+c-style string at 000000B4E155E7F8:
+ogglewaggle
+c-style string at 000000B4E155E7F8:
+zebrakkle
+c-style string at 000000B4E155E7F8:
+zobrikkle
