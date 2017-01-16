@@ -1,74 +1,68 @@
 #include "Application.h"
+#include "StackAllocator.h"
 #include "Logger.h"
 #include "Input.h"
 #include "Graphics.h"
 #include "ServiceCentre.h"
 
-//Map<char* Service*>* ServiceCentre::Map = nullptr;
+#include <typeinfo.h>
+
 ServiceCentre* ServiceCentre::self = nullptr;
+StackAllocator* ServiceCentre::stackAllocatorPtr = nullptr;
+Logger* ServiceCentre::loggerPtr = nullptr;
+Input* ServiceCentre::inputPtr = nullptr;
+Application* ServiceCentre::appPtr = nullptr;
+Graphics* ServiceCentre::graphicsPtr = nullptr;
 
 ServiceCentre::ServiceCentre()
 {
-	serviceBox = new Map<char*, Service*>(10);
-
-	// Create and register memory manager + logger
-	// here, along with any supporting services
-	// accessed by the input service
-
-	// Create and register logging service here
+	// Attempt to create and register the memory-management
+	// service, then abandon ship if creation fails
+	stackAllocatorPtr = new StackAllocator();
 
 	// Attempt to create and register the logging
-	// service, then abandon ship if creation fails
-	ServiceCentre::Register(new Logger("log.txt"));
-	if (ServiceCentre::Fetch("Logger") == false)
-	{
-		return;
-	}
+	// service
+	loggerPtr = new Logger("log.txt");
 
-	// Attempt to create and register the primary input service,
-	// then abandon ship if creation fails
-	ServiceCentre::Register(new Input());
-	if (ServiceCentre::Fetch("Input") == false)
-	{
-		return;
-	}
+	// Attempt to create and register the primary input service
+	inputPtr = new Input();
 
 	// Create and register graphics support services here
 
 	// Attempt to create and register the primary graphics
-	// service, then abandon ship if creation fails
-	ServiceCentre::Register(new Graphics());
-	if (ServiceCentre::Fetch("Graphics") == false)
-	{
-		return;
-	}
+	// service
+	graphicsPtr = new Graphics();
 
 	// Create and register additional application-support
 	// services here
 
-	// Attempt to create and register the application,
-	// then abandon ship if creation fails
-	ServiceCentre::Register(new Application());
-	if (((Application*)ServiceCentre::Fetch("Application")) == false)
-	{
-		return;
-	}
+	// Attempt to create and register the application
+	appPtr = new Application();
 
 	// Create and register additional, independent services over here
+
+	// Place a marker to separate long-term, app-duration
+	// memory from short-term memory that will be written and over-written on
+	// the fly
+	stackAllocatorPtr->SetMarker();
 }
 
 ServiceCentre::~ServiceCentre()
 {
-	delete serviceBox;
-	serviceBox = nullptr;
+	CleanUp();
+	delete stackAllocatorPtr;
+	stackAllocatorPtr = nullptr;
 }
 
-void ServiceCentre::Register(Service* service)
+void ServiceCentre::CleanUp()
 {
-	serviceBox->AssignLast(service->GetName(), service);
-}
+	loggerPtr->~Logger();
+	inputPtr->~Input();
+	graphicsPtr->~Graphics();
+	appPtr->~Application();
 
-Service* ServiceCentre::Fetch(char* serviceName)
-{
-	return serviceBox->GetValue(serviceName);
+	loggerPtr = nullptr;
+	inputPtr = nullptr;
+	graphicsPtr = nullptr;
+	appPtr = nullptr;
 }

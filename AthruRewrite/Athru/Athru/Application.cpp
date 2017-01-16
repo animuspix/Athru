@@ -1,13 +1,15 @@
 #include "ServiceCentre.h"
-#include "Logger.h"
-#include "Input.h"
-#include "Graphics.h"
-#include "Application.h"
 
-Application::Application() : Service("Application")
+Application::Application()
 {
 	// Create the window
 	BuildWindow(1024, 768);
+}
+
+Application::~Application()
+{
+	// Close the window
+	CloseWindow();
 }
 
 bool Application::Frame()
@@ -45,9 +47,9 @@ void Application::Run()
 	// (the application constructor is called by the Service centre
 	// within ITS constructor, so generating these references there
 	// is a guaranteed way to create a dependency loop :P)
-	athruInput = ((Input*)(ServiceCentre::Instance().Fetch("Input")));
-	athruGraphics = ((Graphics*)(ServiceCentre::Instance().Fetch("Graphics")));
-	athruLogger = ((Logger*)(ServiceCentre::Instance().Fetch("Logger")));
+	athruInput = ServiceCentre::Instance().AccessInput();
+	athruGraphics = ServiceCentre::Instance().AccessGraphics();
+	athruLogger = ServiceCentre::Instance().AccessLogger();
 
 	// Loop until there is a quit message from the window or the user.
 	done = false;
@@ -101,7 +103,7 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 		case WM_KEYDOWN:
 		{
 			// If a key is pressed send it to the input object so it can record that state.
-			((Input*)ServiceCentre::Instance().Fetch("Input"))->KeyDown((unsigned int)wparam);
+			ServiceCentre::Instance().AccessInput()->KeyDown((fourByteUnsigned)wparam);
 			return 0;
 		}
 
@@ -109,7 +111,7 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 		case WM_KEYUP:
 		{
 			// If a key is released then send it to the input object so it can unset the state for that key.
-			((Input*)ServiceCentre::Instance().Fetch("Input"))->KeyUp((unsigned int)wparam);
+			ServiceCentre::Instance().AccessInput()->KeyUp((fourByteUnsigned)wparam);
 			return 0;
 		}
 
@@ -141,7 +143,7 @@ void Application::BuildWindow(const int& windowedWidth, const int& windowedHeigh
 	wc.hIcon = LoadIcon(NULL, IDI_WINLOGO);
 	wc.hIconSm = wc.hIcon;
 	wc.hCursor = LoadCursor(NULL, IDC_ARROW);
-	wc.hbrBackground = (HBRUSH)GetStockObject(WHITE_BRUSH);
+	wc.hbrBackground = (HBRUSH)GetStockObject(DKGRAY_BRUSH);
 	wc.lpszMenuName = NULL;
 	wc.lpszClassName = appName;
 	wc.cbSize = sizeof(WNDCLASSEX);
@@ -217,8 +219,15 @@ void Application::CloseWindow()
 	appInstance = NULL;
 }
 
-Application::~Application()
+// Push constructions for this class through Athru's custom allocator
+void* Application::operator new(size_t size)
 {
-	// Close the window
-	CloseWindow();
+	StackAllocator* allocator = ServiceCentre::Instance().AccessMemory();
+	return allocator->AlignedAlloc((fourByteUnsigned)size, 4, false);
+}
+
+// We aren't expecting to use [delete], so overload it to do nothing;
+void Application::operator delete(void* target)
+{
+	return;
 }

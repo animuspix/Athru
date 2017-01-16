@@ -13,7 +13,7 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 
 	// Fetch the engine from the service centre, then start
 	// it
-	((Application*)ServiceCentre::Instance().Fetch("Application"))->Run();
+	ServiceCentre::Instance().AccessApp()->Run();
 
 	// When the engine stops running, wind everything down
 	// by destroying the service centre

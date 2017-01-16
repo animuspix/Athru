@@ -3,37 +3,38 @@
 #include <fstream>
 #include "Typedefs.h"
 #include "ConsolePrinter.h"
-#include "Service.h"
 
 #include "Dispatcher.h"
+#include "leakChecker.h"
 
 #pragma once
 
-class Logger : public Service
+class Logger
 {
 	public:
-		Logger(char* loggingTo) : Service("Logger")
+		Logger(char* loggingTo)
 		{
 			logFilePath = loggingTo;
 
-			logFileStream = std::fstream();
-			logFileStream.open(logFilePath, std::ios::out);
+			// Streams ONLY work if they're allocated on an external heap;
+			// ask SO what the fruit is going on there
+			logFileStreamPttr = DEBUG_NEW std::fstream();
+			logFileStreamPttr->open(logFilePath, std::ios::out);
+			(*logFileStreamPttr) << "Note:" << '\n';
+			(*logFileStreamPttr) << "Unions + structs/classes are too complicated to easily log members," << '\n';
+			(*logFileStreamPttr) << "and it's impossible to easily log the names of enum values without" << '\n';
+			(*logFileStreamPttr) << "lots of boilerplate code. This has resulted in the following:" << '\n' << '\n';;
+			(*logFileStreamPttr) << "- Athru will only ever log the address + type-id of unions and" << '\n';
+			(*logFileStreamPttr) << "  avoid describing their members" << '\n' << '\n';
+			(*logFileStreamPttr) << "- Athru will only ever log the address + type-id of structs/classes" << '\n';
+			(*logFileStreamPttr) << "  and avoid describing their members" << '\n' << '\n';
+			(*logFileStreamPttr) << "- Athru will not attempt to log enums; any enum values that you want" << '\n';
+			(*logFileStreamPttr) << "  to log should be cast into an arithmetic type beforehand, and enum" << '\n';
+			(*logFileStreamPttr) << "  names must be stringified before being passed to the logger" << '\n' << '\n';
+			(*logFileStreamPttr) << "Thank you for reading :)" << '\n' << '\n';
+			logFileStreamPttr->close();
 
-			logFileStream << "Note:" << '\n';
-			logFileStream << "Unions + structs/classes are too complicated to easily log members," << '\n';
-			logFileStream << "and it's impossible to easily log the names of enum values without" << '\n';
-			logFileStream << "lots of boilerplate code. This has resulted in the following:" << '\n' << '\n';;
-			logFileStream << "- Athru will only ever log the address + type-id of unions and" << '\n';
-			logFileStream << "  avoid describing their members" << '\n' << '\n';
-			logFileStream << "- Athru will only ever log the address + type-id of structs/classes" << '\n';
-			logFileStream << "  and avoid describing their members" << '\n' << '\n';
-			logFileStream << "- Athru will not attempt to log enums; any enum values that you want" << '\n';
-			logFileStream << "  to log should be cast into an arithmetic type beforehand, and enum" << '\n';
-			logFileStream << "  names must be stringified before being passed to the logger" << '\n' << '\n';
-			logFileStream << "Thank you for reading :)" << '\n' << '\n';
-			logFileStream.close();
-
-			printStreamPttr = new std::ostringstream();
+			printStreamPttr = DEBUG_NEW std::ostringstream();
 			*printStreamPttr << "Note:" << '\n';
 			*printStreamPttr << "Unions + structs/classes are too complicated to easily log members," << '\n';
 			*printStreamPttr << "and it's impossible to easily log the names of enum values without" << '\n';
@@ -52,6 +53,9 @@ class Logger : public Service
 		~Logger()
 		{
 			// Consider refactoring to use smart pointers
+			delete logFileStreamPttr;
+			logFileStreamPttr = nullptr;
+
 			delete printStreamPttr;
 			printStreamPttr = nullptr;
 		}
@@ -75,9 +79,9 @@ class Logger : public Service
 
 					else
 					{
-						logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
-						logFileStream << "logging " << typeid(loggableType).name() << " with value " << dataLogging << '\n';
-						logFileStream.close();
+						logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+						(*logFileStreamPttr) << "logging " << typeid(loggableType).name() << " with value " << dataLogging << '\n';
+						logFileStreamPttr->close();
 					}
 				},
 
@@ -96,11 +100,11 @@ class Logger : public Service
 
 							else
 							{
-								logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
-								logFileStream << "logging union with type-id " << typeid(loggableType).name() << '\n';;
-								logFileStream << "logging union stack-address " << &dataLogging << '\n';
-								logFileStream << "no further details available" << '\n' << '\n';
-								logFileStream.close();
+								logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+								(*logFileStreamPttr) << "logging union with type-id " << typeid(loggableType).name() << '\n';;
+								(*logFileStreamPttr) << "logging union stack-address " << &dataLogging << '\n';
+								(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
+								logFileStreamPttr->close();
 							}
 						},
 
@@ -119,11 +123,11 @@ class Logger : public Service
 
 									else
 									{
-										logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
-										logFileStream << "\nlogging class with type-id " << typeid(loggableType).name() << '\n';
-										logFileStream << "logging class stack-address " << &dataLogging << '\n';
-										logFileStream << "no further details available" << '\n' << '\n';
-										logFileStream.close();
+										logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+										(*logFileStreamPttr) << "\nlogging class with type-id " << typeid(loggableType).name() << '\n';
+										(*logFileStreamPttr) << "logging class stack-address " << &dataLogging << '\n';
+										(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
+										logFileStreamPttr->close();
 									}
 								},
 
@@ -142,11 +146,11 @@ class Logger : public Service
 
 											else
 											{
-												logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
-												logFileStream << "\nlogging global function with type-id " << typeid(loggableType).name() << '\n';
-												logFileStream << "logging function stack-address " << dataLogging << '\n';
-												logFileStream << "no further details available" << '\n' << '\n';
-												logFileStream.close();
+												logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+												(*logFileStreamPttr) << "\nlogging global function with type-id " << typeid(loggableType).name() << '\n';
+												(*logFileStreamPttr) << "logging function stack-address " << dataLogging << '\n';
+												(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
+												logFileStreamPttr->close();
 											}
 										},
 
@@ -165,11 +169,11 @@ class Logger : public Service
 
 													else
 													{
-														logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
-														logFileStream << "\nlogging member function with type-id " << typeid(loggableType).name() << '\n';
-														logFileStream << "logging function stack-address " << dataLogging << '\n';
-														logFileStream << "no further details available" << '\n' << '\n';
-														logFileStream.close();
+														logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+														(*logFileStreamPttr) << "\nlogging member function with type-id " << typeid(loggableType).name() << '\n';
+														(*logFileStreamPttr) << "logging function stack-address " << dataLogging << '\n';
+														(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
+														logFileStreamPttr->close();
 													}
 												},
 
@@ -182,9 +186,9 @@ class Logger : public Service
 
 													else
 													{
-														logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
-														logFileStream << "Sorry! Athru is only able to log objects with arithmetic, union, class, or function type" << '\n';
-														logFileStream.close();
+														logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+														(*logFileStreamPttr) << "Sorry! Athru is only able to log objects with arithmetic, union, class, or function type" << '\n';
+														logFileStreamPttr->close();
 													}
 												}
 											)
@@ -243,20 +247,20 @@ class Logger : public Service
 
 				else
 				{
-					logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
 					Dispatch(std::is_arithmetic<loggableType>{})
 					(
 						[&](auto&& value)
 						{
 							if (!isCString)
 							{
-								logFileStream << "logging " << typeid(loggableType).name() << " at " << &dataLogging << " with value " << *dataLogging << '\n';
+								(*logFileStreamPttr) << "logging " << typeid(loggableType).name() << " at " << &dataLogging << " with value " << *dataLogging << '\n';
 							}
 
 							else
 							{
-								logFileStream << "c-style string at " << &dataLogging << ':' << '\n';
-								logFileStream << dataLogging << '\n';
+								(*logFileStreamPttr) << "c-style string at " << &dataLogging << ':' << '\n';
+								(*logFileStreamPttr) << dataLogging << '\n';
 							}
 						},
 
@@ -266,8 +270,8 @@ class Logger : public Service
 							(
 								[&](auto&& value)
 								{
-									logFileStream << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-									logFileStream << "no further details available" << '\n';
+									(*logFileStreamPttr) << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
+									(*logFileStreamPttr) << "no further details available" << '\n';
 								},
 
 								[&](auto&& value)
@@ -276,8 +280,8 @@ class Logger : public Service
 									(
 										[&](auto&& value)
 										{
-											logFileStream << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-											logFileStream << "no further details available" << '\n';
+											(*logFileStreamPttr) << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
+											(*logFileStreamPttr) << "no further details available" << '\n';
 										},
 
 										[&](auto&& value)
@@ -286,14 +290,14 @@ class Logger : public Service
 											(
 												[&](auto&& value)
 												{
-													logFileStream << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-													logFileStream << "no further details available" << '\n';
+													(*logFileStreamPttr) << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
+													(*logFileStreamPttr) << "no further details available" << '\n';
 												},
 
 												[&](auto&& value)
 												{
-													logFileStream << "\nlogging global function with type-id " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-													logFileStream << "no further details available" << '\n';
+													(*logFileStreamPttr) << "\nlogging global function with type-id " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
+													(*logFileStreamPttr) << "no further details available" << '\n';
 												}
 											)(dataLogging);
 										}
@@ -304,7 +308,7 @@ class Logger : public Service
 					)
 					(dataLogging);
 
-					logFileStream.close();
+					logFileStreamPttr->close();
 				}
 			}
 
@@ -318,9 +322,9 @@ class Logger : public Service
 
 				else
 				{
-					logFileStream.open(logFilePath, std::fstream::out | std::fstream::app);
-					logFileStream << "Unknown data stored at the null address (0x0000000000000000)" << '\n';
-					logFileStream.close();
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					(*logFileStreamPttr) << "Unknown data stored at the null address (0x0000000000000000)" << '\n';
+					logFileStreamPttr->close();
 				}
 			}
 		}
@@ -343,8 +347,12 @@ class Logger : public Service
 			}
 		}
 
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void operator delete(void* target);
+
 	private:
 		char* logFilePath;
-		std::fstream logFileStream;
+		std::fstream* logFileStreamPttr;
 		std::ostringstream* printStreamPttr;
 };

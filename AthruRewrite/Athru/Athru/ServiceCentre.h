@@ -1,9 +1,10 @@
 #pragma once
 
-#include "Map.h"
-#include "Service.h"
-
-#include "leakChecker.h"
+#include "StackAllocator.h"
+#include "Logger.h"
+#include "Input.h"
+#include "Application.h"
+#include "Graphics.h"
 
 class ServiceCentre
 {
@@ -27,28 +28,47 @@ class ServiceCentre
 			self = nullptr;
 		}
 
-		// Register a new/separate service
-		/*static*/ void Register(Service* service);
+		static StackAllocator* AccessMemory()
+		{
+			return stackAllocatorPtr;
+		}
 
-		// Fetch a given service by name
-		/*static*/ Service* Fetch(char* serviceName);
+		static Logger* AccessLogger()
+		{
+			return loggerPtr;
+		}
+
+		static Input* AccessInput()
+		{
+			return inputPtr;
+		}
+
+		static Application* AccessApp()
+		{
+			return appPtr;
+		}
+
+		static Graphics* AccessGraphics()
+		{
+			return graphicsPtr;
+		}
 
 	private:
-		// Dictionary of available services
-		/*static*/ Map<char*, Service*>* serviceBox;
+		// Pointers to available services
+		static StackAllocator* stackAllocatorPtr;
+		static Logger* loggerPtr;
+		static Input* inputPtr;
+		static Application* appPtr;
+		static Graphics* graphicsPtr;
 
 		// Private constructor/destructor
 		ServiceCentre();
 		~ServiceCentre();
 
+		// Private clean-up function, deconstructs
+		// services during ServiceCentre destruction
+		void CleanUp();
+
 		// Private singleton instance of [this]
 		static ServiceCentre* self;
-
-		// Note that this approach requires an expensive character
-		// check EVERY TIME a service is requested, which could
-		// significantly impact performance; if performance is
-		// especially affected, consider abandoning array-style
-		// storage and returning to the less-elegant-but-faster
-		// approach used by Nystrom in Game Programming Patterns
 };
-

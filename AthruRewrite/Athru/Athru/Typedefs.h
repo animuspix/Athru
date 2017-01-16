@@ -23,3 +23,6 @@ typedef long long eightByteSigned;
 
 // A sixty-four bit unsigned type
 typedef unsigned long long eightByteUnsigned;
+
+// A pointer alias (length depends on compilation target)
+typedef void* address;

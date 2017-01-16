@@ -7,9 +7,7 @@
 #define SCREEN_DEPTH 1000.0f
 #define SCREEN_NEAR 0.1f
 
-#include "Service.h"
-
-class Graphics : public Service
+class Graphics
 {
 	public:
 		Graphics();
@@ -17,6 +15,10 @@ class Graphics : public Service
 		~Graphics();
 
 		bool Frame();
+
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void operator delete(void* target);
 
 	private:
 		bool Render();

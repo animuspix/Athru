@@ -1,8 +1,6 @@
 #pragma once
 
-#include "Service.h"
-
-class Input : public Service
+class Input
 {
 	public:
 		Input();
@@ -11,6 +9,10 @@ class Input : public Service
 		void KeyDown(unsigned int);
 		void KeyUp(unsigned int);
 		bool IsKeyDown(unsigned int);
+
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void operator delete(void* target);
 
 	private:
 		bool keys[256];

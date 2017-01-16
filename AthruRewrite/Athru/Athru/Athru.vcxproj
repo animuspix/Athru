@@ -154,13 +154,13 @@
     <ClCompile Include="ConsolePrinter.cpp" />
     <ClCompile Include="Graphics.cpp" />
     <ClCompile Include="Input.cpp" />
-    <ClCompile Include="MemoryManager.cpp" />
-    <ClCompile Include="Service.cpp" />
+    <ClCompile Include="Logger.cpp" />
+    <ClCompile Include="StackAllocator.cpp" />
     <ClCompile Include="ServiceCentre.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="AthruGlobals.h" />
     <ClInclude Include="ConsolePrinter.h" />
-    <ClInclude Include="Constants.h" />
     <ClInclude Include="Dispatcher.h" />
     <ClInclude Include="leakChecker.h" />
     <ClInclude Include="Logger.h" />
@@ -169,8 +169,7 @@
     <ClInclude Include="Graphics.h" />
     <ClInclude Include="Input.h" />
     <ClInclude Include="KnownLengthArray.h" />
-    <ClInclude Include="MemoryManager.h" />
-    <ClInclude Include="Service.h" />
+    <ClInclude Include="StackAllocator.h" />
     <ClInclude Include="ServiceCentre.h" />
     <ClInclude Include="Typedefs.h" />
   </ItemGroup>

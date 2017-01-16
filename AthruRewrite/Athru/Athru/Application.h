@@ -2,13 +2,12 @@
 
 #define WIN32_LEAN_AND_MEAN
 #include "windows.h"
-#include "Service.h"
 
 class Input;
 class Graphics;
 class Logger;
 
-class Application : public Service
+class Application
 {
 	public:
 		// Build the engine
@@ -19,6 +18,10 @@ class Application : public Service
 
 		// Control the game loop
 		void Run();
+
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void operator delete(void* target);
 
 	private:
 		// Handle individual frames through the Graphics/Input classes
