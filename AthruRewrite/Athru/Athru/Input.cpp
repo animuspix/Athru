@@ -37,7 +37,7 @@ bool Input::IsKeyDown(unsigned int key)
 // Push constructions for this class through Athru's custom allocator
 void* Input::operator new(size_t size)
 {
-	StackAllocator* allocator = ServiceCentre::Instance().AccessMemory();
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc((fourByteUnsigned)size, 4, false);
 }
 

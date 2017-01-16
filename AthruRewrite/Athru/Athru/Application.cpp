@@ -47,9 +47,9 @@ void Application::Run()
 	// (the application constructor is called by the Service centre
 	// within ITS constructor, so generating these references there
 	// is a guaranteed way to create a dependency loop :P)
-	athruInput = ServiceCentre::Instance().AccessInput();
-	athruGraphics = ServiceCentre::Instance().AccessGraphics();
-	athruLogger = ServiceCentre::Instance().AccessLogger();
+	athruInput = ServiceCentre::AccessInput();
+	athruGraphics = ServiceCentre::AccessGraphics();
+	athruLogger = ServiceCentre::AccessLogger();
 
 	// Loop until there is a quit message from the window or the user.
 	done = false;
@@ -103,7 +103,7 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 		case WM_KEYDOWN:
 		{
 			// If a key is pressed send it to the input object so it can record that state.
-			ServiceCentre::Instance().AccessInput()->KeyDown((fourByteUnsigned)wparam);
+			ServiceCentre::AccessInput()->KeyDown((fourByteUnsigned)wparam);
 			return 0;
 		}
 
@@ -111,7 +111,7 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 		case WM_KEYUP:
 		{
 			// If a key is released then send it to the input object so it can unset the state for that key.
-			ServiceCentre::Instance().AccessInput()->KeyUp((fourByteUnsigned)wparam);
+			ServiceCentre::AccessInput()->KeyUp((fourByteUnsigned)wparam);
 			return 0;
 		}
 
@@ -222,7 +222,7 @@ void Application::CloseWindow()
 // Push constructions for this class through Athru's custom allocator
 void* Application::operator new(size_t size)
 {
-	StackAllocator* allocator = ServiceCentre::Instance().AccessMemory();
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc((fourByteUnsigned)size, 4, false);
 }
 

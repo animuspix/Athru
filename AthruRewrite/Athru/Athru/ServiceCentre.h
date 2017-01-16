@@ -9,23 +9,56 @@
 class ServiceCentre
 {
 	public:
-		// Function to allocate the instance (constructor wrapper)
-		static void Create()
+		ServiceCentre();
+		~ServiceCentre();
+
+		static void StartUp()
 		{
-			self = new ServiceCentre();
+			// Attempt to create and register the memory-management
+			// service, then abandon ship if creation fails
+			stackAllocatorPtr = new StackAllocator();
+
+			// Attempt to create and register the logging
+			// service
+			loggerPtr = new Logger("log.txt");
+
+			// Attempt to create and register the primary input service
+			inputPtr = new Input();
+
+			// Create and register graphics support services here
+
+			// Attempt to create and register the primary graphics
+			// service
+			graphicsPtr = new Graphics();
+
+			// Create and register additional application-support
+			// services here
+
+			// Attempt to create and register the application
+			appPtr = new Application();
+
+			// Create and register additional, independent services over here
+
+			// Place a marker to separate long-term, app-duration
+			// memory from short-term memory that will be written and over-written on
+			// the fly
+			stackAllocatorPtr->SetMarker();
 		}
 
-		// Function to fetch the instance
-		static ServiceCentre& Instance()
+		static void ShutDown()
 		{
-			return *self;
-		}
+			loggerPtr->~Logger();
+			inputPtr->~Input();
+			graphicsPtr->~Graphics();
+			appPtr->~Application();
 
-		// Function to de-allocate the instance (destructor wrapper)
-		static void Destroy()
-		{
-			delete self;
-			self = nullptr;
+			loggerPtr = nullptr;
+			inputPtr = nullptr;
+			graphicsPtr = nullptr;
+			appPtr = nullptr;
+
+			delete stackAllocatorPtr;
+			stackAllocatorPtr = nullptr;
 		}
 
 		static StackAllocator* AccessMemory()
@@ -60,15 +93,4 @@ class ServiceCentre
 		static Input* inputPtr;
 		static Application* appPtr;
 		static Graphics* graphicsPtr;
-
-		// Private constructor/destructor
-		ServiceCentre();
-		~ServiceCentre();
-
-		// Private clean-up function, deconstructs
-		// services during ServiceCentre destruction
-		void CleanUp();
-
-		// Private singleton instance of [this]
-		static ServiceCentre* self;
 };
