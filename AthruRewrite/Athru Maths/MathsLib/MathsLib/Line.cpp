@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "Line.h"
 
-Line::Line(Vector2 suppliedStart, Vector2 suppliedEnd, float suppliedThicknessInPx)
+Line::Line(Vector3 suppliedStart, Vector3 suppliedEnd, float suppliedThicknessInPx)
 {
 	start = suppliedStart;
 	end = suppliedEnd;
