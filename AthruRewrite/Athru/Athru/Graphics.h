@@ -1,6 +1,6 @@
 #pragma once
 
-#include <windows.h>
+#include "Direct3D.h"
 
 #define FULL_SCREEN false
 #define VSYNC_ENABLED true
@@ -10,17 +10,19 @@
 class Graphics
 {
 	public:
-		Graphics();
-		//Graphics(int, int, HWND);
+		Graphics(int screenWidth, int screenHeight, HWND hwnd);
 		~Graphics();
 
-		bool Frame();
+		void Frame();
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
-		bool Render();
+		void Render();
+
+		// Connection to the DirectX graphics processing backend
+		Direct3D d3D;
 };
 

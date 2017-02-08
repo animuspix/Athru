@@ -1,24 +1,24 @@
 #include "ServiceCentre.h"
 #include "Graphics.h"
 
-Graphics::Graphics()
+Graphics::Graphics(int screenWidth, int screenHeight, HWND hwnd)
 {
-
+	d3D = Direct3D(screenWidth, screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
 }
 
 Graphics::~Graphics()
 {
 }
 
-bool Graphics::Frame()
+void Graphics::Frame()
 {
-	return true;
+	Render();
 }
 
-bool Graphics::Render()
+void Graphics::Render()
 {
-
-	return true;
+	// d3D.BeginScene(0.5f, 0.5f, 0.5f, 0.2f);
+	// d3D.EndScene();
 }
 
 // Push constructions for this class through Athru's custom allocator

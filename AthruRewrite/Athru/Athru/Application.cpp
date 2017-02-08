@@ -22,16 +22,7 @@ bool Application::Frame()
 	}
 
 	// Process the current frame through the Graphics class
-	bool result = (athruGraphics->Frame());
-	if (!result)
-	{
-		// If the current frame returns false (the player quit,
-		// something went wrong, etc.), end the game loop
-		return false;
-	}
-
-	// If everything worked, return [true]
-	return true;
+	athruGraphics->Frame();
 }
 
 void Application::Run()
@@ -217,6 +208,11 @@ void Application::CloseWindow()
 	// Remove the application instance.
 	UnregisterClass(appName, appInstance);
 	appInstance = NULL;
+}
+
+HWND Application::GetHWND()
+{
+	return appForm;
 }
 
 // Push constructions for this class through Athru's custom allocator

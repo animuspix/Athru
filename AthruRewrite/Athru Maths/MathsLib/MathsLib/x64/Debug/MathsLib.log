@@ -1,0 +1,10 @@
+﻿  stdafx.cpp
+  Vector4.cpp
+  Vector3.cpp
+  Vector2.cpp
+  SQTTransformer.cpp
+  Quaternion.cpp
+  Matrix4.cpp
+  Line.cpp
+  Generating Code...
+  MathsLib.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\MathsLib.lib

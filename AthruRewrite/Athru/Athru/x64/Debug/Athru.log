@@ -1,13 +1,9 @@
-﻿  ServiceCentre.cpp
-  Athru.cpp
+﻿  StackAllocator.cpp
+  Direct3D.cpp
+c:\users\s171519\documents\github\athru\athrurewrite\athru maths\mathslib\mathslib\matrix4.h(64): error C3646: 'matrixData': unknown override specifier
+c:\users\s171519\documents\github\athru\athrurewrite\athru maths\mathslib\mathslib\matrix4.h(64): error C2143: syntax error: missing ',' before '['
+c:\users\s171519\documents\github\athru\athrurewrite\athru maths\mathslib\mathslib\matrix4.h(64): error C2143: syntax error: missing ')' before ';'
+c:\users\s171519\documents\github\athru\athrurewrite\athru maths\mathslib\mathslib\matrix4.h(64): error C2238: unexpected token(s) preceding ';'
+c:\users\s171519\documents\github\athru\athrurewrite\athru maths\mathslib\mathslib\matrix4.h(69): error C2061: syntax error: identifier '__m128'
+c:\users\s171519\documents\github\athru\athrurewrite\athru maths\mathslib\mathslib\matrix4.h(74): error C2061: syntax error: identifier '__m128'
   Generating Code...
-  Compiling...
-  Logger.cpp
-  Input.cpp
-  Graphics.cpp
-  Application.cpp
-  Generating Code...
-  Skipping... (no relevant changes detected)
-  StackAllocator.cpp
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)

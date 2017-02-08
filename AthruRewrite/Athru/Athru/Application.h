@@ -23,6 +23,9 @@ class Application
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
+		// Retrieve the window handle
+		HWND GetHWND();
+
 	private:
 		// Handle individual frames through the Graphics/Input classes
 		bool Frame();

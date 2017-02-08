@@ -4,6 +4,7 @@
 #include "Logger.h"
 #include "Input.h"
 #include "Application.h"
+#include "Direct3D.h"
 #include "Graphics.h"
 
 class ServiceCentre
@@ -27,15 +28,15 @@ class ServiceCentre
 
 			// Create and register graphics support services here
 
+			// Attempt to create and register the application
+			appPtr = new Application();
+
 			// Attempt to create and register the primary graphics
 			// service
-			graphicsPtr = new Graphics();
+			graphicsPtr = new Graphics(1920, 1080, appPtr->GetHWND());
 
 			// Create and register additional application-support
 			// services here
-
-			// Attempt to create and register the application
-			appPtr = new Application();
 
 			// Create and register additional, independent services over here
 
