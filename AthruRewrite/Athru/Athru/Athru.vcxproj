@@ -111,7 +111,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%userprofile%/documents/Github/Athru/AthruRewrite/Athru Maths/MathsLib/x64/Release/MathsLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>%userprofile%/documents/Github/Athru/AthruRewrite/Athru Maths/MathsLib/x64/Debug/MathsLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -143,6 +143,7 @@
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <EnablePREfast>true</EnablePREfast>
+      <AdditionalIncludeDirectories>%userprofile%\Documents\GitHub\Athru\AthruRewrite\Athru Maths\MathsLib\MathsLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>

@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef __m128
+#include "intrin.h"
+#endif
+
 #include "SQTTransformer.h"
 #include "Quaternion.h"
 

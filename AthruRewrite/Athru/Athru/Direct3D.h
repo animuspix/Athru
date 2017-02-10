@@ -3,14 +3,12 @@
 // Alternative way to do this?
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "d3dx11.lib")
-#pragma comment(lib, "d3dx10.lib")
 
 #include "dxgi.h"
 #include "d3dcommon.h"
 #include "d3d11.h"
 
-#include "SQTTransformer.h"
+#include "Matrix4.h"
 
 class Direct3D
 {
@@ -35,11 +33,11 @@ class Direct3D
 		ID3D11DepthStencilView* depthStencilView;
 		ID3D11RasterizerState* rasterState;
 
-		// Transformers to convert data to a perspective 2D
-		// projection, orthographic (2D) projection, or from
+		// Transformation matrices to convert data to a perspective 2D
+		// projection, orthographic (flat 2D) projection, or from 
 		// model/view space to world space
-		SQTTransformer perspProjector;
-		SQTTransformer orthoProjector;
-		SQTTransformer worldTransformer;
+		Matrix4 perspProjector;
+		Matrix4 orthoProjector;
+		Matrix4 worldMatrix;
 };
 

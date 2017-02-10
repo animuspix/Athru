@@ -12,6 +12,10 @@
 //#define new DEBUG_NEW
 #endif
 
+#ifndef _DEBUG
+#define DEBUG_NEW new
+#endif
+
 #define _CRTDBG_MAP_ALLOC
 
 #include <stdlib.h>

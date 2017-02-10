@@ -1,0 +1,9 @@
+﻿  Athru.cpp
+  Application.cpp
+  Graphics.cpp
+  Input.cpp
+  Logger.cpp
+  StackAllocator.cpp
+  ServiceCentre.cpp
+  Running Code Analysis for C/C++...
+LINK : fatal error LNK1104: cannot open file 'd3dx11.lib'

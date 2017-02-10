@@ -1,5 +1,9 @@
 #pragma once
 
+#ifndef __m128
+#include "intrin.h"
+#endif
+
 // The 4-by-4 version of the identity matrix
 // (https://en.wikipedia.org/wiki/Identity_matrix)
 #define MATRIX_4_ID Matrix4(1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1)
