@@ -3,11 +3,15 @@
 
 Graphics::Graphics(int screenWidth, int screenHeight, HWND hwnd)
 {
-	d3D = Direct3D(screenWidth, screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
+	// Eww, eww, eww
+	// Ask Adam about ways to refactor my memory manager so I can avoid this sort of thing
+	d3D = new Direct3D(screenWidth, screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
 }
 
 Graphics::~Graphics()
 {
+	delete d3D;
+	d3D = nullptr;
 }
 
 void Graphics::Frame()
@@ -17,8 +21,8 @@ void Graphics::Frame()
 
 void Graphics::Render()
 {
-	// d3D.BeginScene(0.5f, 0.5f, 0.5f, 0.2f);
-	// d3D.EndScene();
+	d3D->BeginScene();
+	d3D->EndScene();
 }
 
 // Push constructions for this class through Athru's custom allocator

@@ -19,8 +19,31 @@ class Direct3D
 				 float screenFullDepth, float screenNearDepth);
 		~Direct3D();
 
+		// Begin a draw session (wipe the screen and clear the depth buffer)
+		void BeginScene();
+
+		// End a draw session (publish to the screen and close the draw buffer)
+		void EndScene();
+
+		// Retrieve the device/device context
+		ID3D11Device* GetDevice();
+		ID3D11DeviceContext* GetDeviceContext();
+
+		// Retrieve constant references to the perspective/orthographic projection matrices
+		const Matrix4& GetPerspProjector();
+		const Matrix4& GetOrthoProjector();
+
+		// Retrieve a constant reference to the world matrix
+		const Matrix4& GetWorldMatrix();
+
+		// Retrieve a constant reference to information about the video adapter
+		const DXGI_ADAPTER_DESC& GetAdapterInfo();
+
 	private:
+		// Stores whether or not vsync is enabled
 		bool vsyncEnabled;
+
+		// Stores information about the video adapter
 		DXGI_ADAPTER_DESC adapterInfo;
 
 		// DirectX internal types
@@ -34,10 +57,13 @@ class Direct3D
 		ID3D11RasterizerState* rasterState;
 
 		// Transformation matrices to convert data to a perspective 2D
-		// projection, orthographic (flat 2D) projection, or from 
-		// model/view space to world space
+		// projection or orthographic (flat 2D) projection
 		Matrix4 perspProjector;
 		Matrix4 orthoProjector;
+
+		// Matrix representing the basic coordinate system used within
+		// Athru; for more information on coordinate systems, see:
+		// https://en.wikipedia.org/wiki/Coordinate_system
 		Matrix4 worldMatrix;
 };
 

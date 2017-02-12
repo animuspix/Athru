@@ -23,6 +23,7 @@ bool Application::Frame()
 
 	// Process the current frame through the Graphics class
 	athruGraphics->Frame();
+	return true;
 }
 
 void Application::Run()

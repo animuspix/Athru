@@ -3,8 +3,8 @@
 #include "Direct3D.h"
 
 Direct3D::Direct3D() {}
-Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen, 
-				   float screenFullDepth, float screenNearDepth)
+Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
+				   float screenFarDepth, float screenNearDepth)
 {
 	// Long integer used to store success/failure for different DirectX operations
 	HRESULT result;
@@ -19,6 +19,9 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 
 	// Zero the memory in the swap chain description
 	ZeroMemory(&swapChainDesc, sizeof(swapChainDesc));
+
+	// Initialise the swap chain sample description
+	swapChainDesc.SampleDesc = DXGI_SAMPLE_DESC();
 
 	// Set a single back buffer
 	swapChainDesc.BufferCount = 1;
@@ -51,7 +54,7 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 	// Discard the back buffer contents after presenting
 	swapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 
-	// Don't set any extra swap-chain settings
+	// Don't set any extra swap chain settings
 	swapChainDesc.Flags = 0;
 
 	if (vsyncEnabled)
@@ -102,9 +105,9 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 		swapChainDesc.BufferDesc.RefreshRate.Numerator = numerator;
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = denominator;
 
-		// We got the monitor refresh rate, so there's no real reason to keep the DirectX graphics interface factory, 
+		// We got the monitor refresh rate, so there's no real reason to keep the DirectX graphics interface factory,
 		// video adapter, and video adapter output pointers around; we'll [release] them here
-		
+
 		// Release the video adapter output
 		adapterOutput->Release();
 		adapterOutput = nullptr;
@@ -118,7 +121,7 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 		factory = nullptr;
 	}
 
-	else 
+	else
 	{
 		// Set up swap chain refresh rate and presentation frequency without vsync
 		// Set the back buffer to refresh as fast as possible
@@ -131,6 +134,8 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 	featureLevel = D3D_FEATURE_LEVEL_11_0;
 
 	// Instantiate the swap chain, Direct3D device, and Direct3D device context
+	deviceContext = nullptr;
+	swapChain = nullptr;
 	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, &featureLevel, 1,
 										   D3D11_SDK_VERSION, &swapChainDesc, &swapChain, &device, NULL, &deviceContext);
 
@@ -166,7 +171,7 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 
 	// Generate the depth buffer texture using the depth buffer description
 	result = device->CreateTexture2D(&depthBufferDesc, NULL, &depthStencilBuffer);
-	
+
 	// Struct containing a description of the depth stencil
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
 
@@ -240,9 +245,6 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 	// above
 	deviceContext->RSSetState(rasterState);
 
-	int error;
-	float fieldOfView, screenAspect;
-
 	// Struct representing a DirectX11 viewport
 	D3D11_VIEWPORT viewport;
 
@@ -258,18 +260,22 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 	deviceContext->RSSetViewports(1, &viewport);
 
 	// Set the field of view
-	fieldOfView = PI / 4;
+	float fieldOfView = PI / 4;
 
 	// Cache the application aspect ratio
-	screenAspect = (float)screenWidth / (float)screenHeight;
+	float screenAspect = (float)screenWidth / (float)screenHeight;
 
-	float xyScale = 1 / tan(fieldOfView / 2);
+	// Cache values in the perspective projection matrix
+	float xScale = 1 / (screenAspect * tan(fieldOfView / 2));
+	float yScale = 1 / tan(fieldOfView / 2);
+	float zScale = (screenFarDepth + screenNearDepth) / (screenFarDepth - screenNearDepth);
+	float zShift = 2 * zScale;
 
-	// Create perspective projection matrix
-	perspProjector = Matrix4(xyScale, 0, 0, 0,
-							 0, xyScale, 0, 0,
-							 0,		0,   1, 0,
-							 0,		0,	-1, 0);
+	// Create the perspective projection matrix
+	perspProjector = Matrix4(xScale, 0, 0, 0,
+							 0, yScale, 0, 0,
+							 0,	0, zScale, 1,
+							 0, 0, zShift, 0);
 
 	// Create world matrix (initialized to the 4D identity matrix)
 	worldMatrix = Matrix4(1, 0, 0, 0,
@@ -277,10 +283,35 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 						  0, 0, 1, 0,
 						  0, 0, 0, 1);
 
-	// Create orthographic projection matrix
-	orthoProjector = Matrix4();
+	// Cache values in the orthographic projection matrix
+	float left = viewport.TopLeftX;
+	float right = left + viewport.Width;
+	float top = viewport.TopLeftY;
+	float bottom = top - viewport.Height;
 
-	// Raise an error if anything failed to execute
+	float rightPlusLeft = right + left;
+	float rightMinusLeft = right - left;
+	float topMinusBottom = top - bottom;
+	float topPlusBottom = top + bottom;
+
+	float screenFarMinusScreenNear = screenFarDepth - screenNearDepth;
+	float screenFarPlusScreenNear = screenFarDepth - screenNearDepth;
+
+	float orthoXScale = 2 / rightMinusLeft;
+	float orthoYScale = 2 / topMinusBottom;
+	float orthoZScale = 2 / screenFarMinusScreenNear;
+
+	float orthoXShift = rightPlusLeft / rightMinusLeft;
+	float orthoYShift = topPlusBottom / topMinusBottom;
+	float orthoZShift = screenFarPlusScreenNear / screenFarMinusScreenNear;
+
+	// Create orthographic projection matrix
+	orthoProjector = Matrix4(orthoXScale, 0, 0, orthoXShift,
+							 0, orthoYScale, 0, orthoYShift,
+							 0, 0, orthoZScale, orthoZShift,
+							 0, 0,			 0,			 1);
+
+	// Raise an error if any DirectX components failed to build
 	assert(SUCCEEDED(result));
 }
 
@@ -288,28 +319,82 @@ Direct3D::~Direct3D()
 {
 	// Set the application to windowed mode; otherwise, releasing the swap chain throws an exception
 	swapChain->SetFullscreenState(false, NULL);
-	
+
 	rasterState->Release();
 	rasterState = nullptr;
 
 	depthStencilView->Release();
 	depthStencilView = nullptr;
-	
+
 	depthStencilState->Release();
 	depthStencilState = nullptr;
-	
+
 	depthStencilBuffer->Release();
 	depthStencilBuffer = nullptr;
-	
+
 	renderTargetView->Release();
 	renderTargetView = nullptr;
-	
+
 	deviceContext->Release();
 	deviceContext = nullptr;
-	
+
 	device->Release();
 	device = nullptr;
-	
+
 	swapChain->Release();
 	swapChain = nullptr;
+}
+
+void Direct3D::BeginScene()
+{
+	// The color to display before anything is drawn to the scene
+	float color[4] = { 0, 0.4, 0.1, 0.2 };
+
+	// Clear the back buffer and flush the view with [color]
+	deviceContext->ClearRenderTargetView(renderTargetView, color);
+
+	// Clear the depth buffer
+	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+}
+
+void Direct3D::EndScene()
+{
+	// Finish the rendering pass by displaying the
+	// buffered draw data
+	// If vsync is enabled (read: equal to [true] or [1]), present the data
+	// in sync with the screen refresh rate
+	//
+	// If vsync is disabled (read: equal to [false] or [0]), present it as
+	// fast as possible
+	swapChain->Present(vsyncEnabled, 0);
+}
+
+ID3D11Device* Direct3D::GetDevice()
+{
+	return device;
+}
+
+ID3D11DeviceContext* Direct3D::GetDeviceContext()
+{
+	return deviceContext;
+}
+
+const DXGI_ADAPTER_DESC& Direct3D::GetAdapterInfo()
+{
+	return adapterInfo;
+}
+
+const Matrix4& Direct3D::GetPerspProjector()
+{
+	return perspProjector;
+}
+
+const Matrix4& Direct3D::GetOrthoProjector()
+{
+	return orthoProjector;
+}
+
+const Matrix4& Direct3D::GetWorldMatrix()
+{
+	return worldMatrix;
 }

@@ -1,12 +1,3 @@
-﻿  Direct3D.cpp
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(22): warning C4101: 'screenAspect': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(13): warning C4101: 'error': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(22): warning C4101: 'fieldOfView': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(18): warning C4101: 'depthStencilDesc': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(17): warning C4101: 'depthBufferDesc': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(20): warning C4101: 'rasterDesc': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(16): warning C4101: 'backBufferPtr': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(19): warning C4101: 'depthStencilViewDesc': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(21): warning C4101: 'viewport': unreferenced local variable
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\direct3d.cpp(12): warning C4101: 'stringLength': unreferenced local variable
-  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+﻿  Application.cpp
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)

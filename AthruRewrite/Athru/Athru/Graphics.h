@@ -23,6 +23,6 @@ class Graphics
 		void Render();
 
 		// Connection to the DirectX graphics processing backend
-		Direct3D d3D;
+		Direct3D* d3D;
 };
 

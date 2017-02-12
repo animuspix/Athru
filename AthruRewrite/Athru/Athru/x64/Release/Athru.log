@@ -1,9 +1,13 @@
 ﻿  Athru.cpp
   Application.cpp
+  Direct3D.cpp
   Graphics.cpp
   Input.cpp
   Logger.cpp
   StackAllocator.cpp
   ServiceCentre.cpp
   Running Code Analysis for C/C++...
-LINK : fatal error LNK1104: cannot open file 'd3dx11.lib'
+Direct3D.obj : error LNK2001: unresolved external symbol "public: __cdecl Matrix4::~Matrix4(void)" (??1Matrix4@@QEAA@XZ)
+Direct3D.obj : error LNK2001: unresolved external symbol "public: __cdecl Matrix4::Matrix4(void)" (??0Matrix4@@QEAA@XZ)
+Direct3D.obj : error LNK2001: unresolved external symbol "public: __cdecl Matrix4::Matrix4(float,float,float,float,float,float,float,float,float,float,float,float,float,float,float,float)" (??0Matrix4@@QEAA@MMMMMMMMMMMMMMMM@Z)
+C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.exe : fatal error LNK1120: 3 unresolved externals
