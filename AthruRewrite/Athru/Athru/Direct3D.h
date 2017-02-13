@@ -13,9 +13,7 @@
 class Direct3D
 {
 	public:
-		// Ask Adam how I should resolve this; ignore for now
-		Direct3D();
-		Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
+		Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
 				 float screenFullDepth, float screenNearDepth);
 		~Direct3D();
 

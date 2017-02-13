@@ -1,9 +1,10 @@
 #include <assert.h>
 #include "MathIncludes.h"
+#include "typedefs.h"
 #include "Direct3D.h"
 
 Direct3D::Direct3D() {}
-Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
+Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
 				   float screenFarDepth, float screenNearDepth)
 {
 	// Long integer used to store success/failure for different DirectX operations
@@ -80,18 +81,18 @@ Direct3D::Direct3D(unsigned int screenWidth, unsigned int screenHeight, bool vsy
 		DXGI_MODE_DESC displayModes[4095];
 
 		// The number of possible display modes
-		unsigned int numModes;
+		fourByteUnsigned numModes;
 
 		// The numerator/denominator of the refresh rate
-		unsigned int numerator;
-		unsigned int denominator;
+		fourByteUnsigned numerator;
+		fourByteUnsigned denominator;
 
 		// Ask the adapter for a collection of possible display modes
 		result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, displayModes);
 
 		// Traverse the set of display modes until one appears with the given screen width and height;
 		// cache the numerator/denominator of the refresh rate for the selected mode
-		for (unsigned int i = 0; i < numModes; i += 1)
+		for (fourByteUnsigned i = 0; i < numModes; i += 1)
 		{
 			if (displayModes[i].Width == screenWidth && displayModes[i].Height == screenHeight)
 			{

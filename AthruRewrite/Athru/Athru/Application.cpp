@@ -220,7 +220,7 @@ HWND Application::GetHWND()
 void* Application::operator new(size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc((fourByteUnsigned)size, 4, false);
+	return allocator->AlignedAlloc((fourByteUnsigned)size, (byteUnsigned)std::alignment_of<Application>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

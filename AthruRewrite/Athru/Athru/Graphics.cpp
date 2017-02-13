@@ -1,11 +1,11 @@
 #include "ServiceCentre.h"
 #include "Graphics.h"
 
-Graphics::Graphics(int screenWidth, int screenHeight, HWND hwnd)
+Graphics::Graphics(int screenWidth, int screenHeight, HWND hwnd, StackAllocator* allocator)
 {
 	// Eww, eww, eww
 	// Ask Adam about ways to refactor my memory manager so I can avoid this sort of thing
-	d3D = new Direct3D(screenWidth, screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
+	d3D = DEBUG_NEW Direct3D(screenWidth, screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
 }
 
 Graphics::~Graphics()
@@ -29,7 +29,7 @@ void Graphics::Render()
 void* Graphics::operator new(size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc((fourByteUnsigned)size, 4, false);
+	return allocator->AlignedAlloc((fourByteUnsigned)size, (byteUnsigned)std::alignment_of<Graphics>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

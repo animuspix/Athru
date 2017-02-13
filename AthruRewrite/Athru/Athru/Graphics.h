@@ -7,10 +7,11 @@
 #define SCREEN_DEPTH 1000.0f
 #define SCREEN_NEAR 0.1f
 
+class StackAllocator;
 class Graphics
 {
 	public:
-		Graphics(int screenWidth, int screenHeight, HWND hwnd);
+		Graphics(int screenWidth, int screenHeight, HWND hwnd, StackAllocator* allocator);
 		~Graphics();
 
 		void Frame();

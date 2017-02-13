@@ -6,9 +6,9 @@ class Input
 		Input();
 		~Input();
 
-		void KeyDown(unsigned int);
-		void KeyUp(unsigned int);
-		bool IsKeyDown(unsigned int);
+		void KeyDown(fourByteUnsigned);
+		void KeyUp(fourByteUnsigned);
+		bool IsKeyDown(fourByteUnsigned);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
