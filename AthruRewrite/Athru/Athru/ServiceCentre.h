@@ -33,7 +33,7 @@ class ServiceCentre
 
 			// Attempt to create and register the primary graphics
 			// service
-			graphicsPtr = new Graphics(1920, 1080, appPtr->GetHWND(), stackAllocatorPtr);
+			graphicsPtr = new Graphics(1920, 1080, appPtr->GetHWND());
 
 			// Create and register additional application-support
 			// services here

@@ -3,7 +3,6 @@
 #include "typedefs.h"
 #include "Direct3D.h"
 
-Direct3D::Direct3D() {}
 Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
 				   float screenFarDepth, float screenNearDepth)
 {

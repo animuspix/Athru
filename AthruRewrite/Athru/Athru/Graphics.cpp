@@ -1,7 +1,7 @@
 #include "ServiceCentre.h"
 #include "Graphics.h"
 
-Graphics::Graphics(int screenWidth, int screenHeight, HWND hwnd, StackAllocator* allocator)
+Graphics::Graphics(int screenWidth, int screenHeight, HWND hwnd)
 {
 	// Eww, eww, eww
 	// Ask Adam about ways to refactor my memory manager so I can avoid this sort of thing
