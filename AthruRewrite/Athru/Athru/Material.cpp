@@ -6,8 +6,16 @@ Material::Material() : sonicData(Sound()),
 Material::Material(Sound sonicStuff,
 				   float r, float g, float b, float a) :
 				   sonicData(sonicStuff),
-				   color{ r, g, b, a } {}
+				   color{ r, g, b, a } 
+{
+	// Register appropriate shaders here...
+}
 
 Material::~Material()
 {
+}
+
+float* Material::GetColorData()
+{
+	return color;
 }

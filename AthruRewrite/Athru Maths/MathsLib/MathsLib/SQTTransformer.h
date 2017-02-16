@@ -6,13 +6,12 @@
 struct SQTTransformer
 {
 	SQTTransformer();
-	SQTTransformer(float baseScale, Quaternion baseRotation,
-				   float xTranslation, float yTranslation, float zTranslation);
+	SQTTransformer(float baseScale, Quaternion& baseRotation, Vector3& baseTranslation);
 	~SQTTransformer();
 
 	Matrix4 asMatrix();
 
 	float scaleFactor;
 	Quaternion rotation;
-	float translation[3];
+	Vector3 translation;
 };

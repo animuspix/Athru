@@ -1,17 +1,35 @@
 #include "ServiceCentre.h"
 #include "Graphics.h"
 
-Graphics::Graphics(int screenWidth, int screenHeight, HWND hwnd)
+Graphics::Graphics(int screenWidth, int screenHeight, HWND windowHandle, Logger* logger)
 {
 	// Eww, eww, eww
 	// Ask Adam about ways to refactor my memory manager so I can avoid this sort of thing
-	d3D = DEBUG_NEW Direct3D(screenWidth, screenHeight, VSYNC_ENABLED, hwnd, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
+	d3D = DEBUG_NEW Direct3D(screenWidth, screenHeight, VSYNC_ENABLED, windowHandle, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
+
+	// Create the camera object
+	camera = new Camera();
+
+	// Create a single Boxecule
+	activeBoxecules[0] = new Boxecule(d3D->GetDevice(), Material(), SQTTransformer());
+
+	// Create the shader manager
+	shaderManager = new ShaderCentre(d3D->GetDevice(), windowHandle, logger);
 }
 
 Graphics::~Graphics()
 {
 	delete d3D;
 	d3D = nullptr;
+
+	delete shaderManager;
+	shaderManager = nullptr;
+
+	delete activeBoxecules[0];
+	activeBoxecules[0] = nullptr;
+
+	delete camera;
+	camera = nullptr;
 }
 
 void Graphics::Frame()
@@ -22,6 +40,13 @@ void Graphics::Frame()
 void Graphics::Render()
 {
 	d3D->BeginScene();
+
+	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
+	activeBoxecules[0]->Render(d3D->GetDeviceContext());
+
+	// Render the model using [VertPlotter] and [Colorizer]
+	shaderManager->Render(d3D->GetDeviceContext(), d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
+
 	d3D->EndScene();
 }
 

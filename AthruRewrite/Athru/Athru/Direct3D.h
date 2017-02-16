@@ -3,10 +3,12 @@
 // Alternative way to do this?
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "D3DCompiler.lib")
 
 #include "dxgi.h"
 #include "d3dcommon.h"
 #include "d3d11.h"
+#include "directxmath.h"
 
 #include "Matrix4.h"
 
@@ -28,11 +30,11 @@ class Direct3D
 		ID3D11DeviceContext* GetDeviceContext();
 
 		// Retrieve constant references to the perspective/orthographic projection matrices
-		const Matrix4& GetPerspProjector();
-		const Matrix4& GetOrthoProjector();
+		DirectX::XMMATRIX GetPerspProjector();
+		DirectX::XMMATRIX GetOrthoProjector();
 
 		// Retrieve a constant reference to the world matrix
-		const Matrix4& GetWorldMatrix();
+		DirectX::XMMATRIX GetWorldMatrix();
 
 		// Retrieve a constant reference to information about the video adapter
 		const DXGI_ADAPTER_DESC& GetAdapterInfo();

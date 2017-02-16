@@ -38,14 +38,12 @@ float Matrix4::determinant(__m128* lower, __m128* upper, char luRowExchanges)
 	float detInverter = (float)(-1 + (2 * (luRowExchanges % 2)));
 
 	const float one = 1;
-	__m128 detLower = _mm_broadcast_ss(&one);
-	__m128 detUpper = detLower;
+	const float scalarDetLower = lower[0].m128_f32[3] * lower[1].m128_f32[2] * lower[2].m128_f32[1] * lower[3].m128_f32[0];
+	__m128 sseDetLower = _mm_broadcast_ss(&scalarDetLower);
+	__m128 sseDetUpper = _mm_broadcast_ss(&one);
+	__m128 sseLowerUpperProduct = _mm_mul_ps(sseDetLower, sseDetUpper);
 
-	detLower = _mm_mul_ps(detLower, *lower);
-	detUpper = _mm_mul_ps(detUpper, *upper);
-	__m128 lowerUpperProduct = _mm_mul_ps(detLower, detUpper);
-
-	float lowerUpperScalarProduct = _mm_cvtss_f32(lowerUpperProduct);
+	float lowerUpperScalarProduct = _mm_cvtss_f32(sseLowerUpperProduct);
 	return detInverter * lowerUpperScalarProduct;
 }
 
@@ -218,6 +216,11 @@ float& Matrix4::FetchValue(char row, char column)
 const float Matrix4::FetchValue(char row, char column) const
 {
 	return matrixData[row].m128_f32[column];
+}
+
+const __m128& Matrix4::GetVector(char index)
+{
+	return matrixData[index];
 }
 
 void Matrix4::SetRotateX(float angleInRads)

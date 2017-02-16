@@ -2,17 +2,21 @@
 #include "Typedefs.h"
 #include "Boxecule.h"
 
-Boxecule::Boxecule(ID3D11Device* device) : material(Material()), transformData(SQTTransformer())
+Boxecule::Boxecule(ID3D11Device* device, Material mat, SQTTransformer transformStuff) : 
+				   material(mat), transformData(transformStuff)
 {
+	// Cache the material color
+	float* colors = material.GetColorData();
+
 	// Generate cubic verts (first four are at Z = 0, second four are at Z = 1)
-	Vertex verts[BOXECULE_VERT_COUNT] = { Vertex(0,0,0),
-										  Vertex(0,1,0),
-										  Vertex(1,1,0),
-										  Vertex(1,0,0),
-										  Vertex(0,0,1),
-										  Vertex(0,1,1),
-										  Vertex(1,1,1),
-										  Vertex(1,0,1) };
+	Vertex verts[BOXECULE_VERT_COUNT] = { Vertex(0,0,0, colors[0], colors[1], colors[2], colors[3]),
+										  Vertex(0,1,0, colors[0], colors[1], colors[2], colors[3]),
+										  Vertex(1,1,0, colors[0], colors[1], colors[2], colors[3]),
+										  Vertex(1,0,0, colors[0], colors[1], colors[2], colors[3]),
+										  Vertex(0,0,1, colors[0], colors[1], colors[2], colors[3]),
+										  Vertex(0,1,1, colors[0], colors[1], colors[2], colors[3]),
+										  Vertex(1,1,1, colors[0], colors[1], colors[2], colors[3]),
+										  Vertex(1,0,1, colors[0], colors[1], colors[2], colors[3]) };
 
 	// Generate vert indices (used to construct the shape, broken into 12 separate triangles)
 	// Each set of three items is equivalent to one triangle
@@ -129,5 +133,5 @@ void Boxecule::Render(ID3D11DeviceContext* deviceContext)
 	deviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
-	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 }

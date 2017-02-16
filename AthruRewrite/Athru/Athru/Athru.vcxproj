@@ -157,6 +157,7 @@
     <ClCompile Include="Athru.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="Boxecule.cpp" />
+    <ClCompile Include="Camera.cpp" />
     <ClCompile Include="ConsolePrinter.cpp" />
     <ClCompile Include="Direct3D.cpp" />
     <ClCompile Include="Graphics.cpp" />
@@ -171,6 +172,7 @@
   <ItemGroup>
     <ClInclude Include="AthruGlobals.h" />
     <ClInclude Include="Boxecule.h" />
+    <ClInclude Include="Camera.h" />
     <ClInclude Include="ConsolePrinter.h" />
     <ClInclude Include="Direct3D.h" />
     <ClInclude Include="Dispatcher.h" />

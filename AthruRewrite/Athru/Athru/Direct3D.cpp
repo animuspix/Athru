@@ -348,7 +348,7 @@ Direct3D::~Direct3D()
 void Direct3D::BeginScene()
 {
 	// The color to display before anything is drawn to the scene
-	float color[4] = { 0, 0.4, 0.1, 0.2 };
+	float color[4] = { 0.0f, 0.6f, 0.6f, 1.0f };
 
 	// Clear the back buffer and flush the view with [color]
 	deviceContext->ClearRenderTargetView(renderTargetView, color);
@@ -384,17 +384,26 @@ const DXGI_ADAPTER_DESC& Direct3D::GetAdapterInfo()
 	return adapterInfo;
 }
 
-const Matrix4& Direct3D::GetPerspProjector()
+DirectX::XMMATRIX Direct3D::GetPerspProjector()
 {
-	return perspProjector;
+	return DirectX::XMMATRIX(perspProjector.GetVector(0),
+							 perspProjector.GetVector(1),
+							 perspProjector.GetVector(2),
+							 perspProjector.GetVector(3));
 }
 
-const Matrix4& Direct3D::GetOrthoProjector()
+DirectX::XMMATRIX Direct3D::GetOrthoProjector()
 {
-	return orthoProjector;
+	return DirectX::XMMATRIX(orthoProjector.GetVector(0),
+							 orthoProjector.GetVector(1),
+							 orthoProjector.GetVector(2),
+							 orthoProjector.GetVector(3));
 }
 
-const Matrix4& Direct3D::GetWorldMatrix()
+DirectX::XMMATRIX Direct3D::GetWorldMatrix()
 {
-	return worldMatrix;
+	return DirectX::XMMATRIX(worldMatrix.GetVector(0),
+							 worldMatrix.GetVector(1),
+							 worldMatrix.GetVector(2),
+							 worldMatrix.GetVector(3));
 }

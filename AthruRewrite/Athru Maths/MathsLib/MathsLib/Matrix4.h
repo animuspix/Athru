@@ -39,6 +39,9 @@ class Matrix4
 		// (readable and writable, expects a const caller)
 		const float FetchValue(char row, char column) const;
 
+		// Return individual vectors from [this] as packed SSE values
+		const __m128& GetVector(char index);
+
 		// Convert [this] to a rotation matrix about x
 		void SetRotateX(float angleInRads);
 
