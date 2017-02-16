@@ -1,2 +1,19 @@
-﻿  Boxecule.cpp
+﻿  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Colorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\VertPlotter.cso
+  ServiceCentre.cpp
+  StackAllocator.cpp
+  Sound.cpp
+  ShaderCentre.cpp
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\shadercentre.cpp(10): warning C4101: 'errorMessage': unreferenced local variable
+  Material.cpp
+  Logger.cpp
+  Input.cpp
+  Graphics.cpp
+  Direct3D.cpp
+  ConsolePrinter.cpp
+  Camera.cpp
+  Boxecule.cpp
+  Application.cpp
+  Athru.cpp
+  Generating Code...
   Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
