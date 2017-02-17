@@ -10,11 +10,11 @@ Graphics::Graphics(int screenWidth, int screenHeight, HWND windowHandle, Logger*
 	// Create the camera object
 	camera = new Camera();
 
-	// Create a single Boxecule
-	activeBoxecules[0] = new Boxecule(d3D->GetDevice(), Material(), SQTTransformer());
+	// Create a Triangle
+	triangle = new Triangle(d3D->GetDevice());
 
 	// Create the shader manager
-	shaderManager = new ShaderCentre(d3D->GetDevice(), windowHandle, logger);
+	shaderManager = new Shaders(d3D->GetDevice(), windowHandle);
 }
 
 Graphics::~Graphics()
@@ -25,8 +25,8 @@ Graphics::~Graphics()
 	delete shaderManager;
 	shaderManager = nullptr;
 
-	delete activeBoxecules[0];
-	activeBoxecules[0] = nullptr;
+	delete triangle;
+	triangle = nullptr;
 
 	delete camera;
 	camera = nullptr;
@@ -42,7 +42,7 @@ void Graphics::Render()
 	d3D->BeginScene();
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
-	activeBoxecules[0]->Render(d3D->GetDeviceContext());
+	triangle->Render(d3D->GetDeviceContext());
 
 	// Render the model using [VertPlotter] and [Colorizer]
 	shaderManager->Render(d3D->GetDeviceContext(), d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());

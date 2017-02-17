@@ -2,8 +2,8 @@
 
 #include "Direct3D.h"
 #include "Camera.h"
-#include "Boxecule.h"
-#include "ShaderCentre.h"
+#include "Triangle.h"
+#include "Shaders.h"
 
 #define FULL_SCREEN false
 #define VSYNC_ENABLED true
@@ -35,9 +35,9 @@ class Graphics
 
 		// Array of pointers to currently visible Boxecules (refactor to use a
 		// stack-based chunking system)
-		Boxecule* activeBoxecules[MAX_VISIBLE_BOXECULES];
+		Triangle* triangle;
 
 		// Pointer to the shader manager
-		ShaderCentre* shaderManager;
+		Shaders* shaderManager;
 };
 

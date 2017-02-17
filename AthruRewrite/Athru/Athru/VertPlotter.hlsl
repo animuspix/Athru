@@ -1,9 +1,9 @@
 
-cbuffer Spatializer
+cbuffer MatBuffer
 {
-	matrix world;
-	matrix view;
-	matrix projection;
+    matrix world;
+    matrix view;
+    matrix projection;
 };
 
 struct Vertex
@@ -18,11 +18,12 @@ struct Pixel
     float4 color : COLOR;
 };
 
-Pixel main(Vertex vertIn) : SV_POSITION
+Pixel main(Vertex vertIn)
 {
-	vertIn.pos.w = 1.0f;
-	vertIn.pos = mul(vertIn.pos, world);
-	vertIn.pos = mul(vertIn.pos, view);
-	vertIn.pos = mul(vertIn.pos, projection);
-	return vertIn.pos;
+    Pixel output;
+    output.pos = mul(vertIn.pos, world);
+    output.pos = mul(output.pos, view);
+    output.pos = mul(output.pos, projection);
+    output.color = vertIn.color;
+    return output;
 }

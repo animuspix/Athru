@@ -265,23 +265,15 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	// Cache the application aspect ratio
 	float screenAspect = (float)screenWidth / (float)screenHeight;
 
-	// Cache values in the perspective projection matrix
-	float xScale = 1 / (screenAspect * tan(fieldOfView / 2));
-	float yScale = 1 / tan(fieldOfView / 2);
-	float zScale = (screenFarDepth + screenNearDepth) / (screenFarDepth - screenNearDepth);
-	float zShift = 2 * zScale;
-
 	// Create the perspective projection matrix
-	perspProjector = Matrix4(xScale, 0, 0, 0,
-							 0, yScale, 0, 0,
-							 0,	0, zScale, 1,
-							 0, 0, zShift, 0);
+	perspProjector = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNearDepth, screenFarDepth);
 
 	// Create world matrix (initialized to the 4D identity matrix)
-	worldMatrix = Matrix4(1, 0, 0, 0,
-						  0, 1, 0, 0,
-						  0, 0, 1, 0,
-						  0, 0, 0, 1);
+	//worldMatrix = DirectX::XMMatrixIdentity();
+	worldMatrix = DirectX::XMMATRIX(_mm_set_ps(1, 0, 0, 0),
+									_mm_set_ps(0, 1, 0, 0),
+									_mm_set_ps(0, 0, 1, 0),
+									_mm_set_ps(0, 0, 0, 1));
 
 	// Cache values in the orthographic projection matrix
 	float left = viewport.TopLeftX;
@@ -386,10 +378,7 @@ const DXGI_ADAPTER_DESC& Direct3D::GetAdapterInfo()
 
 DirectX::XMMATRIX Direct3D::GetPerspProjector()
 {
-	return DirectX::XMMATRIX(perspProjector.GetVector(0),
-							 perspProjector.GetVector(1),
-							 perspProjector.GetVector(2),
-							 perspProjector.GetVector(3));
+	return perspProjector;
 }
 
 DirectX::XMMATRIX Direct3D::GetOrthoProjector()
@@ -402,8 +391,5 @@ DirectX::XMMATRIX Direct3D::GetOrthoProjector()
 
 DirectX::XMMATRIX Direct3D::GetWorldMatrix()
 {
-	return DirectX::XMMATRIX(worldMatrix.GetVector(0),
-							 worldMatrix.GetVector(1),
-							 worldMatrix.GetVector(2),
-							 worldMatrix.GetVector(3));
+	return worldMatrix;
 }

@@ -9,7 +9,6 @@
 #include "d3dcommon.h"
 #include "d3d11.h"
 #include "directxmath.h"
-
 #include "Matrix4.h"
 
 class Direct3D
@@ -58,12 +57,12 @@ class Direct3D
 
 		// Transformation matrices to convert data to a perspective 2D
 		// projection or orthographic (flat 2D) projection
-		Matrix4 perspProjector;
+		DirectX::XMMATRIX perspProjector;
 		Matrix4 orthoProjector;
 
 		// Matrix representing the basic coordinate system used within
 		// Athru; for more information on coordinate systems, see:
 		// https://en.wikipedia.org/wiki/Coordinate_system
-		Matrix4 worldMatrix;
+		DirectX::XMMATRIX worldMatrix;
 };
 

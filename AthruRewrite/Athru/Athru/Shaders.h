@@ -14,7 +14,7 @@ class Shaders
 					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
 
 	private:
-		struct Spatializer
+		struct MatBuffer
 		{
 			DirectX::XMMATRIX world;
 			DirectX::XMMATRIX view;
@@ -28,6 +28,6 @@ class Shaders
 		ID3D11VertexShader* vertPlotter;
 		ID3D11PixelShader* colorizer;
 		ID3D11InputLayout* inputLayout;
-		ID3D11Buffer* spatializer;
+		ID3D11Buffer* matBufferLocal;
 };
 
