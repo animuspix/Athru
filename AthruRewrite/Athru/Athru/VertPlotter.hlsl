@@ -18,11 +18,11 @@ struct Pixel
     float4 color : COLOR;
 };
 
-float4 main(Vertex inVert) : SV_POSITION
+Pixel main(Vertex vertIn) : SV_POSITION
 {
-	inVert.pos.w = 1.0f;
-	inVert.pos = mul(inVert.pos, world);
-	inVert.pos = mul(inVert.pos, view);
-	inVert.pos = mul(inVert.pos, projection);
-	return inVert.pos;
+	vertIn.pos.w = 1.0f;
+	vertIn.pos = mul(vertIn.pos, world);
+	vertIn.pos = mul(vertIn.pos, view);
+	vertIn.pos = mul(vertIn.pos, projection);
+	return vertIn.pos;
 }
