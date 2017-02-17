@@ -1,19 +1,17 @@
-﻿  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Colorizer.cso
-  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\VertPlotter.cso
-  ServiceCentre.cpp
+﻿  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\VertPlotter.cso
   StackAllocator.cpp
-  Sound.cpp
   ShaderCentre.cpp
 c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\shadercentre.cpp(10): warning C4101: 'errorMessage': unreferenced local variable
+  ServiceCentre.cpp
   Material.cpp
   Logger.cpp
   Input.cpp
   Graphics.cpp
-  Direct3D.cpp
-  ConsolePrinter.cpp
   Camera.cpp
   Boxecule.cpp
   Application.cpp
+  Generating Code...
+  Compiling...
   Athru.cpp
   Generating Code...
   Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
