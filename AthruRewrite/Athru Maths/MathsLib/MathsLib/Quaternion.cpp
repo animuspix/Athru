@@ -71,9 +71,9 @@ Matrix4 Quaternion::asMatrix()
 
 Quaternion Quaternion::BasicBlend(Quaternion blendWith)
 {
-	// Consider asking AIE teachers for hints on extracting the axis of
-	// rotation and angle from the Grassman product without using the dodgy
-	// inverse-multiplication approach I've got atm
+	// Investigate ways to extract the axis of rotation + angle
+	// without the dodgy inverse-multiplication method I'm using
+	// atm
 
 	Vector3 vectorA = Vector3(components[0], components[1], components[2]);
 	Vector3 vectorB = Vector3(blendWith[0], blendWith[1], blendWith[2]);
@@ -96,9 +96,9 @@ Quaternion Quaternion::BasicBlend(Quaternion blendWith)
 
 Quaternion Quaternion::SlerpyBlend(Quaternion blendWith, float blendAmount)
 {
-	// Consider asking AIE teachers for hints on extracting the axis of rotation
-	// and angle of the result quaternion from the Slerp algorithm without using
-	// the dodgy inverse-multiplication approach I've got atm
+	// Investigate ways to extract the axis of rotation + angle
+	// without the dodgy inverse-multiplication method I'm using
+	// atm
 
 	// [Theta] is defined as the angle directly between [this] and [blendWith]
 	Vector4 cosThetaLHS = Vector4(components[0], components[1], components[2], components[3]);
