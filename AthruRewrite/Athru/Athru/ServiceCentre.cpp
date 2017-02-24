@@ -12,13 +12,3 @@ Logger* ServiceCentre::loggerPtr = nullptr;
 Input* ServiceCentre::inputPtr = nullptr;
 Application* ServiceCentre::appPtr = nullptr;
 Graphics* ServiceCentre::graphicsPtr = nullptr;
-
-ServiceCentre::ServiceCentre()
-{
-
-}
-
-ServiceCentre::~ServiceCentre()
-{
-
-}

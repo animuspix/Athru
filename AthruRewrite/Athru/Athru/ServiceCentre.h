@@ -10,8 +10,8 @@
 class ServiceCentre
 {
 	public:
-		ServiceCentre();
-		~ServiceCentre();
+		ServiceCentre() = delete;
+		~ServiceCentre() = delete;
 
 		static void StartUp()
 		{
