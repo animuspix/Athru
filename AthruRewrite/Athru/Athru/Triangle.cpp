@@ -8,13 +8,13 @@ Triangle::Triangle(ID3D11Device* device)
 	Vertex vertices[3];
 	long indices[3];
 
-	vertices[0].position = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 0);  // Bottom left.
+	vertices[0].position = DirectX::XMFLOAT4(-1.0f, -0.5f, 0.0f, 1);  // Bottom left.
 	vertices[0].color = DirectX::XMFLOAT4(1.0f, 0.0f, 0.0f, 1.0f);
 
-	vertices[1].position = DirectX::XMFLOAT4(1.7f, 1.0f, 0.0f, 0);  // Top middle.
+	vertices[1].position = DirectX::XMFLOAT4(0.0f, 0.5f, 0.0f, 1);  // Top middle.
 	vertices[1].color = DirectX::XMFLOAT4(0.0f, 1.0f, 0.0f, 1.0f);
 
-	vertices[2].position = DirectX::XMFLOAT4(8.0f, 0.0f, 0.0f, 0);  // Bottom right.
+	vertices[2].position = DirectX::XMFLOAT4(1.0f, -0.5f, 0.0f, 1);  // Bottom right.
 	vertices[2].color = DirectX::XMFLOAT4(0.0f, 0.0f, 1.0f, 1.0f);
 
 	// Load the index array with data.

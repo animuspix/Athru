@@ -245,6 +245,25 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	// above
 	deviceContext->RSSetState(rasterState);
 
+	// Setup alpha blending description
+	D3D11_BLEND_DESC BlendState;
+	ZeroMemory(&BlendState, sizeof(D3D11_BLEND_DESC));
+	BlendState.RenderTarget[0].BlendEnable = TRUE;
+	BlendState.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	BlendState.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	BlendState.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	BlendState.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	BlendState.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	BlendState.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	BlendState.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+
+	// Instantiate the blend state
+	ID3D11BlendState* g_pBlendStateBlending = NULL;
+	device->CreateBlendState(&BlendState, &g_pBlendStateBlending);
+
+	// Match the internal blend state to the blend state instantiated above
+	deviceContext->OMSetBlendState(g_pBlendStateBlending, NULL, 0xffffffff);
+
 	// Struct representing a DirectX11 viewport
 	D3D11_VIEWPORT viewport;
 
@@ -269,11 +288,7 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	perspProjector = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNearDepth, screenFarDepth);
 
 	// Create world matrix (initialized to the 4D identity matrix)
-	//worldMatrix = DirectX::XMMatrixIdentity();
-	worldMatrix = DirectX::XMMATRIX(_mm_set_ps(1, 0, 0, 0),
-									_mm_set_ps(0, 1, 0, 0),
-									_mm_set_ps(0, 0, 1, 0),
-									_mm_set_ps(0, 0, 0, 1));
+	worldMatrix = DirectX::XMMatrixIdentity();
 
 	// Cache values in the orthographic projection matrix
 	float left = viewport.TopLeftX;

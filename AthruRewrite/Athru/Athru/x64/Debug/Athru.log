@@ -1,3 +1,5 @@
-﻿  ServiceCentre.cpp
-cl : Command line warning D9028: minimal rebuild failure, reverting to normal build
-  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+﻿  Triangle.cpp
+  Direct3D.cpp
+  Generating Code...
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)

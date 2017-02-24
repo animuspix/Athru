@@ -10,7 +10,7 @@ class Triangle
 		~Triangle();
 
 		void Render(ID3D11DeviceContext* deviceContext);
-	
+
 	private:
 		struct Vertex
 		{
