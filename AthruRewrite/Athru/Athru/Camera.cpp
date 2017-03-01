@@ -3,7 +3,7 @@
 Camera::Camera()
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, -2.5f, 0, 0);
+	position = _mm_set_ps(0, -4.5f, 0, 0);
 
 	// Set the camera's default rotation
 	rotation = _mm_set_ps(0, 0, 0, 0);

@@ -1,50 +1,34 @@
 #pragma once
 
-#include "d3d11.h"
-#include "Vector4.h"
-#include "SQTTransformer.h"
-#include "Vector4.h"
+#include <d3d11.h>
+#include <directxmath.h>
 
-#include "Material.h"
-
-#define BOXECULE_VERT_COUNT 8
+#include "Quaternion.h"
 
 class Boxecule
 {
 	public:
-		Boxecule(ID3D11Device* device, Material mat, SQTTransformer transformStuff);
+		Boxecule(ID3D11Device* device);
 		~Boxecule();
 
-		// Render [this]
-		void Render(ID3D11DeviceContext* deviceContext);
+		void PassToGPU(ID3D11DeviceContext* deviceContext);
 
 	private:
-		// Struct representing a generic vertex
 		struct Vertex
 		{
+			Vertex() {};
 			Vertex(float x, float y, float z,
-				   float r, float g, float b, float a) : 
-				   position{ x, y, z, 1 }, 
-				   color{ r, g, b, a } {}
-			float position[4];
-			float color[4];
+				   float r, float g, float b, float a) :
+				   position{x, y, z, 1 },
+				   color{r, g, b, a} {}
+
+			DirectX::XMFLOAT4 position;
+			DirectX::XMFLOAT4 color;
 		};
 
-		// Buffer containing the un-ordered vertices in [this]
-		ID3D11Buffer* vertBuffer;
-
-		// Buffer containing indices to each un-ordered vertex
-		// in the [vertBuffer]
-		ID3D11Buffer* indexBuffer;
-
-		// Single property representing current rotation, 
-		// translation, and scale for [this]
-		SQTTransformer transformData;
-
-		// Single property representing the visual 
-		// (e.g. reflectiveness, color, etc.) and 
-		// physical (e.g. compressive/shear strength, density, etc.)
-		// properties of [this]
-		Material material;
+		//Quaternion rotation;
+		//DirectX::XMMATRIX transform;
+		ID3D11Buffer *m_vertexBuffer;
+		ID3D11Buffer *m_indexBuffer;
 };
 

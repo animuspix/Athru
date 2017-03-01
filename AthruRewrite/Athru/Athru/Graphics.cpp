@@ -1,3 +1,4 @@
+#include "MathIncludes.h"
 #include "ServiceCentre.h"
 #include "Graphics.h"
 
@@ -10,8 +11,8 @@ Graphics::Graphics(int screenWidth, int screenHeight, HWND windowHandle, Logger*
 	// Create the camera object
 	camera = new Camera();
 
-	// Create a Triangle
-	triangle = new Triangle(d3D->GetDevice());
+	// Create a Boxecule
+	boxecule = new Boxecule(d3D->GetDevice());
 
 	// Create the shader manager
 	shaderManager = new Shaders(d3D->GetDevice(), windowHandle);
@@ -25,8 +26,8 @@ Graphics::~Graphics()
 	delete shaderManager;
 	shaderManager = nullptr;
 
-	delete triangle;
-	triangle = nullptr;
+	delete boxecule;
+	boxecule = nullptr;
 
 	delete camera;
 	camera = nullptr;
@@ -42,10 +43,12 @@ void Graphics::Render()
 	d3D->BeginScene();
 
 	// Put the model vertex and index buffers on the graphics pipeline to prepare them for drawing.
-	triangle->Render(d3D->GetDeviceContext());
+	boxecule->PassToGPU(d3D->GetDeviceContext());
 
 	// Render the model using [VertPlotter] and [Colorizer]
-	shaderManager->Render(d3D->GetDeviceContext(), d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
+	// Temporary euler rotation, replace with a quaternion + transform asap
+	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationRollPitchYaw(PI / 4, PI / 4, 0);
+	shaderManager->Render(d3D->GetDeviceContext(), d3D->GetWorldMatrix() * rotation, camera->GetViewMatrix(), d3D->GetPerspProjector());
 
 	d3D->EndScene();
 }

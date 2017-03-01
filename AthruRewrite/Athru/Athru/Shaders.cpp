@@ -134,12 +134,12 @@ void Shaders::RenderShader(ID3D11DeviceContext* deviceContext)
 	// Set the vertex input layout.
 	deviceContext->IASetInputLayout(inputLayout);
 
-	// Set the vertex and pixel shaders that will be used to render the triangle
+	// Set the vertex and pixel shaders that will be used to render the boxecule
 	deviceContext->VSSetShader(vertPlotter, NULL, 0);
 	deviceContext->PSSetShader(colorizer, NULL, 0);
 
-	// Render a triangle
-	deviceContext->DrawIndexed(3, 0, 0);
+	// PassToGPU a boxecule
+	deviceContext->DrawIndexed(36, 0, 0);
 }
 
 void Shaders::Render(ID3D11DeviceContext* deviceContext,

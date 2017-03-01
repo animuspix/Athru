@@ -1,137 +1,153 @@
-#include "assert.h"
-#include "Typedefs.h"
 #include "Boxecule.h"
 
-Boxecule::Boxecule(ID3D11Device* device, Material mat, SQTTransformer transformStuff) : 
-				   material(mat), transformData(transformStuff)
+Boxecule::Boxecule(ID3D11Device* device)
 {
-	// Cache the material color
-	float* colors = material.GetColorData();
-
-	// Generate cubic verts (first four are at Z = 0, second four are at Z = 1)
-	Vertex verts[BOXECULE_VERT_COUNT] = { Vertex(0,0,0, colors[0], colors[1], colors[2], colors[3]),
-										  Vertex(0,1,0, colors[0], colors[1], colors[2], colors[3]),
-										  Vertex(1,1,0, colors[0], colors[1], colors[2], colors[3]),
-										  Vertex(1,0,0, colors[0], colors[1], colors[2], colors[3]),
-										  Vertex(0,0,1, colors[0], colors[1], colors[2], colors[3]),
-										  Vertex(0,1,1, colors[0], colors[1], colors[2], colors[3]),
-										  Vertex(1,1,1, colors[0], colors[1], colors[2], colors[3]),
-										  Vertex(1,0,1, colors[0], colors[1], colors[2], colors[3]) };
-
-	// Generate vert indices (used to construct the shape, broken into 12 separate triangles)
-	// Each set of three items is equivalent to one triangle
-	unsigned long indices[36] = { 0,
-								  1,
-								  2,
-
-								  1,
-								  3,
-								  2,
-
-								  2,
-								  3,
-								  4,
-
-								  3,
-								  1,
-								  4,
-
-								  4,
-								  1,
-								  5,
-
-								  1,
-								  0,
-								  5,
-
-								  5,
-								  0,
-								  6,
-
-								  0,
-								  2,
-								  6,
-		
-								  6,
-								  2,
-								  7,
-
-								  2,
-								  7,
-								  4,
-
-								  7,
-								  4,
-								  6,
-
-								  6,
-								  4,
-								  5 };
-
-	// Long integer used to store success/failure for different DirectX operations
+	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
+	// Initialise vertices
+	// X and Y coordinates look a helluva lot like magic numbers; they were basically
+	// chosen out of trial and error while I was looking for points that'd line up
+	// into a reasonable cube on a 16:9 screen without too much distortion
+	float alpha = 1.0f;
+	Vertex vertices[8] = { Vertex(-0.95f, 0.7f, -1.0f,
+								   1.0f, 1.0f, 1.0f, alpha), // Front plane, upper left (v0)
+
+						   Vertex(0.95f, 0.7f, -1.0f,
+							      0.0f, 0.7f, 0.7f, alpha), // Front plane, upper right (v1)
+
+						   Vertex(-0.95f, -0.7f, -1.0f,
+								  0.0f, 0.0f, 0.7f, alpha), // Front plane, lower left (v2)
+
+						   Vertex(0.95f, -0.7f, -1.0f,
+							      0.0f, 0.0f, 0.0f, alpha), // Front plane, lower right (v3)
+
+						   Vertex(0.95f, -0.7f, 1.0f,
+								  0.7f, 0.7f, 0.7f, alpha), // Back plane, lower right (v4)
+
+						   Vertex(0.95f, 0.7f, 1.0f,
+								  0.7f, 0.7f, 0.0f, alpha), // Back plane, upper right (v5)
+
+						   Vertex(-0.95f, 0.7f, 1.0f,
+								   0.7f, 0.0f, 0.0f, alpha), // Back plane, upper left (v6)
+
+						   Vertex(-0.95f, -0.7f, 1.0f,
+								   0.4f, 0.4f, 0.4f, alpha) }; // Back plane, lower left (v7)
+
+	// Initialise indices
+	// Each set of three values is one boxecule
+	long indices[36] = { 0, // Safe
+						 1,
+						 2,
+
+						 1, // Safe
+						 3,
+						 2,
+
+						 2,
+						 3,
+						 4,
+
+						 1,
+						 5,
+						 4,
+
+						 4,
+						 3,
+						 1,
+
+						 0,
+						 1,
+						 5,
+
+						 5,
+						 0,
+						 6,
+
+						 0,
+						 2,
+						 7,
+
+						 6,
+						 2,
+						 7,
+
+						 3,
+						 7,
+						 4,
+
+						 4,
+						 5,
+						 6,
+
+						 7,
+						 6,
+						 4 };
+
+
 	// Set up the description of the static vertex buffer
-	D3D11_BUFFER_DESC vertBufferDesc;
-	vertBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	vertBufferDesc.ByteWidth = sizeof(Vertex) * BOXECULE_VERT_COUNT;
-	vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertBufferDesc.CPUAccessFlags = 0;
-	vertBufferDesc.MiscFlags = 0;
-	vertBufferDesc.StructureByteStride = 0;
+	D3D11_BUFFER_DESC vertexBufferDesc;
+	vertexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertexBufferDesc.ByteWidth = sizeof(Vertex) * 8;
+	vertexBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertexBufferDesc.CPUAccessFlags = 0;
+	vertexBufferDesc.MiscFlags = 0;
+	vertexBufferDesc.StructureByteStride = 0;
 
-	// Give a subresource structure a pointer to the vertex data.
-	D3D11_SUBRESOURCE_DATA vertData;
-	vertData.pSysMem = verts;
-	vertData.SysMemPitch = 0;
-	vertData.SysMemSlicePitch = 0;
+	// Place a reference to the vertices in a subresource structure
+	D3D11_SUBRESOURCE_DATA vertexData;
+	vertexData.pSysMem = vertices;
+	vertexData.SysMemPitch = 0;
+	vertexData.SysMemSlicePitch = 0;
 
-	// Instantiate the vertex buffer
-	result = device->CreateBuffer(&vertBufferDesc, &vertData, &vertBuffer);
+	// Create the vertex buffer
+	result = device->CreateBuffer(&vertexBufferDesc, &vertexData, &m_vertexBuffer);
 
 	// Set up the description of the static index buffer
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	indexBufferDesc.ByteWidth = sizeof(unsigned long) * BOXECULE_VERT_COUNT;
+	indexBufferDesc.ByteWidth = sizeof(unsigned long) * 36;
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.CPUAccessFlags = 0;
 	indexBufferDesc.MiscFlags = 0;
 	indexBufferDesc.StructureByteStride = 0;
 
-	// Give a subresource structure a pointer to the index data
+	// Place a reference to the vertex indices in a subresource structure
 	D3D11_SUBRESOURCE_DATA indexData;
 	indexData.pSysMem = indices;
 	indexData.SysMemPitch = 0;
 	indexData.SysMemSlicePitch = 0;
 
-	// Instantiate the index buffer
-	result = device->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
+	// Create the index buffer
+	result = device->CreateBuffer(&indexBufferDesc, &indexData, &m_indexBuffer);
 
-	// Break the program if either of the buffers couldn't be created
 	assert(SUCCEEDED(result));
 }
 
 Boxecule::~Boxecule()
 {
-	// Release the vertex buffer
-	vertBuffer->Release();
-	vertBuffer = 0;
+	// Release the index buffer.
+	m_indexBuffer->Release();
+	m_indexBuffer = 0;
 
-	// Release the index buffer
-	indexBuffer->Release();
-	indexBuffer = 0;
+	// Release the vertex buffer.
+	m_vertexBuffer->Release();
+	m_vertexBuffer = 0;
 }
 
-void Boxecule::Render(ID3D11DeviceContext* deviceContext)
+void Boxecule::PassToGPU(ID3D11DeviceContext* deviceContext)
 {
 	// Set vertex buffer stride and offset.
-	fourByteUnsigned stride = sizeof(Vertex);
-	fourByteUnsigned offset = 0;
+	unsigned int stride = sizeof(Vertex);
+	unsigned int offset = 0;
 
-	// Activate the vertex buffer + index buffer so we can render [this]
-	deviceContext->IASetVertexBuffers(0, 1, &vertBuffer, &stride, &offset);
-	deviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+	// Set the vertex buffer to active in the input assembler so it can be rendered
+	deviceContext->IASetVertexBuffers(0, 1, &m_vertexBuffer, &stride, &offset);
 
-	// Set the type of primitive that should be rendered from this vertex buffer, in this case triangles.
-	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+	// Set the index buffer to active in the input assembler so it can be rendered
+	deviceContext->IASetIndexBuffer(m_indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	// Set the 2D primitive type used to create the boxecule; we're making one boxecule,
+	// so triangular primitives make the most sense :P
+	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 }
