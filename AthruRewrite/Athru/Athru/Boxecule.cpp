@@ -17,7 +17,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 							      0.0f, 0.7f, 0.7f, alpha), // Front plane, upper right (v1)
 
 						   Vertex(-0.95f, -0.7f, -1.0f,
-								  0.0f, 0.0f, 0.7f, alpha), // Front plane, lower left (v2)
+								   0.0f, 0.0f, 0.7f, alpha), // Front plane, lower left (v2)
 
 						   Vertex(0.95f, -0.7f, -1.0f,
 							      0.0f, 0.0f, 0.0f, alpha), // Front plane, lower right (v3)
@@ -35,54 +35,54 @@ Boxecule::Boxecule(ID3D11Device* device)
 								   0.4f, 0.4f, 0.4f, alpha) }; // Back plane, lower left (v7)
 
 	// Initialise indices
-	// Each set of three values is one boxecule
-	long indices[36] = { 0, // Safe
+	// Each set of three values is one triangle
+	long indices[36] = { 0,
 						 1,
 						 2,
 
-						 1, // Safe
-						 3,
 						 2,
+						 1,
+						 3,
 
 						 2,
 						 3,
 						 4,
 
+						 4,
+						 3,
+						 1,
+
+						 4,
 						 1,
 						 5,
-						 4,
 
-						 4,
-						 3,
+						 5,
 						 1,
-
 						 0,
-						 1,
-						 5,
 
 						 5,
 						 0,
 						 6,
 
+						 6,
 						 0,
 						 2,
-						 7,
 
 						 6,
 						 2,
 						 7,
 
-						 3,
+						 2,
 						 7,
 						 4,
 
+						 7,
 						 4,
-						 5,
 						 6,
 
-						 7,
 						 6,
-						 4 };
+						 4,
+						 5 };
 
 
 	// Set up the description of the static vertex buffer

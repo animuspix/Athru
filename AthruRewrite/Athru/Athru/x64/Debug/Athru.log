@@ -1,3 +1,20 @@
-﻿  Graphics.cpp
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)
+﻿  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Colorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\VertPlotter.cso
+  Boxecule.cpp
+  ServiceCentre.cpp
+  StackAllocator.cpp
+  Sound.cpp
+  Material.cpp
+  Logger.cpp
+  Input.cpp
+  Graphics.cpp
+  Direct3D.cpp
+  ConsolePrinter.cpp
+  Shaders.cpp
+  Camera.cpp
+  Application.cpp
+  Athru.cpp
+  Generating Code...
+MathsLib.lib(Matrix4.obj) : warning LNK4099: PDB 'MathsLib.pdb' was not found with 'MathsLib.lib(Matrix4.obj)' or at 'C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\MathsLib.pdb'; linking object as if no debug info
+MathsLib.lib(stdafx.obj) : warning LNK4099: PDB 'MathsLib.pdb' was not found with 'MathsLib.lib(stdafx.obj)' or at 'C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\MathsLib.pdb'; linking object as if no debug info
+  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe

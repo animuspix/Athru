@@ -47,7 +47,7 @@ void Graphics::Render()
 
 	// Render the model using [VertPlotter] and [Colorizer]
 	// Temporary euler rotation, replace with a quaternion + transform asap
-	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationRollPitchYaw(PI / 4, PI / 4, 0);
+	DirectX::XMMATRIX rotation = DirectX::XMMatrixRotationRollPitchYaw(PI / 4, PI / 2, 0);
 	shaderManager->Render(d3D->GetDeviceContext(), d3D->GetWorldMatrix() * rotation, camera->GetViewMatrix(), d3D->GetPerspProjector());
 
 	d3D->EndScene();
