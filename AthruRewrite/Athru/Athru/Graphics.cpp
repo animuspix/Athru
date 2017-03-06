@@ -12,11 +12,11 @@ Graphics::Graphics(HWND windowHandle, Logger* logger)
 	// Create the camera object
 	camera = new Camera();
 
-	// Create a single boxecule
-	boxecule = new Boxecule(d3D->GetDevice());
+	// Retrieve a pointer to the render manager from the service centre
+	renderManagerPttr = ServiceCentre::AccessRenderManager();
 
-	// Create the shader manager
-	renderManager = new RenderManager(d3D->GetDeviceContext(), d3D->GetDevice());
+	// Retrieve a pointer to the scene manager from the service centre
+	sceneManagerPttr = ServiceCentre::AccessSceneManager();
 }
 
 Graphics::~Graphics()
@@ -24,11 +24,8 @@ Graphics::~Graphics()
 	delete d3D;
 	d3D = nullptr;
 
-	delete renderManager;
-	renderManager = nullptr;
-
-	delete boxecule;
-	boxecule = nullptr;
+	delete renderManagerPttr;
+	renderManagerPttr = nullptr;
 
 	delete camera;
 	camera = nullptr;
@@ -63,18 +60,21 @@ void Graphics::Frame()
 	// Rotate the camera with mouse input
 	camera->MouseLook(localInput);
 
-	// Frustum culling here...
-	//if ()
-	//{
-	//	renderManager->Register(boxecule);
-	//}
-
+	// Update the camera's view matrix to
+	// reflect the translation + rotation above
 	camera->RefreshViewMatrix();
-	renderManager->Register(boxecule);
+
+	// Update the scene (generate terrain/organisms, update organism statuses,
+	// simulate physics for visible areas, etc.)
+	sceneManagerPttr->Update(camera->GetTranslation());
+
+	// Pass the boxecules currently in the scene along to the
+	// render manager
+	renderManagerPttr->Prepare(sceneManagerPttr->GetSceneBoxecules());
 
 	// Record the time at this frame so we can calculate
 	// [deltaTime]
-	TimeStuff::timeAtLastFrame = std::chrono::steady_clock::now();;
+	TimeStuff::timeAtLastFrame = std::chrono::steady_clock::now();
 
 	// No more updates, so pass control onto [Render()] and begin drawing to
 	// the screen :)
@@ -84,8 +84,12 @@ void Graphics::Frame()
 void Graphics::Render()
 {
 	d3D->BeginScene();
-	renderManager->Render(d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
 	d3D->EndScene();
+}
+
+Direct3D* Graphics::GetD3D()
+{
+	return d3D;
 }
 
 // Push constructions for this class through Athru's custom allocator

@@ -5,8 +5,10 @@
 #include "Graphics.h"
 #include "ServiceCentre.h"
 
-StackAllocator* ServiceCentre::stackAllocatorPtr = nullptr;
-Logger* ServiceCentre::loggerPtr = nullptr;
-Input* ServiceCentre::inputPtr = nullptr;
-Application* ServiceCentre::appPtr = nullptr;
-Graphics* ServiceCentre::graphicsPtr = nullptr;
+StackAllocator* ServiceCentre::stackAllocatorPttr = nullptr;
+Logger* ServiceCentre::loggerPttr = nullptr;
+Input* ServiceCentre::inputPttr = nullptr;
+Application* ServiceCentre::appPttr = nullptr;
+Graphics* ServiceCentre::graphicsPttr = nullptr;
+RenderManager* ServiceCentre::renderManagerPttr = nullptr;
+SceneManager* ServiceCentre::sceneManagerPttr = nullptr;

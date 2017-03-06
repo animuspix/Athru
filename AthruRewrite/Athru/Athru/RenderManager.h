@@ -5,6 +5,7 @@
 #include "Typedefs.h"
 #include "DeferredRenderer.h"
 #include "Shader.h"
+#include "SceneManager.h"
 
 enum class AVAILABLE_SHADERS
 {
@@ -22,7 +23,7 @@ class RenderManager
 		~RenderManager();
 
 		void Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
-		void Register(Boxecule* boxecule);
+		void Prepare(Boxecule** boxeculeSet);
 
 	private:
 		ID3D11DeviceContext* deviceContext;

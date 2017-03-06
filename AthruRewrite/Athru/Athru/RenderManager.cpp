@@ -47,7 +47,7 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 		byteUnsigned j = 0;
 		while (shaders[j] != AVAILABLE_SHADERS::NULL_SHADER)
 		{
-			(*availableShaders)[(byteUnsigned)shaders[j]].Render(deviceContext, world, view, projection);
+			(*availableShaders)[(byteUnsigned)shaders[j]].Render(deviceContext, world * renderable.GetTransform(), view, projection);
 			j += 1;
 		}
 	}
@@ -57,11 +57,14 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 	renderQueueLength = 0;
 }
 
-void RenderManager::Register(Boxecule* boxecule)
+void RenderManager::Prepare(Boxecule** boxeculeSet)
 {
-	// Sneaky trick here so we can avoid branching
-	// to check whether or not indexing at [length - 1]
-	// is safe
-	renderQueue[(renderQueueLength - 1) * (renderQueueLength != 0)] = boxecule;
-	renderQueueLength = 1;
+	for (fourByteUnsigned i = 0; i < MAXIMUM_NUM_BOXECULES; i += 1)
+	{
+		// Frustum culling here...
+		//if ([frustum collision check succeeds])
+		//{
+		//	renderQueue[i] = boxeculeSet[i];
+		//}
+	}
 }

@@ -1,14 +1,1 @@
-﻿  StackAllocator.cpp
-  ServiceCentre.cpp
-  RenderManager.cpp
-  Logger.cpp
-  Input.cpp
-  Graphics.cpp
-  Athru.cpp
-  Application.cpp
-  Generating Code...
-  Compiling...
-  Camera.cpp
-  Generating Code...
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)
+﻿  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe

@@ -2,9 +2,8 @@
 
 #include <d3d11.h>
 #include <directxmath.h>
-
+#include "SQT.h"
 #include "Material.h"
-#include "Quaternion.h"
 
 class Boxecule
 {
@@ -13,7 +12,14 @@ class Boxecule
 		~Boxecule();
 
 		void PassToGPU(ID3D11DeviceContext* deviceContext);
+		void SetMaterial(Material& freshMaterial);
 		Material GetMaterial();
+
+		// Get write-allowed raw transformation data
+		SQT& FetchTransformations();
+
+		// Get shader-friendly matrix transformation data
+		DirectX::XMMATRIX GetTransform();
 
 	private:
 		struct Vertex
@@ -35,11 +41,7 @@ class Boxecule
 		// using the same shaders as possible
 		Material material;
 
-		// Is [this] glowing?
-		bool isLightSource;
-
-		//Quaternion rotation;
-		//DirectX::XMMATRIX transform;
+		SQT transformations;
 		ID3D11Buffer *m_vertexBuffer;
 		ID3D11Buffer *m_indexBuffer;
 };

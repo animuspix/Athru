@@ -126,7 +126,11 @@ Boxecule::Boxecule(ID3D11Device* device)
 	// Create the index buffer
 	result = device->CreateBuffer(&indexBufferDesc, &indexData, &m_indexBuffer);
 
+	// Check if anything failed during the geometry setup
 	assert(SUCCEEDED(result));
+
+	// Initialise the scale, rotation, and position of [this]
+	transformations = SQT();
 }
 
 Boxecule::~Boxecule()
@@ -157,7 +161,22 @@ void Boxecule::PassToGPU(ID3D11DeviceContext* deviceContext)
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 }
 
+void Boxecule::SetMaterial(Material& freshMaterial)
+{
+	material = freshMaterial;
+}
+
 Material Boxecule::GetMaterial()
 {
 	return material;
+}
+
+SQT& Boxecule::FetchTransformations()
+{
+	return transformations;
+}
+
+DirectX::XMMATRIX Boxecule::GetTransform()
+{
+	return transformations.asMatrix();
 }

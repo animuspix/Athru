@@ -4,7 +4,6 @@
 #include "Camera.h"
 #include "Boxecule.h"
 #include "Shader.h"
-#include "RenderManager.h"
 
 #define FULL_SCREEN false
 #define VSYNC_ENABLED true
@@ -13,6 +12,8 @@
 #define SCREEN_DEPTH 1000.0f
 #define SCREEN_NEAR 0.1f
 
+class RenderManager;
+class SceneManager;
 class Graphics
 {
 	public:
@@ -20,6 +21,7 @@ class Graphics
 		~Graphics();
 
 		void Frame();
+		Direct3D* GetD3D();
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
@@ -34,10 +36,14 @@ class Graphics
 		// Connection to the player's camera
 		Camera* camera;
 
-		// An array of boxecule
-		Boxecule* boxecule;
+		// The below don't /have/ to go in here, and prob's shouldn't;
+		// they're in this class because that's where the "game loop"
+		// is atm :P
 
 		// Pointer to the render manager
-		RenderManager* renderManager;
+		RenderManager* renderManagerPttr;
+
+		// Pointer to the scene manager
+		SceneManager* sceneManagerPttr;
 };
 

@@ -5,7 +5,9 @@
 #include "Input.h"
 #include "Application.h"
 #include "Direct3D.h"
+#include "RenderManager.h"
 #include "Graphics.h"
+#include "SceneManager.h"
 #include "AthruGlobals.h"
 
 class ServiceCentre
@@ -17,82 +19,93 @@ class ServiceCentre
 		static void StartUp()
 		{
 			// Attempt to create and register the memory-management
-			// service, then abandon ship if creation fails
-			stackAllocatorPtr = new StackAllocator();
+			// service
+			stackAllocatorPttr = new StackAllocator();
 
 			// Attempt to create and register the logging
 			// service
-			loggerPtr = new Logger("log.txt");
+			loggerPttr = new Logger("log.txt");
 
 			// Attempt to create and register the primary input service
-			inputPtr = new Input();
-
-			// Create and register graphics support services here
+			inputPttr = new Input();
 
 			// Attempt to create and register the application
-			appPtr = new Application();
+			appPttr = new Application();
 
 			// Attempt to create and register the primary graphics
 			// service
-			graphicsPtr = new Graphics(appPtr->GetHWND(), loggerPtr);
+			graphicsPttr = new Graphics(appPttr->GetHWND(), loggerPttr);
 
-			// Create and register additional application-support
-			// services here
+			// Attempt to create and register the render manager
+			Direct3D* d3DPttr = graphicsPttr->GetD3D();
+			renderManagerPttr = new RenderManager(d3DPttr->GetDeviceContext(), d3DPttr->GetDevice());
 
-			// Create and register additional, independent services over here
-
-			// Place a marker to separate long-term, app-duration
-			// memory from short-term memory that will be written and over-written on
-			// the fly
-			stackAllocatorPtr->SetMarker();
+			// Attempt to create and register the scene manager
+			sceneManagerPttr = new SceneManager();
 		}
 
 		static void ShutDown()
 		{
-			graphicsPtr->~Graphics();
-			appPtr->~Application();
-			inputPtr->~Input();
-			loggerPtr->~Logger();
+			sceneManagerPttr->~SceneManager();
+			renderManagerPttr->~RenderManager();
+			graphicsPttr->~Graphics();
+			appPttr->~Application();
+			inputPttr->~Input();
+			loggerPttr->~Logger();
 
-			loggerPtr = nullptr;
-			inputPtr = nullptr;
-			graphicsPtr = nullptr;
-			appPtr = nullptr;
+			loggerPttr = nullptr;
+			inputPttr = nullptr;
+			appPttr = nullptr;
+			graphicsPttr = nullptr;
+			renderManagerPttr = nullptr;
+			sceneManagerPttr = nullptr;
 
-			delete stackAllocatorPtr;
-			stackAllocatorPtr = nullptr;
+			delete stackAllocatorPttr;
+			stackAllocatorPttr = nullptr;
 		}
 
 		static StackAllocator* AccessMemory()
 		{
-			return stackAllocatorPtr;
+			return stackAllocatorPttr;
 		}
 
 		static Logger* AccessLogger()
 		{
-			return loggerPtr;
+			return loggerPttr;
 		}
 
 		static Input* AccessInput()
 		{
-			return inputPtr;
+			return inputPttr;
 		}
 
 		static Application* AccessApp()
 		{
-			return appPtr;
+			return appPttr;
 		}
 
 		static Graphics* AccessGraphics()
 		{
-			return graphicsPtr;
+			return graphicsPttr;
+		}
+
+		static RenderManager* AccessRenderManager()
+		{
+			return renderManagerPttr;
+		}
+
+		static SceneManager* AccessSceneManager()
+		{
+			return sceneManagerPttr;
 		}
 
 	private:
 		// Pointers to available services
-		static StackAllocator* stackAllocatorPtr;
-		static Logger* loggerPtr;
-		static Input* inputPtr;
-		static Application* appPtr;
-		static Graphics* graphicsPtr;
+		static StackAllocator* stackAllocatorPttr;
+		static Logger* loggerPttr;
+		static Input* inputPttr;
+		static Application* appPttr;
+		static Graphics* graphicsPttr;
+		static RenderManager* renderManagerPttr;
+		static SceneManager* sceneManagerPttr;
 };

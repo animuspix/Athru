@@ -164,6 +164,7 @@
     <ClCompile Include="PhongLighting.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="RenderManager.cpp" />
+    <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ConsolePrinter.cpp" />
     <ClCompile Include="Direct3D.cpp" />
@@ -185,6 +186,7 @@
     <ClInclude Include="PhongLighting.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="RenderManager.h" />
+    <ClInclude Include="SceneManager.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ConsolePrinter.h" />
     <ClInclude Include="Direct3D.h" />
@@ -198,6 +200,7 @@
     <ClInclude Include="KnownLengthArray.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Sound.h" />
+    <ClInclude Include="SQT.h" />
     <ClInclude Include="StackAllocator.h" />
     <ClInclude Include="ServiceCentre.h" />
     <ClInclude Include="Boxecule.h" />
