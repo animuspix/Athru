@@ -1,6 +1,6 @@
-#include <sstream>
-
 #pragma once
+
+#include <sstream>
 
 class ConsolePrinter
 {

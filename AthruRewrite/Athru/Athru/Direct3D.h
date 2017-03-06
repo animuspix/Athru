@@ -1,13 +1,12 @@
 #pragma once
 
-// Alternative way to do this?
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
 #pragma comment(lib, "D3DCompiler.lib")
 
-#include "dxgi.h"
-#include "d3dcommon.h"
-#include "d3d11.h"
+#include <dxgi.h>
+#include <d3dcommon.h>
+#include <d3d11.h>
 #include "directxmath.h"
 #include "Matrix4.h"
 

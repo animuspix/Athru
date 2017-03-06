@@ -5,8 +5,6 @@
 #include "Graphics.h"
 #include "ServiceCentre.h"
 
-#include <typeinfo.h>
-
 StackAllocator* ServiceCentre::stackAllocatorPtr = nullptr;
 Logger* ServiceCentre::loggerPtr = nullptr;
 Input* ServiceCentre::inputPtr = nullptr;

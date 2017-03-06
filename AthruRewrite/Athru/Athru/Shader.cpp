@@ -1,28 +1,29 @@
-#include "assert.h"
+#include <assert.h>
 #include "Typedefs.h"
-#include "Shaders.h"
+#include "Shader.h"
 
-Shaders::Shaders(ID3D11Device* device, HWND windowHandle)
+Shader::Shader(ID3D11Device* device, HWND windowHandle,
+			   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath)
 {
 	// Long integer used to store success/failure for DirectX operations
 	HRESULT result;
 
 	// Read the vertex shader into a buffer on the GPU
-	ID3D10Blob* vertPlotterBuffer;
-	D3DReadFileToBlob(L"VertPlotter.cso", &vertPlotterBuffer);
+	ID3D10Blob* vertShaderBuffer;
+	D3DReadFileToBlob(vertexShaderFilePath, &vertShaderBuffer);
 
 	// Read the pixel shader into a buffer on the GPU
-	ID3D10Blob* colorizerBuffer;
-	D3DReadFileToBlob(L"Colorizer.cso", &colorizerBuffer);
+	ID3D10Blob* pixelShaderBuffer;
+	D3DReadFileToBlob(pixelShaderFilePath, &pixelShaderBuffer);
 
 	// Create the vertex shader from the vertex shader buffer
-	result = device->CreateVertexShader(vertPlotterBuffer->GetBufferPointer(), vertPlotterBuffer->GetBufferSize(), NULL, &vertPlotter);
+	result = device->CreateVertexShader(vertShaderBuffer->GetBufferPointer(), vertShaderBuffer->GetBufferSize(), NULL, &vertShader);
 
 	// Create the pixel shader from the pixel shader buffer
-	result = device->CreatePixelShader(colorizerBuffer->GetBufferPointer(), colorizerBuffer->GetBufferSize(), NULL, &colorizer);
+	result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &pixelShader);
 
 	// Set up the vertex input layout description
-	// This setup needs to match the Vertex stuct in Boxecule + [VertPlotter]/[Colorizer].
+	// This setup needs to match the Vertex struct in Boxecule + each shader
 	D3D11_INPUT_ELEMENT_DESC polygonLayout[2];
 	polygonLayout[0].SemanticName = "POSITION";
 	polygonLayout[0].SemanticIndex = 0;
@@ -44,15 +45,15 @@ Shaders::Shaders(ID3D11Device* device, HWND windowHandle)
 	fourByteUnsigned numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
 
 	// Create the vertex input layout
-	result = device->CreateInputLayout(polygonLayout, numElements, vertPlotterBuffer->GetBufferPointer(),
-									   vertPlotterBuffer->GetBufferSize(), &inputLayout);
+	result = device->CreateInputLayout(polygonLayout, numElements, vertShaderBuffer->GetBufferPointer(),
+									   vertShaderBuffer->GetBufferSize(), &inputLayout);
 
 	// Release the vertex shader buffer + pixel shader buffer
-	vertPlotterBuffer->Release();
-	vertPlotterBuffer = nullptr;
+	vertShaderBuffer->Release();
+	vertShaderBuffer = nullptr;
 
-	colorizerBuffer->Release();
-	colorizerBuffer = nullptr;
+	pixelShaderBuffer->Release();
+	pixelShaderBuffer = nullptr;
 
 	// Set up the description of the dynamic matrix cbuffer in the vertex shader.
 	D3D11_BUFFER_DESC matrixBufferDesc;
@@ -71,7 +72,7 @@ Shaders::Shaders(ID3D11Device* device, HWND windowHandle)
 	assert(SUCCEEDED(result));
 }
 
-Shaders::~Shaders()
+Shader::~Shader()
 {
 	// Release the cbuffer
 	matBufferLocal->Release();
@@ -82,15 +83,15 @@ Shaders::~Shaders()
 	inputLayout = nullptr;
 
 	// Release the pixel shader
-	colorizer->Release();
-	colorizer = nullptr;
+	pixelShader->Release();
+	pixelShader = nullptr;
 
 	// Release the vertex shader
-	vertPlotter->Release();
-	vertPlotter = nullptr;
+	vertShader->Release();
+	vertShader = nullptr;
 }
 
-void Shaders::SetShaderParameters(ID3D11DeviceContext* deviceContext,
+void Shader::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 								  DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	// Long integer used to store success/failure for DirectX operations
@@ -129,20 +130,20 @@ void Shaders::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 	assert(SUCCEEDED(result));
 }
 
-void Shaders::RenderShader(ID3D11DeviceContext* deviceContext)
+void Shader::RenderShader(ID3D11DeviceContext* deviceContext)
 {
 	// Set the vertex input layout.
 	deviceContext->IASetInputLayout(inputLayout);
 
-	// Set the vertex and pixel shaders that will be used to render the boxecule
-	deviceContext->VSSetShader(vertPlotter, NULL, 0);
-	deviceContext->PSSetShader(colorizer, NULL, 0);
+	// Set the vertex/pixel/compute shaders that will be used to render the boxecule
+	deviceContext->VSSetShader(vertShader, NULL, 0);
+	deviceContext->PSSetShader(pixelShader, NULL, 0);
 
-	// PassToGPU a boxecule
+	// Render a boxecule
 	deviceContext->DrawIndexed(36, 0, 0);
 }
 
-void Shaders::Render(ID3D11DeviceContext* deviceContext,
+void Shader::Render(ID3D11DeviceContext* deviceContext,
 					 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	SetShaderParameters(deviceContext, world, view, projection);

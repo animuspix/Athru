@@ -3,7 +3,7 @@
 Application::Application()
 {
 	// Create the window
-	BuildWindow(1024, 768);
+	BuildWindow(DISPLAY_WIDTH, DISPLAY_HEIGHT);
 }
 
 Application::~Application()
@@ -75,6 +75,9 @@ void Application::Run()
 // responds appropriately
 LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
 {
+	// Cache a local reference to the input handler
+	Input* localInput = ServiceCentre::AccessInput();
+
 	switch (umessage)
 	{
 		// Check if the window is being destroyed.
@@ -91,23 +94,32 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 			return 0;
 		}
 
-		// Check if a key has been pressed on the keyboard.
+		// Check if a key has been pressed on the keyboard
 		case WM_KEYDOWN:
 		{
-			// If a key is pressed send it to the input object so it can record that state.
-			ServiceCentre::AccessInput()->KeyDown((fourByteUnsigned)wparam);
+			// If a key is pressed, send it to the input object so it can record that state
+			localInput->KeyDown((fourByteUnsigned)wparam);
 			return 0;
 		}
 
-		// Check if a key has been released on the keyboard.
+		// Check if a key has been released on the keyboard
 		case WM_KEYUP:
 		{
-			// If a key is released then send it to the input object so it can unset the state for that key.
-			ServiceCentre::AccessInput()->KeyUp((fourByteUnsigned)wparam);
+			// If a key is released, send it to the input object so it can unset the state for that key
+			localInput->KeyUp((fourByteUnsigned)wparam);
 			return 0;
 		}
 
-		// Any other messages send to the default message handler as our application won't make use of them.
+		// Check for mouse movement
+		case WM_MOUSEMOVE:
+		{
+			// If the mouse has moved, store its coordinates in the input handler
+			float currMouseX = (float)GET_X_LPARAM(lparam);
+			float currMouseY = (float)GET_Y_LPARAM(lparam);
+			localInput->CacheMousePos(currMouseX, currMouseY);
+		}
+
+		// Send any remaining messages back to Windows since we won't be using them
 		default:
 		{
 			return DefWindowProc(hwnd, umessage, wparam, lparam);;

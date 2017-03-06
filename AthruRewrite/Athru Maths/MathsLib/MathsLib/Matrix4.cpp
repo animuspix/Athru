@@ -275,21 +275,6 @@ void Matrix4::SetScale(float xScale, float yScale, float zScale)
 	matrixData[3] = _mm_set_ps(0, 0,   0,    1);
 }
 
-float Matrix4::sseSquash(__m128 sseVector)
-{
-	__m128 sseVectorCopy = sseVector;
-
-	__m128 sseXXXXVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(3, 3, 3, 3));
-	__m128 sseYYYYVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(2, 2, 2, 2));
-	__m128 sseZZZZVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(1, 1, 1, 1));
-	__m128 sseWWWWVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(0, 0, 0, 0));
-
-	__m128 sseXPlusYVector = _mm_add_ps(sseXXXXVector, sseYYYYVector);
-	__m128 sseSumVector = _mm_add_ps(sseXPlusYVector, sseWWWWVector);
-
-	return _mm_cvtss_f32(sseSumVector);
-}
-
 Matrix4 Matrix4::operator*(const Matrix4& rhs)
 {
 	__m128 lhsRow0 = matrixData[0];

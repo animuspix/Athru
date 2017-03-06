@@ -1,16 +1,15 @@
 #pragma once
 
 #include "Typedefs.h"
-
 #include "leakChecker.h"
 
 template <typename keyType, typename valueType> class Map
 {
 	private:
-		twoByteUnsigned ValueToIndex(valueType value)
+		fourByteUnsigned ValueToIndex(valueType value)
 		{
-			twoByteUnsigned index = 0;
-			for (twoByteUnsigned indexFinder = 0; indexFinder < count; indexFinder += 1)
+			fourByteUnsigned index = 0;
+			for (fourByteUnsigned indexFinder = 0; indexFinder < count; indexFinder += 1)
 			{
 				if (values[indexFinder] == value)
 				{
@@ -22,10 +21,10 @@ template <typename keyType, typename valueType> class Map
 			return index;
 		}
 
-		twoByteUnsigned KeyToIndex(keyType key)
+		fourByteUnsigned KeyToIndex(keyType key)
 		{
-			twoByteUnsigned index = 0;
-			for (twoByteUnsigned indexFinder = 0; indexFinder < count; indexFinder += 1)
+			fourByteUnsigned index = 0;
+			for (fourByteUnsigned indexFinder = 0; indexFinder < count; indexFinder += 1)
 			{
 				if (keys[indexFinder] == key)
 				{
@@ -38,7 +37,7 @@ template <typename keyType, typename valueType> class Map
 		}
 
 	public:
-		Map(twoByteUnsigned length)
+		Map(fourByteUnsigned length)
 		{
 			keys = new keyType[length];
 			values = new valueType[length];
@@ -51,7 +50,7 @@ template <typename keyType, typename valueType> class Map
 			delete keys;
 
 			// Clean-up all values
-			for (twoByteUnsigned valuePurger = 0; valuePurger < count; valuePurger += 1)
+			for (fourByteUnsigned valuePurger = 0; valuePurger < count; valuePurger += 1)
 			{
 				delete values[valuePurger];
 				values[valuePurger] = nullptr;
@@ -65,7 +64,7 @@ template <typename keyType, typename valueType> class Map
 			values = nullptr;
 		}
 
-		bool Assign(twoByteUnsigned index, keyType key, valueType value)
+		bool Assign(fourByteUnsigned index, keyType key, valueType value)
 		{
 			if ((index > 0) && (index < count))
 			{
@@ -108,7 +107,7 @@ template <typename keyType, typename valueType> class Map
 			return values[KeyToIndex(key)];
 		}
 
-		twoByteUnsigned GetCount()
+		fourByteUnsigned GetCount()
 		{
 			return count;
 		}
@@ -116,6 +115,6 @@ template <typename keyType, typename valueType> class Map
 	private:
 		keyType* keys;
 		valueType* values;
-		twoByteUnsigned count;
+		fourByteUnsigned count;
 };
 

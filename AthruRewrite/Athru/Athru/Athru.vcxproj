@@ -156,8 +156,15 @@
   <ItemGroup>
     <ClCompile Include="Athru.cpp" />
     <ClCompile Include="Application.cpp" />
+    <ClCompile Include="AthruGlobals.cpp" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Shaders.cpp" />
+    <ClCompile Include="Chunk.cpp" />
+    <ClCompile Include="CookTorranceLighting.cpp" />
+    <ClCompile Include="DeferredRenderer.cpp" />
+    <ClCompile Include="PhongLighting.cpp" />
+    <ClCompile Include="Rasterizer.cpp" />
+    <ClCompile Include="RenderManager.cpp" />
+    <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ConsolePrinter.cpp" />
     <ClCompile Include="Direct3D.cpp" />
     <ClCompile Include="Graphics.cpp" />
@@ -172,7 +179,13 @@
   <ItemGroup>
     <ClInclude Include="AthruGlobals.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="Shaders.h" />
+    <ClInclude Include="Chunk.h" />
+    <ClInclude Include="CookTorranceLighting.h" />
+    <ClInclude Include="DeferredRenderer.h" />
+    <ClInclude Include="PhongLighting.h" />
+    <ClInclude Include="Rasterizer.h" />
+    <ClInclude Include="RenderManager.h" />
+    <ClInclude Include="Shader.h" />
     <ClInclude Include="ConsolePrinter.h" />
     <ClInclude Include="Direct3D.h" />
     <ClInclude Include="Dispatcher.h" />

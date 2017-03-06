@@ -74,9 +74,4 @@ class Matrix4
 		// Kept [private] because it's really only useful for calculating the inverse
 		// matrix
 		float determinant(__m128* lower, __m128* upper, char luRowExchanges);
-
-		// "Squash" _m128 values into a single scalar through shuffles and SSE additions
-		// Kept [private] because it's only used for matrix multiplication in this context
-		// and I'd rather not make it globally available
-		float sseSquash(__m128 sseVector);
 };

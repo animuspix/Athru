@@ -5,34 +5,39 @@ Boxecule::Boxecule(ID3D11Device* device)
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
+	// Initialise the material associated with [this]
+	material = Material();
+
+	// Cache the color associated with [this]
+	float* color = material.GetColorData();
+
 	// Initialise vertices
 	// X and Y coordinates look a helluva lot like magic numbers; they were basically
 	// chosen out of trial and error while I was looking for points that'd line up
 	// into a reasonable cube on a 16:9 screen without too much distortion
-	float alpha = 1.0f;
 	Vertex vertices[8] = { Vertex(-0.95f, 0.7f, -1.0f,
-								   1.0f, 1.0f, 1.0f, alpha), // Front plane, upper left (v0)
+								   color), // Front plane, upper left (v0)
 
 						   Vertex(0.95f, 0.7f, -1.0f,
-							      0.0f, 0.7f, 0.7f, alpha), // Front plane, upper right (v1)
+								  color), // Front plane, upper right (v1)
 
 						   Vertex(-0.95f, -0.7f, -1.0f,
-								   0.0f, 0.0f, 0.7f, alpha), // Front plane, lower left (v2)
+								   color), // Front plane, lower left (v2)
 
 						   Vertex(0.95f, -0.7f, -1.0f,
-							      0.0f, 0.0f, 0.0f, alpha), // Front plane, lower right (v3)
+								  color), // Front plane, lower right (v3)
 
 						   Vertex(0.95f, -0.7f, 1.0f,
-								  0.7f, 0.7f, 0.7f, alpha), // Back plane, lower right (v4)
+								  color), // Back plane, lower right (v4)
 
 						   Vertex(0.95f, 0.7f, 1.0f,
-								  0.7f, 0.7f, 0.0f, alpha), // Back plane, upper right (v5)
+								  color), // Back plane, upper right (v5)
 
 						   Vertex(-0.95f, 0.7f, 1.0f,
-								   0.7f, 0.0f, 0.0f, alpha), // Back plane, upper left (v6)
+								   color), // Back plane, upper left (v6)
 
 						   Vertex(-0.95f, -0.7f, 1.0f,
-								   0.4f, 0.4f, 0.4f, alpha) }; // Back plane, lower left (v7)
+								   color) }; // Back plane, lower left (v7)
 
 	// Initialise indices
 	// Each set of three values is one triangle
@@ -73,16 +78,16 @@ Boxecule::Boxecule(ID3D11Device* device)
 						 7,
 
 						 2,
-						 7,
 						 4,
+						 7,
 
 						 7,
 						 4,
 						 6,
 
-						 6,
 						 4,
-						 5 };
+						 5,
+						 6 };
 
 
 	// Set up the description of the static vertex buffer
@@ -150,4 +155,9 @@ void Boxecule::PassToGPU(ID3D11DeviceContext* deviceContext)
 	// Set the 2D primitive type used to create the boxecule; we're making one boxecule,
 	// so triangular primitives make the most sense :P
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+}
+
+Material Boxecule::GetMaterial()
+{
+	return material;
 }

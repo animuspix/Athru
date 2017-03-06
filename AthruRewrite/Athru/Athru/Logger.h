@@ -1,13 +1,12 @@
+#pragma once
+
 #include <iostream>
 #include <sstream>
 #include <fstream>
 #include "Typedefs.h"
 #include "ConsolePrinter.h"
-
 #include "Dispatcher.h"
 #include "leakChecker.h"
-
-#pragma once
 
 class Logger
 {

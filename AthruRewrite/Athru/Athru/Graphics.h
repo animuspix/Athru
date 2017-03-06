@@ -3,19 +3,20 @@
 #include "Direct3D.h"
 #include "Camera.h"
 #include "Boxecule.h"
-#include "Shaders.h"
+#include "Shader.h"
+#include "RenderManager.h"
 
 #define FULL_SCREEN false
 #define VSYNC_ENABLED true
+#define DISPLAY_WIDTH 1024
+#define DISPLAY_HEIGHT 768
 #define SCREEN_DEPTH 1000.0f
 #define SCREEN_NEAR 0.1f
-
-#define MAX_VISIBLE_BOXECULES 10000
 
 class Graphics
 {
 	public:
-		Graphics(int screenWidth, int screenHeight, HWND hwnd, Logger* logger);
+		Graphics(HWND hwnd, Logger* logger);
 		~Graphics();
 
 		void Frame();
@@ -33,11 +34,10 @@ class Graphics
 		// Connection to the player's camera
 		Camera* camera;
 
-		// Array of pointers to currently visible Boxecules (refactor to use a
-		// stack-based chunking system)
+		// An array of boxecule
 		Boxecule* boxecule;
 
-		// Pointer to the shader manager
-		Shaders* shaderManager;
+		// Pointer to the render manager
+		RenderManager* renderManager;
 };
 
