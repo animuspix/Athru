@@ -5,7 +5,6 @@
 #include "Typedefs.h"
 #include "DeferredRenderer.h"
 #include "Shader.h"
-#include "SceneManager.h"
 
 enum class AVAILABLE_SHADERS
 {

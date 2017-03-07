@@ -60,9 +60,6 @@
     <ClCompile Include="RenderManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PhongLighting.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Rasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -78,7 +75,13 @@
     <ClCompile Include="AthruGlobals.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SceneHandler.cpp">
+    <ClCompile Include="SceneManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Planet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectionalLight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -143,9 +146,6 @@
     <ClInclude Include="RenderManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PhongLighting.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Rasterizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -158,10 +158,16 @@
     <ClInclude Include="CookTorranceLighting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SceneHandler.h">
+    <ClInclude Include="SQT.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SQT.h">
+    <ClInclude Include="SceneManager.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Planet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

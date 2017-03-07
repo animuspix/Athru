@@ -2,8 +2,9 @@
 
 #include <cstdlib>
 #include "Typedefs.h"
+#include "SceneManager.h"
 
-#define STARTING_HEAP INT_MAX - 2
+#define STARTING_HEAP (eightByteUnsigned)(BOXECULE_MEMORY_ALLOCATION * 1.4)
 #define MAX_MARKER_COUNT 120
 #define MARKER_INDEX_TYPE byteSigned
 #define POINTER_LENGTH eightByteUnsigned

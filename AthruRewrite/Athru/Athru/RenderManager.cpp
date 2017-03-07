@@ -1,6 +1,7 @@
 #include "ServiceCentre.h"
 #include "Rasterizer.h"
 #include "Boxecule.h"
+#include "SceneManager.h"
 #include "RenderManager.h"
 
 RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device* d3dDevice)

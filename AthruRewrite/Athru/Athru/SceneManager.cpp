@@ -23,14 +23,14 @@ void SceneManager::Update(DirectX::XMVECTOR playerPosition)
 	// Update each chunk within the scene
 	// HUGE threading opportunity here - implement once current
 	// to-do is cleared :)
-	sceneChunks[0].Update(playerPosition);
-	sceneChunks[1].Update(playerPosition);
-	sceneChunks[2].Update(playerPosition);
-	sceneChunks[3].Update(playerPosition);
-	sceneChunks[4].Update(playerPosition);
-	sceneChunks[5].Update(playerPosition);
-	sceneChunks[6].Update(playerPosition);
-	sceneChunks[7].Update(playerPosition);
-	sceneChunks[8].Update(playerPosition);
-	sceneChunks[9].Update(playerPosition);
+	nearChunks[0].Update(playerPosition);
+	nearChunks[1].Update(playerPosition);
+	nearChunks[2].Update(playerPosition);
+	nearChunks[3].Update(playerPosition);
+	nearChunks[4].Update(playerPosition);
+	nearChunks[5].Update(playerPosition);
+	nearChunks[6].Update(playerPosition);
+	nearChunks[7].Update(playerPosition);
+	nearChunks[8].Update(playerPosition);
+	nearChunks[9].Update(playerPosition);
 }
