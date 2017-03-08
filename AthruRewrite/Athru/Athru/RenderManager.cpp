@@ -41,14 +41,14 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 	// No deferred rendering, so display everything with forward rendering for now
 	for (fourByteSigned i = 0; i < renderQueueLength; i += 1)
 	{
-		Boxecule renderable = *renderQueue[i];
-		AVAILABLE_SHADERS* shaders = renderable.GetMaterial().GetShaderSet();
-		renderable.PassToGPU(deviceContext);
+		Boxecule* renderable = renderQueue[i];
+		AVAILABLE_SHADERS* shaders = renderable->GetMaterial().GetShaderSet();
+		renderable->PassToGPU(deviceContext);
 
 		byteUnsigned j = 0;
 		while (shaders[j] != AVAILABLE_SHADERS::NULL_SHADER)
 		{
-			(*availableShaders)[(byteUnsigned)shaders[j]].Render(deviceContext, world * renderable.GetTransform(), view, projection);
+			(*availableShaders)[(byteUnsigned)shaders[j]].Render(deviceContext, world * renderable->GetTransform(), view, projection);
 			j += 1;
 		}
 	}
@@ -59,7 +59,6 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 
 void RenderManager::Prepare(Boxecule** boxeculeSet)
 {
-	ServiceCentre::AccessLogger()->Log(ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(), Logger::DESTINATIONS::CONSOLE);
 	for (fourByteUnsigned i = 0; i < ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(); i += 1)
 	{
 		// Frustum culling here...
@@ -70,7 +69,7 @@ void RenderManager::Prepare(Boxecule** boxeculeSet)
 		//	renderQueueLength += 1;
 		//}
 
-		(*renderQueue)[i] = (*boxeculeSet)[i];
+		renderQueue[i] = boxeculeSet[i];
 		renderQueueLength += 1;
 	}
 }

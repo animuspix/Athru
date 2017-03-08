@@ -18,12 +18,8 @@ class Chunk
 		Boxecule** GetChunkBoxecules();
 
 	private:
-		// Raw 3D array of boxecules within this chunk
-		Boxecule*** chunkBoxecules;
-
-		// "Flattened" 1D array of pointers to the boxecules within
-		// this chunk
-		Boxecule* flattenedChunkBoxecules[CHUNK_WIDTH];
+		// Raw array of boxecules within this chunk
+		Boxecule** chunkBoxecules;
 
 		// Where [this] is on it's associated planet
 		unsigned int planetaryIndex;

@@ -53,25 +53,39 @@ void SceneManager::Update(DirectX::XMVECTOR playerPosition)
 	Boxecule** nearChunk1Boxecules = nearChunks[1].GetChunkBoxecules();
 	Boxecule** nearChunk2Boxecules = nearChunks[2].GetChunkBoxecules();
 	Boxecule** nearChunk3Boxecules = nearChunks[3].GetChunkBoxecules();
-	Boxecule** nearChunk4Boxecules = nearChunks[4].GetChunkBoxecules();
+	Boxecule** homeChunkBoxecules = nearChunks[4].GetChunkBoxecules();
 	Boxecule** nearChunk5Boxecules = nearChunks[5].GetChunkBoxecules();
 	Boxecule** nearChunk6Boxecules = nearChunks[6].GetChunkBoxecules();
 	Boxecule** nearChunk7Boxecules = nearChunks[7].GetChunkBoxecules();
 	Boxecule** nearChunk8Boxecules = nearChunks[8].GetChunkBoxecules();
 
-	for (eightByteUnsigned i = 0; i < CurrBoxeculeCount(); i += 9)
-	{
-		boxeculeSet[i] = nearChunk0Boxecules[i];
-		boxeculeSet[i + 1] = nearChunk1Boxecules[i];
-		boxeculeSet[i + 2] = nearChunk2Boxecules[i];
-		boxeculeSet[i + 3] = nearChunk3Boxecules[i];
-		boxeculeSet[i + 4] = nearChunk4Boxecules[i];
-		boxeculeSet[i + 5] = nearChunk5Boxecules[i];
-		boxeculeSet[i + 6] = nearChunk6Boxecules[i];
-		boxeculeSet[i + 7] = nearChunk7Boxecules[i];
-		boxeculeSet[i + 8] = nearChunk8Boxecules[i];
+	Boxecule** nearChunkBoxecules[8] = { nearChunk0Boxecules,
+										 nearChunk1Boxecules,
+										 nearChunk2Boxecules,
+										 nearChunk3Boxecules,
+										 nearChunk5Boxecules,
+										 nearChunk6Boxecules,
+										 nearChunk7Boxecules,
+										 nearChunk8Boxecules };
 
-		//ServiceCentre::AccessLogger()->Log(boxeculeSet[i]->GetMaterial().GetColorData()[0], Logger::DESTINATIONS::CONSOLE);
+	// Copy boxecules from non-home chunks
+	eightByteUnsigned homeChunkOffset = 0;
+	byteUnsigned chunkIndex = 0;
+	for (eightByteUnsigned i = 0; i < (8 * CHUNK_VOLUME); i += CHUNK_VOLUME)
+	{
+		for (eightByteUnsigned j = 0; j < CHUNK_VOLUME; j += 1)
+		{
+			boxeculeSet[i + j] = &((*nearChunkBoxecules[chunkIndex])[j]);
+		}
+
+		chunkIndex += 1;
+		homeChunkOffset = (i + CHUNK_VOLUME);
+	}
+
+	// Copy boxecules from the home chunk
+	for (eightByteUnsigned i = 0; i < CHUNK_VOLUME * boxeculeDensity; i += 1)
+	{
+		boxeculeSet[i + homeChunkOffset] = &((*homeChunkBoxecules)[i]);
 	}
 }
 
