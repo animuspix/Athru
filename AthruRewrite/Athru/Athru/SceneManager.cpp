@@ -4,7 +4,6 @@
 SceneManager::SceneManager()
 {
 	StackAllocator* stackAllocatorPttr = ServiceCentre::AccessMemory();
-	ServiceCentre::AccessLogger()->Log(MAX_NUM_STORED_BOXECULES, Logger::DESTINATIONS::CONSOLE);
 	boxeculeSet = new Boxecule*[MAX_NUM_STORED_BOXECULES];
 
 	nearChunks[0] = Chunk(-1 * CHUNK_WIDTH, CHUNK_WIDTH);
@@ -16,6 +15,8 @@ SceneManager::SceneManager()
 	nearChunks[6] = Chunk(-1 * CHUNK_WIDTH, -1 * CHUNK_WIDTH);
 	nearChunks[7] = Chunk(0, -1 * CHUNK_WIDTH);
 	nearChunks[8] = Chunk(CHUNK_WIDTH, -1 * CHUNK_WIDTH);
+
+	boxeculeDensity = 1;
 }
 
 SceneManager::~SceneManager()
@@ -48,15 +49,30 @@ void SceneManager::Update(DirectX::XMVECTOR playerPosition)
 	nearChunks[8].Update(playerPosition);
 
 	// Copy chunk-boxecules across into the array of scene boxecules
-	boxeculeSet[0] = *(nearChunks[0].GetChunkBoxecules());
-	boxeculeSet[1] = *(nearChunks[1].GetChunkBoxecules());
-	boxeculeSet[2] = *(nearChunks[2].GetChunkBoxecules());
-	boxeculeSet[3] = *(nearChunks[3].GetChunkBoxecules());
-	boxeculeSet[4] = *(nearChunks[4].GetChunkBoxecules());
-	boxeculeSet[5] = *(nearChunks[5].GetChunkBoxecules());
-	boxeculeSet[6] = *(nearChunks[6].GetChunkBoxecules());
-	boxeculeSet[7] = *(nearChunks[7].GetChunkBoxecules());
-	boxeculeSet[8] = *(nearChunks[8].GetChunkBoxecules());
+	Boxecule** nearChunk0Boxecules = nearChunks[0].GetChunkBoxecules();
+	Boxecule** nearChunk1Boxecules = nearChunks[1].GetChunkBoxecules();
+	Boxecule** nearChunk2Boxecules = nearChunks[2].GetChunkBoxecules();
+	Boxecule** nearChunk3Boxecules = nearChunks[3].GetChunkBoxecules();
+	Boxecule** nearChunk4Boxecules = nearChunks[4].GetChunkBoxecules();
+	Boxecule** nearChunk5Boxecules = nearChunks[5].GetChunkBoxecules();
+	Boxecule** nearChunk6Boxecules = nearChunks[6].GetChunkBoxecules();
+	Boxecule** nearChunk7Boxecules = nearChunks[7].GetChunkBoxecules();
+	Boxecule** nearChunk8Boxecules = nearChunks[8].GetChunkBoxecules();
+
+	for (eightByteUnsigned i = 0; i < CurrBoxeculeCount(); i += 9)
+	{
+		boxeculeSet[i] = nearChunk0Boxecules[i];
+		boxeculeSet[i + 1] = nearChunk1Boxecules[i];
+		boxeculeSet[i + 2] = nearChunk2Boxecules[i];
+		boxeculeSet[i + 3] = nearChunk3Boxecules[i];
+		boxeculeSet[i + 4] = nearChunk4Boxecules[i];
+		boxeculeSet[i + 5] = nearChunk5Boxecules[i];
+		boxeculeSet[i + 6] = nearChunk6Boxecules[i];
+		boxeculeSet[i + 7] = nearChunk7Boxecules[i];
+		boxeculeSet[i + 8] = nearChunk8Boxecules[i];
+
+		//ServiceCentre::AccessLogger()->Log(boxeculeSet[i]->GetMaterial().GetColorData()[0], Logger::DESTINATIONS::CONSOLE);
+	}
 }
 
 // Push constructions for this class through Athru's custom allocator

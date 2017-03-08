@@ -10,7 +10,7 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	renderQueueLength = 0;
 
 	// More reasons to fix the StackAllocator here...
-	renderQueue = new Boxecule*;
+	renderQueue = new Boxecule*[MAX_NUM_STORED_BOXECULES];
 
 	// Render-time optimisation can't be significantly improved without
 	// creating a many-to-one relationship between vertices and shaders;
@@ -59,6 +59,7 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 
 void RenderManager::Prepare(Boxecule** boxeculeSet)
 {
+	ServiceCentre::AccessLogger()->Log(ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(), Logger::DESTINATIONS::CONSOLE);
 	for (fourByteUnsigned i = 0; i < ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(); i += 1)
 	{
 		// Frustum culling here...
@@ -69,7 +70,7 @@ void RenderManager::Prepare(Boxecule** boxeculeSet)
 		//	renderQueueLength += 1;
 		//}
 
-		renderQueue[i] = boxeculeSet[i];
+		(*renderQueue)[i] = (*boxeculeSet)[i];
 		renderQueueLength += 1;
 	}
 }

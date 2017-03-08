@@ -22,8 +22,6 @@ class Graphics
 		void FetchDependencies();
 		~Graphics();
 
-		unsigned int boxeculeLoadCounter = 0;
-
 		void Frame();
 		Direct3D* GetD3D();
 

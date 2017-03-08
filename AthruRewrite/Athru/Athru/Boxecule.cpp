@@ -139,9 +139,6 @@ Boxecule::Boxecule(float r, float g, float b, float a)
 
 	// Initialise the scale, rotation, and position of [this]
 	transformations = SQT();
-
-	ServiceCentre::AccessLogger()->Log(ServiceCentre::AccessGraphics()->boxeculeLoadCounter, Logger::DESTINATIONS::CONSOLE);
-	ServiceCentre::AccessGraphics()->boxeculeLoadCounter += 1;
 }
 
 Boxecule::~Boxecule()

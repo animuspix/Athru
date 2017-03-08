@@ -13,7 +13,7 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 		{
 			for (byteUnsigned k = 0; k < CHUNK_WIDTH; k += 1)
 			{
-				chunkBoxecules[i][j][k] = Boxecule(0.7f, 0.5f, 0.5f, 0.8f);
+				(*chunkBoxecules)[i][j][k] = Boxecule(0.7f, 0.5f, 0.5f, 0.8f);
 				DirectX::XMVECTOR boxeculePos = _mm_set_ps(i + offsetFromHomeX, j, k + offsetFromHomeZ, 1);
 				DirectX::XMVECTOR boxeculeRot = _mm_set_ps(0, 0, 0, 0);
 				chunkBoxecules[i][j][k].FetchTransformations() = SQT(boxeculeRot, boxeculePos, 1);

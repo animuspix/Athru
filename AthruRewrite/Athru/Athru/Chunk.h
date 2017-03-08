@@ -19,7 +19,7 @@ class Chunk
 
 	private:
 		// Raw 3D array of boxecules within this chunk
-		Boxecule (*chunkBoxecules)[CHUNK_WIDTH][CHUNK_WIDTH];
+		Boxecule*** chunkBoxecules;
 
 		// "Flattened" 1D array of pointers to the boxecules within
 		// this chunk
