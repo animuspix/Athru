@@ -42,6 +42,11 @@ class ServiceCentre
 
 			// Attempt to create and register the scene manager
 			sceneManagerPttr = new SceneManager();
+
+			// Now that the Render Manager and the Scene Manager exist,
+			// we can initialise their references within the Graphics class;
+			// do that here
+			graphicsPttr->FetchDependencies();
 		}
 
 		static void ShutDown()

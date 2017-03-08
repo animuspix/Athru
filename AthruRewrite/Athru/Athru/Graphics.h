@@ -2,8 +2,6 @@
 
 #include "Direct3D.h"
 #include "Camera.h"
-#include "Boxecule.h"
-#include "Shader.h"
 
 #define FULL_SCREEN false
 #define VSYNC_ENABLED true
@@ -18,7 +16,13 @@ class Graphics
 {
 	public:
 		Graphics(HWND hwnd, Logger* logger);
+		// Initialiser, needed to avoid a dependency loop between
+		// [this] and RenderManager (required in the main game loop,
+		// but dependant on [this])
+		void FetchDependencies();
 		~Graphics();
+
+		unsigned int boxeculeLoadCounter = 0;
 
 		void Frame();
 		Direct3D* GetD3D();

@@ -24,6 +24,10 @@ class RenderManager
 		void Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
 		void Prepare(Boxecule** boxeculeSet);
 
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void operator delete(void * target);
+
 	private:
 		ID3D11DeviceContext* deviceContext;
 		Boxecule** renderQueue;

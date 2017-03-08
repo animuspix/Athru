@@ -94,7 +94,7 @@ DirectX::XMFLOAT2 Input::GetMousePos()
 void* Input::operator new(size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc((fourByteUnsigned)size, 4, false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Input>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

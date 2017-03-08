@@ -11,7 +11,10 @@ Graphics::Graphics(HWND windowHandle, Logger* logger)
 
 	// Create the camera object
 	camera = new Camera();
+}
 
+void Graphics::FetchDependencies()
+{
 	// Retrieve a pointer to the render manager from the service centre
 	renderManagerPttr = ServiceCentre::AccessRenderManager();
 
@@ -84,6 +87,7 @@ void Graphics::Frame()
 void Graphics::Render()
 {
 	d3D->BeginScene();
+	renderManagerPttr->Render(d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
 	d3D->EndScene();
 }
 
@@ -96,7 +100,7 @@ Direct3D* Graphics::GetD3D()
 void* Graphics::operator new(size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc((fourByteUnsigned)size, (byteUnsigned)std::alignment_of<Graphics>(), false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

@@ -8,7 +8,8 @@
 class Boxecule
 {
 	public:
-		Boxecule(ID3D11Device* device);
+		Boxecule() {}
+		Boxecule(float r, float g, float b, float a);
 		~Boxecule();
 
 		void PassToGPU(ID3D11DeviceContext* deviceContext);
@@ -20,6 +21,12 @@ class Boxecule
 
 		// Get shader-friendly matrix transformation data
 		DirectX::XMMATRIX GetTransform();
+
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void* operator new[](size_t size);
+		void operator delete(void * target);
+		void operator delete[](void * target);
 
 	private:
 		struct Vertex

@@ -38,14 +38,14 @@ address StackAllocator::PtrAdjuster(address srcPtr, byteUnsigned alignment)
 	return (char*)srcPtr + memoryAdjustment;
 }
 
-address StackAllocator::AlignedAlloc(fourByteUnsigned bytes, byteUnsigned alignment, bool setMarker)
+address StackAllocator::AlignedAlloc(eightByteUnsigned bytes, byteUnsigned alignment, bool setMarker)
 {
 	// Only accept power-of-two alignments
 	assert((alignment & (alignment - 1)) == 0);
 
 	address rawMemory;
 	address returnableMemory;
-	fourByteUnsigned allocSize = bytes + alignment;
+	eightByteUnsigned allocSize = bytes + alignment;
 	if (!setMarker)
 	{
 		rawMemory = stackTop;
@@ -53,7 +53,7 @@ address StackAllocator::AlignedAlloc(fourByteUnsigned bytes, byteUnsigned alignm
 		stackTop = (char*)returnableMemory + allocSize + 1;
 		for (MARKER_INDEX_TYPE i = 0; i < (activeMarkerCount + 1); i += 1)
 		{
-			markers[i].distanceFromTop += (fourByteUnsigned)(((char*)returnableMemory - (char*)rawMemory) + allocSize + 1);
+			markers[i].distanceFromTop += (eightByteUnsigned)(((char*)returnableMemory - (char*)rawMemory) + allocSize + 1);
 		}
 	}
 	else
@@ -63,7 +63,7 @@ address StackAllocator::AlignedAlloc(fourByteUnsigned bytes, byteUnsigned alignm
 		stackTop = (char*)returnableMemory + allocSize + 2;
 		for (MARKER_INDEX_TYPE i = 0; i < (activeMarkerCount + 1); i += 1)
 		{
-			markers[i].distanceFromTop += (fourByteUnsigned)(((char*)returnableMemory - (char*)rawMemory) + allocSize + 2);
+			markers[i].distanceFromTop += (eightByteUnsigned)(((char*)returnableMemory - (char*)rawMemory) + allocSize + 2);
 		}
 
 		activeMarkerCount += 1;

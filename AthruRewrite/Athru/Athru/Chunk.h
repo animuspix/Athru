@@ -1,22 +1,31 @@
 #pragma once
 
 #include <directxmath.h>
+#include "Typedefs.h"
 
-#define CHUNK_WIDTH 50
+#define CHUNK_WIDTH 35
 #define CHUNK_VOLUME CHUNK_WIDTH * CHUNK_WIDTH * CHUNK_WIDTH
 
 class Boxecule;
 class Chunk
 {
 	public:
-		Chunk();
+		Chunk() {}
+		Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ);
 		~Chunk();
 
 		void Update(DirectX::XMVECTOR playerPosition);
-		Boxecule*** GetChunkBoxecules();
+		Boxecule** GetChunkBoxecules();
 
 	private:
-		Boxecule*** chunkBoxecules;
+		// Raw 3D array of boxecules within this chunk
+		Boxecule (*chunkBoxecules)[CHUNK_WIDTH][CHUNK_WIDTH];
+
+		// "Flattened" 1D array of pointers to the boxecules within
+		// this chunk
+		Boxecule* flattenedChunkBoxecules[CHUNK_WIDTH];
+
+		// Where [this] is on it's associated planet
 		unsigned int planetaryIndex;
 };
 

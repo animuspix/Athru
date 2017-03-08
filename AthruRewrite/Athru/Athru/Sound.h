@@ -11,6 +11,6 @@ class Sound
 		float freq;
 
 		// Wave amplitude (decibels)
-		float amp;
+		float vol;
 };
 

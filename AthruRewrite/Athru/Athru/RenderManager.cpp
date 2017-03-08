@@ -53,19 +53,36 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 		}
 	}
 
-	// Zero the length of the render queue so that
-	// existing boxecules are overwritten by incoming ones
+	// Nothing left to draw on this pass, so zero the length of the render queue
 	renderQueueLength = 0;
 }
 
 void RenderManager::Prepare(Boxecule** boxeculeSet)
 {
-	for (fourByteUnsigned i = 0; i < MAXIMUM_NUM_BOXECULES; i += 1)
+	for (fourByteUnsigned i = 0; i < ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(); i += 1)
 	{
 		// Frustum culling here...
-		//if ([frustum collision check succeeds])
+		//if ([frustum collision check succeeds] &&
+		//    (boxeculeSet[i]->GetMaterial().GetColorData()[3] != 0))
 		//{
 		//	renderQueue[i] = boxeculeSet[i];
+		//	renderQueueLength += 1;
 		//}
+
+		renderQueue[i] = boxeculeSet[i];
+		renderQueueLength += 1;
 	}
+}
+
+// Push constructions for this class through Athru's custom allocator
+void* RenderManager::operator new(size_t size)
+{
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<RenderManager>(), false);
+}
+
+// We aren't expecting to use [delete], so overload it to do nothing
+void RenderManager::operator delete(void* target)
+{
+	return;
 }

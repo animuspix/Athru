@@ -1,12 +1,19 @@
+#include "ServiceCentre.h"
 #include "Boxecule.h"
 
-Boxecule::Boxecule(ID3D11Device* device)
+Boxecule::Boxecule(float r, float g, float b, float a)
 {
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
 	// Initialise the material associated with [this]
-	material = Material();
+	material = Material(Sound(),
+						r, g, b, a,
+						AVAILABLE_SHADERS::RASTERIZER,
+						AVAILABLE_SHADERS::NULL_SHADER,
+						AVAILABLE_SHADERS::NULL_SHADER,
+						AVAILABLE_SHADERS::NULL_SHADER,
+						AVAILABLE_SHADERS::NULL_SHADER);
 
 	// Cache the color associated with [this]
 	float* color = material.GetColorData();
@@ -15,28 +22,28 @@ Boxecule::Boxecule(ID3D11Device* device)
 	// X and Y coordinates look a helluva lot like magic numbers; they were basically
 	// chosen out of trial and error while I was looking for points that'd line up
 	// into a reasonable cube on a 16:9 screen without too much distortion
-	Vertex vertices[8] = { Vertex(-0.95f, 0.7f, -1.0f,
+	Vertex vertices[8] = { Vertex(-0.5f, 0.5f, -0.5f,
 								   color), // Front plane, upper left (v0)
 
-						   Vertex(0.95f, 0.7f, -1.0f,
+						   Vertex(0.5f, 0.5f, -0.5f,
 								  color), // Front plane, upper right (v1)
 
-						   Vertex(-0.95f, -0.7f, -1.0f,
+						   Vertex(-0.5f, -0.5f, -0.5f,
 								   color), // Front plane, lower left (v2)
 
-						   Vertex(0.95f, -0.7f, -1.0f,
+						   Vertex(0.5f, -0.5f, -0.5f,
 								  color), // Front plane, lower right (v3)
 
-						   Vertex(0.95f, -0.7f, 1.0f,
+						   Vertex(0.5f, -0.5f, 0.5f,
 								  color), // Back plane, lower right (v4)
 
-						   Vertex(0.95f, 0.7f, 1.0f,
+						   Vertex(0.5f, 0.5f, 0.5f,
 								  color), // Back plane, upper right (v5)
 
-						   Vertex(-0.95f, 0.7f, 1.0f,
+						   Vertex(-0.5f, 0.5f, 0.5f,
 								   color), // Back plane, upper left (v6)
 
-						   Vertex(-0.95f, -0.7f, 1.0f,
+						   Vertex(-0.5f, -0.5f, 0.5f,
 								   color) }; // Back plane, lower left (v7)
 
 	// Initialise indices
@@ -106,6 +113,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 	vertexData.SysMemSlicePitch = 0;
 
 	// Create the vertex buffer
+	ID3D11Device* device = ServiceCentre::AccessGraphics()->GetD3D()->GetDevice();
 	result = device->CreateBuffer(&vertexBufferDesc, &vertexData, &m_vertexBuffer);
 
 	// Set up the description of the static index buffer
@@ -131,6 +139,9 @@ Boxecule::Boxecule(ID3D11Device* device)
 
 	// Initialise the scale, rotation, and position of [this]
 	transformations = SQT();
+
+	ServiceCentre::AccessLogger()->Log(ServiceCentre::AccessGraphics()->boxeculeLoadCounter, Logger::DESTINATIONS::CONSOLE);
+	ServiceCentre::AccessGraphics()->boxeculeLoadCounter += 1;
 }
 
 Boxecule::~Boxecule()
@@ -179,4 +190,30 @@ SQT& Boxecule::FetchTransformations()
 DirectX::XMMATRIX Boxecule::GetTransform()
 {
 	return transformations.asMatrix();
+}
+
+// Push constructions for this class through Athru's custom allocator
+void* Boxecule::operator new(size_t size)
+{
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
+}
+
+// Push constructions for this class through Athru's custom allocator
+void* Boxecule::operator new[](size_t size)
+{
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
+}
+
+// We aren't expecting to use [delete], so overload it to do nothing;
+void Boxecule::operator delete(void* target)
+{
+	return;
+}
+
+// We aren't expecting to use [delete[]], so overload it to do nothing;
+void Boxecule::operator delete[](void* target)
+{
+	return;
 }

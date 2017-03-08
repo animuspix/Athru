@@ -5,7 +5,7 @@
 void* Logger::operator new(size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc((fourByteUnsigned)size, (byteUnsigned)std::alignment_of<Logger>(), false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Logger>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

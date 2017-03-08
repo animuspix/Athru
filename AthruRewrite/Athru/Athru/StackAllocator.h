@@ -17,7 +17,7 @@ class StackAllocator
 {
 	struct Marker
 	{
-		fourByteUnsigned distanceFromTop;
+		eightByteUnsigned distanceFromTop;
 	};
 
 	public:
@@ -25,7 +25,7 @@ class StackAllocator
 		~StackAllocator();
 
 		// Allocate [bytes] from the available heap memory
-		address AlignedAlloc(fourByteUnsigned bytes, byteUnsigned alignment, bool setMarker);
+		address AlignedAlloc(eightByteUnsigned bytes, byteUnsigned alignment, bool setMarker);
 
 		// Allocate a single non-aligned byte from the available heap memory
 		address ByteAlloc(bool setMarker);
