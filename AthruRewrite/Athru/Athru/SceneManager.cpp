@@ -3,7 +3,6 @@
 
 SceneManager::SceneManager()
 {
-	StackAllocator* stackAllocatorPttr = ServiceCentre::AccessMemory();
 	boxeculeSet = new Boxecule*[MAX_NUM_STORED_BOXECULES];
 
 	nearChunks[0] = Chunk(-1 * CHUNK_WIDTH, CHUNK_WIDTH);
@@ -75,7 +74,7 @@ void SceneManager::Update(DirectX::XMVECTOR playerPosition)
 	{
 		for (eightByteUnsigned j = 0; j < CHUNK_VOLUME; j += 1)
 		{
-			boxeculeSet[i + j] = &((*nearChunkBoxecules[chunkIndex])[j]);
+			boxeculeSet[i + j] = nearChunkBoxecules[chunkIndex][j];
 		}
 
 		chunkIndex += 1;
@@ -85,7 +84,7 @@ void SceneManager::Update(DirectX::XMVECTOR playerPosition)
 	// Copy boxecules from the home chunk
 	for (eightByteUnsigned i = 0; i < CHUNK_VOLUME * boxeculeDensity; i += 1)
 	{
-		boxeculeSet[i + homeChunkOffset] = &((*homeChunkBoxecules)[i]);
+		boxeculeSet[i + homeChunkOffset] = homeChunkBoxecules[i];
 	}
 }
 

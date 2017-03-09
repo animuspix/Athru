@@ -22,7 +22,10 @@ class RenderManager
 		~RenderManager();
 
 		void Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
-		void Prepare(Boxecule** boxeculeSet);
+
+		// Prepare a series of boxecules for rendering, culling every item outside the main
+		// camera's view frustum in the process
+		void Prepare(Boxecule** boxeculeSet, Camera* mainCamera);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);

@@ -26,12 +26,6 @@ Graphics::~Graphics()
 {
 	delete d3D;
 	d3D = nullptr;
-
-	delete renderManagerPttr;
-	renderManagerPttr = nullptr;
-
-	delete camera;
-	camera = nullptr;
 }
 
 void Graphics::Frame()
@@ -61,7 +55,7 @@ void Graphics::Frame()
 	}
 
 	// Rotate the camera with mouse input
-	camera->MouseLook(localInput);
+	//camera->MouseLook(localInput);
 
 	// Update the camera's view matrix to
 	// reflect the translation + rotation above
@@ -73,7 +67,7 @@ void Graphics::Frame()
 
 	// Pass the boxecules currently in the scene along to the
 	// render manager
-	renderManagerPttr->Prepare(sceneManagerPttr->GetSceneBoxecules());
+	renderManagerPttr->Prepare(sceneManagerPttr->GetSceneBoxecules(), camera);
 
 	// Record the time at this frame so we can calculate
 	// [deltaTime]

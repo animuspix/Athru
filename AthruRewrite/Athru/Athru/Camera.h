@@ -18,13 +18,27 @@ class Camera
 		DirectX::XMMATRIX GetViewMatrix();
 
 		void MouseLook(Input* inputPttr);
+		
+		// Simple frustum collision check, used to evaluate whether
+		// or not the given [Boxecule] contains points within the
+		// viewing frustum
+		bool IsIntersecting(Boxecule* item);
+
+		void* operator new(size_t size);
+		void operator delete(void* target);
 
 	private:
 		DirectX::XMVECTOR position;
 		DirectX::XMVECTOR rotationQuaternion;
 		DirectX::XMFLOAT3 rotationEuler;
 		DirectX::XMMATRIX viewMatrix;
-		// Frustum data here...
+		
+		// The near and far planes of the camera frustum
+		DirectX::XMVECTOR farPlanePos;
+		DirectX::XMVECTOR farPlaneNormal;
+
+		DirectX::XMVECTOR nearPlanePos;
+		DirectX::XMVECTOR nearPlaneNormal;
 
 		// The mouse position (smoothed) captured last time
 		// MouseLook(...) was called

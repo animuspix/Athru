@@ -57,7 +57,7 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 	renderQueueLength = 0;
 }
 
-void RenderManager::Prepare(Boxecule** boxeculeSet)
+void RenderManager::Prepare(Boxecule** boxeculeSet, Camera* mainCamera)
 {
 	for (fourByteUnsigned i = 0; i < ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(); i += 1)
 	{
@@ -68,9 +68,6 @@ void RenderManager::Prepare(Boxecule** boxeculeSet)
 		//	renderQueue[i] = boxeculeSet[i];
 		//	renderQueueLength += 1;
 		//}
-
-		renderQueue[i] = boxeculeSet[i];
-		renderQueueLength += 1;
 	}
 }
 

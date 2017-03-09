@@ -1,4 +1,5 @@
 #include "Chunk.h"
+#include "MathIncludes.h"
 #include "Boxecule.h"
 
 Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
@@ -10,14 +11,18 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 	for (eightByteUnsigned i = 0; i < CHUNK_VOLUME; i += 1)
 	{
 		chunkBoxecules[i] = new Boxecule(0.7f, 0.5f, 0.5f, 0.8f);
-		DirectX::XMVECTOR boxeculePos = _mm_set_ps(i % CHUNK_WIDTH + offsetFromHomeX, i % CHUNK_WIDTH, (eightByteUnsigned)(i / CHUNK_WIDTH) + offsetFromHomeZ, 1);
-		DirectX::XMVECTOR boxeculeRot = _mm_set_ps(0, 0, 0, 0);
+		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)i / (float)CHUNK_WIDTH) + offsetFromHomeZ, i % CHUNK_WIDTH, i % CHUNK_WIDTH + offsetFromHomeX);
+		DirectX::XMVECTOR boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 		chunkBoxecules[i]->FetchTransformations() = SQT(boxeculeRot, boxeculePos, 1);
  	}
 }
 
 Chunk::~Chunk()
 {
+	for (eightByteUnsigned i = 0; i < CHUNK_VOLUME; i += 1)
+	{
+		chunkBoxecules[i]->~Boxecule();
+	}
 }
 
 void Chunk::Update(DirectX::XMVECTOR playerPosition)
