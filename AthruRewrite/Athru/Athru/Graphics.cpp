@@ -1,6 +1,7 @@
 #include <intrin.h>
 #include "MathIncludes.h"
 #include "ServiceCentre.h"
+#include "Camera.h"
 #include "Graphics.h"
 
 Graphics::Graphics(HWND windowHandle, Logger* logger)

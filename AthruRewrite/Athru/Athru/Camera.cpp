@@ -26,7 +26,7 @@ Camera::Camera()
 	// Translate the rotated camera position to the location of the viewer
 	lookAt = _mm_add_ps(position, lookAt);
 
-	// Finally create the view matrix with [position], [lookAt], and [localUp]
+	// Create the view matrix with [position], [lookAt], and [localUp]
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
 	// Initialise the "last" mouse position to zero since the mouse won't have
@@ -34,21 +34,11 @@ Camera::Camera()
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
 
-	// Initialise the position of the near plane
-	nearPlanePos = _mm_set_ps(0, SCREEN_NEAR, 0, 0);
-
-	// Initialise the normal of the near plane
-
-	nearPlaneNormal = _mm_set_ps(0, SCREEN_NEAR, -1, 0);
-
-	// Initialise the position of the far plane
-	farPlanePos = _mm_set_ps(0, SCREEN_DEPTH, 0, 0);
-	
-	// Initialise the normal of the far plane
-	farPlaneNormal = _mm_set_ps();
-
 	// Initialise the speed modifier for mouse-look
 	speed = 0.1f;
+
+	// Create the camera frustum
+	frustum = Frustum();
 }
 
 
@@ -130,17 +120,17 @@ bool Camera::IsIntersecting(Boxecule* item)
 {
 	// Cache the position
 	DirectX::XMVECTOR itemPos = item->FetchTransformations().pos;
-	
+
 	// Create a series of offsets to represent the per-axis displacements of
 	// each vertex from the boxecule origin ([itemPos])
 	DirectX::XMVECTOR upperOffset = _mm_set_ps(0, 0, 0.5f, 0);
 	DirectX::XMVECTOR leftUpperOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, -0.5f), upperOffset);
 	DirectX::XMVECTOR rightUpperOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, 0.5f), upperOffset);
-	
+
 	DirectX::XMVECTOR lowerOffset = _mm_set_ps(0, 0, -0.5f, 0);
 	DirectX::XMVECTOR leftLowerOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, -0.5f), lowerOffset);
 	DirectX::XMVECTOR rightLowerOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, 0.5f), lowerOffset);
-	
+
 	DirectX::XMVECTOR frontOffset = _mm_set_ps(0, -0.5f, 0, 0);
 	DirectX::XMVECTOR backOffset = _mm_set_ps(0, -0.5f, 0, 0);
 
@@ -154,43 +144,22 @@ bool Camera::IsIntersecting(Boxecule* item)
 	DirectX::XMVECTOR itemVert6 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftUpperOffset);
 	DirectX::XMVECTOR itemVert7 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftLowerOffset);
 
-	// Update the position of the near plane
-	nearPlanePos = _mm_set_ps(0, SCREEN_NEAR, 0, 0);
+	// Update the frustum
+	frustum.Update(position, rotationQuaternion);
 
-	// Update the position of the far plane
+	// Check if any of the item vertices intersect with the frustum
+	bool intersection = frustum.CheckIntersection(itemVert0, itemVert1, itemVert2, itemVert3,
+												  itemVert4, itemVert5, itemVert6, itemVert7);
 
-	// Update the normal of the near plane
-
-	// Update the normal of the far plane
-
-	// Generate the upper plane
-
-	// Generate the left plane
-
-	// Generate the right plane
-
-	// Generate the lower plane
-
-	// Check intersection against the near plane
-
-	// Check intersection against the far plane
-
-	// Check intersection against the upper plane
-
-	// Check intersection against the left plane
-
-	// Check intersection against the right plane
-
-	// Check intersection against the lower plane
-
-	return false;
+	// Return whether or not an intersection was detected
+	return intersection;
 }
 
 // Push constructions for this class through Athru's custom allocator
 void* Camera::operator new(size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Camera>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Direct3D.h"
-#include "Camera.h"
 
 #define FULL_SCREEN false
 #define VSYNC_ENABLED true
@@ -12,6 +11,7 @@
 
 class RenderManager;
 class SceneManager;
+class Camera;
 class Graphics
 {
 	public:
@@ -39,7 +39,7 @@ class Graphics
 		Camera* camera;
 
 		// The below don't /have/ to go in here, and prob's shouldn't;
-		// they're in this class because that's where the "game loop"
+		// they're in this class because that's where the game loop
 		// is atm :P
 
 		// Pointer to the render manager

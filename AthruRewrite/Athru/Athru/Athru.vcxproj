@@ -162,6 +162,7 @@
     <ClCompile Include="CookTorranceLighting.cpp" />
     <ClCompile Include="DeferredRenderer.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
+    <ClCompile Include="Frustum.cpp" />
     <ClCompile Include="Planet.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="RenderManager.cpp" />
@@ -186,6 +187,8 @@
     <ClInclude Include="CookTorranceLighting.h" />
     <ClInclude Include="DeferredRenderer.h" />
     <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="Frustum.h" />
+    <ClInclude Include="Plane.h" />
     <ClInclude Include="Planet.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="RenderManager.h" />

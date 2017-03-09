@@ -1,3 +1,4 @@
 ﻿  Chunk.cpp
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\chunk.cpp(14): warning C4244: 'argument': conversion from 'eightByteUnsigned' to 'float', possible loss of data
-  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+c:\users\pefer\documents\github\athru\athrurewrite\athru\athru\chunk.cpp(15): warning C4244: 'argument': conversion from 'eightByteUnsigned' to 'float', possible loss of data
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)

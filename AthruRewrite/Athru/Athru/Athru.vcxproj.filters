@@ -87,6 +87,9 @@
     <ClCompile Include="StarSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Frustum.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Graphics.h">
@@ -174,6 +177,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="StarSystem.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Frustum.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Plane.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

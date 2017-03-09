@@ -8,18 +8,18 @@ struct SQT
 			pos(_mm_set_ps(1, 0, 0, 0)),
 			uniformScale(_mm_set_ps(1, 1, 1, 1)) {}
 
-	SQT(DirectX::XMVECTOR baseRotationQuaternion, 
-		DirectX::XMVECTOR basePos, 
-		float baseScale) : 
-		rotationQuaternion(baseRotationQuaternion), 
-		pos(basePos), 
+	SQT(DirectX::XMVECTOR baseRotationQuaternion,
+		DirectX::XMVECTOR basePos,
+		float baseScale) :
+		rotationQuaternion(baseRotationQuaternion),
+		pos(basePos),
 		uniformScale(_mm_set_ps(1, baseScale, baseScale, baseScale)) {}
 
 	DirectX::XMMATRIX asMatrix()
 	{
-		return DirectX::XMMatrixAffineTransformation(uniformScale, 
-													 _mm_set_ps(0, 0, 0, 0), 
-													 rotationQuaternion, 
+		return DirectX::XMMatrixAffineTransformation(uniformScale,
+													 _mm_set_ps(0, 0, 0, 0),
+													 rotationQuaternion,
 													 pos);
 	}
 

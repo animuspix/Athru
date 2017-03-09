@@ -1,6 +1,8 @@
 #pragma once
 
 #include <directxmath.h>
+#include "Graphics.h"
+#include "Frustum.h"
 
 class Camera
 {
@@ -18,27 +20,26 @@ class Camera
 		DirectX::XMMATRIX GetViewMatrix();
 
 		void MouseLook(Input* inputPttr);
-		
+
 		// Simple frustum collision check, used to evaluate whether
 		// or not the given [Boxecule] contains points within the
 		// viewing frustum
 		bool IsIntersecting(Boxecule* item);
 
+		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
+		// Camera position, rotation (as a quaternion), rotation
+		// (in Euler angles), and view-space projection (view matrix)
 		DirectX::XMVECTOR position;
 		DirectX::XMVECTOR rotationQuaternion;
 		DirectX::XMFLOAT3 rotationEuler;
 		DirectX::XMMATRIX viewMatrix;
-		
-		// The near and far planes of the camera frustum
-		DirectX::XMVECTOR farPlanePos;
-		DirectX::XMVECTOR farPlaneNormal;
 
-		DirectX::XMVECTOR nearPlanePos;
-		DirectX::XMVECTOR nearPlaneNormal;
+		// The camera frustum
+		Frustum frustum;
 
 		// The mouse position (smoothed) captured last time
 		// MouseLook(...) was called

@@ -14,6 +14,7 @@ enum class AVAILABLE_SHADERS
 	NULL_SHADER
 };
 
+class Camera;
 class Boxecule;
 class RenderManager
 {
