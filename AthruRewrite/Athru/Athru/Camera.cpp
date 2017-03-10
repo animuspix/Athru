@@ -5,7 +5,7 @@
 Camera::Camera()
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, -4.5f, 0, 0);
+	position = _mm_set_ps(0, -4.5f, 1, 0);
 
 	// Set the camera's default rotation
 	rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
@@ -35,7 +35,7 @@ Camera::Camera()
 	lastMousePos.y = 0;
 
 	// Initialise the speed modifier for mouse-look
-	speed = 0.1f;
+	speed = 0.4f;
 
 	// Create the camera frustum
 	frustum = Frustum();

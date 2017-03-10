@@ -1,14 +1,13 @@
 #include <intrin.h>
-#include "MathIncludes.h"
 #include "ServiceCentre.h"
 #include "Camera.h"
 #include "Graphics.h"
 
-Graphics::Graphics(HWND windowHandle, Logger* logger)
+Graphics::Graphics(HWND windowHandle)
 {
 	// Eww, eww, eww
 	// Ask Adam about ways to refactor my memory manager so I can avoid this sort of thing
-	d3D = DEBUG_NEW Direct3D(DISPLAY_WIDTH, DISPLAY_HEIGHT, VSYNC_ENABLED, windowHandle, FULL_SCREEN, SCREEN_DEPTH, SCREEN_NEAR);
+	d3D = DEBUG_NEW Direct3D(windowHandle);
 
 	// Create the camera object
 	camera = new Camera();
@@ -56,7 +55,7 @@ void Graphics::Frame()
 	}
 
 	// Rotate the camera with mouse input
-	//camera->MouseLook(localInput);
+	camera->MouseLook(localInput);
 
 	// Update the camera's view matrix to
 	// reflect the translation + rotation above

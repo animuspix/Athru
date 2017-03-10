@@ -193,14 +193,14 @@ DirectX::XMMATRIX Boxecule::GetTransform()
 void* Boxecule::operator new(size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Boxecule>(), false);
 }
 
 // Push constructions for this class through Athru's custom allocator
 void* Boxecule::operator new[](size_t size)
 {
 	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Boxecule>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

@@ -1,8 +1,10 @@
+#include "Graphics.h"
 #include "Frustum.h"
 
 Frustum::Frustum()
 {
-
+	float tanHalfFOV = tan(FIELD_OF_VIEW_RADS / 2);
+	frustumPlanes[(byteSigned)(PLANE_TYPES::NEAR_PLANE)].cornerPos = DirectX::XMVECTOR();
 }
 
 Frustum::~Frustum()

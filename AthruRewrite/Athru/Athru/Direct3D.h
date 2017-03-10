@@ -13,8 +13,7 @@
 class Direct3D
 {
 	public:
-		Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
-				 float screenFullDepth, float screenNearDepth);
+		Direct3D(HWND hwnd);
 		~Direct3D();
 
 		// Begin a draw session (wipe the screen and clear the depth buffer)

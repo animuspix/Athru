@@ -1,13 +1,15 @@
 #pragma once
 
 #include "Direct3D.h"
+#include "MathIncludes.h"
 
 #define FULL_SCREEN false
 #define VSYNC_ENABLED true
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT 768
-#define SCREEN_DEPTH 1000.0f
+#define SCREEN_FAR 1000.0f
 #define SCREEN_NEAR 0.1f
+#define FIELD_OF_VIEW_RADS PI / 4
 
 class RenderManager;
 class SceneManager;
@@ -15,7 +17,7 @@ class Camera;
 class Graphics
 {
 	public:
-		Graphics(HWND hwnd, Logger* logger);
+		Graphics(HWND hwnd);
 		// Initialiser, needed to avoid a dependency loop between
 		// [this] and RenderManager (required in the main game loop,
 		// but dependant on [this])

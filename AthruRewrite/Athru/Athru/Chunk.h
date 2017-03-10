@@ -3,7 +3,7 @@
 #include <directxmath.h>
 #include "Typedefs.h"
 
-#define CHUNK_WIDTH 35
+#define CHUNK_WIDTH 10
 #define CHUNK_VOLUME CHUNK_WIDTH * CHUNK_WIDTH * CHUNK_WIDTH
 
 class Boxecule;
@@ -16,6 +16,9 @@ class Chunk
 
 		void Update(DirectX::XMVECTOR playerPosition);
 		Boxecule** GetChunkBoxecules();
+
+		void* operator new(size_t size);
+		void operator delete(void * target);
 
 	private:
 		// Raw array of boxecules within this chunk

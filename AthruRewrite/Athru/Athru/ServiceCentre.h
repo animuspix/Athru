@@ -34,7 +34,7 @@ class ServiceCentre
 
 			// Attempt to create and register the primary graphics
 			// service
-			graphicsPttr = new Graphics(appPttr->GetHWND(), loggerPttr);
+			graphicsPttr = new Graphics(appPttr->GetHWND());
 
 			// Attempt to create and register the render manager
 			Direct3D* d3DPttr = graphicsPttr->GetD3D();

@@ -31,7 +31,7 @@ class SceneManager
 		// [0, 1, 2]
 		// [3, 4P, 5]
 		// [6, 7, 8]
-		Chunk nearChunks[9];
+		Chunk* nearChunks[9];
 
 		// HUGE pointer containing sub-pointers to all the boxecules that will
 		// ever exist in the scene at once

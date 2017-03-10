@@ -1,19 +1,16 @@
 #include <assert.h>
 #include "MathIncludes.h"
 #include "typedefs.h"
+#include "Graphics.h"
 #include "Direct3D.h"
 
-Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, bool vsyncActive, HWND hwnd, bool isFullscreen,
-				   float screenFarDepth, float screenNearDepth)
+Direct3D::Direct3D(HWND hwnd)
 {
 	// Long integer used to store success/failure for different DirectX operations
 	HRESULT result;
 
 	// Struct containing a description of the swap chain
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
-
-	// Cache whether vsync is active/inactive
-	vsyncEnabled = vsyncActive;
 
 	// Set up the swap chain description
 
@@ -27,8 +24,8 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	swapChainDesc.BufferCount = 1;
 
 	// Set the width and height of the back buffer
-	swapChainDesc.BufferDesc.Width = screenWidth;
-	swapChainDesc.BufferDesc.Height = screenHeight;
+	swapChainDesc.BufferDesc.Width = DISPLAY_WIDTH;
+	swapChainDesc.BufferDesc.Height = DISPLAY_HEIGHT;
 
 	// Set regular 32-bit surface for the back buffer
 	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -44,7 +41,7 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	swapChainDesc.SampleDesc.Quality = 0;
 
 	// Set fullscreen/windowed mode
-	swapChainDesc.Windowed = !isFullscreen;
+	swapChainDesc.Windowed = !FULL_SCREEN;
 
 	// Allow the rasterizer to decide the most appropriate scan-line ordering and scaling
 	// mode
@@ -57,7 +54,7 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	// Don't set any extra swap chain settings
 	swapChainDesc.Flags = 0;
 
-	if (vsyncEnabled)
+	if (VSYNC_ENABLED)
 	{
 		// Figure out the monitor refresh rate so we can implement vsync
 
@@ -93,7 +90,7 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 		// cache the numerator/denominator of the refresh rate for the selected mode
 		for (fourByteUnsigned i = 0; i < numModes; i += 1)
 		{
-			if (displayModes[i].Width == screenWidth && displayModes[i].Height == screenHeight)
+			if (displayModes[i].Width == DISPLAY_WIDTH && displayModes[i].Height == DISPLAY_HEIGHT)
 			{
 				numerator = displayModes[i].RefreshRate.Numerator;
 				denominator = displayModes[i].RefreshRate.Denominator;
@@ -157,8 +154,8 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));
 
 	// Set up the depth buffer description
-	depthBufferDesc.Width = screenWidth;
-	depthBufferDesc.Height = screenHeight;
+	depthBufferDesc.Width = DISPLAY_WIDTH;
+	depthBufferDesc.Height = DISPLAY_WIDTH;
 	depthBufferDesc.MipLevels = 1;
 	depthBufferDesc.ArraySize = 1;
 	depthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -180,7 +177,7 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 
 	// Set up the stencil state description
 	depthStencilDesc.DepthEnable = true;
-	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
 	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
 	depthStencilDesc.StencilEnable = true;
 	depthStencilDesc.StencilReadMask = 0xFF;
@@ -268,8 +265,8 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	D3D11_VIEWPORT viewport;
 
 	// Setup the viewport for rendering
-	viewport.Width = (float)screenWidth;
-	viewport.Height = (float)screenHeight;
+	viewport.Width = (float)DISPLAY_WIDTH;
+	viewport.Height = (float)DISPLAY_WIDTH;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0.0f;
@@ -279,13 +276,13 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	deviceContext->RSSetViewports(1, &viewport);
 
 	// Set the field of view
-	float fieldOfView = PI / 4;
+	float fieldOfView = FIELD_OF_VIEW_RADS;
 
 	// Cache the application aspect ratio
-	float screenAspect = (float)screenWidth / (float)screenHeight;
+	float screenAspect = (float)DISPLAY_WIDTH / (float)DISPLAY_WIDTH;
 
 	// Create the perspective projection matrix
-	perspProjector = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, screenNearDepth, screenFarDepth);
+	perspProjector = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_FAR);
 
 	// Create world matrix (initialized to the 4D identity matrix)
 	worldMatrix = DirectX::XMMatrixIdentity();
@@ -301,8 +298,8 @@ Direct3D::Direct3D(fourByteUnsigned screenWidth, fourByteUnsigned screenHeight, 
 	float topMinusBottom = top - bottom;
 	float topPlusBottom = top + bottom;
 
-	float screenFarMinusScreenNear = screenFarDepth - screenNearDepth;
-	float screenFarPlusScreenNear = screenFarDepth - screenNearDepth;
+	float screenFarMinusScreenNear = SCREEN_FAR - SCREEN_NEAR;
+	float screenFarPlusScreenNear = SCREEN_FAR + SCREEN_NEAR;
 
 	float orthoXScale = 2 / rightMinusLeft;
 	float orthoYScale = 2 / topMinusBottom;
