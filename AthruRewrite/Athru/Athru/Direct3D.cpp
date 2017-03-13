@@ -7,7 +7,7 @@
 Direct3D::Direct3D(HWND hwnd)
 {
 	// Long integer used to store success/failure for different DirectX operations
-	HRESULT result;
+	eightByteUnsigned result;
 
 	// Struct containing a description of the swap chain
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
@@ -57,65 +57,12 @@ Direct3D::Direct3D(HWND hwnd)
 	if (VSYNC_ENABLED)
 	{
 		// Figure out the monitor refresh rate so we can implement vsync
-
-		// Create DirectX graphics interface factory
-		IDXGIFactory* factory;
-		CreateDXGIFactory(__uuidof(IDXGIFactory), (void**)&factory);
-
-		// Use the factory to create an adapter for the primary graphics interface (video card)
-		IDXGIAdapter* adapter;
-		result = factory->EnumAdapters(0, &adapter);
-
-		// Enumerate the available monitors
-		IDXGIOutput* adapterOutput;
-		result = adapter->EnumOutputs(0, &adapterOutput);
-
-		// Generate + store a description of the video card
-		adapterInfo = DXGI_ADAPTER_DESC();
-
-		// Create an array to hold all the possible display modes for this monitor/video card combination
-		DXGI_MODE_DESC displayModes[4095];
-
-		// The number of possible display modes
-		fourByteUnsigned numModes;
-
-		// The numerator/denominator of the refresh rate
-		fourByteUnsigned numerator;
-		fourByteUnsigned denominator;
-
-		// Ask the adapter for a collection of possible display modes
-		result = adapterOutput->GetDisplayModeList(DXGI_FORMAT_R8G8B8A8_UNORM, DXGI_ENUM_MODES_INTERLACED, &numModes, displayModes);
-
-		// Traverse the set of display modes until one appears with the given screen width and height;
-		// cache the numerator/denominator of the refresh rate for the selected mode
-		for (fourByteUnsigned i = 0; i < numModes; i += 1)
-		{
-			if (displayModes[i].Width == DISPLAY_WIDTH && displayModes[i].Height == DISPLAY_HEIGHT)
-			{
-				numerator = displayModes[i].RefreshRate.Numerator;
-				denominator = displayModes[i].RefreshRate.Denominator;
-				break;
-			}
-		}
+		DEVMODE displayData = DEVMODE();
+		EnumDisplaySettings(NULL, ENUM_CURRENT_SETTINGS, &displayData);
 
 		// Set the back buffer to refresh at the same rate as the monitor (implement vsync)
-		swapChainDesc.BufferDesc.RefreshRate.Numerator = numerator;
-		swapChainDesc.BufferDesc.RefreshRate.Denominator = denominator;
-
-		// We got the monitor refresh rate, so there's no real reason to keep the DirectX graphics interface factory,
-		// video adapter, and video adapter output pointers around; we'll [release] them here
-
-		// Release the video adapter output
-		adapterOutput->Release();
-		adapterOutput = nullptr;
-
-		// Release the video adapter
-		adapter->Release();
-		adapter = nullptr;
-
-		// Release the DirectX graphics interface factory
-		factory->Release();
-		factory = nullptr;
+		swapChainDesc.BufferDesc.RefreshRate.Numerator = displayData.dmDisplayFrequency;
+		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
 	}
 
 	else
@@ -136,11 +83,16 @@ Direct3D::Direct3D(HWND hwnd)
 	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, &featureLevel, 1,
 										   D3D11_SDK_VERSION, &swapChainDesc, &swapChain, &device, NULL, &deviceContext);
 
+	assert(SUCCEEDED(result));
+
 	// Cache the address of the back buffer
 	ID3D11Texture2D* backBufferPtr;
 	result = swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferPtr);
 
-	// Create the render target view with the back buffer
+	// Create the render target view with the back buffer and verify that it isn't stored
+	// in [nullptr] (the program isn't allowed to de-reference null pointers, so the best
+	// way to stop that from happening is to stamp out )
+	assert(backBufferPtr != nullptr);
 	result = device->CreateRenderTargetView(backBufferPtr, NULL, &renderTargetView);
 
 	// No more need for a pointer to the back buffer, so release it
@@ -155,7 +107,7 @@ Direct3D::Direct3D(HWND hwnd)
 
 	// Set up the depth buffer description
 	depthBufferDesc.Width = DISPLAY_WIDTH;
-	depthBufferDesc.Height = DISPLAY_WIDTH;
+	depthBufferDesc.Height = DISPLAY_HEIGHT;
 	depthBufferDesc.MipLevels = 1;
 	depthBufferDesc.ArraySize = 1;
 	depthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -168,6 +120,7 @@ Direct3D::Direct3D(HWND hwnd)
 
 	// Generate the depth buffer texture using the depth buffer description
 	result = device->CreateTexture2D(&depthBufferDesc, NULL, &depthStencilBuffer);
+	assert(SUCCEEDED(result));
 
 	// Struct containing a description of the depth stencil
 	D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
@@ -197,6 +150,7 @@ Direct3D::Direct3D(HWND hwnd)
 
 	// Instantiate the depth stencil state within [depthStencilState]
 	result = device->CreateDepthStencilState(&depthStencilDesc, &depthStencilState);
+	assert(SUCCEEDED(result));
 
 	// Match the internal depth stencil state to the depth stencil state
 	// instantiated above
@@ -213,8 +167,11 @@ Direct3D::Direct3D(HWND hwnd)
 	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
 	depthStencilViewDesc.Texture2D.MipSlice = 0;
 
-	// Instantiate the depth stencil view
+	// Instantiate the depth stencil view and verify that [depthStencilBuffer]
+	// is not at [nullptr] (since de-referencing null-pointers usually breaks everything)
+	assert(depthStencilBuffer != nullptr);
 	result = device->CreateDepthStencilView(depthStencilBuffer, &depthStencilViewDesc, &depthStencilView);
+	assert(SUCCEEDED(result));
 
 	// Send the render target view and depth stencil buffer into the output render pipeline
 	deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
@@ -223,7 +180,7 @@ Direct3D::Direct3D(HWND hwnd)
 	D3D11_RASTERIZER_DESC rasterDesc;
 
 	// Setup the raster description
-	rasterDesc.AntialiasedLineEnable = false;
+	rasterDesc.AntialiasedLineEnable = true;
 	rasterDesc.CullMode = D3D11_CULL_BACK;
 	rasterDesc.DepthBias = 0;
 	rasterDesc.DepthBiasClamp = 0.0f;
@@ -237,6 +194,7 @@ Direct3D::Direct3D(HWND hwnd)
 	// Instantiate the rasterizer state from the raster description
 	// and store it within [rasterState]
 	result = device->CreateRasterizerState(&rasterDesc, &rasterState);
+	assert(SUCCEEDED(result));
 
 	// Match the internal rasterizer state to the rasterizer state instantiated
 	// above
@@ -266,7 +224,7 @@ Direct3D::Direct3D(HWND hwnd)
 
 	// Setup the viewport for rendering
 	viewport.Width = (float)DISPLAY_WIDTH;
-	viewport.Height = (float)DISPLAY_WIDTH;
+	viewport.Height = (float)DISPLAY_HEIGHT;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0.0f;
@@ -275,14 +233,8 @@ Direct3D::Direct3D(HWND hwnd)
 	// Instantiate the viewport within [viewport]
 	deviceContext->RSSetViewports(1, &viewport);
 
-	// Set the field of view
-	float fieldOfView = FIELD_OF_VIEW_RADS;
-
-	// Cache the application aspect ratio
-	float screenAspect = (float)DISPLAY_WIDTH / (float)DISPLAY_WIDTH;
-
 	// Create the perspective projection matrix
-	perspProjector = DirectX::XMMatrixPerspectiveFovLH(fieldOfView, screenAspect, SCREEN_NEAR, SCREEN_FAR);
+	perspProjector = DirectX::XMMatrixPerspectiveFovLH(VERT_FIELD_OF_VIEW_RADS, DISPLAY_ASPECT_RATIO, SCREEN_NEAR, SCREEN_FAR);
 
 	// Create world matrix (initialized to the 4D identity matrix)
 	worldMatrix = DirectX::XMMatrixIdentity();

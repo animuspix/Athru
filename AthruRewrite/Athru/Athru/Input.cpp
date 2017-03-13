@@ -48,9 +48,9 @@ void Input::CacheMousePos(float mouseX, float mouseY)
 	// Move the last-used mouse position into the array of past positions,
 	// then mark it's age as [0] since it's only just been cached
 	bool freshCountsExist = mouseInfo.freshlyStoredPosCount != 0;
-	mouseInfo.pastPositions[mouseInfo.freshlyStoredPosCount - freshCountsExist].posRaw.x = mouseInfo.mousePos.x;
-	mouseInfo.pastPositions[mouseInfo.freshlyStoredPosCount - freshCountsExist].posRaw.y = mouseInfo.mousePos.y;
-	mouseInfo.pastPositions[mouseInfo.freshlyStoredPosCount - freshCountsExist].age = 0;
+	mouseInfo.pastPositions[mouseInfo.freshlyStoredPosCount - (byteUnsigned)freshCountsExist].posRaw.x = mouseInfo.mousePos.x;
+	mouseInfo.pastPositions[mouseInfo.freshlyStoredPosCount - (byteUnsigned)freshCountsExist].posRaw.y = mouseInfo.mousePos.y;
+	mouseInfo.pastPositions[mouseInfo.freshlyStoredPosCount - (byteUnsigned)freshCountsExist].age = 0;
 	mouseInfo.freshlyStoredPosCount += 1;
 	mouseInfo.freshlyStoredPosCount *= mouseInfo.freshlyStoredPosCount != 11;
 

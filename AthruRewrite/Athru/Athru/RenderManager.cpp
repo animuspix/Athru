@@ -63,17 +63,14 @@ void RenderManager::Prepare(Boxecule** boxeculeSet, Camera* mainCamera)
 	for (fourByteUnsigned i = 0; i < ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(); i += 1)
 	{
 		// Frustum culling here
-		//if (mainCamera->IsIntersecting(boxeculeSet[i]) &&
-		//	(boxeculeSet[i]->GetMaterial().GetColorData()[3] != 0))
-		//{
-		//	// If the item is inside the view frustum and not 100% transparent,
-		//	// add it to the render queue :D
-		//	renderQueue[i] = boxeculeSet[i];
-		//	renderQueueLength += 1;
-		//}
-
-		renderQueue[i] = boxeculeSet[i];
-		renderQueueLength += 1;
+		if (mainCamera->IsIntersecting(boxeculeSet[i]) &&
+			(boxeculeSet[i]->GetMaterial().GetColorData()[3] != 0))
+		{
+			// If the item is inside the view frustum and not 100% transparent,
+			// add it to the render queue :D
+			renderQueue[i] = boxeculeSet[i];
+			renderQueueLength += 1;
+		}
 	}
 }
 

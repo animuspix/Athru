@@ -1,4 +1,8 @@
-﻿  StackAllocator.cpp
+﻿  Application.cpp
+  Running Code Analysis for C/C++...
+  Generating Code...
+  Compiling...
+  StackAllocator.cpp
   ServiceCentre.cpp
   SceneManager.cpp
   RenderManager.cpp
@@ -7,12 +11,10 @@
   Graphics.cpp
   Direct3D.cpp
   Chunk.cpp
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\chunk.cpp(17): warning C4244: 'argument': conversion from 'eightByteSigned' to 'float', possible loss of data
   Camera.cpp
   Boxecule.cpp
   Athru.cpp
+  Running Code Analysis for C/C++...
   Generating Code...
-  Compiling...
-  Application.cpp
-  Generating Code...
-  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)

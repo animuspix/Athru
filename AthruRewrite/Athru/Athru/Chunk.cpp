@@ -14,7 +14,11 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 	for (eightByteSigned i = 0; i < CHUNK_VOLUME; i += 1)
 	{
 		chunkBoxecules[i] = new Boxecule(0.7f, 0.5f, 0.5f, 0.8f);
-		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((i / CHUNK_WIDTH) % CHUNK_WIDTH) + offsetFromHomeZ, i % CHUNK_WIDTH, i / (CHUNK_WIDTH * CHUNK_WIDTH) + offsetFromHomeX);
+
+		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / CHUNK_WIDTH) % CHUNK_WIDTH)) + offsetFromHomeZ,
+												       (float)(i % CHUNK_WIDTH),
+													   (float)(i / (CHUNK_WIDTH * CHUNK_WIDTH)) + offsetFromHomeX);
+
 		DirectX::XMVECTOR boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 		chunkBoxecules[i]->FetchTransformations() = SQT(boxeculeRot, boxeculePos, 1);
  	}

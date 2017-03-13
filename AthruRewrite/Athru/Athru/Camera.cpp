@@ -5,7 +5,7 @@
 Camera::Camera()
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, -4.5f, 1, 0);
+	position = _mm_set_ps(0, -4.5f, 0, 0);
 
 	// Set the camera's default rotation
 	rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
@@ -30,17 +30,16 @@ Camera::Camera()
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
 	// Initialise the "last" mouse position to zero since the mouse won't have
-	// moved before the main Camera instance is constructed :P
+	// moved before the main [Camera] instance is constructed :P
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
 
 	// Initialise the speed modifier for mouse-look
 	speed = 0.4f;
 
-	// Create the camera frustum
-	frustum = Frustum();
+	// Initialise the camera frustum
+	frustum = Frustum(position, rotationQuaternion);
 }
-
 
 Camera::~Camera()
 {
@@ -49,8 +48,12 @@ Camera::~Camera()
 
 void Camera::Translate(DirectX::XMVECTOR displacement)
 {
+	// Translate the software camera
 	DirectX::XMVECTOR positionCopy = position;
 	position = _mm_add_ps(positionCopy, displacement);
+
+	// Translate the camera frustum
+	frustum.Translate(displacement);
 }
 
 DirectX::XMVECTOR Camera::GetTranslation()
@@ -60,10 +63,14 @@ DirectX::XMVECTOR Camera::GetTranslation()
 
 void Camera::SetRotation(float eulerX, float eulerY, float eulerZ)
 {
+	// Rotate the software camera
 	rotationEuler.x = eulerX;
 	rotationEuler.y = eulerY;
 	rotationEuler.z = eulerZ;
 	rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(rotationEuler.x, rotationEuler.y, rotationEuler.z);
+
+	// Rotate the camera frustum
+	frustum.Rotate(rotationQuaternion);
 }
 
 DirectX::XMVECTOR Camera::GetRotation()
@@ -144,12 +151,12 @@ bool Camera::IsIntersecting(Boxecule* item)
 	DirectX::XMVECTOR itemVert6 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftUpperOffset);
 	DirectX::XMVECTOR itemVert7 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftLowerOffset);
 
-	// Update the frustum
-	frustum.Update(position, rotationQuaternion);
+	// Update the inner vectors for each frustum plane
+	frustum.UpdateInnerVectors();
 
 	// Check if any of the item vertices intersect with the frustum
 	bool intersection = frustum.CheckIntersection(itemVert0, itemVert1, itemVert2, itemVert3,
-												  itemVert4, itemVert5, itemVert6, itemVert7);
+												   itemVert4, itemVert5, itemVert6, itemVert7);
 
 	// Return whether or not an intersection was detected
 	return intersection;
@@ -162,7 +169,7 @@ void* Camera::operator new(size_t size)
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Camera>(), false);
 }
 
-// We aren't expecting to use [delete], so overload it to do nothing;
+// We aren't expecting to use [delete], so overload it to do nothing
 void Camera::operator delete(void* target)
 {
 	return;
