@@ -4,11 +4,11 @@
 #include "MathIncludes.h"
 
 #define FULL_SCREEN false
-#define VSYNC_ENABLED false
+#define VSYNC_ENABLED true
 #define DISPLAY_WIDTH 1024
 #define DISPLAY_HEIGHT 768
 #define DISPLAY_ASPECT_RATIO DISPLAY_WIDTH / DISPLAY_HEIGHT
-#define SCREEN_FAR 1000.0f
+#define SCREEN_FAR 10.0f
 #define SCREEN_NEAR 0.1f
 #define VERT_FIELD_OF_VIEW_RADS PI / 4
 

@@ -1,20 +1,19 @@
 ﻿  Application.cpp
   Running Code Analysis for C/C++...
   Generating Code...
-  Compiling...
+  Skipping... (no relevant changes detected)
+  StarSystem.cpp
   StackAllocator.cpp
   ServiceCentre.cpp
   SceneManager.cpp
   RenderManager.cpp
+  Planet.cpp
   Logger.cpp
   Input.cpp
   Graphics.cpp
-  Direct3D.cpp
   Chunk.cpp
   Camera.cpp
   Boxecule.cpp
   Athru.cpp
-  Running Code Analysis for C/C++...
-  Generating Code...
   Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
   Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)

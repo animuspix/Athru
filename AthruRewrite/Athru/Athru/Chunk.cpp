@@ -13,7 +13,13 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 
 	for (eightByteSigned i = 0; i < CHUNK_VOLUME; i += 1)
 	{
-		chunkBoxecules[i] = new Boxecule(0.7f, 0.5f, 0.5f, 0.8f);
+		chunkBoxecules[i] = new Boxecule(Material(Sound(),
+												  0.6f, 0.6f, 0.4f, 1.0f,
+												  AVAILABLE_SHADERS::RASTERIZER,
+												  AVAILABLE_SHADERS::NULL_SHADER,
+												  AVAILABLE_SHADERS::NULL_SHADER,
+												  AVAILABLE_SHADERS::NULL_SHADER,
+												  AVAILABLE_SHADERS::NULL_SHADER));
 
 		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / CHUNK_WIDTH) % CHUNK_WIDTH)) + offsetFromHomeZ,
 												       (float)(i % CHUNK_WIDTH),

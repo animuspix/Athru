@@ -60,6 +60,7 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 
 void RenderManager::Prepare(Boxecule** boxeculeSet, Camera* mainCamera)
 {
+	fourByteUnsigned unculledCounter = 0;
 	for (fourByteUnsigned i = 0; i < ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(); i += 1)
 	{
 		// Frustum culling here
@@ -68,8 +69,9 @@ void RenderManager::Prepare(Boxecule** boxeculeSet, Camera* mainCamera)
 		{
 			// If the item is inside the view frustum and not 100% transparent,
 			// add it to the render queue :D
-			renderQueue[i] = boxeculeSet[i];
+			renderQueue[unculledCounter] = boxeculeSet[i];
 			renderQueueLength += 1;
+			unculledCounter += 1;
 		}
 	}
 }

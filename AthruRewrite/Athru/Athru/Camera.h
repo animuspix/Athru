@@ -1,13 +1,12 @@
 #pragma once
 
 #include <directxmath.h>
-#include "Plane.h"
 #include "Graphics.h"
 
 class Camera
 {
 	public:
-		Camera();
+		Camera(DirectX::XMMATRIX& projectorMatrix);
 		~Camera();
 
 		void Translate(DirectX::XMVECTOR displacement);
@@ -16,7 +15,7 @@ class Camera
 		void SetRotation(float eulerX, float eulerY, float eulerZ);
 		DirectX::XMVECTOR GetRotation();
 
-		void RefreshViewMatrix();
+		void RefreshViewMatrix(DirectX::XMMATRIX& projectorMatrix);
 		DirectX::XMMATRIX GetViewMatrix();
 
 		void MouseLook(Input* inputPttr);
@@ -41,7 +40,7 @@ class Camera
 		// The mouse position (smoothed) captured last time
 		// MouseLook(...) was called
 		// Used to calculate mouse displacements that easily
-		// convert into incremental camera rotations applied
+		// conplane into incremental camera rotations applied
 		// by the MouseLook(...) function
 		DirectX::XMFLOAT2 lastMousePos;
 
@@ -52,189 +51,176 @@ class Camera
 		// Camera frustum properties + methods
 		class Frustum
 		{
-			public:
-				Frustum() {}
-				Frustum(DirectX::XMVECTOR cameraPos, DirectX::XMVECTOR quaternionRotation)
-				{
-					const float tanHalfFOV = tan(VERT_FIELD_OF_VIEW_RADS);
-					const float frustumHeightNear = (SCREEN_NEAR * tanHalfFOV) * 2;
-					const float frustumWidthNear = frustumHeightNear * DISPLAY_ASPECT_RATIO;
+		public:
+			Frustum() {}
 
-					const float frustumHeightFar = (SCREEN_FAR * tanHalfFOV) * 2;
-					const float frustumWidthFar = frustumWidthNear * DISPLAY_ASPECT_RATIO;
+			// Construct the initial frustum planes from a given frustum matrix
+			// (defined as the combination of the view matrix with a given
+			// projection matrix)
+			Frustum(DirectX::XMMATRIX frustumMatrix)
+			{
+				// Our plane-array exists on the stack and will have been safely
+				// initialised by default, but the planes themselves won't match
+				// up with the frustum defined by the combination of the view +
+				// projection matrices; to ensure they do, we need to "freshen"
+				// them by explicitly initialising each plane with values
+				// extracted from the "frustum matrix"
+				// (see: http://www.chadvernon.com/blog/resources/directx9/frustum-culling/
+				// for a description of the [view * projection] matrix (aka the "frustum matrix")
+				// and how it connects to the planes that actually make up the frustum)
+				FreshenPlanes(frustumMatrix);
+			}
 
-					// Initialise the near plane
-					DirectX::XMVECTOR pointOnNearPlane = _mm_set_ps(0, SCREEN_NEAR, 0, 0);
-					DirectX::XMVECTOR nearPlaneNormal = _mm_set_ps(0, 0, 1, 0);
-					BuildPlane(pointOnNearPlane, nearPlaneNormal, cameraPos, quaternionRotation, (byteSigned)(PLANE_TYPES::NEAR_PLANE));
+			// Update the frustum planes with a fresher frustum matrix
+			void Update(DirectX::XMMATRIX frustumMatrix)
+			{
+				FreshenPlanes(frustumMatrix);
+			}
 
-					// Initialise the far plane
-					DirectX::XMVECTOR pointOnFarPlane = _mm_set_ps(0, SCREEN_FAR, 0, 0);
-					DirectX::XMVECTOR farPlaneNormal = _mm_set_ps(0, 0, 1, 0);
-					BuildPlane(pointOnFarPlane, farPlaneNormal, cameraPos, quaternionRotation, (byteUnsigned)PLANE_TYPES::FAR_PLANE);
-
-					// Initialise the left plane
-					DirectX::XMVECTOR pointOnLeftPlane = _mm_set_ps(0, 0, 0, (frustumWidthNear / 2) * -1);
-					DirectX::XMVECTOR leftPlaneNormal = _mm_set_ps(0, SCREEN_NEAR, 0, (frustumWidthNear / 2) * -1);
-					BuildPlane(pointOnLeftPlane, leftPlaneNormal, cameraPos, quaternionRotation, (byteUnsigned)PLANE_TYPES::LEFT_PLANE);
-
-					// Initialise the right plane
-					DirectX::XMVECTOR pointOnRightPlane = _mm_set_ps(0, 0, 0, frustumWidthNear / 2);
-					DirectX::XMVECTOR rightPlaneNormal = _mm_set_ps(0, SCREEN_NEAR, 0, (frustumWidthNear / 2));
-					BuildPlane(pointOnLeftPlane, leftPlaneNormal, cameraPos, quaternionRotation, (byteUnsigned)PLANE_TYPES::RIGHT_PLANE);
-
-					// Initialise the upper plane
-					DirectX::XMVECTOR pointOnUpperPlane = _mm_set_ps(0, 0, frustumHeightNear / 2, 0);
-					DirectX::XMVECTOR upperPlaneNormal = _mm_set_ps(0, SCREEN_NEAR, 0, (frustumHeightNear / 2));
-					BuildPlane(pointOnLeftPlane, leftPlaneNormal, cameraPos, quaternionRotation, (byteUnsigned)PLANE_TYPES::UPPER_PLANE);
-
-					// Initialise the lower plane
-					DirectX::XMVECTOR pointOnLowerPlane = _mm_set_ps(0, 0, (frustumHeightNear / 2) * -1, 0);
-					DirectX::XMVECTOR lowerPlaneNormal = _mm_set_ps(0, SCREEN_NEAR, 0, (frustumHeightNear / 2) * -1);
-					BuildPlane(pointOnLeftPlane, leftPlaneNormal, cameraPos, quaternionRotation, (byteUnsigned)PLANE_TYPES::LOWER_PLANE);
-				}
-
-				void Translate(DirectX::XMVECTOR displacement)
-				{
-					frustumPlanes[0].Translate(displacement);
-					frustumPlanes[1].Translate(displacement);
-					frustumPlanes[2].Translate(displacement);
-					frustumPlanes[3].Translate(displacement);
-					frustumPlanes[4].Translate(displacement);
-					frustumPlanes[5].Translate(displacement);
-				}
-
-				void Rotate(DirectX::XMVECTOR rotationQuaternion)
-				{
-					frustumPlanes[0].Rotate(rotationQuaternion);
-					frustumPlanes[1].Rotate(rotationQuaternion);
-					frustumPlanes[2].Rotate(rotationQuaternion);
-					frustumPlanes[3].Rotate(rotationQuaternion);
-					frustumPlanes[4].Rotate(rotationQuaternion);
-					frustumPlanes[5].Rotate(rotationQuaternion);
-				}
-
-				void UpdateInnerVectors()
-				{
-					frustumPlanes[0].UpdateInnerVector();
-					frustumPlanes[1].UpdateInnerVector();
-					frustumPlanes[2].UpdateInnerVector();
-					frustumPlanes[3].UpdateInnerVector();
-					frustumPlanes[4].UpdateInnerVector();
-					frustumPlanes[5].UpdateInnerVector();
-				}
-
-				bool CheckIntersection(DirectX::XMVECTOR vert0, DirectX::XMVECTOR vert1,
-											  DirectX::XMVECTOR vert2, DirectX::XMVECTOR vert3,
-											  DirectX::XMVECTOR vert4, DirectX::XMVECTOR vert5,
-											  DirectX::XMVECTOR vert6, DirectX::XMVECTOR vert7)
-				{
-					// Copy vectors into class storage so they can be accessed from within [AnyPointBelow(..)]
-					// and [AnyPointAbove(...)]
-					tempVert0 = vert0;
-					tempVert1 = vert1;
-					tempVert2 = vert2;
-					tempVert3 = vert3;
-					tempVert4 = vert4;
-					tempVert5 = vert5;
-					tempVert6 = vert6;
-					tempVert7 = vert7;
-
-					bool vertIntersectionsNearPlane = AnyPointAbove((byteUnsigned)PLANE_TYPES::NEAR_PLANE);
-					bool vertIntersectionsFarPlane = AnyPointBelow((byteUnsigned)PLANE_TYPES::FAR_PLANE);
-
-					bool vertIntersectionsLeftPlane = AnyPointBelow((byteUnsigned)PLANE_TYPES::LEFT_PLANE);
-					bool vertIntersectionsRightPlane = AnyPointAbove((byteUnsigned)PLANE_TYPES::RIGHT_PLANE);
-
-					bool vertIntersectionsUpperPlane = AnyPointBelow((byteUnsigned)PLANE_TYPES::UPPER_PLANE);
-					bool vertIntersectionsLowerPlane = AnyPointAbove((byteUnsigned)PLANE_TYPES::LOWER_PLANE);
-
-					return vertIntersectionsNearPlane || vertIntersectionsFarPlane ||
-						   vertIntersectionsLeftPlane || vertIntersectionsRightPlane ||
-						   vertIntersectionsUpperPlane || vertIntersectionsLowerPlane;
-				}
+			// Check if any of the given points intersect with the camera frustum
+			bool CheckIntersection(DirectX::XMVECTOR vert0, DirectX::XMVECTOR vert1,
+								   DirectX::XMVECTOR vert2, DirectX::XMVECTOR vert3,
+								   DirectX::XMVECTOR vert4, DirectX::XMVECTOR vert5,
+								   DirectX::XMVECTOR vert6, DirectX::XMVECTOR vert7)
+			{
+				return PointIntersection(vert0) || PointIntersection(vert1) ||
+					   PointIntersection(vert2) || PointIntersection(vert3) ||
+					   PointIntersection(vert4) || PointIntersection(vert5) ||
+					   PointIntersection(vert6) || PointIntersection(vert7);
+			}
 
 			// Array containing the near, far, left, right, upper, and lower planes
 			// of the frustum
-			Plane frustumPlanes[6];
+			DirectX::XMVECTOR frustumPlanes[6];
 
 			private:
 				enum class PLANE_TYPES
 				{
-					NEAR_PLANE,
-					FAR_PLANE,
 					LEFT_PLANE,
 					RIGHT_PLANE,
 					UPPER_PLANE,
-					LOWER_PLANE
+					LOWER_PLANE,
+					NEAR_PLANE,
+					FAR_PLANE
 				};
 
-				// Helper function; used to setup each plane during initialisation
-				void BuildPlane(DirectX::XMVECTOR point, DirectX::XMVECTOR normal,
-									   DirectX::XMVECTOR pos, DirectX::XMVECTOR quaternionRotation,
-									   byteUnsigned planeIndex)
+				// Extract frustum planes from the "frustum matrix", a combination of the view and
+				// a given projection matrix
+				// Based on the algorithm used here:
+				// http://www.chadvernon.com/blog/resources/directx9/frustum-culling/
+				void FreshenPlanes(DirectX::XMMATRIX frustumMatrix)
 				{
-					point = _mm_add_ps(pos, point);
-					normal = DirectX::XMVector3Rotate(normal, quaternionRotation);
-					normal = DirectX::XMVector3Normalize(normal);
-					frustumPlanes[(byteSigned)(Frustum::PLANE_TYPES::FAR_PLANE)] = Plane(point, normal);
+					// Extract rows from the frustum matrix (calculated by multiplying
+					// the view matrix with a projection matrix)
+					DirectX::XMVECTOR* frustumCoords = frustumMatrix.r;
+
+					// Shuffle each component from each row into it's own vector so
+					// we can perform component-wise operations without leaving the SSE
+					// registers
+					DirectX::XMVECTOR frustumRow0XXXX = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow0YYYY = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow0ZZZZ = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow0WWWW = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(3, 3, 3, 3));
+
+					DirectX::XMVECTOR frustumRow1XXXX = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow1YYYY = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow1ZZZZ = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow1WWWW = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(3, 3, 3, 3));
+
+					DirectX::XMVECTOR frustumRow2XXXX = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow2YYYY = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow2ZZZZ = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow2WWWW = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(3, 3, 3, 3));
+
+					DirectX::XMVECTOR frustumRow3XXXX = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow3YYYY = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow3ZZZZ = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow3WWWW = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(3, 3, 3, 3));
+
+					// Generate each plane value from the components extracted above
+					DirectX::XMVECTOR frustumPlane0CoordZero = _mm_add_ps(frustumRow0WWWW, frustumRow0XXXX);
+					DirectX::XMVECTOR frustumPlane0CoordOne = _mm_add_ps(frustumRow1WWWW, frustumRow1XXXX);
+					DirectX::XMVECTOR frustumPlane0CoordTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2XXXX);
+					DirectX::XMVECTOR frustumPlane0CoordThree = _mm_add_ps(frustumRow3WWWW, frustumRow3XXXX);
+
+					DirectX::XMVECTOR frustumPlane1CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0XXXX);
+					DirectX::XMVECTOR frustumPlane1CoordOne = _mm_sub_ps(frustumRow2WWWW, frustumRow1XXXX);
+					DirectX::XMVECTOR frustumPlane1CoordTwo = _mm_sub_ps(frustumRow1WWWW, frustumRow2XXXX);
+					DirectX::XMVECTOR frustumPlane1CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3XXXX);
+
+					DirectX::XMVECTOR frustumPlane2CoordZero = _mm_add_ps(frustumRow0WWWW, frustumRow0YYYY);
+					DirectX::XMVECTOR frustumPlane2CoordOne = _mm_add_ps(frustumRow1WWWW, frustumRow1YYYY);
+					DirectX::XMVECTOR frustumPlane2CoordTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2YYYY);
+					DirectX::XMVECTOR frustumPlane2CoordThree = _mm_add_ps(frustumRow3WWWW, frustumRow3YYYY);
+
+					DirectX::XMVECTOR frustumPlane3CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0YYYY);
+					DirectX::XMVECTOR frustumPlane3CoordOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1YYYY);
+					DirectX::XMVECTOR frustumPlane3CoordTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2YYYY);
+					DirectX::XMVECTOR frustumPlane3CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3YYYY);
+
+					DirectX::XMVECTOR frustumPlane4CoordZero = frustumRow0ZZZZ;
+					DirectX::XMVECTOR frustumPlane4CoordOne = frustumRow1ZZZZ;
+					DirectX::XMVECTOR frustumPlane4CoordTwo = frustumRow2ZZZZ;
+					DirectX::XMVECTOR frustumPlane4CoordThree = frustumRow3ZZZZ;
+
+					DirectX::XMVECTOR frustumPlane5CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0ZZZZ);
+					DirectX::XMVECTOR frustumPlane5CoordOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1ZZZZ);
+					DirectX::XMVECTOR frustumPlane5CoordTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2ZZZZ);
+					DirectX::XMVECTOR frustumPlane5CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3ZZZZ);
+
+					// Blend the plane values from above into a set of six (one for each plane in the frustum)
+					// 4D vectors representing plane equations
+					frustumPlanes[0] = _mm_blend_ps(frustumPlane0CoordZero, frustumPlane0CoordOne, 0b0100);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0CoordTwo, 0b0010);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0CoordThree, 0b001);
+
+					frustumPlanes[1] = _mm_blend_ps(frustumPlane1CoordZero, frustumPlane1CoordOne, 0b0100);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1CoordTwo, 0b0010);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1CoordThree, 0b001);
+
+					frustumPlanes[2] = _mm_blend_ps(frustumPlane2CoordZero, frustumPlane2CoordOne, 0b0100);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2CoordTwo, 0b0010);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2CoordThree, 0b001);
+
+					frustumPlanes[3] = _mm_blend_ps(frustumPlane3CoordZero, frustumPlane3CoordOne, 0b0100);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3CoordTwo, 0b0010);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3CoordThree, 0b001);
+
+					frustumPlanes[4] = _mm_blend_ps(frustumPlane4CoordZero, frustumPlane4CoordOne, 0b0100);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4CoordTwo, 0b0010);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4CoordThree, 0b001);
+
+					frustumPlanes[5] = _mm_blend_ps(frustumPlane5CoordZero, frustumPlane5CoordOne, 0b0100);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5CoordTwo, 0b0010);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5CoordThree, 0b001);
+
+					// Normalize each frustum plane so our intersection checks (which depend on the dot-product)
+					// return valid results
+					frustumPlanes[0] = DirectX::XMPlaneNormalize(frustumPlanes[0]);
+					frustumPlanes[1] = DirectX::XMPlaneNormalize(frustumPlanes[1]);
+					frustumPlanes[2] = DirectX::XMPlaneNormalize(frustumPlanes[2]);
+					frustumPlanes[3] = DirectX::XMPlaneNormalize(frustumPlanes[3]);
+					frustumPlanes[4] = DirectX::XMPlaneNormalize(frustumPlanes[4]);
+					frustumPlanes[5] = DirectX::XMPlaneNormalize(frustumPlanes[5]);
 				}
 
-				// Helper function; checks if any of the provided points are below the specified
-				// plane and returns the result
-				bool AnyPointBelow(byteUnsigned planeIndex)
-				{
-					DirectX::XMVECTOR planeInnerVector = frustumPlanes[planeIndex].GetInnerVector();
-					bool vert0Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert0)) > 0);
-					bool vert1Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert1)) > 0);
-					bool vert2Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert2)) > 0);
-					bool vert3Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert3)) > 0);
-					bool vert4Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert4)) > 0);
-					bool vert5Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert5)) > 0);
-					bool vert6Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert6)) > 0);
-					bool vert7Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert7)) > 0);
-
-					bool vertIntersections = vert0Intersection || vert1Intersection ||
-											 vert2Intersection || vert3Intersection ||
-											 vert4Intersection || vert5Intersection ||
-											 vert6Intersection || vert7Intersection;
-
-					return vertIntersections;
-				}
-
-				// Helper function; checks if a point is above the specified plane and
+				// Helper function; checks if a given point sits "in front" of every plane in the frustum and
 				// returns the result
-				bool AnyPointAbove(byteUnsigned planeIndex)
+				bool PointIntersection(DirectX::XMVECTOR point)
 				{
-					DirectX::XMVECTOR planeInnerVector = frustumPlanes[planeIndex].GetInnerVector();
-					bool vert0Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert0)) < 0);
-					bool vert1Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert1)) < 0);
-					bool vert2Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert2)) < 0);
-					bool vert3Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert3)) < 0);
-					bool vert4Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert4)) < 0);
-					bool vert5Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert5)) < 0);
-					bool vert6Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert6)) < 0);
-					bool vert7Intersection = (_mm_cvtss_f32(DirectX::XMVector3Dot(planeInnerVector, tempVert7)) < 0);
+					bool leftPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[0], point)) < 0;
+					bool rightPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[1], point)) < 0;
+					bool upperPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[2], point)) < 0;
+					bool lowerPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[3], point)) < 0;
+					bool nearPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[4], point)) < 0;
+					bool farPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[5], point)) < 0;
 
-					bool vertIntersections = vert0Intersection || vert1Intersection ||
-											 vert2Intersection || vert3Intersection ||
-											 vert4Intersection || vert5Intersection ||
-											 vert6Intersection || vert7Intersection;
+					bool planeIntersections = leftPlaneIntersection && rightPlaneIntersection &&
+											  upperPlaneIntersection && lowerPlaneIntersection &&
+											  nearPlaneIntersection && farPlaneIntersection;
 
-					return vertIntersections;
+					return planeIntersections;
 				}
-
-				// Temporary (refreshed per-frame) stores containing the vertices passed in
-				// during calls to [CheckIntersection] (used to avoid wasting memory with
-				// separate copies during each call to [isAPointBelow(...)] or [isAPointAbove(...)])
-				DirectX::XMVECTOR tempVert0;
-				DirectX::XMVECTOR tempVert1;
-				DirectX::XMVECTOR tempVert2;
-				DirectX::XMVECTOR tempVert3;
-				DirectX::XMVECTOR tempVert4;
-				DirectX::XMVECTOR tempVert5;
-				DirectX::XMVECTOR tempVert6;
-				DirectX::XMVECTOR tempVert7;
 		};
 
 		// Frustum instance (statics break everything, singletons feel hacky in C++)

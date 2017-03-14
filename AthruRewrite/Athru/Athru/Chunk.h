@@ -3,7 +3,7 @@
 #include <directxmath.h>
 #include "Typedefs.h"
 
-#define CHUNK_WIDTH 1
+#define CHUNK_WIDTH 5
 #define CHUNK_VOLUME CHUNK_WIDTH * CHUNK_WIDTH * CHUNK_WIDTH
 
 class Boxecule;

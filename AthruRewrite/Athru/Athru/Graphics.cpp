@@ -10,7 +10,7 @@ Graphics::Graphics(HWND windowHandle)
 	d3D = DEBUG_NEW Direct3D(windowHandle);
 
 	// Create the camera object
-	camera = new Camera();
+	camera = new Camera(d3D->GetPerspProjector());
 }
 
 void Graphics::FetchDependencies()
@@ -55,11 +55,11 @@ void Graphics::Frame()
 	}
 
 	// Rotate the camera with mouse input
-	camera->MouseLook(localInput);
+	//camera->MouseLook(localInput);
 
 	// Update the camera's view matrix to
 	// reflect the translation + rotation above
-	camera->RefreshViewMatrix();
+	camera->RefreshViewMatrix(d3D->GetPerspProjector());
 
 	// Update the scene (generate terrain/organisms, update organism statuses,
 	// simulate physics for visible areas, etc.)

@@ -1,19 +1,13 @@
 #include "ServiceCentre.h"
 #include "Boxecule.h"
 
-Boxecule::Boxecule(float r, float g, float b, float a)
+Boxecule::Boxecule(Material boxeculeMaterial)
 {
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
 	// Initialise the material associated with [this]
-	material = Material(Sound(),
-						r, g, b, a,
-						AVAILABLE_SHADERS::RASTERIZER,
-						AVAILABLE_SHADERS::NULL_SHADER,
-						AVAILABLE_SHADERS::NULL_SHADER,
-						AVAILABLE_SHADERS::NULL_SHADER,
-						AVAILABLE_SHADERS::NULL_SHADER);
+	material = boxeculeMaterial;
 
 	// Cache the color associated with [this]
 	float* color = material.GetColorData();

@@ -2,7 +2,7 @@
 #include "Graphics.h"
 #include "Camera.h"
 
-Camera::Camera()
+Camera::Camera(DirectX::XMMATRIX& projectorMatrix)
 {
 	// Set the camera's default position
 	position = _mm_set_ps(0, -4.5f, 0, 0);
@@ -38,7 +38,7 @@ Camera::Camera()
 	speed = 0.4f;
 
 	// Initialise the camera frustum
-	frustum = Frustum(position, rotationQuaternion);
+	frustum = Frustum(viewMatrix * projectorMatrix);
 }
 
 Camera::~Camera()
@@ -51,9 +51,6 @@ void Camera::Translate(DirectX::XMVECTOR displacement)
 	// Translate the software camera
 	DirectX::XMVECTOR positionCopy = position;
 	position = _mm_add_ps(positionCopy, displacement);
-
-	// Translate the camera frustum
-	frustum.Translate(displacement);
 }
 
 DirectX::XMVECTOR Camera::GetTranslation()
@@ -68,9 +65,6 @@ void Camera::SetRotation(float eulerX, float eulerY, float eulerZ)
 	rotationEuler.y = eulerY;
 	rotationEuler.z = eulerZ;
 	rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(rotationEuler.x, rotationEuler.y, rotationEuler.z);
-
-	// Rotate the camera frustum
-	frustum.Rotate(rotationQuaternion);
 }
 
 DirectX::XMVECTOR Camera::GetRotation()
@@ -102,7 +96,7 @@ void Camera::MouseLook(Input* inputPttr)
 	lastMousePos.y = currMousePos.y;
 }
 
-void Camera::RefreshViewMatrix()
+void Camera::RefreshViewMatrix(DirectX::XMMATRIX& projectorMatrix)
 {
 	// Setup the local "up"-vector
 	DirectX::XMVECTOR localUp;
@@ -121,6 +115,9 @@ void Camera::RefreshViewMatrix()
 
 	// Finally create the view matrix with [position], [lookAt], and [localUp]
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
+
+	// Update the camera frustum to match the updated view matrix
+	frustum.Update(viewMatrix * projectorMatrix);
 }
 
 bool Camera::IsIntersecting(Boxecule* item)
@@ -151,12 +148,9 @@ bool Camera::IsIntersecting(Boxecule* item)
 	DirectX::XMVECTOR itemVert6 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftUpperOffset);
 	DirectX::XMVECTOR itemVert7 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftLowerOffset);
 
-	// Update the inner vectors for each frustum plane
-	frustum.UpdateInnerVectors();
-
 	// Check if any of the item vertices intersect with the frustum
 	bool intersection = frustum.CheckIntersection(itemVert0, itemVert1, itemVert2, itemVert3,
-												   itemVert4, itemVert5, itemVert6, itemVert7);
+												  itemVert4, itemVert5, itemVert6, itemVert7);
 
 	// Return whether or not an intersection was detected
 	return intersection;

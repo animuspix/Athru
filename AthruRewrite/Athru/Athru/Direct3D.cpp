@@ -322,7 +322,7 @@ void Direct3D::EndScene()
 	//
 	// If vsync is disabled (read: equal to [false] or [0]), present it as
 	// fast as possible
-	swapChain->Present(vsyncEnabled, 0);
+	swapChain->Present(VSYNC_ENABLED, 0);
 }
 
 ID3D11Device* Direct3D::GetDevice()

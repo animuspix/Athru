@@ -9,7 +9,7 @@ class Boxecule
 {
 	public:
 		Boxecule() {}
-		Boxecule(float r, float g, float b, float a);
+		Boxecule(Material boxeculeMaterial);
 		~Boxecule();
 
 		void PassToGPU(ID3D11DeviceContext* deviceContext);
