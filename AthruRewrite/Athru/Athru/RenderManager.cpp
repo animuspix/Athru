@@ -25,6 +25,13 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	// (such as Rasterizer) are processed
 	availableShaders = new Shader*;
 	availableShaders[(byteUnsigned)AVAILABLE_SHADERS::RASTERIZER] = new Rasterizer(d3dDevice, ServiceCentre::AccessApp()->GetHWND(), L"VertPlotter.cso", L"Colorizer.cso");
+
+	// Initialize the function pointers accessed within [Prepare(...)]
+	basicBoxeculeDispatch[0] = &RenderManager::DirectionalCullFailed;
+	basicBoxeculeDispatch[1] = &RenderManager::DirectionalCullPassed;
+
+	coreBoxeculeDispatch[0] = &RenderManager::BoxeculeDiscard;
+	coreBoxeculeDispatch[1] = &RenderManager::BoxeculeCache;
 }
 
 RenderManager::~RenderManager()
@@ -58,21 +65,42 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 	renderQueueLength = 0;
 }
 
+bool RenderManager::BoxeculeDiscard(Boxecule* boxecule, fourByteUnsigned unculledCounter)
+{
+	return false;
+}
+
+bool RenderManager::BoxeculeCache(Boxecule* boxecule, fourByteUnsigned unculledCounter)
+{
+	renderQueue[unculledCounter] = boxecule;
+	return true;
+}
+
+bool RenderManager::DirectionalCullFailed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter)
+{
+	return false;
+}
+
+bool RenderManager::DirectionalCullPassed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter)
+{
+	byteUnsigned dispatchIndex = (byteUnsigned)(mainCamera->IsIntersecting(boxecule) &&
+											   (boxecule->GetMaterial().GetColorData()[3] != 0));
+
+	return (this->*(this->coreBoxeculeDispatch[dispatchIndex]))(boxecule, unculledCounter);
+}
+
 void RenderManager::Prepare(Boxecule** boxeculeSet, Camera* mainCamera)
 {
 	fourByteUnsigned unculledCounter = 0;
 	for (fourByteUnsigned i = 0; i < ServiceCentre::AccessSceneManager()->CurrBoxeculeCount(); i += 1)
 	{
-		// Frustum culling here
-		if (mainCamera->IsIntersecting(boxeculeSet[i]) &&
-			(boxeculeSet[i]->GetMaterial().GetColorData()[3] != 0))
-		{
-			// If the item is inside the view frustum and not 100% transparent,
-			// add it to the render queue :D
-			renderQueue[unculledCounter] = boxeculeSet[i];
-			renderQueueLength += 1;
-			unculledCounter += 1;
-		}
+		// Directional/frustum/opacity culling here
+		float cameraLocalZ = DirectX::XMVector3Rotate(mainCamera->GetTranslation(), mainCamera->GetRotation()).m128_f32[1];
+		float boxeculeGlobalZ = boxeculeSet[i]->FetchTransformations().pos.m128_f32[1];
+		fourByteUnsigned resultNumeral = (fourByteUnsigned)((this->*(this->basicBoxeculeDispatch[boxeculeGlobalZ <= cameraLocalZ]))(boxeculeSet[i], mainCamera, unculledCounter));
+
+		renderQueueLength += resultNumeral;
+		unculledCounter += resultNumeral;
 	}
 }
 

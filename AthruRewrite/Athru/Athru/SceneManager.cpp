@@ -14,7 +14,7 @@ SceneManager::SceneManager()
 	nearChunks[6] = new Chunk(-1 * CHUNK_WIDTH, -1 * CHUNK_WIDTH);
 	nearChunks[7] = new Chunk(0, -1 * CHUNK_WIDTH);
 	nearChunks[8] = new Chunk(CHUNK_WIDTH, -1 * CHUNK_WIDTH);
-	
+
 	boxeculeDensity = 1;
 }
 

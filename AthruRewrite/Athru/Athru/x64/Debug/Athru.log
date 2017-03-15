@@ -1,7 +1,7 @@
 ﻿  Application.cpp
   Running Code Analysis for C/C++...
   Generating Code...
-  Skipping... (no relevant changes detected)
+  Compiling...
   StarSystem.cpp
   StackAllocator.cpp
   ServiceCentre.cpp
@@ -15,5 +15,7 @@
   Camera.cpp
   Boxecule.cpp
   Athru.cpp
+  Running Code Analysis for C/C++...
+  Generating Code...
   Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
   Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)

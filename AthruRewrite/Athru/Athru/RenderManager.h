@@ -33,10 +33,37 @@ class RenderManager
 		void operator delete(void * target);
 
 	private:
+		// Do nothing; null function called if a boxecule processed during [Prepare(...)]
+		// is invisible or positioned outside the camera frustum
+		// Must have the same arguments as [boxeculeCache] so it can be stored within the
+		// core boxecule-processing function pointer array (I figure an if-statement accessed
+		// 70000+ times is a significant bottleneck, so replacing it with function pointers
+		// and boolean magic should hopefully be a reasonable optimisation)
+		bool BoxeculeDiscard(Boxecule* boxecule, fourByteUnsigned unculledCounter);
+
+		// Store the given boxecule
+		bool BoxeculeCache(Boxecule* boxecule, fourByteUnsigned unculledCounter);
+
+		// Do nothing; null function called if a boxecule is completely behind the camera
+		bool DirectionalCullFailed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter);
+
+		// Pass the given boxecule on to the core boxecule-processing functions
+		// (called if a boxecule is in front of the camera position, regardless of whether
+		// or not it's inside the camera frustum)
+		bool DirectionalCullPassed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter);
+
+		// Each preparation stage enters into [directional]
+
 		ID3D11DeviceContext* deviceContext;
 		Boxecule** renderQueue;
 		DeferredRenderer* deferredRenderer;
 		fourByteSigned renderQueueLength;
 		Shader** availableShaders;
+
+		// Low-fi boxecule-processing function pointer array
+		bool(RenderManager::*basicBoxeculeDispatch[2])(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter);
+
+		// Core boxecule-processing function pointer array
+		bool(RenderManager::*coreBoxeculeDispatch[2])(Boxecule* boxecule, fourByteUnsigned unculledCounter);
 };
 
