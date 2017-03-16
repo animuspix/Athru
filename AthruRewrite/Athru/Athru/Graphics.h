@@ -10,7 +10,7 @@
 #define DISPLAY_ASPECT_RATIO DISPLAY_WIDTH / DISPLAY_HEIGHT
 #define SCREEN_FAR 10.0f
 #define SCREEN_NEAR 0.1f
-#define VERT_FIELD_OF_VIEW_RADS PI / 4
+#define VERT_FIELD_OF_VIEW_RADS PI / 2
 
 class RenderManager;
 class SceneManager;

@@ -13,8 +13,11 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 
 	for (eightByteSigned i = 0; i < CHUNK_VOLUME; i += 1)
 	{
+		float alpha = 1.0f;//1 - ((float)(i % CHUNK_WIDTH) + 1) / 10;
+		//ServiceCentre::AccessLogger()->Log(alpha, Logger::DESTINATIONS::CONSOLE);
+		float red = 1.0f / (rand() % 10);
 		chunkBoxecules[i] = new Boxecule(Material(Sound(),
-												  0.6f, 0.6f, 0.4f, 1.0f,
+												  red, 0.6f, 0.4f, alpha,
 												  AVAILABLE_SHADERS::RASTERIZER,
 												  AVAILABLE_SHADERS::NULL_SHADER,
 												  AVAILABLE_SHADERS::NULL_SHADER,
@@ -22,12 +25,19 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 												  AVAILABLE_SHADERS::NULL_SHADER));
 
 		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / CHUNK_WIDTH) % CHUNK_WIDTH)) + offsetFromHomeZ,
-												       (float)(i % CHUNK_WIDTH),
+												       (float)((i % CHUNK_WIDTH) + 1 * (byteUnsigned)(i > 0 && i % CHUNK_WIDTH == 0)),
 													   (float)(i / (CHUNK_WIDTH * CHUNK_WIDTH)) + offsetFromHomeX);
 
 		DirectX::XMVECTOR boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 		chunkBoxecules[i]->FetchTransformations() = SQT(boxeculeRot, boxeculePos, 1);
+
+		ServiceCentre::AccessLogger()->Log((float)((i % CHUNK_WIDTH) + 1 * (byteUnsigned)(i > 0 && i % CHUNK_WIDTH == 0)), Logger::DESTINATIONS::CONSOLE);
  	}
+
+	chunkPoints[0] = _mm_set_ps(0, (float)(offsetFromHomeZ), 0, (float)offsetFromHomeX);
+	chunkPoints[1] = _mm_set_ps(0, (float)(offsetFromHomeZ - CHUNK_WIDTH), 0, (float)offsetFromHomeX);
+	chunkPoints[2] = _mm_set_ps(0, (float)(offsetFromHomeZ), 0, (float)(offsetFromHomeX + CHUNK_WIDTH));
+	chunkPoints[3] = _mm_set_ps(0, (float)(offsetFromHomeZ - CHUNK_WIDTH), 0, (float)(offsetFromHomeX + CHUNK_WIDTH));
 }
 
 Chunk::~Chunk()
@@ -54,6 +64,11 @@ void Chunk::Update(DirectX::XMVECTOR playerPosition)
 Boxecule** Chunk::GetChunkBoxecules()
 {
 	return chunkBoxecules;
+}
+
+DirectX::XMVECTOR* Chunk::GetChunkPoints()
+{
+	return chunkPoints;
 }
 
 // Push constructions for this class through Athru's custom allocator

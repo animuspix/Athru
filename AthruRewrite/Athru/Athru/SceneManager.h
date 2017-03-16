@@ -5,6 +5,7 @@
 #include "Boxecule.h"
 #include "Chunk.h"
 
+#define HOME_CHUNK_INDEX 4
 #define MAX_CHUNKS_PER_METER 100
 #define MIN_NUM_STORED_BOXECULES CHUNK_VOLUME * 9
 #define MAX_NUM_STORED_BOXECULES (8 * CHUNK_VOLUME) + (CHUNK_VOLUME * MAX_CHUNKS_PER_METER)
@@ -17,8 +18,9 @@ class SceneManager
 		SceneManager();
 		~SceneManager();
 
-		Boxecule** GetSceneBoxecules();
-		fourByteUnsigned CurrBoxeculeCount();
+		Chunk** GetChunks();
+		fourByteUnsigned GetBoxeculeCount();
+		twoByteUnsigned GetBoxeculeDensity();
 		void Update(DirectX::XMVECTOR playerPosition);
 
 		// Overload the standard allocation/de-allocation operators
@@ -32,13 +34,6 @@ class SceneManager
 		// [3, 4P, 5]
 		// [6, 7, 8]
 		Chunk* nearChunks[9];
-
-		// HUGE pointer containing sub-pointers to all the boxecules that will
-		// ever exist in the scene at once
-		// Only the subset defined by multiplying the minimum number of boxecules
-		// by the current boxecule density is actually passed to the
-		// render manager each frame
-		Boxecule** boxeculeSet;
 
 		// Boxecule scale as a proportion of the default boxecule size
 		// ([1])

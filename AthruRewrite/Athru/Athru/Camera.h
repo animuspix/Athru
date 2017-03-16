@@ -148,15 +148,15 @@ class Camera
 					DirectX::XMVECTOR frustumPlane1CoordTwo = _mm_sub_ps(frustumRow1WWWW, frustumRow2XXXX);
 					DirectX::XMVECTOR frustumPlane1CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3XXXX);
 
-					DirectX::XMVECTOR frustumPlane2CoordZero = _mm_add_ps(frustumRow0WWWW, frustumRow0YYYY);
-					DirectX::XMVECTOR frustumPlane2CoordOne = _mm_add_ps(frustumRow1WWWW, frustumRow1YYYY);
-					DirectX::XMVECTOR frustumPlane2CoordTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2YYYY);
-					DirectX::XMVECTOR frustumPlane2CoordThree = _mm_add_ps(frustumRow3WWWW, frustumRow3YYYY);
+					DirectX::XMVECTOR frustumPlane2CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0YYYY);
+					DirectX::XMVECTOR frustumPlane2CoordOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1YYYY);
+					DirectX::XMVECTOR frustumPlane2CoordTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2YYYY);
+					DirectX::XMVECTOR frustumPlane2CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3YYYY);
 
-					DirectX::XMVECTOR frustumPlane3CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0YYYY);
-					DirectX::XMVECTOR frustumPlane3CoordOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1YYYY);
-					DirectX::XMVECTOR frustumPlane3CoordTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2YYYY);
-					DirectX::XMVECTOR frustumPlane3CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3YYYY);
+					DirectX::XMVECTOR frustumPlane3CoordZero = _mm_add_ps(frustumRow0WWWW, frustumRow0YYYY);
+					DirectX::XMVECTOR frustumPlane3CoordOne = _mm_add_ps(frustumRow1WWWW, frustumRow1YYYY);
+					DirectX::XMVECTOR frustumPlane3CoordTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2YYYY);
+					DirectX::XMVECTOR frustumPlane3CoordThree = _mm_add_ps(frustumRow3WWWW, frustumRow3YYYY);
 
 					DirectX::XMVECTOR frustumPlane4CoordZero = frustumRow0ZZZZ;
 					DirectX::XMVECTOR frustumPlane4CoordOne = frustumRow1ZZZZ;

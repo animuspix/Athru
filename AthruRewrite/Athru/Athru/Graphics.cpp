@@ -54,6 +54,16 @@ void Graphics::Frame()
 		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, 10 * TimeStuff::deltaTime()), camera->GetRotation()));
 	}
 
+	if (localInput->IsKeyDown(32))
+	{
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 10 * TimeStuff::deltaTime(), 0), camera->GetRotation()));
+	}
+
+	if (localInput->IsKeyDown(17))
+	{
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, -10 * TimeStuff::deltaTime(), 0), camera->GetRotation()));
+	}
+
 	// Rotate the camera with mouse input
 	//camera->MouseLook(localInput);
 
@@ -67,7 +77,7 @@ void Graphics::Frame()
 
 	// Pass the boxecules currently in the scene along to the
 	// render manager
-	renderManagerPttr->Prepare(sceneManagerPttr->GetSceneBoxecules(), camera);
+	renderManagerPttr->Prepare(sceneManagerPttr->GetChunks(), camera, sceneManagerPttr->GetBoxeculeDensity());
 
 	// Record the time at this frame so we can calculate
 	// [deltaTime]

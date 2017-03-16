@@ -3,8 +3,6 @@
 
 SceneManager::SceneManager()
 {
-	boxeculeSet = DEBUG_NEW Boxecule*[MAX_NUM_STORED_BOXECULES];
-
 	nearChunks[0] = new Chunk(-1 * CHUNK_WIDTH, CHUNK_WIDTH);
 	nearChunks[1] = new Chunk(0, CHUNK_WIDTH);
 	nearChunks[2] = new Chunk(CHUNK_WIDTH, CHUNK_WIDTH);
@@ -31,12 +29,17 @@ SceneManager::~SceneManager()
 	nearChunks[8]->~Chunk();
 }
 
-Boxecule** SceneManager::GetSceneBoxecules()
+Chunk** SceneManager::GetChunks()
 {
-	return boxeculeSet;
+	return nearChunks;
 }
 
-fourByteUnsigned SceneManager::CurrBoxeculeCount()
+twoByteUnsigned SceneManager::GetBoxeculeDensity()
+{
+	return boxeculeDensity;
+}
+
+fourByteUnsigned SceneManager::GetBoxeculeCount()
 {
 	return boxeculeDensity * MIN_NUM_STORED_BOXECULES;
 }
@@ -55,46 +58,6 @@ void SceneManager::Update(DirectX::XMVECTOR playerPosition)
 	nearChunks[6]->Update(playerPosition);
 	nearChunks[7]->Update(playerPosition);
 	nearChunks[8]->Update(playerPosition);
-
-	// Copy chunk-boxecules across into the array of scene boxecules
-	Boxecule** nearChunk0Boxecules = nearChunks[0]->GetChunkBoxecules();
-	Boxecule** nearChunk1Boxecules = nearChunks[1]->GetChunkBoxecules();
-	Boxecule** nearChunk2Boxecules = nearChunks[2]->GetChunkBoxecules();
-	Boxecule** nearChunk3Boxecules = nearChunks[3]->GetChunkBoxecules();
-	Boxecule** homeChunkBoxecules = nearChunks[4]->GetChunkBoxecules();
-	Boxecule** nearChunk5Boxecules = nearChunks[5]->GetChunkBoxecules();
-	Boxecule** nearChunk6Boxecules = nearChunks[6]->GetChunkBoxecules();
-	Boxecule** nearChunk7Boxecules = nearChunks[7]->GetChunkBoxecules();
-	Boxecule** nearChunk8Boxecules = nearChunks[8]->GetChunkBoxecules();
-
-	Boxecule** nearChunkBoxecules[8] = { nearChunk0Boxecules,
-										 nearChunk1Boxecules,
-										 nearChunk2Boxecules,
-										 nearChunk3Boxecules,
-										 nearChunk5Boxecules,
-										 nearChunk6Boxecules,
-										 nearChunk7Boxecules,
-										 nearChunk8Boxecules };
-
-	// Copy boxecules from non-home chunks
-	eightByteUnsigned homeChunkOffset = 0;
-	byteUnsigned chunkIndex = 0;
-	for (eightByteUnsigned i = 0; i < (8 * CHUNK_VOLUME); i += CHUNK_VOLUME)
-	{
-		for (eightByteUnsigned j = 0; j < CHUNK_VOLUME; j += 1)
-		{
-			boxeculeSet[i + j] = nearChunkBoxecules[chunkIndex][j];
-		}
-
-		chunkIndex += 1;
-		homeChunkOffset = (i + CHUNK_VOLUME);
-	}
-
-	// Copy boxecules from the home chunk
-	for (eightByteUnsigned i = 0; i < CHUNK_VOLUME * boxeculeDensity; i += 1)
-	{
-		boxeculeSet[i + homeChunkOffset] = homeChunkBoxecules[i];
-	}
 }
 
 // Push constructions for this class through Athru's custom allocator
