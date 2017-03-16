@@ -54,13 +54,13 @@ class RenderManager
 		bool DirectionalCullPassed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter);
 
 		// Each boxecule that makes it past initial chunk culling is directionally-tested, and the result is
-		// used with [basicBoxeculeDispatch] to either call [DirectionalCullFailed(...)] or 
+		// used with [basicBoxeculeDispatch] to either call [DirectionalCullFailed(...)] or
 		// [DirectionalCulllPassed(...)]; boxecules that survive the directional cull are frustum-tested, and
-		// the result is used with [coreBoxeculeDispatch] to either call [BoxeculeDiscard(...)] or 
-		// [BoxeculeCache(...)]; [BoxeculeCache(...)] stores the given boxecule in the render queue and returns 
+		// the result is used with [coreBoxeculeDispatch] to either call [BoxeculeDiscard(...)] or
+		// [BoxeculeCache(...)]; [BoxeculeCache(...)] stores the given boxecule in the render queue and returns
 		// [true], while [BoxeculeDiscard(...)] does nothing and returns [false]. Both return values are echoed
 		// through [DirectionalCullFailed(...)] and [DirectionalCullPassed(...)]
-		
+
 		// Do nothing; null function called if a chunk is outside the view triangle
 		fourByteUnsigned ChunkDiscard(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);
 

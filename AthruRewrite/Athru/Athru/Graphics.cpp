@@ -34,34 +34,35 @@ void Graphics::Frame()
 	Input* localInput = ServiceCentre::AccessInput();
 
 	// Translate the camera with WASD
+	float speed = 10;
 	if (localInput->IsKeyDown(87))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 10 * TimeStuff::deltaTime(), 0, 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), camera->GetRotation()));
 	}
 
 	if (localInput->IsKeyDown(65))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, -10 * TimeStuff::deltaTime()), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, -speed * TimeStuff::deltaTime()), camera->GetRotation()));
 	}
 
 	if (localInput->IsKeyDown(83))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, -10 * TimeStuff::deltaTime(), 0, 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, -speed * TimeStuff::deltaTime(), 0, 0), camera->GetRotation()));
 	}
 
 	if (localInput->IsKeyDown(68))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, 10 * TimeStuff::deltaTime()), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, speed * TimeStuff::deltaTime()), camera->GetRotation()));
 	}
 
 	if (localInput->IsKeyDown(32))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 10 * TimeStuff::deltaTime(), 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, speed * TimeStuff::deltaTime(), 0), camera->GetRotation()));
 	}
 
 	if (localInput->IsKeyDown(17))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, -10 * TimeStuff::deltaTime(), 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, -speed * TimeStuff::deltaTime(), 0), camera->GetRotation()));
 	}
 
 	// Rotate the camera with mouse input

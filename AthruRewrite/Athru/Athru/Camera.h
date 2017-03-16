@@ -112,87 +112,87 @@ class Camera
 				{
 					// Extract rows from the frustum matrix (calculated by multiplying
 					// the view matrix with a projection matrix)
-					DirectX::XMVECTOR* frustumCoords = frustumMatrix.r;
+					DirectX::XMVECTOR* frustumMatrixRows = frustumMatrix.r;
 
 					// Shuffle each component from each row into it's own vector so
 					// we can perform component-wise operations without leaving the SSE
 					// registers
-					DirectX::XMVECTOR frustumRow0XXXX = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(0, 0, 0, 0));
-					DirectX::XMVECTOR frustumRow0YYYY = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(1, 1, 1, 1));
-					DirectX::XMVECTOR frustumRow0ZZZZ = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(2, 2, 2, 2));
-					DirectX::XMVECTOR frustumRow0WWWW = _mm_shuffle_ps(frustumCoords[0], frustumCoords[0], _MM_SHUFFLE(3, 3, 3, 3));
+					DirectX::XMVECTOR frustumRow0XXXX = _mm_shuffle_ps(frustumMatrixRows[0], frustumMatrixRows[0], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow0YYYY = _mm_shuffle_ps(frustumMatrixRows[0], frustumMatrixRows[0], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow0ZZZZ = _mm_shuffle_ps(frustumMatrixRows[0], frustumMatrixRows[0], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow0WWWW = _mm_shuffle_ps(frustumMatrixRows[0], frustumMatrixRows[0], _MM_SHUFFLE(3, 3, 3, 3));
 
-					DirectX::XMVECTOR frustumRow1XXXX = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(0, 0, 0, 0));
-					DirectX::XMVECTOR frustumRow1YYYY = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(1, 1, 1, 1));
-					DirectX::XMVECTOR frustumRow1ZZZZ = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(2, 2, 2, 2));
-					DirectX::XMVECTOR frustumRow1WWWW = _mm_shuffle_ps(frustumCoords[1], frustumCoords[1], _MM_SHUFFLE(3, 3, 3, 3));
+					DirectX::XMVECTOR frustumRow1XXXX = _mm_shuffle_ps(frustumMatrixRows[1], frustumMatrixRows[1], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow1YYYY = _mm_shuffle_ps(frustumMatrixRows[1], frustumMatrixRows[1], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow1ZZZZ = _mm_shuffle_ps(frustumMatrixRows[1], frustumMatrixRows[1], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow1WWWW = _mm_shuffle_ps(frustumMatrixRows[1], frustumMatrixRows[1], _MM_SHUFFLE(3, 3, 3, 3));
 
-					DirectX::XMVECTOR frustumRow2XXXX = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(0, 0, 0, 0));
-					DirectX::XMVECTOR frustumRow2YYYY = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(1, 1, 1, 1));
-					DirectX::XMVECTOR frustumRow2ZZZZ = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(2, 2, 2, 2));
-					DirectX::XMVECTOR frustumRow2WWWW = _mm_shuffle_ps(frustumCoords[2], frustumCoords[2], _MM_SHUFFLE(3, 3, 3, 3));
+					DirectX::XMVECTOR frustumRow2XXXX = _mm_shuffle_ps(frustumMatrixRows[2], frustumMatrixRows[2], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow2YYYY = _mm_shuffle_ps(frustumMatrixRows[2], frustumMatrixRows[2], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow2ZZZZ = _mm_shuffle_ps(frustumMatrixRows[2], frustumMatrixRows[2], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow2WWWW = _mm_shuffle_ps(frustumMatrixRows[2], frustumMatrixRows[2], _MM_SHUFFLE(3, 3, 3, 3));
 
-					DirectX::XMVECTOR frustumRow3XXXX = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(0, 0, 0, 0));
-					DirectX::XMVECTOR frustumRow3YYYY = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(1, 1, 1, 1));
-					DirectX::XMVECTOR frustumRow3ZZZZ = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(2, 2, 2, 2));
-					DirectX::XMVECTOR frustumRow3WWWW = _mm_shuffle_ps(frustumCoords[3], frustumCoords[3], _MM_SHUFFLE(3, 3, 3, 3));
+					DirectX::XMVECTOR frustumRow3XXXX = _mm_shuffle_ps(frustumMatrixRows[3], frustumMatrixRows[3], _MM_SHUFFLE(0, 0, 0, 0));
+					DirectX::XMVECTOR frustumRow3YYYY = _mm_shuffle_ps(frustumMatrixRows[3], frustumMatrixRows[3], _MM_SHUFFLE(1, 1, 1, 1));
+					DirectX::XMVECTOR frustumRow3ZZZZ = _mm_shuffle_ps(frustumMatrixRows[3], frustumMatrixRows[3], _MM_SHUFFLE(2, 2, 2, 2));
+					DirectX::XMVECTOR frustumRow3WWWW = _mm_shuffle_ps(frustumMatrixRows[3], frustumMatrixRows[3], _MM_SHUFFLE(3, 3, 3, 3));
 
 					// Generate each plane value from the components extracted above
-					DirectX::XMVECTOR frustumPlane0CoordZero = _mm_add_ps(frustumRow0WWWW, frustumRow0XXXX);
-					DirectX::XMVECTOR frustumPlane0CoordOne = _mm_add_ps(frustumRow1WWWW, frustumRow1XXXX);
-					DirectX::XMVECTOR frustumPlane0CoordTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2XXXX);
-					DirectX::XMVECTOR frustumPlane0CoordThree = _mm_add_ps(frustumRow3WWWW, frustumRow3XXXX);
+					DirectX::XMVECTOR frustumPlane0ValZero = _mm_add_ps(frustumRow0WWWW, frustumRow0XXXX);
+					DirectX::XMVECTOR frustumPlane0ValOne = _mm_add_ps(frustumRow1WWWW, frustumRow1XXXX);
+					DirectX::XMVECTOR frustumPlane0ValTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2XXXX);
+					DirectX::XMVECTOR frustumPlane0ValThree = _mm_add_ps(frustumRow3WWWW, frustumRow3XXXX);
 
-					DirectX::XMVECTOR frustumPlane1CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0XXXX);
-					DirectX::XMVECTOR frustumPlane1CoordOne = _mm_sub_ps(frustumRow2WWWW, frustumRow1XXXX);
-					DirectX::XMVECTOR frustumPlane1CoordTwo = _mm_sub_ps(frustumRow1WWWW, frustumRow2XXXX);
-					DirectX::XMVECTOR frustumPlane1CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3XXXX);
+					DirectX::XMVECTOR frustumPlane1ValZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0XXXX);
+					DirectX::XMVECTOR frustumPlane1ValOne = _mm_sub_ps(frustumRow2WWWW, frustumRow1XXXX);
+					DirectX::XMVECTOR frustumPlane1ValTwo = _mm_sub_ps(frustumRow1WWWW, frustumRow2XXXX);
+					DirectX::XMVECTOR frustumPlane1ValThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3XXXX);
 
-					DirectX::XMVECTOR frustumPlane2CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0YYYY);
-					DirectX::XMVECTOR frustumPlane2CoordOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1YYYY);
-					DirectX::XMVECTOR frustumPlane2CoordTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2YYYY);
-					DirectX::XMVECTOR frustumPlane2CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3YYYY);
+					DirectX::XMVECTOR frustumPlane2ValZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0YYYY);
+					DirectX::XMVECTOR frustumPlane2ValOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1YYYY);
+					DirectX::XMVECTOR frustumPlane2ValTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2YYYY);
+					DirectX::XMVECTOR frustumPlane2ValThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3YYYY);
 
-					DirectX::XMVECTOR frustumPlane3CoordZero = _mm_add_ps(frustumRow0WWWW, frustumRow0YYYY);
-					DirectX::XMVECTOR frustumPlane3CoordOne = _mm_add_ps(frustumRow1WWWW, frustumRow1YYYY);
-					DirectX::XMVECTOR frustumPlane3CoordTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2YYYY);
-					DirectX::XMVECTOR frustumPlane3CoordThree = _mm_add_ps(frustumRow3WWWW, frustumRow3YYYY);
+					DirectX::XMVECTOR frustumPlane3ValZero = _mm_add_ps(frustumRow0WWWW, frustumRow0YYYY);
+					DirectX::XMVECTOR frustumPlane3ValOne = _mm_add_ps(frustumRow1WWWW, frustumRow1YYYY);
+					DirectX::XMVECTOR frustumPlane3ValTwo = _mm_add_ps(frustumRow2WWWW, frustumRow2YYYY);
+					DirectX::XMVECTOR frustumPlane3ValThree = _mm_add_ps(frustumRow3WWWW, frustumRow3YYYY);
 
-					DirectX::XMVECTOR frustumPlane4CoordZero = frustumRow0ZZZZ;
-					DirectX::XMVECTOR frustumPlane4CoordOne = frustumRow1ZZZZ;
-					DirectX::XMVECTOR frustumPlane4CoordTwo = frustumRow2ZZZZ;
-					DirectX::XMVECTOR frustumPlane4CoordThree = frustumRow3ZZZZ;
+					DirectX::XMVECTOR frustumPlane4ValZero = frustumRow0ZZZZ;
+					DirectX::XMVECTOR frustumPlane4ValOne = frustumRow1ZZZZ;
+					DirectX::XMVECTOR frustumPlane4ValTwo = frustumRow2ZZZZ;
+					DirectX::XMVECTOR frustumPlane4ValThree = frustumRow3ZZZZ;
 
-					DirectX::XMVECTOR frustumPlane5CoordZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0ZZZZ);
-					DirectX::XMVECTOR frustumPlane5CoordOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1ZZZZ);
-					DirectX::XMVECTOR frustumPlane5CoordTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2ZZZZ);
-					DirectX::XMVECTOR frustumPlane5CoordThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3ZZZZ);
+					DirectX::XMVECTOR frustumPlane5ValZero = _mm_sub_ps(frustumRow0WWWW, frustumRow0ZZZZ);
+					DirectX::XMVECTOR frustumPlane5ValOne = _mm_sub_ps(frustumRow1WWWW, frustumRow1ZZZZ);
+					DirectX::XMVECTOR frustumPlane5ValTwo = _mm_sub_ps(frustumRow2WWWW, frustumRow2ZZZZ);
+					DirectX::XMVECTOR frustumPlane5ValThree = _mm_sub_ps(frustumRow3WWWW, frustumRow3ZZZZ);
 
 					// Blend the plane values from above into a set of six (one for each plane in the frustum)
 					// 4D vectors representing plane equations
-					frustumPlanes[0] = _mm_blend_ps(frustumPlane0CoordZero, frustumPlane0CoordOne, 0b0100);
-					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0CoordTwo, 0b0010);
-					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0CoordThree, 0b001);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlane0ValZero, frustumPlane0ValOne, 0b0100);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0ValTwo, 0b0010);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0ValThree, 0b0001);
 
-					frustumPlanes[1] = _mm_blend_ps(frustumPlane1CoordZero, frustumPlane1CoordOne, 0b0100);
-					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1CoordTwo, 0b0010);
-					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1CoordThree, 0b001);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlane1ValZero, frustumPlane1ValOne, 0b0100);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1ValTwo, 0b0010);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1ValThree, 0b0001);
 
-					frustumPlanes[2] = _mm_blend_ps(frustumPlane2CoordZero, frustumPlane2CoordOne, 0b0100);
-					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2CoordTwo, 0b0010);
-					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2CoordThree, 0b001);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlane2ValZero, frustumPlane2ValOne, 0b0100);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2ValTwo, 0b0010);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2ValThree, 0b0001);
 
-					frustumPlanes[3] = _mm_blend_ps(frustumPlane3CoordZero, frustumPlane3CoordOne, 0b0100);
-					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3CoordTwo, 0b0010);
-					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3CoordThree, 0b001);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlane3ValZero, frustumPlane3ValOne, 0b0100);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3ValTwo, 0b0010);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3ValThree, 0b0001);
 
-					frustumPlanes[4] = _mm_blend_ps(frustumPlane4CoordZero, frustumPlane4CoordOne, 0b0100);
-					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4CoordTwo, 0b0010);
-					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4CoordThree, 0b001);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlane4ValZero, frustumPlane4ValOne, 0b0100);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4ValTwo, 0b0010);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4ValThree, 0b0001);
 
-					frustumPlanes[5] = _mm_blend_ps(frustumPlane5CoordZero, frustumPlane5CoordOne, 0b0100);
-					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5CoordTwo, 0b0010);
-					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5CoordThree, 0b001);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlane5ValZero, frustumPlane5ValOne, 0b0100);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5ValTwo, 0b0010);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5ValThree, 0b0001);
 
 					// Normalize each frustum plane so our intersection checks (which depend on the dot-product)
 					// return valid results

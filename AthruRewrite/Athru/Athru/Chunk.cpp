@@ -13,8 +13,7 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 
 	for (eightByteSigned i = 0; i < CHUNK_VOLUME; i += 1)
 	{
-		float alpha = 1.0f;//1 - ((float)(i % CHUNK_WIDTH) + 1) / 10;
-		//ServiceCentre::AccessLogger()->Log(alpha, Logger::DESTINATIONS::CONSOLE);
+		float alpha = 1.0f;
 		float red = 1.0f / (rand() % 10);
 		chunkBoxecules[i] = new Boxecule(Material(Sound(),
 												  red, 0.6f, 0.4f, alpha,
@@ -30,8 +29,6 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 
 		DirectX::XMVECTOR boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 		chunkBoxecules[i]->FetchTransformations() = SQT(boxeculeRot, boxeculePos, 1);
-
-		ServiceCentre::AccessLogger()->Log((float)((i % CHUNK_WIDTH) + 1 * (byteUnsigned)(i > 0 && i % CHUNK_WIDTH == 0)), Logger::DESTINATIONS::CONSOLE);
  	}
 
 	chunkPoints[0] = _mm_set_ps(0, (float)(offsetFromHomeZ), 0, (float)offsetFromHomeX);
