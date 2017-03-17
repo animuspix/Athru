@@ -94,7 +94,7 @@ fourByteUnsigned RenderManager::ChunkCache(Chunk* chunk, bool isHome, twoByteUns
 		float cameraLocalZ = DirectX::XMVector3Rotate(mainCamera->GetTranslation(), mainCamera->GetRotation()).m128_f32[2];
 		float boxeculeGlobalZ = currBoxecule->FetchTransformations().pos.m128_f32[2];
 
-		fourByteUnsigned resultNumeral = (fourByteUnsigned)((this->*(this->basicBoxeculeDispatch[(byteUnsigned)(boxeculeGlobalZ > cameraLocalZ)]))(currBoxecule, mainCamera, unculledCounter));
+		fourByteUnsigned resultNumeral = (fourByteUnsigned)((this->*(this->basicBoxeculeDispatch[(byteUnsigned)(/*boxeculeGlobalZ > cameraLocalZ*/true)]))(currBoxecule, mainCamera, unculledCounter));
 		renderQueueLength += resultNumeral;
 		unculledCounter += resultNumeral;
 	}
@@ -109,8 +109,8 @@ bool RenderManager::ChunkVisible(Chunk* chunk, Camera* mainCamera)
 	// so a view triangle is a good analogue to the view frustum we use
 	// with boxecules)
 	DirectX::XMVECTOR viewTriVertA = mainCamera->GetTranslation();
-	DirectX::XMVECTOR viewTriVertB = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, tan(VERT_FIELD_OF_VIEW_RADS / 2) * 1000)), mainCamera->GetRotation());
-	DirectX::XMVECTOR viewTriVertC = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, (tan(VERT_FIELD_OF_VIEW_RADS / 2) * 1000) * -1)), mainCamera->GetRotation());
+	DirectX::XMVECTOR viewTriVertB = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, tan(VERT_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR)), mainCamera->GetRotation());
+	DirectX::XMVECTOR viewTriVertC = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, (tan(VERT_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR) * -1)), mainCamera->GetRotation());
 
 	// Point/triangle culling algorithm found here:
 	// http://www.nerdparadise.com/math/pointinatriangle
@@ -155,7 +155,7 @@ void RenderManager::Prepare(Chunk** boxeculeChunks, Camera* mainCamera, twoByteU
 	// culling
 	byteUnsigned chunkIndex = 0;
 	fourByteUnsigned unculledCounter = 0;
-	for (eightByteUnsigned i = 0; i < (8 * CHUNK_VOLUME); i += CHUNK_VOLUME)
+	for (eightByteUnsigned i = 0; i < (9 * CHUNK_VOLUME); i += CHUNK_VOLUME)
 	{
 		unculledCounter = (this->*(this->chunkDispatch[(byteUnsigned)/*(chunkVisibilities[chunkIndex])*/true]))
 								  (boxeculeChunks[chunkIndex], chunkIndex == HOME_CHUNK_INDEX, boxeculeDensity, mainCamera, unculledCounter);

@@ -170,29 +170,29 @@ class Camera
 
 					// Blend the plane values from above into a set of six (one for each plane in the frustum)
 					// 4D vectors representing plane equations
-					frustumPlanes[0] = _mm_blend_ps(frustumPlane0ValZero, frustumPlane0ValOne, 0b0100);
-					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0ValTwo, 0b0010);
-					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0ValThree, 0b0001);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlane0ValZero, frustumPlane0ValOne, 0b0010);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0ValTwo, 0b0100);
+					frustumPlanes[0] = _mm_blend_ps(frustumPlanes[0], frustumPlane0ValThree, 0b1000);
 
-					frustumPlanes[1] = _mm_blend_ps(frustumPlane1ValZero, frustumPlane1ValOne, 0b0100);
-					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1ValTwo, 0b0010);
-					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1ValThree, 0b0001);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlane1ValZero, frustumPlane1ValOne, 0b0010);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1ValTwo, 0b0100);
+					frustumPlanes[1] = _mm_blend_ps(frustumPlanes[1], frustumPlane1ValThree, 0b1000);
 
-					frustumPlanes[2] = _mm_blend_ps(frustumPlane2ValZero, frustumPlane2ValOne, 0b0100);
-					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2ValTwo, 0b0010);
-					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2ValThree, 0b0001);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlane2ValZero, frustumPlane2ValOne, 0b0010);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2ValTwo, 0b0100);
+					frustumPlanes[2] = _mm_blend_ps(frustumPlanes[2], frustumPlane2ValThree, 0b1000);
 
-					frustumPlanes[3] = _mm_blend_ps(frustumPlane3ValZero, frustumPlane3ValOne, 0b0100);
-					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3ValTwo, 0b0010);
-					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3ValThree, 0b0001);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlane3ValZero, frustumPlane3ValOne, 0b0010);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3ValTwo, 0b0100);
+					frustumPlanes[3] = _mm_blend_ps(frustumPlanes[3], frustumPlane3ValThree, 0b1000);
 
-					frustumPlanes[4] = _mm_blend_ps(frustumPlane4ValZero, frustumPlane4ValOne, 0b0100);
-					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4ValTwo, 0b0010);
-					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4ValThree, 0b0001);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlane4ValZero, frustumPlane4ValOne, 0b0010);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4ValTwo, 0b0100);
+					frustumPlanes[4] = _mm_blend_ps(frustumPlanes[4], frustumPlane4ValThree, 0b1000);
 
-					frustumPlanes[5] = _mm_blend_ps(frustumPlane5ValZero, frustumPlane5ValOne, 0b0100);
-					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5ValTwo, 0b0010);
-					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5ValThree, 0b0001);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlane5ValZero, frustumPlane5ValOne, 0b0010);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5ValTwo, 0b0100);
+					frustumPlanes[5] = _mm_blend_ps(frustumPlanes[5], frustumPlane5ValThree, 0b1000);
 
 					// Normalize each frustum plane so our intersection checks (which depend on the dot-product)
 					// return valid results
@@ -208,12 +208,12 @@ class Camera
 				// returns the result
 				bool PointIntersection(DirectX::XMVECTOR point)
 				{
-					bool leftPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[0], point)) < 0;
-					bool rightPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[1], point)) < 0;
-					bool upperPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[2], point)) < 0;
-					bool lowerPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[3], point)) < 0;
-					bool nearPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[4], point)) < 0;
-					bool farPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[5], point)) < 0;
+					bool leftPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[0], point)) > 0;
+					bool rightPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[1], point)) > 0;
+					bool upperPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[2], point)) > 0;
+					bool lowerPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[3], point)) > 0;
+					bool nearPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[4], point)) > 0;
+					bool farPlaneIntersection = _mm_cvtss_f32(DirectX::XMPlaneDotCoord(frustumPlanes[5], point)) > 0;
 
 					bool planeIntersections = leftPlaneIntersection && rightPlaneIntersection &&
 											  upperPlaneIntersection && lowerPlaneIntersection &&

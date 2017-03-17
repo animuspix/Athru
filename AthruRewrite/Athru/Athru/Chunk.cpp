@@ -24,7 +24,7 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 												  AVAILABLE_SHADERS::NULL_SHADER));
 
 		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / CHUNK_WIDTH) % CHUNK_WIDTH)) + offsetFromHomeZ,
-												       (float)((i % CHUNK_WIDTH) + 1 * (byteUnsigned)(i > 0 && i % CHUNK_WIDTH == 0)),
+												       (float)(i % CHUNK_WIDTH),
 													   (float)(i / (CHUNK_WIDTH * CHUNK_WIDTH)) + offsetFromHomeX);
 
 		DirectX::XMVECTOR boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);

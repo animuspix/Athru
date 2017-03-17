@@ -1,13 +1,29 @@
-﻿  Athru.cpp
-  Application.cpp
+﻿  Application.cpp
+  Athru.cpp
+  AthruGlobals.cpp
+  Boxecule.cpp
+  Camera.cpp
+  Chunk.cpp
+  ConsolePrinter.cpp
+  CookTorranceLighting.cpp
+  DeferredRenderer.cpp
   Direct3D.cpp
+  DirectionalLight.cpp
   Graphics.cpp
   Input.cpp
   Logger.cpp
-  StackAllocator.cpp
+  Material.cpp
+  Planet.cpp
+  Rasterizer.cpp
+  RenderManager.cpp
+  SceneManager.cpp
   ServiceCentre.cpp
   Running Code Analysis for C/C++...
-Direct3D.obj : error LNK2001: unresolved external symbol "public: __cdecl Matrix4::~Matrix4(void)" (??1Matrix4@@QEAA@XZ)
-Direct3D.obj : error LNK2001: unresolved external symbol "public: __cdecl Matrix4::Matrix4(void)" (??0Matrix4@@QEAA@XZ)
-Direct3D.obj : error LNK2001: unresolved external symbol "public: __cdecl Matrix4::Matrix4(float,float,float,float,float,float,float,float,float,float,float,float,float,float,float,float)" (??0Matrix4@@QEAA@MMMMMMMMMMMMMMMM@Z)
-C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.exe : fatal error LNK1120: 3 unresolved externals
+  Compiling...
+  Shader.cpp
+  Sound.cpp
+  StackAllocator.cpp
+  StarSystem.cpp
+  Running Code Analysis for C/C++...
+Direct3D.obj : error LNK2001: unresolved external symbol "public: union __m128 const & __cdecl Matrix4::GetVector(char)" (?GetVector@Matrix4@@QEAAAEBT__m128@@D@Z)
+C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.exe : fatal error LNK1120: 1 unresolved externals
