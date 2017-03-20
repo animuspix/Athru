@@ -34,11 +34,8 @@ Camera::Camera(DirectX::XMMATRIX& projectorMatrix)
 	lastMousePos.x = 0;
 	lastMousePos.y = 0;
 
-	// Initialise the speed modifier for mouse-look
-	speed = 0.4f;
-
-	// Initialise the camera frustum
-	frustum = Frustum(viewMatrix * projectorMatrix);
+	// Initialise the spinSpeed modifier for mouse-look
+	spinSpeed = 0.4f;
 }
 
 Camera::~Camera()
@@ -58,18 +55,21 @@ DirectX::XMVECTOR Camera::GetTranslation()
 	return position;
 }
 
-void Camera::SetRotation(float eulerX, float eulerY, float eulerZ)
+void Camera::SetRotation(DirectX::XMFLOAT3 eulerAngles)
 {
 	// Rotate the software camera
-	rotationEuler.x = eulerX;
-	rotationEuler.y = eulerY;
-	rotationEuler.z = eulerZ;
+	rotationEuler = eulerAngles;
 	rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(rotationEuler.x, rotationEuler.y, rotationEuler.z);
 }
 
-DirectX::XMVECTOR Camera::GetRotation()
+DirectX::XMVECTOR Camera::GetRotationQuaternion()
 {
 	return rotationQuaternion;
+}
+
+DirectX::XMFLOAT3 Camera::GetRotationEuler()
+{
+	return rotationEuler;
 }
 
 DirectX::XMMATRIX Camera::GetViewMatrix()
@@ -84,19 +84,19 @@ void Camera::MouseLook(Input* inputPttr)
 	float mouseDispY = currMousePos.y - lastMousePos.y;
 
 	// Rotate the camera through mouse XY coordinates
-	float xRotationDisp = speed * mouseDispY * TimeStuff::deltaTime();
-	float yRotationDisp = speed * mouseDispX * TimeStuff::deltaTime();
+	float xRotationDisp = spinSpeed * mouseDispY * TimeStuff::deltaTime();
+	float yRotationDisp = spinSpeed * mouseDispX * TimeStuff::deltaTime();
 
 	// We're using an incremental mouse look now, so add the current rotation
 	// into the displacements generated above before setting the new camera angles
-	SetRotation(rotationEuler.x + xRotationDisp, rotationEuler.y + yRotationDisp, 0);
+	SetRotation(DirectX::XMFLOAT3(rotationEuler.x + xRotationDisp, rotationEuler.y + yRotationDisp, 0));
 
 	// Update [lastMousePos] with the coordinates stored for this frame
 	lastMousePos.x = currMousePos.x;
 	lastMousePos.y = currMousePos.y;
 }
 
-void Camera::RefreshViewMatrix(DirectX::XMMATRIX& projectorMatrix)
+void Camera::RefreshViewMatrix()
 {
 	// Setup the local "up"-vector
 	DirectX::XMVECTOR localUp;
@@ -115,45 +115,6 @@ void Camera::RefreshViewMatrix(DirectX::XMMATRIX& projectorMatrix)
 
 	// Finally create the view matrix with [position], [lookAt], and [localUp]
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
-
-	// Update the camera frustum to match the updated view matrix
-	frustum.Update(viewMatrix * projectorMatrix);
-}
-
-bool Camera::IsIntersecting(Boxecule* item)
-{
-	// Cache the position
-	DirectX::XMVECTOR itemPos = item->FetchTransformations().pos;
-
-	// Create a series of offsets to represent the per-axis displacements of
-	// each vertex from the boxecule origin ([itemPos])
-	DirectX::XMVECTOR upperOffset = _mm_set_ps(0, 0, 0.5f, 0);
-	DirectX::XMVECTOR leftUpperOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, -0.5f), upperOffset);
-	DirectX::XMVECTOR rightUpperOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, 0.5f), upperOffset);
-
-	DirectX::XMVECTOR lowerOffset = _mm_set_ps(0, 0, -0.5f, 0);
-	DirectX::XMVECTOR leftLowerOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, -0.5f), lowerOffset);
-	DirectX::XMVECTOR rightLowerOffset = _mm_add_ps(_mm_set_ps(0, 0, 0, 0.5f), lowerOffset);
-
-	DirectX::XMVECTOR frontOffset = _mm_set_ps(0, -0.5f, 0, 0);
-	DirectX::XMVECTOR backOffset = _mm_set_ps(0, -0.5f, 0, 0);
-
-	// Generate vectors representing the positions of each vertex within [item]
-	DirectX::XMVECTOR itemVert0 = _mm_add_ps(_mm_add_ps(itemPos, frontOffset), leftUpperOffset);
-	DirectX::XMVECTOR itemVert1 = _mm_add_ps(_mm_add_ps(itemPos, frontOffset), rightUpperOffset);
-	DirectX::XMVECTOR itemVert2 = _mm_add_ps(_mm_add_ps(itemPos, frontOffset), leftLowerOffset);
-	DirectX::XMVECTOR itemVert3 = _mm_add_ps(_mm_add_ps(itemPos, frontOffset), rightLowerOffset);
-	DirectX::XMVECTOR itemVert4 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), rightUpperOffset);
-	DirectX::XMVECTOR itemVert5 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), rightLowerOffset);
-	DirectX::XMVECTOR itemVert6 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftUpperOffset);
-	DirectX::XMVECTOR itemVert7 = _mm_add_ps(_mm_add_ps(itemPos, backOffset), leftLowerOffset);
-
-	// Check if any of the item vertices intersect with the frustum
-	bool intersection = frustum.CheckIntersection(itemVert0, itemVert1, itemVert2, itemVert3,
-												  itemVert4, itemVert5, itemVert6, itemVert7);
-
-	// Return whether or not an intersection was detected
-	return intersection;
 }
 
 // Push constructions for this class through Athru's custom allocator

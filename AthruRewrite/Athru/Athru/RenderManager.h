@@ -17,6 +17,7 @@ enum class AVAILABLE_SHADERS
 class Camera;
 class Boxecule;
 class Chunk;
+class SubChunk;
 class RenderManager
 {
 	public:
@@ -42,7 +43,7 @@ class RenderManager
 		// and boolean magic should hopefully be a reasonable optimisation)
 		bool BoxeculeDiscard(Boxecule* boxecule, fourByteUnsigned unculledCounter);
 
-		// Store the given boxecule
+		// Store the given boxecule inside the render queue
 		bool BoxeculeCache(Boxecule* boxecule, fourByteUnsigned unculledCounter);
 
 		// Do nothing; null function called if a boxecule is completely behind the camera
@@ -53,28 +54,27 @@ class RenderManager
 		// or not it's inside the camera frustum)
 		bool DirectionalCullPassed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter);
 
-		// Each boxecule that makes it past initial chunk culling is directionally-tested, and the result is
-		// used with [basicBoxeculeDispatch] to either call [DirectionalCullFailed(...)] or
-		// [DirectionalCulllPassed(...)]; boxecules that survive the directional cull are frustum-tested, and
-		// the result is used with [coreBoxeculeDispatch] to either call [BoxeculeDiscard(...)] or
-		// [BoxeculeCache(...)]; [BoxeculeCache(...)] stores the given boxecule in the render queue and returns
-		// [true], while [BoxeculeDiscard(...)] does nothing and returns [false]. Both return values are echoed
-		// through [DirectionalCullFailed(...)] and [DirectionalCullPassed(...)]
+		// Do nothing; null function called if a sub-chunk is outside the ZY view triangle
+		fourByteUnsigned SubChunkDiscard(SubChunk* subChunk, bool withinHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);
 
-		// Do nothing; null function called if a chunk is outside the view triangle
-		fourByteUnsigned ChunkDiscard(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);
+		// Pass the boxecules within the given sub-chunk on to the basic boxecule-processing functions
+		fourByteUnsigned SubChunkCache(SubChunk* subChunk, bool withinHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);
 
-		// Pass the boxecules within the given chunk on to the basic boxecule-processing functions
+		// Do nothing; null function called if a chunk is outside the ZX view triangle
+		fourByteUnsigned ChunkDiscard(Chunk* chunk, bool withinHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);
+
+		// Pass the sub-chunks within the given chunk on to the relevant functions
 		fourByteUnsigned ChunkCache(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);
-
-		// Helper function to segregate chunk directional-testing from generic boxecule testing/culling
-		bool ChunkVisible(Chunk* chunk, Camera* mainCamera);
 
 		ID3D11DeviceContext* deviceContext;
 		Boxecule** renderQueue;
 		DeferredRenderer* deferredRenderer;
 		fourByteSigned renderQueueLength;
 		Shader** availableShaders;
+		byteUnsigned definedShaderCount;
+
+		// Sub-chunk processing function pointer array
+		fourByteUnsigned(RenderManager::*subChunkDispatch[2])(SubChunk* subChunk, bool withinHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);
 
 		// Chunk-processing function pointer array
 		fourByteUnsigned(RenderManager::*chunkDispatch[2])(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter);

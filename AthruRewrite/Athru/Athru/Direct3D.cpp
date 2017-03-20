@@ -274,7 +274,7 @@ Direct3D::Direct3D(HWND hwnd)
 Direct3D::~Direct3D()
 {
 	// Set the application to windowed mode; otherwise, releasing the swap chain throws an exception
-	swapChain->SetFullscreenState(false, NULL);
+	//swapChain->SetFullscreenState(false, NULL);
 
 	rasterState->Release();
 	rasterState = nullptr;

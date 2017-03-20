@@ -24,8 +24,10 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	// objects if possible, since that could drastically reduce the
 	// number of times especially common shader programs
 	// (such as Rasterizer) are processed
-	availableShaders = new Shader*;
+	const byteUnsigned shaderCount = (byteUnsigned)AVAILABLE_SHADERS::NULL_SHADER;
+	availableShaders = new Shader*[shaderCount];
 	availableShaders[(byteUnsigned)AVAILABLE_SHADERS::RASTERIZER] = new Rasterizer(d3dDevice, ServiceCentre::AccessApp()->GetHWND(), L"VertPlotter.cso", L"Colorizer.cso");
+	definedShaderCount = 1;
 
 	// Initialize the function pointers accessed within [Prepare(...)]
 	basicBoxeculeDispatch[0] = &RenderManager::DirectionalCullFailed;
@@ -36,12 +38,23 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 
 	chunkDispatch[0] = &RenderManager::ChunkDiscard;
 	chunkDispatch[1] = &RenderManager::ChunkCache;
+
+	subChunkDispatch[0] = &RenderManager::SubChunkDiscard;
+	subChunkDispatch[1] = &RenderManager::SubChunkCache;
 }
 
 RenderManager::~RenderManager()
 {
+	for (byteUnsigned i = 0; i < definedShaderCount; i += 1)
+	{
+		availableShaders[i]->~Shader();
+	}
+
 	delete availableShaders;
 	availableShaders = nullptr;
+
+	delete renderQueue;
+	renderQueue = nullptr;
 }
 
 void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
@@ -79,22 +92,22 @@ bool RenderManager::BoxeculeCache(Boxecule* boxecule, fourByteUnsigned unculledC
 bool RenderManager::DirectionalCullFailed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter) { return false; }
 bool RenderManager::DirectionalCullPassed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter)
 {
-	byteUnsigned dispatchIndex = (byteUnsigned)(mainCamera->IsIntersecting(boxecule) &&
-											   (boxecule->GetMaterial().GetColorData()[3] != 0));
-
+	byteUnsigned dispatchIndex = (byteUnsigned)(boxecule->GetMaterial().GetColorData()[3] != 0);
 	return (this->*(this->coreBoxeculeDispatch[dispatchIndex]))(boxecule, unculledCounter);
 }
 
-fourByteUnsigned RenderManager::ChunkDiscard(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter) { return unculledCounter; }
-fourByteUnsigned RenderManager::ChunkCache(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter)
+fourByteUnsigned RenderManager::SubChunkDiscard(SubChunk* subChunk, bool withinHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter) { return unculledCounter; }
+fourByteUnsigned RenderManager::SubChunkCache(SubChunk* subChunk, bool withinHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter)
 {
-	for (eightByteUnsigned j = 0; j < CHUNK_VOLUME * ((((twoByteUnsigned)isHome) * boxeculeDensity) + (1 * !isHome)); j += 1)
+	Boxecule** subChunkBoxecules = subChunk->GetStoredBoxecules();
+
+	for (eightByteUnsigned i = 0; i < SUB_CHUNK_VOLUME * ((((twoByteUnsigned)withinHome) * boxeculeDensity) + (1 * !withinHome)); i += 1)
 	{
-		Boxecule* currBoxecule = chunk->GetChunkBoxecules()[j];
-		float cameraLocalZ = DirectX::XMVector3Rotate(mainCamera->GetTranslation(), mainCamera->GetRotation()).m128_f32[2];
+		Boxecule* currBoxecule = subChunkBoxecules[i];
+		float cameraLocalZ = DirectX::XMVector3Rotate(mainCamera->GetTranslation(), mainCamera->GetRotationQuaternion()).m128_f32[2];
 		float boxeculeGlobalZ = currBoxecule->FetchTransformations().pos.m128_f32[2];
 
-		fourByteUnsigned resultNumeral = (fourByteUnsigned)((this->*(this->basicBoxeculeDispatch[(byteUnsigned)(/*boxeculeGlobalZ > cameraLocalZ*/true)]))(currBoxecule, mainCamera, unculledCounter));
+		fourByteUnsigned resultNumeral = (fourByteUnsigned)((this->*(this->basicBoxeculeDispatch[(byteUnsigned)(boxeculeGlobalZ > cameraLocalZ)]))(currBoxecule, mainCamera, unculledCounter));
 		renderQueueLength += resultNumeral;
 		unculledCounter += resultNumeral;
 	}
@@ -102,38 +115,17 @@ fourByteUnsigned RenderManager::ChunkCache(Chunk* chunk, bool isHome, twoByteUns
 	return unculledCounter;
 }
 
-bool RenderManager::ChunkVisible(Chunk* chunk, Camera* mainCamera)
+fourByteUnsigned RenderManager::ChunkDiscard(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter) { return unculledCounter; }
+fourByteUnsigned RenderManager::ChunkCache(Chunk* chunk, bool isHome, twoByteUnsigned boxeculeDensity, Camera* mainCamera, fourByteUnsigned unculledCounter)
 {
-	// Generate a view triangle so we can check chunk visibility
-	// without expensive frustum testing (chunks exist on a plane anyway,
-	// so a view triangle is a good analogue to the view frustum we use
-	// with boxecules)
-	DirectX::XMVECTOR viewTriVertA = mainCamera->GetTranslation();
-	DirectX::XMVECTOR viewTriVertB = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, tan(VERT_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR)), mainCamera->GetRotation());
-	DirectX::XMVECTOR viewTriVertC = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, (tan(VERT_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR) * -1)), mainCamera->GetRotation());
+	SubChunk** chunkChildren = chunk->GetSubChunks();
 
-	// Point/triangle culling algorithm found here:
-	// http://www.nerdparadise.com/math/pointinatriangle
-	float crossProductMagnitudes[4][3];
-	for (byteUnsigned i = 0; i < 4; i += 1)
+	for (byteUnsigned i = 0; i < SUB_CHUNKS_PER_CHUNK; i += 1)
 	{
-		DirectX::XMVECTOR* chunkPoints = chunk->GetChunkPoints();
-		DirectX::XMVECTOR vectorDiffA = _mm_sub_ps(chunkPoints[i], viewTriVertA);
-		DirectX::XMVECTOR vectorDiffB = _mm_sub_ps(viewTriVertB, viewTriVertA);
-		DirectX::XMVECTOR vectorDiffC = _mm_sub_ps(chunkPoints[i], viewTriVertB);
-
-		DirectX::XMVECTOR vectorDiffD = _mm_sub_ps(viewTriVertC, viewTriVertB);
-		DirectX::XMVECTOR vectorDiffE = _mm_sub_ps(chunkPoints[i], viewTriVertC);
-		DirectX::XMVECTOR vectorDiffF = _mm_sub_ps(viewTriVertA, viewTriVertC);
-
-		crossProductMagnitudes[i][0] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffA, vectorDiffB)));
-		crossProductMagnitudes[i][1] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffC, vectorDiffD)));
-		crossProductMagnitudes[i][2] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffE, vectorDiffF)));
+		unculledCounter = (this->*(this->subChunkDispatch[(byteUnsigned)(chunkChildren[i]->GetVisibility(mainCamera))]))(chunkChildren[i], isHome, boxeculeDensity, mainCamera, unculledCounter);
 	}
 
-	return std::signbit(crossProductMagnitudes[0][0]) == std::signbit(crossProductMagnitudes[1][0]) == std::signbit(crossProductMagnitudes[2][0]) == std::signbit(crossProductMagnitudes[3][0]) ||
-		   std::signbit(crossProductMagnitudes[0][1]) == std::signbit(crossProductMagnitudes[1][1]) == std::signbit(crossProductMagnitudes[2][1]) == std::signbit(crossProductMagnitudes[3][1]) ||
-		   std::signbit(crossProductMagnitudes[0][2]) == std::signbit(crossProductMagnitudes[1][2]) == std::signbit(crossProductMagnitudes[2][2]) == std::signbit(crossProductMagnitudes[3][2]);
+	return unculledCounter;
 }
 
 void RenderManager::Prepare(Chunk** boxeculeChunks, Camera* mainCamera, twoByteUnsigned boxeculeDensity)
@@ -141,23 +133,23 @@ void RenderManager::Prepare(Chunk** boxeculeChunks, Camera* mainCamera, twoByteU
 	// Chunk culling here
 	// Failing chunk culling means skipping boxecule culling/preparation for the
 	// failed chunk
-	bool chunkVisibilities[9] = { ChunkVisible(boxeculeChunks[0], mainCamera),
-								  ChunkVisible(boxeculeChunks[1], mainCamera),
-								  ChunkVisible(boxeculeChunks[2], mainCamera),
-								  ChunkVisible(boxeculeChunks[3], mainCamera),
-								  ChunkVisible(boxeculeChunks[4], mainCamera),
-								  ChunkVisible(boxeculeChunks[5], mainCamera),
-								  ChunkVisible(boxeculeChunks[6], mainCamera),
-								  ChunkVisible(boxeculeChunks[7], mainCamera),
-								  ChunkVisible(boxeculeChunks[8], mainCamera) };
+	bool chunkVisibilities[CHUNK_COUNT] = { boxeculeChunks[0]->GetVisibility(mainCamera),
+											boxeculeChunks[1]->GetVisibility(mainCamera),
+											boxeculeChunks[2]->GetVisibility(mainCamera),
+											boxeculeChunks[3]->GetVisibility(mainCamera),
+											boxeculeChunks[4]->GetVisibility(mainCamera),
+											boxeculeChunks[5]->GetVisibility(mainCamera),
+											boxeculeChunks[6]->GetVisibility(mainCamera),
+											boxeculeChunks[7]->GetVisibility(mainCamera),
+											boxeculeChunks[8]->GetVisibility(mainCamera) };
 
 	// Copy boxecules from non-home chunks while performing directional/frustum/opacity
 	// culling
 	byteUnsigned chunkIndex = 0;
 	fourByteUnsigned unculledCounter = 0;
-	for (eightByteUnsigned i = 0; i < (9 * CHUNK_VOLUME); i += CHUNK_VOLUME)
+	for (eightByteUnsigned i = 0; i < CHUNK_COUNT; i += 1)
 	{
-		unculledCounter = (this->*(this->chunkDispatch[(byteUnsigned)/*(chunkVisibilities[chunkIndex])*/true]))
+		unculledCounter = (this->*(this->chunkDispatch[(byteUnsigned)(chunkVisibilities[chunkIndex])]))
 								  (boxeculeChunks[chunkIndex], chunkIndex == HOME_CHUNK_INDEX, boxeculeDensity, mainCamera, unculledCounter);
 		chunkIndex += 1;
 	}

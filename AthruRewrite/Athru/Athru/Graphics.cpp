@@ -30,6 +30,8 @@ Graphics::~Graphics()
 
 void Graphics::Frame()
 {
+	//ServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
+
 	// Cache a local reference to the Input service
 	Input* localInput = ServiceCentre::AccessInput();
 
@@ -37,32 +39,32 @@ void Graphics::Frame()
 	float speed = 10;
 	if (localInput->IsKeyDown(87))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), camera->GetRotationQuaternion()));
 	}
 
 	if (localInput->IsKeyDown(65))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, -speed * TimeStuff::deltaTime()), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, (speed * TimeStuff::deltaTime()) * -1), camera->GetRotationQuaternion()));
 	}
 
 	if (localInput->IsKeyDown(83))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, -speed * TimeStuff::deltaTime(), 0, 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, (speed * TimeStuff::deltaTime()) * -1, 0, 0), camera->GetRotationQuaternion()));
 	}
 
 	if (localInput->IsKeyDown(68))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, speed * TimeStuff::deltaTime()), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, speed * TimeStuff::deltaTime()), camera->GetRotationQuaternion()));
 	}
 
 	if (localInput->IsKeyDown(32))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, speed * TimeStuff::deltaTime(), 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, speed * TimeStuff::deltaTime(), 0), camera->GetRotationQuaternion()));
 	}
 
 	if (localInput->IsKeyDown(17))
 	{
-		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, -speed * TimeStuff::deltaTime(), 0), camera->GetRotation()));
+		camera->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, (speed * TimeStuff::deltaTime()) * -1, 0), camera->GetRotationQuaternion()));
 	}
 
 	// Rotate the camera with mouse input
@@ -70,7 +72,7 @@ void Graphics::Frame()
 
 	// Update the camera's view matrix to
 	// reflect the translation + rotation above
-	camera->RefreshViewMatrix(d3D->GetPerspProjector());
+	camera->RefreshViewMatrix();
 
 	// Update the scene (generate terrain/organisms, update organism statuses,
 	// simulate physics for visible areas, etc.)

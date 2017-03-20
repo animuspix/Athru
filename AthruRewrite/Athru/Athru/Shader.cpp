@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "Typedefs.h"
+#include "ServiceCentre.h"
 #include "Shader.h"
 
 Shader::Shader(ID3D11Device* device, HWND windowHandle,
@@ -148,4 +149,17 @@ void Shader::Render(ID3D11DeviceContext* deviceContext,
 {
 	SetShaderParameters(deviceContext, world, view, projection);
 	RenderShader(deviceContext);
+}
+
+// Push constructions for this class through Athru's custom allocator
+void* Shader::operator new(size_t size)
+{
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Shader>(), false);
+}
+
+// We aren't expecting to use [delete], so overload it to do nothing;
+void Shader::operator delete(void* target)
+{
+	return;
 }

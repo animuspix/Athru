@@ -1,6 +1,7 @@
 #pragma once
 
 #include <chrono>
+#include "Typedefs.h"
 
 namespace TimeStuff
 {
@@ -16,5 +17,10 @@ namespace TimeStuff
 		std::chrono::duration<float> deltaTimeValue = std::chrono::duration_cast<std::chrono::duration<float>>(current - timeAtLastFrame);
 		float test = deltaTimeValue.count();
 		return deltaTimeValue.count();
+	}
+
+	inline twoByteUnsigned FPS()
+	{
+		return (twoByteUnsigned)(1.0f / deltaTime());
 	}
 }
