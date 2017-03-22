@@ -170,6 +170,7 @@
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="RenderManager.cpp" />
     <ClCompile Include="SceneManager.cpp" />
+    <ClCompile Include="ScreenRect.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ConsolePrinter.cpp" />
     <ClCompile Include="Direct3D.cpp" />
@@ -184,6 +185,7 @@
     <ClCompile Include="StarSystem.cpp" />
     <ClCompile Include="SubChunk.cpp" />
     <ClCompile Include="TexturedRasterizer.cpp" />
+    <ClCompile Include="WindowRect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AthruGlobals.h" />
@@ -197,6 +199,7 @@
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="RenderManager.h" />
     <ClInclude Include="SceneManager.h" />
+    <ClInclude Include="ScreenRect.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ConsolePrinter.h" />
     <ClInclude Include="Direct3D.h" />
@@ -218,6 +221,7 @@
     <ClInclude Include="SubChunk.h" />
     <ClInclude Include="TexturedRasterizer.h" />
     <ClInclude Include="Typedefs.h" />
+    <ClInclude Include="WindowRect.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="BloomEffect.hlsl" />

@@ -5,6 +5,8 @@
 #include "SQT.h"
 #include "Material.h"
 
+#define BOXECULE_INDEX_COUNT 36
+
 class Boxecule
 {
 	public:

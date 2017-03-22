@@ -28,6 +28,7 @@ class Shader
 
 		virtual void SetShaderParameters(ID3D11DeviceContext* deviceContext,
 										 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
+		
 		virtual void RenderShader(ID3D11DeviceContext* deviceContext);
 
 		ID3D11VertexShader* vertShader;

@@ -6,16 +6,25 @@ cbuffer MatBuffer
     matrix projection;
 };
 
+// Normals are ignored here since we're treating lighting as
+// a post-processing effect, but every shader class deriving
+// from the same [Shader] super-class means the properties
+// need to be there anyway
+
 struct Vertex
 {
     float4 pos : POSITION;
     float4 color : COLOR;
+    float4 normal : NORMAL;
+    float2 texCoord : TEXCOORD0;
 };
 
 struct Pixel
 {
     float4 pos : SV_POSITION;
     float4 color : COLOR;
+    float4 normal : NORMAL;
+    float2 texCoord : TEXCOORD0;
 };
 
 Pixel main(Vertex vertIn)
