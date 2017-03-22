@@ -63,13 +63,7 @@
     <ClCompile Include="Rasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DeferredRenderer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Chunk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="CookTorranceLighting.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="AthruGlobals.cpp">
@@ -88,6 +82,18 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SubChunk.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Bloom.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="CookTorrancePBR.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="DepthOfField.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="TexturedRasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -155,13 +161,7 @@
     <ClInclude Include="Rasterizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DeferredRenderer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Chunk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="CookTorranceLighting.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SQT.h">
@@ -182,9 +182,27 @@
     <ClInclude Include="SubChunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Bloom.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="CookTorrancePBR.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="DepthOfField.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TexturedRasterizer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Colorizer.hlsl" />
     <FxCompile Include="VertPlotter.hlsl" />
+    <FxCompile Include="BloomEffect.hlsl" />
+    <FxCompile Include="CookTorranceLighting.hlsl" />
+    <FxCompile Include="DepthOfFieldEffect.hlsl" />
+    <FxCompile Include="LightPlotter.hlsl" />
+    <FxCompile Include="PostEffectPlotter.hlsl" />
+    <FxCompile Include="Texturizer.hlsl" />
   </ItemGroup>
 </Project>

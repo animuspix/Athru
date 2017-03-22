@@ -168,7 +168,7 @@ void Boxecule::SetMaterial(Material& freshMaterial)
 	material = freshMaterial;
 }
 
-Material Boxecule::GetMaterial()
+Material& Boxecule::GetMaterial()
 {
 	return material;
 }

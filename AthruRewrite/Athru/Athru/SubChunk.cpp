@@ -18,22 +18,19 @@ SubChunk::SubChunk(Chunk* parent,
 
 	for (eightByteSigned i = 0; i < SUB_CHUNK_VOLUME; i += 1)
 	{
-		float alpha = 1.0f;
+		float alpha = (float)(index <= (SUB_CHUNKS_PER_CHUNK / 2));
 		float red = 1.0f / (rand() % 10);
 		storedBoxecules[i] = new Boxecule(Material(Sound(),
 												   red, 0.6f, 0.4f, alpha,
-												   AVAILABLE_SHADERS::RASTERIZER,
-												   AVAILABLE_SHADERS::NULL_SHADER,
-												   AVAILABLE_SHADERS::NULL_SHADER,
-												   AVAILABLE_SHADERS::NULL_SHADER,
-												   AVAILABLE_SHADERS::NULL_SHADER));
+												   AVAILABLE_OBJECT_SHADERS::RASTERIZER,
+												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER));
 
-		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / CHUNK_WIDTH * SUB_CHUNK_DEPTH) % CHUNK_WIDTH)) + parentOffsetZ,
-												       (float)((i % SUB_CHUNK_DEPTH) + index * SUB_CHUNK_DEPTH),
-													   (float)((i / (CHUNK_WIDTH) % CHUNK_WIDTH)) + parentOffsetX);
-
-		//ServiceCentre::AccessLogger()->Log(i % SUB_CHUNK_DEPTH, Logger::DESTINATIONS::LOG_FILE);
-		//ServiceCentre::AccessLogger()->Log(i % CHUNK_WIDTH, Logger::DESTINATIONS::LOG_FILE);
+		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / (CHUNK_WIDTH * SUB_CHUNK_DEPTH)) % (CHUNK_WIDTH))) + parentOffsetZ,
+												       (float)(((i / CHUNK_WIDTH) % SUB_CHUNK_DEPTH) + index * SUB_CHUNK_DEPTH),
+													   (float)(i % CHUNK_WIDTH) + parentOffsetX);
 
 		DirectX::XMVECTOR boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 		storedBoxecules[i]->FetchTransformations() = SQT(boxeculeRot, boxeculePos, 1);

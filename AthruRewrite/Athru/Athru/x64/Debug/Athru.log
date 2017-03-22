@@ -1,3 +1,7 @@
-﻿  SubChunk.cpp
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)
+﻿  compilation object save succeeded; see C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\Colorizer.cso
+  SubChunk.cpp
+  StarSystem.cpp
+  StackAllocator.cpp
+  Shader.cpp
+  ServiceCentre.cpp
+  SceneManager.cpp
