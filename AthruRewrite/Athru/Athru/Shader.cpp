@@ -147,7 +147,7 @@ void Shader::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 	assert(SUCCEEDED(result));
 }
 
-void Shader::RenderShader(ID3D11DeviceContext* deviceContext)
+void Shader::RenderShader(ID3D11DeviceContext* deviceContext, fourByteUnsigned numIndicesDrawing)
 {
 	// Set the vertex input layout.
 	deviceContext->IASetInputLayout(inputLayout);
@@ -157,14 +157,15 @@ void Shader::RenderShader(ID3D11DeviceContext* deviceContext)
 	deviceContext->PSSetShader(pixelShader, NULL, 0);
 
 	// Render a boxecule
-	deviceContext->DrawIndexed(36, 0, 0);
+	deviceContext->DrawIndexed(numIndicesDrawing, 0, 0);
 }
 
 void Shader::Render(ID3D11DeviceContext* deviceContext,
-					 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
+					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
+					fourByteUnsigned numIndicesDrawing)
 {
 	SetShaderParameters(deviceContext, world, view, projection);
-	RenderShader(deviceContext);
+	RenderShader(deviceContext, numIndicesDrawing);
 }
 
 // Push constructions for this class through Athru's custom allocator
