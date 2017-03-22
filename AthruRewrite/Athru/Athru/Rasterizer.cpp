@@ -8,4 +8,6 @@ Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 
 Rasterizer::~Rasterizer()
 {
+	// Call the parent destructor
+	Shader::~Shader();
 }

@@ -10,12 +10,16 @@ struct Vertex
 {
     float4 pos : POSITION;
     float4 color : COLOR;
+    float4 normal : NORMAL;
+    float2 texCoord : TEXCOORD0;
 };
 
 struct Pixel
 {
     float4 pos : SV_POSITION;
     float4 color : COLOR;
+    float4 normal : NORMAL;
+    float2 texCoord : TEXCOORD0;
 };
 
 Pixel main(Vertex vertIn)
@@ -24,6 +28,7 @@ Pixel main(Vertex vertIn)
     output.pos = mul(vertIn.pos, world);
     output.pos = mul(output.pos, view);
     output.pos = mul(output.pos, projection);
+    output.texCoord = vertIn.texCoord;
     output.color = vertIn.color;
     return output;
 }

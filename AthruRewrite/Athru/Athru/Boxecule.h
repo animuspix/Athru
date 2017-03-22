@@ -14,7 +14,7 @@ class Boxecule
 
 		void PassToGPU(ID3D11DeviceContext* deviceContext);
 		void SetMaterial(Material& freshMaterial);
-		Material GetMaterial();
+		Material& GetMaterial();
 
 		// Get write-allowed raw transformation data
 		SQT& FetchTransformations();
@@ -25,8 +25,8 @@ class Boxecule
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void* operator new[](size_t size);
-		void operator delete(void * target);
-		void operator delete[](void * target);
+		void operator delete(void* target);
+		void operator delete[](void* target);
 
 	private:
 		struct Vertex

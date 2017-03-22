@@ -11,8 +11,8 @@ class Shader
 			   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
 		~Shader();
 
-		void Render(ID3D11DeviceContext* deviceContext,
-					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
+		virtual void Render(ID3D11DeviceContext* deviceContext,
+							DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
@@ -26,9 +26,9 @@ class Shader
 			DirectX::XMMATRIX projection;
 		};
 
-		void SetShaderParameters(ID3D11DeviceContext* deviceContext,
-								 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
-		void RenderShader(ID3D11DeviceContext* deviceContext);
+		virtual void SetShaderParameters(ID3D11DeviceContext* deviceContext,
+										 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
+		virtual void RenderShader(ID3D11DeviceContext* deviceContext);
 
 		ID3D11VertexShader* vertShader;
 		ID3D11PixelShader* pixelShader;

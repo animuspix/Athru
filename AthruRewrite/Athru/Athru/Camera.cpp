@@ -5,7 +5,7 @@
 Camera::Camera(DirectX::XMMATRIX& projectorMatrix)
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, -4.5f, 0, 0);
+	position = _mm_set_ps(0, 0, (CHUNK_WIDTH / 2) + 2, 0);
 
 	// Set the camera's default rotation
 	rotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
@@ -89,7 +89,9 @@ void Camera::MouseLook(Input* inputPttr)
 
 	// We're using an incremental mouse look now, so add the current rotation
 	// into the displacements generated above before setting the new camera angles
-	SetRotation(DirectX::XMFLOAT3(rotationEuler.x + xRotationDisp, rotationEuler.y + yRotationDisp, 0));
+	SetRotation(DirectX::XMFLOAT3(rotationEuler.x + xRotationDisp,
+								  rotationEuler.y + yRotationDisp,
+								  0));
 
 	// Update [lastMousePos] with the coordinates stored for this frame
 	lastMousePos.x = currMousePos.x;

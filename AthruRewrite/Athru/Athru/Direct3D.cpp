@@ -99,27 +99,27 @@ Direct3D::Direct3D(HWND hwnd)
 	backBufferPtr->Release();
 	backBufferPtr = nullptr;
 
-	// Struct containing a description of the depth buffer
-	D3D11_TEXTURE2D_DESC depthBufferDesc;
+	// Struct containing a description of the depth-stencil buffer
+	D3D11_TEXTURE2D_DESC depthStencilBufferDesc;
 
 	// Zero the memory in the depth buffer description
-	ZeroMemory(&depthBufferDesc, sizeof(depthBufferDesc));
+	ZeroMemory(&depthStencilBufferDesc, sizeof(depthStencilBufferDesc));
 
-	// Set up the depth buffer description
-	depthBufferDesc.Width = DISPLAY_WIDTH;
-	depthBufferDesc.Height = DISPLAY_HEIGHT;
-	depthBufferDesc.MipLevels = 1;
-	depthBufferDesc.ArraySize = 1;
-	depthBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthBufferDesc.SampleDesc.Count = 1;
-	depthBufferDesc.SampleDesc.Quality = 0;
-	depthBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthBufferDesc.CPUAccessFlags = 0;
-	depthBufferDesc.MiscFlags = 0;
+	// Set up the depth-stencil buffer description
+	depthStencilBufferDesc.Width = DISPLAY_WIDTH;
+	depthStencilBufferDesc.Height = DISPLAY_HEIGHT;
+	depthStencilBufferDesc.MipLevels = 1;
+	depthStencilBufferDesc.ArraySize = 1;
+	depthStencilBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
+	depthStencilBufferDesc.SampleDesc.Count = 1;
+	depthStencilBufferDesc.SampleDesc.Quality = 0;
+	depthStencilBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	depthStencilBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
+	depthStencilBufferDesc.CPUAccessFlags = 0;
+	depthStencilBufferDesc.MiscFlags = 0;
 
-	// Generate the depth buffer texture using the depth buffer description
-	result = device->CreateTexture2D(&depthBufferDesc, NULL, &depthStencilBuffer);
+	// Generate the depth buffer texture using the depth-stencil buffer description
+	result = device->CreateTexture2D(&depthStencilBufferDesc, NULL, &depthStencilBuffer);
 	assert(SUCCEEDED(result));
 
 	// Struct containing a description of the depth stencil
@@ -239,33 +239,10 @@ Direct3D::Direct3D(HWND hwnd)
 	// Create world matrix (initialized to the 4D identity matrix)
 	worldMatrix = DirectX::XMMatrixIdentity();
 
-	// Cache values in the orthographic projection matrix
-	float left = viewport.TopLeftX;
-	float right = left + viewport.Width;
-	float top = viewport.TopLeftY;
-	float bottom = top - viewport.Height;
-
-	float rightPlusLeft = right + left;
-	float rightMinusLeft = right - left;
-	float topMinusBottom = top - bottom;
-	float topPlusBottom = top + bottom;
-
-	float screenFarMinusScreenNear = SCREEN_FAR - SCREEN_NEAR;
-	float screenFarPlusScreenNear = SCREEN_FAR + SCREEN_NEAR;
-
-	float orthoXScale = 2 / rightMinusLeft;
-	float orthoYScale = 2 / topMinusBottom;
-	float orthoZScale = 2 / screenFarMinusScreenNear;
-
-	float orthoXShift = rightPlusLeft / rightMinusLeft;
-	float orthoYShift = topPlusBottom / topMinusBottom;
-	float orthoZShift = screenFarPlusScreenNear / screenFarMinusScreenNear;
-
 	// Create orthographic projection matrix
-	orthoProjector = Matrix4(orthoXScale, 0, 0, orthoXShift,
-							 0, orthoYScale, 0, orthoYShift,
-							 0, 0, orthoZScale, orthoZShift,
-							 0, 0,			 0,			 1);
+	float frustumWidthAtNear = ((2 * SCREEN_NEAR) * tan(VERT_FIELD_OF_VIEW_RADS * 0.5f));
+	float frustumHeightAtNear = frustumWidthAtNear / DISPLAY_ASPECT_RATIO;
+	orthoProjector = DirectX::XMMatrixOrthographicLH(frustumWidthAtNear, frustumHeightAtNear, SCREEN_NEAR, SCREEN_FAR);
 
 	// Raise an error if any DirectX components failed to build
 	assert(SUCCEEDED(result));
@@ -325,6 +302,11 @@ void Direct3D::EndScene()
 	swapChain->Present(VSYNC_ENABLED, 0);
 }
 
+void Direct3D::ResetRenderTargets()
+{
+	deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+}
+
 ID3D11Device* Direct3D::GetDevice()
 {
 	return device;
@@ -333,6 +315,11 @@ ID3D11Device* Direct3D::GetDevice()
 ID3D11DeviceContext* Direct3D::GetDeviceContext()
 {
 	return deviceContext;
+}
+
+D3D11_VIEWPORT& Direct3D::GetViewport()
+{
+	return viewport;
 }
 
 const DXGI_ADAPTER_DESC& Direct3D::GetAdapterInfo()
@@ -347,10 +334,7 @@ DirectX::XMMATRIX Direct3D::GetPerspProjector()
 
 DirectX::XMMATRIX Direct3D::GetOrthoProjector()
 {
-	return DirectX::XMMATRIX(orthoProjector.GetVector(0),
-							 orthoProjector.GetVector(1),
-							 orthoProjector.GetVector(2),
-							 orthoProjector.GetVector(3));
+	return orthoProjector;
 }
 
 DirectX::XMMATRIX Direct3D::GetWorldMatrix()
