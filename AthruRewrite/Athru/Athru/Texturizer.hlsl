@@ -21,7 +21,7 @@ struct DeferredPixel
     float4 normal : SV_Target1;
 };
 
-DeferredPixel main(Pixel pixIn) : SV_TARGET
+DeferredPixel main(Pixel pixIn)
 {
     DeferredPixel pixOut;
     // Multiplicative blend between the object color and the

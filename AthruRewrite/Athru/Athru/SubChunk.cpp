@@ -26,7 +26,8 @@ SubChunk::SubChunk(Chunk* parent,
 												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
 												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
 												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER));
+												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   L""));
 
 		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / (CHUNK_WIDTH * SUB_CHUNK_DEPTH)) % (CHUNK_WIDTH))) + parentOffsetZ,
 												       (float)(((i / CHUNK_WIDTH) % SUB_CHUNK_DEPTH) + index * SUB_CHUNK_DEPTH),

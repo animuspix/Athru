@@ -23,7 +23,7 @@ struct Pixel
 {
     float4 pos : SV_POSITION;
     float4 color : COLOR;
-    float4 normal : NORMAL;
+    float4 normal : COLOR1;
     float2 texCoord : TEXCOORD0;
 };
 
@@ -34,5 +34,7 @@ Pixel main(Vertex vertIn)
     output.pos = mul(output.pos, view);
     output.pos = mul(output.pos, projection);
     output.color = vertIn.color;
+    output.normal = vertIn.normal;
+    output.texCoord = vertIn.texCoord;
     return output;
 }

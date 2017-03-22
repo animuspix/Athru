@@ -168,9 +168,9 @@
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="Planet.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
+    <ClCompile Include="Rect.cpp" />
     <ClCompile Include="RenderManager.cpp" />
     <ClCompile Include="SceneManager.cpp" />
-    <ClCompile Include="ScreenRect.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="ConsolePrinter.cpp" />
     <ClCompile Include="Direct3D.cpp" />
@@ -185,7 +185,6 @@
     <ClCompile Include="StarSystem.cpp" />
     <ClCompile Include="SubChunk.cpp" />
     <ClCompile Include="TexturedRasterizer.cpp" />
-    <ClCompile Include="WindowRect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AthruGlobals.h" />
@@ -197,9 +196,9 @@
     <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="Planet.h" />
     <ClInclude Include="Rasterizer.h" />
+    <ClInclude Include="Rect.h" />
     <ClInclude Include="RenderManager.h" />
     <ClInclude Include="SceneManager.h" />
-    <ClInclude Include="ScreenRect.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="ConsolePrinter.h" />
     <ClInclude Include="Direct3D.h" />
@@ -221,10 +220,11 @@
     <ClInclude Include="SubChunk.h" />
     <ClInclude Include="TexturedRasterizer.h" />
     <ClInclude Include="Typedefs.h" />
-    <ClInclude Include="WindowRect.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="BloomEffect.hlsl" />
+    <FxCompile Include="BloomEffect.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="Colorizer.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
@@ -232,11 +232,21 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ObjectFileOutput Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(SolutionDir)%(Filename).cso</ObjectFileOutput>
     </FxCompile>
-    <FxCompile Include="CookTorranceLighting.hlsl" />
-    <FxCompile Include="DepthOfFieldEffect.hlsl" />
-    <FxCompile Include="LightPlotter.hlsl" />
-    <FxCompile Include="PostEffectPlotter.hlsl" />
-    <FxCompile Include="Texturizer.hlsl" />
+    <FxCompile Include="CookTorranceLighting.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="DepthOfFieldEffect.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="LightPlotter.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="PostEffectPlotter.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="Texturizer.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
     <FxCompile Include="VertPlotter.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>

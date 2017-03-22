@@ -1,29 +1,21 @@
 
-cbuffer MatBuffer
+struct DeferredPixel
 {
-    matrix world;
-    matrix view;
-    matrix projection;
+    // Send color data to the raster buffer (target 0) and
+    // normal data to the light buffer (target 1)
+    float4 color : SV_Target0;
+    float4 normal : SV_Target1;
 };
 
-struct Vertex
+struct FilteredDeferredPixel
 {
-    float4 pos : POSITION;
-    float4 color : COLOR;
+
 };
 
-struct Pixel
+FilteredDeferredPixel main(DeferredPixel pixIn)
 {
-    float4 pos : SV_POSITION;
-    float4 color : COLOR;
-};
-
-Pixel main(Vertex vertIn)
-{
-    Pixel output;
-    output.pos = mul(vertIn.pos, world);
-    output.pos = mul(output.pos, view);
-    output.pos = mul(output.pos, projection);
-    output.color = vertIn.color;
-    return output;
+    FilteredDeferredPixel pixOut;
+    pixOut.color = pixIn.color;
+    pixOut.normal = pixIn.normal;
+    return pixOut;
 }

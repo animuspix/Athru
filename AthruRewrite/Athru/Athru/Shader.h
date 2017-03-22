@@ -12,7 +12,8 @@ class Shader
 		~Shader();
 
 		virtual void Render(ID3D11DeviceContext* deviceContext,
-							DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
+							DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
+							fourByteUnsigned numIndicesDrawing);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
@@ -28,8 +29,8 @@ class Shader
 
 		virtual void SetShaderParameters(ID3D11DeviceContext* deviceContext,
 										 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
-		
-		virtual void RenderShader(ID3D11DeviceContext* deviceContext);
+
+		virtual void RenderShader(ID3D11DeviceContext* deviceContext, fourByteUnsigned numIndicesDrawing);
 
 		ID3D11VertexShader* vertShader;
 		ID3D11PixelShader* pixelShader;

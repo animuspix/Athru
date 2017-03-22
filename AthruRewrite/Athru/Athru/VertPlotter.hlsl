@@ -28,6 +28,7 @@ Pixel main(Vertex vertIn)
     output.pos = mul(vertIn.pos, world);
     output.pos = mul(output.pos, view);
     output.pos = mul(output.pos, projection);
+    output.normal = vertIn.normal;
     output.texCoord = vertIn.texCoord;
     output.color = vertIn.color;
     return output;

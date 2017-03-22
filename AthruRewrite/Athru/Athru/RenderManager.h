@@ -136,7 +136,7 @@ class RenderManager
 									  fourByteUnsigned numIndicesDrawing);
 
 		// Specialized render call for [CookTorrancePBR]
-		void CookTorrancePBRRender(ID3D11ShaderResourceView rasterBuffer, ID3D11ShaderResourceView lightBuffer, ID3D11DeviceContext* deviceContext,
+		void CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer, ID3D11ShaderResourceView* lightBuffer, ID3D11DeviceContext* deviceContext,
 								   DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 								   fourByteUnsigned numIndicesDrawing);
 

@@ -11,7 +11,7 @@
 #include "DepthOfField.h"
 
 // Generic objects relevant to [this]
-#include "ScreenRect.h"
+#include "Rect.h"
 #include "Boxecule.h"
 #include "Camera.h"
 
@@ -193,38 +193,44 @@ RenderManager::~RenderManager()
 	renderQueue = nullptr;
 }
 
-void RenderManager::RasterizerRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext, 
-									 DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection)
+void RenderManager::RasterizerRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+									 DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+									 fourByteUnsigned numIndicesDrawing)
 {
 	rasterizer->Render(deviceContext, worldByModel, view, projection);
 }
 
 void RenderManager::TexturedRasterizerRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
-										     DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection)
+										     DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+											 fourByteUnsigned numIndicesDrawing)
 {
 	texturedRasterizer->Render(deviceContext, worldByModel, view, projection, renderableMaterial.GetTextureAsShaderResource());
 }
 
-void RenderManager::CookTorrancePBRRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext, 
-										  DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection)
+void RenderManager::CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer, ID3D11ShaderResourceView* lightBuffer, ID3D11DeviceContext* deviceContext,
+										  DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+										  fourByteUnsigned numIndicesDrawing)
 {
 	cookTorrancePBR->Render(deviceContext, worldByModel, view, projection);
 }
 
-void RenderManager::ProceduralShadowMapperRenderer(Material& renderableMaterial, ID3D11DeviceContext* deviceContext, 
-												   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection)
+void RenderManager::ProceduralShadowMapperRenderer(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+												   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+												   fourByteUnsigned numIndicesDrawing)
 {
 	// Nothing for now...
 }
 
-void RenderManager::BloomRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext, 
-							    DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection)
+void RenderManager::BloomRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+							    DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+							    fourByteUnsigned numIndicesDrawing)
 {
 	// Nothing for now...
 }
 
-void RenderManager::DepthOfFieldRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext, 
-									   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection)
+void RenderManager::DepthOfFieldRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+									   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+									   fourByteUnsigned numIndicesDrawing)
 {
 	// Nothing for now...
 }
@@ -259,7 +265,7 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 
 	// Apply lighting effects as appropriate for each vertex in the pipeline and output the results to
 	// each pixel in the light buffer
-	// (this->*(this->objectShaderRenderDispatch[j]))(renderable->GetMaterial(), deviceContext, world * renderable->GetTransform(), view, projection, WINDOW_RECT_INDEX_COUNT);
+	// (this->*(this->objectShaderRenderDispatch[j]))(deviceContext, world * renderable->GetTransform(), view, projection, WINDOW_RECT_INDEX_COUNT);
 
 	// Apply the currently-active post effects as appropriate for each pixel of the post buffer
 
