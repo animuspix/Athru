@@ -1,21 +1,42 @@
 
-struct DeferredPixel
+// Mark [colorTexIn] as a resource bound to the zeroth texture register ([register(t0)])
+Texture2D colorTexIn : register(t0);
+
+// Mark [lightTexIn] as a resource bound to the first texture register ([register(t1)])
+Texture2D lightTexIn : register(t1);
+
+// Mark [postTexIn] as a resource bound to the second texture register ([register(t2)])
+Texture2D postTexIn : register(t2);
+
+// Mark [wrapSampler] as a resource bound to the zeroth sampler register ([register(s0)])
+SamplerState wrapSampler : register(s0);
+
+struct LitDeferredPixel
 {
-    // Send color data to the raster buffer (target 0) and
-    // normal data to the light buffer (target 1)
-    float4 color : SV_Target0;
-    float4 normal : SV_Target1;
+    float2 texCoord : TEXCOORD0;
 };
 
-struct FilteredDeferredPixel
+struct FilteredPixel
 {
-
+    float4 rawColor : SV_TARGET0;
+    float4 rawNormal : SV_TARGET1;
+    float4 outColor : SV_TARGET2;
 };
 
-FilteredDeferredPixel main(DeferredPixel pixIn)
+FilteredPixel main(LitDeferredPixel pixIn)
 {
-    FilteredDeferredPixel pixOut;
-    pixOut.color = pixIn.color;
-    pixOut.normal = pixIn.normal;
+    FilteredPixel pixOut;
+
+    // HLSL requires us to write to every render target in each pass,
+    // so we just clone out the existing color and normal values
+    // into the relevant targets before sending the actual post data
+    // to [outColor]
+    pixOut.rawColor = colorTexIn.Sample(wrapSampler, pixIn.texCoord);
+    pixOut.rawNormal = lightTexIn.Sample(wrapSampler, pixIn.texCoord);
+        
+    // Lighting shaders write their output to the post buffer, so we can
+    // pull the data we want to manipulate out of there before processing it
+    // Post-processing would happen here...
+    pixOut.outColor = postTexIn.Sample(wrapSampler, pixIn.texCoord);
     return pixOut;
 }

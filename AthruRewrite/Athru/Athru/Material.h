@@ -2,6 +2,7 @@
 
 #include "Typedefs.h"
 #include "RenderManager.h"
+#include "AthruTexture.h"
 #include "Sound.h"
 
 class Material
@@ -10,9 +11,12 @@ class Material
 		Material();
 		Material(Sound sonicStuff,
 				 float r, float g, float b, float a,
-				 AVAILABLE_OBJECT_SHADERS shader0, AVAILABLE_OBJECT_SHADERS shader1,
-				 AVAILABLE_OBJECT_SHADERS shader2, AVAILABLE_OBJECT_SHADERS shader3,
-				 AVAILABLE_OBJECT_SHADERS shader4, LPCWSTR textureFilePath);
+				 DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader0, DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader1,
+				 DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader2, DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader3,
+				 DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader4, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader0, 
+				 FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader1, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader2, 
+				 FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader3, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader4, 
+				 AthruTexture baseTexture);
 		~Material();
 
 		// Retrieve the sound associated with [this]
@@ -21,24 +25,25 @@ class Material
 		// Retrieve the base color of [this]
 		float* GetColorData();
 
-		// Retrieve a shader-friendly interpretation
-		// of the texture associated with [this]
-		ID3D11ShaderResourceView* GetTextureAsShaderResource();
+		// Retrieve the raw texture associated with [this]
+		AthruTexture& GetTexture();
 
 		// Retrieve the raw texture associated with [this]
-		ID3D11Texture2D* GetTexture();
+		void SetTexture(AthruTexture suppliedTexture);
 
-		// Retrieve the array of shaders associated with
+		// Retrieve the array of deferred rendering shaders associated with
 		// [this]
-		AVAILABLE_OBJECT_SHADERS* GetShaderSet();
+		DEFERRED::AVAILABLE_OBJECT_SHADERS* GetDeferredShaderSet();
+
+		// Retrieve the array of forward rendering shaders associated with
+		// [this]
+		FORWARD::AVAILABLE_OBJECT_SHADERS* GetForwardShaderSet();
 
 	private:
 		Sound sonicData;
 		float color[4];
-
-		ID3D11Texture2D* texture;
-		ID3D11ShaderResourceView* shaderFriendlyTexture;
-
-		AVAILABLE_OBJECT_SHADERS shaderSet[5];
+		AthruTexture texture;
+		DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShaderSet[5];
+		FORWARD::AVAILABLE_OBJECT_SHADERS forwardShaderSet[5];
 };
 

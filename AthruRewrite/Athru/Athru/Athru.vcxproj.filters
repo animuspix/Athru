@@ -96,7 +96,10 @@
     <ClCompile Include="TexturedRasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Rect.cpp">
+    <ClCompile Include="AthruRect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="BufferRasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -197,7 +200,16 @@
     <ClInclude Include="TexturedRasterizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rect.h">
+    <ClInclude Include="AthruRect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Vertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AthruTexture.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="BufferRasterizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -210,5 +222,6 @@
     <FxCompile Include="LightPlotter.hlsl" />
     <FxCompile Include="PostEffectPlotter.hlsl" />
     <FxCompile Include="Texturizer.hlsl" />
+    <FxCompile Include="BufferColorizer.hlsl" />
   </ItemGroup>
 </Project>

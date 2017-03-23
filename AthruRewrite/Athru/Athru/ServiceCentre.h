@@ -39,8 +39,8 @@ class ServiceCentre
 			// Attempt to create and register the render manager
 			Direct3D* d3DPttr = graphicsPttr->GetD3D();
 			renderManagerPttr = new RenderManager(d3DPttr->GetDeviceContext(), d3DPttr->GetDevice(), d3DPttr->GetViewport(),
-												  AVAILABLE_POST_EFFECTS::BLOOM, AVAILABLE_POST_EFFECTS::DEPTH_OF_FIELD, AVAILABLE_POST_EFFECTS::NULL_EFFECT,
-												  AVAILABLE_LIGHTING_SHADERS::COOK_TORRANCE_PBR);
+												  DEFERRED::AVAILABLE_POST_EFFECTS::BLOOM, DEFERRED::AVAILABLE_POST_EFFECTS::DEPTH_OF_FIELD, DEFERRED::AVAILABLE_POST_EFFECTS::NULL_EFFECT,
+												  DEFERRED::AVAILABLE_LIGHTING_SHADERS::COOK_TORRANCE_PBR);
 
 			// Attempt to create and register the scene manager
 			sceneManagerPttr = new SceneManager();

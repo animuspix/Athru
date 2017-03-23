@@ -41,7 +41,7 @@ TexturedRasterizer::~TexturedRasterizer()
 
 void TexturedRasterizer::Render(ID3D11DeviceContext* deviceContext,
 								DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-							    ID3D11ShaderResourceView* texture)
+							    ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawings)
 {
 	// Call the base parameter setter to initialise the vertex shader's matrix cbuffer
 	// with the world/view/projection matrices
@@ -54,5 +54,5 @@ void TexturedRasterizer::Render(ID3D11DeviceContext* deviceContext,
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
 	// Render the newest boxecule on the pipeline with [this]
-	Shader::RenderShader(deviceContext);
+	Shader::RenderShader(deviceContext, numIndicesDrawings);
 }

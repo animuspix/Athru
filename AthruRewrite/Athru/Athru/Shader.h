@@ -4,6 +4,8 @@
 #include <d3dcompiler.h>
 #include <directxmath.h>
 
+#include "Typedefs.h"
+
 class Shader
 {
 	public:

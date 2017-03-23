@@ -22,12 +22,17 @@ SubChunk::SubChunk(Chunk* parent,
 		float red = 1.0f / (rand() % 10);
 		storedBoxecules[i] = new Boxecule(Material(Sound(),
 												   red, 0.6f, 0.4f, alpha,
-												   AVAILABLE_OBJECT_SHADERS::RASTERIZER,
-												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   L""));
+												   DEFERRED::AVAILABLE_OBJECT_SHADERS::RASTERIZER,
+												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+												   AthruTexture()));
 
 		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / (CHUNK_WIDTH * SUB_CHUNK_DEPTH)) % (CHUNK_WIDTH))) + parentOffsetZ,
 												       (float)(((i / CHUNK_WIDTH) % SUB_CHUNK_DEPTH) + index * SUB_CHUNK_DEPTH),

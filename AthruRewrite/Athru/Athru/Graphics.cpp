@@ -94,7 +94,7 @@ void Graphics::Frame()
 void Graphics::Render()
 {
 	d3D->BeginScene();
-	renderManagerPttr->Render(d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
+	renderManagerPttr->Render(d3D, camera, d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
 	d3D->EndScene();
 }
 

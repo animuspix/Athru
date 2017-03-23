@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Shader.h"
+#include "Typedefs.h"
 
 class TexturedRasterizer : public Shader
 {
@@ -12,13 +13,14 @@ class TexturedRasterizer : public Shader
 		// Force render calls to go through here
 		void Render(ID3D11DeviceContext* deviceContext,
 					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-					ID3D11ShaderResourceView* texture);
+					ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawing);
 
 	private:
 		// Overload ordinary shader render to do nothing
 		// Also place the overload in [private] so it becomes inaccessible
 		void Render(ID3D11DeviceContext* deviceContext,
-					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection) {};
+					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
+					fourByteUnsigned numIndicesDrawing) {};
 
 		ID3D11SamplerState* wrapSamplerState;
 };

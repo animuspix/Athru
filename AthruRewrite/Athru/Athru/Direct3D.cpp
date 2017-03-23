@@ -240,9 +240,7 @@ Direct3D::Direct3D(HWND hwnd)
 	worldMatrix = DirectX::XMMatrixIdentity();
 
 	// Create orthographic projection matrix
-	float frustumWidthAtNear = ((2 * SCREEN_NEAR) * tan(VERT_FIELD_OF_VIEW_RADS * 0.5f));
-	float frustumHeightAtNear = frustumWidthAtNear / DISPLAY_ASPECT_RATIO;
-	orthoProjector = DirectX::XMMatrixOrthographicLH(frustumWidthAtNear, frustumHeightAtNear, SCREEN_NEAR, SCREEN_FAR);
+	orthoProjector = DirectX::XMMatrixOrthographicLH(FRUSTUM_WIDTH_AT_NEAR, FRUSTUM_HEIGHT_AT_NEAR, SCREEN_NEAR, SCREEN_FAR);
 
 	// Raise an error if any DirectX components failed to build
 	assert(SUCCEEDED(result));

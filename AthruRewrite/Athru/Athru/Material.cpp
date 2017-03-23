@@ -1,25 +1,29 @@
 #include "Material.h"
 
 Material::Material() : sonicData(Sound()),
-					   shaderSet{ AVAILABLE_OBJECT_SHADERS::RASTERIZER, AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-								  AVAILABLE_OBJECT_SHADERS::NULL_SHADER, AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-								  AVAILABLE_OBJECT_SHADERS::NULL_SHADER },
-					   color{ 1.0f, 1.0f, 1.0f, 0.6f } {}
+					   deferredShaderSet{ DEFERRED::AVAILABLE_OBJECT_SHADERS::RASTERIZER, DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+										  DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER, DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+										  DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER },
+					   forwardShaderSet{ FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER, FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+										 FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER, FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
+										 FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER },
+					   color{ 1.0f, 1.0f, 1.0f, 0.6f }
+{
+	texture = AthruTexture();
+}
 
 Material::Material(Sound sonicStuff,
 				   float r, float g, float b, float a,
-				   AVAILABLE_OBJECT_SHADERS shader0, AVAILABLE_OBJECT_SHADERS shader1,
-				   AVAILABLE_OBJECT_SHADERS shader2, AVAILABLE_OBJECT_SHADERS shader3,
-				   AVAILABLE_OBJECT_SHADERS shader4,
-				   LPCWSTR textureFilePath) :
+				   DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader0, DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader1,
+				   DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader2, DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader3,
+				   DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader4, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader0,
+				   FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader1, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader2,
+				   FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader3, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader4,
+				   AthruTexture baseTexture) :
 				   sonicData(sonicStuff),
 				   color{ r, g, b, a },
-				   shaderSet{ shader0, shader1, shader2, shader3, shader4 }
-{
-	// Construct texture here...
-	texture = nullptr;
-	shaderFriendlyTexture = nullptr;
-}
+				   deferredShaderSet{ deferredShader0, deferredShader1, deferredShader2, deferredShader3, deferredShader4 },
+				   forwardShaderSet{ forwardShader0, forwardShader1, forwardShader2, forwardShader3, forwardShader4 } {}
 
 Material::~Material()
 {
@@ -35,17 +39,22 @@ float* Material::GetColorData()
 	return color;
 }
 
-ID3D11ShaderResourceView* Material::GetTextureAsShaderResource()
-{
-	return shaderFriendlyTexture;
-}
-
-ID3D11Texture2D* Material::GetTexture()
+AthruTexture& Material::GetTexture()
 {
 	return texture;
 }
 
-AVAILABLE_OBJECT_SHADERS* Material::GetShaderSet()
+void Material::SetTexture(AthruTexture suppliedTexture)
 {
-	return shaderSet;
+	texture = suppliedTexture;
+}
+
+DEFERRED::AVAILABLE_OBJECT_SHADERS* Material::GetDeferredShaderSet()
+{
+	return deferredShaderSet;
+}
+
+FORWARD::AVAILABLE_OBJECT_SHADERS* Material::GetForwardShaderSet()
+{
+	return forwardShaderSet;
 }

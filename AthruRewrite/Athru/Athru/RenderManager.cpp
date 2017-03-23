@@ -6,12 +6,13 @@
 // Shaders (object first, then lighting, then post-effects)
 #include "Rasterizer.h"
 #include "TexturedRasterizer.h"
+#include "BufferRasterizer.h"
 #include "CookTorrancePBR.h"
 #include "Bloom.h"
 #include "DepthOfField.h"
 
 // Generic objects relevant to [this]
-#include "Rect.h"
+#include "AthruRect.h"
 #include "Boxecule.h"
 #include "Camera.h"
 
@@ -19,8 +20,8 @@
 #include "RenderManager.h"
 
 RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device* d3dDevice, D3D11_VIEWPORT& viewport,
-							 AVAILABLE_POST_EFFECTS defaultPostEffectA, AVAILABLE_POST_EFFECTS defaultPostEffectB, AVAILABLE_POST_EFFECTS defaultPostEffectC,
-							 AVAILABLE_LIGHTING_SHADERS defaultLightingShader) :
+							 DEFERRED::AVAILABLE_POST_EFFECTS defaultPostEffectA, DEFERRED::AVAILABLE_POST_EFFECTS defaultPostEffectB, DEFERRED::AVAILABLE_POST_EFFECTS defaultPostEffectC,
+							 DEFERRED::AVAILABLE_LIGHTING_SHADERS defaultLightingShader) :
 							 deviceContext(d3dDeviceContext), viewportRef(viewport)
 {
 	// Initialise core rendering objects/properties
@@ -43,13 +44,13 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	renderBufferDesc.MiscFlags = 0;
 
 	// Create render-buffers
-	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
+	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
 	assert(SUCCEEDED(result));
 
-	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
+	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
 	assert(SUCCEEDED(result));
 
-	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED_BUFFER_TYPES::POST_BUFFER]);
+	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER]);
 	assert(SUCCEEDED(result));
 
 	// Setup render-buffer (target view) description
@@ -60,13 +61,13 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	renderTargetViewDesc.Texture2D.MipSlice = 0;
 
 	// Create render-buffer targets
-	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[0], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
+	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[0], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
 	assert(SUCCEEDED(result));
 
-	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[1], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
+	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[1], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
 	assert(SUCCEEDED(result));
 
-	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[2], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED_BUFFER_TYPES::POST_BUFFER]);
+	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[2], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER]);
 	assert(SUCCEEDED(result));
 
 	// Setup render-buffer (shader resource view) description
@@ -78,13 +79,13 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	shaderResourceViewDesc.Texture2D.MipLevels = 1;
 
 	// Create render-buffer shader resources
-	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[0], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
+	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[0], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
 	assert(SUCCEEDED(result));
 
-	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[1], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
+	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[1], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
 	assert(SUCCEEDED(result));
 
-	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[2], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED_BUFFER_TYPES::POST_BUFFER]);
+	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[2], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER]);
 	assert(SUCCEEDED(result));
 
 	// Setup the description for the local depth-stencil buffer (raw texture view)
@@ -128,6 +129,10 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	// Memoize the window handle (required for shader initialisation)
 	HWND windowHandle = ServiceCentre::AccessApp()->GetHWND();
 
+	// Initialise the buffer rasterizer (used to draw the final render buffer to a rect that can be sent to the window
+	// with ordinary forward rendering)
+	bufferRasterizer = new BufferRasterizer(d3dDevice, windowHandle, L"VertPlotter.cso", L"BufferColorizer.cso");
+
 	// Initialise object shaders
 	rasterizer = new Rasterizer(d3dDevice, windowHandle, L"VertPlotter.cso", L"Colorizer.cso");
 	texturedRasterizer = new TexturedRasterizer(d3dDevice, windowHandle, L"VertPlotter.cso", L"Texturizer.cso");
@@ -141,8 +146,8 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 
 	// Initialise the array of shadow shaders
 	// No idea how to do shadows atm - come back to this after deferred rendering + lighting :)
-	//availableShadowShaders = new Shader*[(byteUnsigned)AVAILABLE_SHADOW_SHADERS::NULL_SHADER];
-	//availableShadowShaders[(byteUnsigned)AVAILABLE_SHADOW_SHADERS::PROCEDURAL_SHADOW_MAPPER] = new ProceduralShadowMapper(d3dDevice, windowHandle, L"ShaowPlotter.cso", L"ProceduralShadowPainter.cso");
+	//availableShadowShaders = new Shader*[(byteUnsigned)DEFERRED::AVAILABLE_SHADOW_SHADERS::NULL_SHADER];
+	//availableShadowShaders[(byteUnsigned)DEFERRED::AVAILABLE_SHADOW_SHADERS::PROCEDURAL_SHADOW_MAPPER] = new ProceduralShadowMapper(d3dDevice, windowHandle, L"ShadowPlotter.cso", L"ProceduralShadowPainter.cso");
 	//shadowShaderCount = 1;
 
 	// Initialise post-processing effects + define which post-processing
@@ -193,49 +198,61 @@ RenderManager::~RenderManager()
 	renderQueue = nullptr;
 }
 
-void RenderManager::RasterizerRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+void RenderManager::RasterizerRender(Material& renderableMaterial, 
+									 ID3D11DeviceContext* deviceContext,
 									 DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 									 fourByteUnsigned numIndicesDrawing)
 {
-	rasterizer->Render(deviceContext, worldByModel, view, projection);
+	rasterizer->Render(deviceContext, worldByModel, view, projection, numIndicesDrawing);
 }
 
-void RenderManager::TexturedRasterizerRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+void RenderManager::TexturedRasterizerRender(Material& renderableMaterial, 
+											 ID3D11DeviceContext* deviceContext,
 										     DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 											 fourByteUnsigned numIndicesDrawing)
 {
-	texturedRasterizer->Render(deviceContext, worldByModel, view, projection, renderableMaterial.GetTextureAsShaderResource());
+	texturedRasterizer->Render(deviceContext, worldByModel, view, projection, renderableMaterial.GetTexture().asShaderResource, numIndicesDrawing);
 }
 
-void RenderManager::CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer, ID3D11ShaderResourceView* lightBuffer, ID3D11DeviceContext* deviceContext,
+void RenderManager::CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer, 
+										  ID3D11ShaderResourceView* lightBuffer, 
+										  ID3D11DeviceContext* deviceContext,
 										  DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 										  fourByteUnsigned numIndicesDrawing)
 {
-	cookTorrancePBR->Render(deviceContext, worldByModel, view, projection);
+	cookTorrancePBR->Render(deviceContext, worldByModel, view, projection, numIndicesDrawing);
 }
 
-void RenderManager::ProceduralShadowMapperRenderer(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+void RenderManager::ProceduralShadowMapperRenderer(Material& renderableMaterial, 
+												   ID3D11DeviceContext* deviceContext,
 												   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 												   fourByteUnsigned numIndicesDrawing)
 {
 	// Nothing for now...
 }
 
-void RenderManager::BloomRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+void RenderManager::BloomRender(ID3D11ShaderResourceView* rasterBuffer, 
+								ID3D11ShaderResourceView* lightBuffer, 
+								ID3D11ShaderResourceView* postBuffer, 
+								ID3D11DeviceContext* deviceContext,
 							    DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 							    fourByteUnsigned numIndicesDrawing)
 {
 	// Nothing for now...
 }
 
-void RenderManager::DepthOfFieldRender(Material& renderableMaterial, ID3D11DeviceContext* deviceContext,
+void RenderManager::DepthOfFieldRender(ID3D11ShaderResourceView* rasterBuffer, 
+									   ID3D11ShaderResourceView* lightBuffer, 
+									   ID3D11ShaderResourceView* postBuffer, 
+									   ID3D11DeviceContext* deviceContext,
 									   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 									   fourByteUnsigned numIndicesDrawing)
 {
 	// Nothing for now...
 }
 
-void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
+void RenderManager::Render(Direct3D* d3DPttr, Camera* mainCamera, 
+						   DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	// Get each item from the render queue
 	// Pass it to the GPU
@@ -243,6 +260,9 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 
 	// Begin rendering by pushing the deferred render buffers onto the GPU
 	BuffersToGPU();
+
+	// Disable Z-buffering before 2D rendering
+	// Might not actually do this, see what everything looks like without it first
 
 	// Then get rid of any data from the last frame by flushing them with a
 	// given color + clearing the depth buffer
@@ -252,11 +272,11 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 	for (fourByteSigned i = 0; i < renderQueueLength; i += 1)
 	{
 		Boxecule* renderable = renderQueue[i];
-		AVAILABLE_OBJECT_SHADERS* shaders = renderable->GetMaterial().GetShaderSet();
+		DEFERRED::AVAILABLE_OBJECT_SHADERS* shaders = renderable->GetMaterial().GetDeferredShaderSet();
 		renderable->PassToGPU(deviceContext);
 
 		byteUnsigned j = 0;
-		while (shaders[j] != AVAILABLE_OBJECT_SHADERS::NULL_SHADER)
+		while (shaders[j] != DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER)
 		{
 			(this->*(this->objectShaderRenderDispatch[j]))(renderable->GetMaterial(), deviceContext, world * renderable->GetTransform(), view, projection, BOXECULE_INDEX_COUNT);
 			j += 1;
@@ -264,12 +284,36 @@ void RenderManager::Render(DirectX::XMMATRIX world, DirectX::XMMATRIX view, Dire
 	}
 
 	// Apply lighting effects as appropriate for each vertex in the pipeline and output the results to
-	// each pixel in the light buffer
-	// (this->*(this->objectShaderRenderDispatch[j]))(deviceContext, world * renderable->GetTransform(), view, projection, WINDOW_RECT_INDEX_COUNT);
+	// each pixel in the post buffer
+	(this->*(this->lightingShaderRenderDispatch[(byteUnsigned)currentLightingShader]))(renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER], 
+																					   renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER], 
+																					   deviceContext, 
+																					   world, view, projection, 
+																					   RECT_INDEX_COUNT);
 
 	// Apply the currently-active post effects as appropriate for each pixel of the post buffer
+	byteUnsigned i = 0;
+	while (activePostEffects[i] != DEFERRED::AVAILABLE_POST_EFFECTS::NULL_EFFECT)
+	{
+		(this->*(this->postEffectRenderDispatch[i]))(renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER], 
+													 renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER],
+													 renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER],
+													 deviceContext, 
+													 world, view, projection, 
+													 RECT_INDEX_COUNT);
+	}
 
-	// Nothing left to draw on this pass, so zero the length of the render queue
+	// Tell Direct3D to start rendering to the screen again
+	d3DPttr->ResetRenderTargets();
+
+	// Pass the camera's viewfinder (screen rect) onto the GPU
+	mainCamera->GetViewFinder().PassToGPU(deviceContext);
+
+	// Render the camera's viewfinder with [bufferRasterizer(...)]
+	bufferRasterizer->Render(deviceContext, world, view, d3DPttr->GetOrthoProjector(), RECT_INDEX_COUNT);
+
+	// Nothing left to draw on this pass, so re-enable the z-buffer (if needed) and 
+	// zero the length of the render queue
 	renderQueueLength = 0;
 }
 
@@ -286,15 +330,15 @@ void RenderManager::ClearBuffers(float r, float g, float b, float a)
 {
 	// Flush the render buffers
 	float color[4] = { r, g, b, a };
-	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED_BUFFER_TYPES::RASTER_BUFFER], color);
-	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED_BUFFER_TYPES::LIGHT_BUFFER], color);
-	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED_BUFFER_TYPES::POST_BUFFER], color);
+	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER], color);
+	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER], color);
+	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER], color);
 
 	// Clear the local depth-stencil buffer (depth-stencil view)
 	deviceContext->ClearDepthStencilView(localDepthStencil, D3D11_CLEAR_DEPTH, 1.0f, 0);
 }
 
-ID3D11ShaderResourceView* RenderManager::GetShaderResourceView(DEFERRED_BUFFER_TYPES deferredBuffer)
+ID3D11ShaderResourceView* RenderManager::GetShaderResourceView(DEFERRED::DEFERRED_BUFFER_TYPES deferredBuffer)
 {
 	return renderBufferShaderResources[(byteUnsigned)deferredBuffer];
 }
