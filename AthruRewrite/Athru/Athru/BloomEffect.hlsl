@@ -33,7 +33,7 @@ FilteredPixel main(LitDeferredPixel pixIn)
     // to [outColor]
     pixOut.rawColor = colorTexIn.Sample(wrapSampler, pixIn.texCoord);
     pixOut.rawNormal = lightTexIn.Sample(wrapSampler, pixIn.texCoord);
-        
+
     // Lighting shaders write their output to the post buffer, so we can
     // pull the data we want to manipulate out of there before processing it
     // Post-processing would happen here...

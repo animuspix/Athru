@@ -198,6 +198,7 @@
     <ClInclude Include="CookTorrancePBR.h" />
     <ClInclude Include="DepthOfField.h" />
     <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="PlanarUnwrapper.h" />
     <ClInclude Include="Planet.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="RenderManager.h" />

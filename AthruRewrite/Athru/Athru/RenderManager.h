@@ -141,42 +141,42 @@ class RenderManager
 		// Specialized shader render calls
 
 		// Specialized render call for [TexturedRasterizer]
-		void RasterizerRender(Material& renderableMaterial, 
+		void RasterizerRender(Material& renderableMaterial,
 							  ID3D11DeviceContext* deviceContext,
 							  DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 							  fourByteUnsigned numIndicesDrawing);
 
 		// Specialized render call for [Rasterizer]
-		void TexturedRasterizerRender(Material& renderableMaterial, 
+		void TexturedRasterizerRender(Material& renderableMaterial,
 									  ID3D11DeviceContext* deviceContext,
 									  DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 									  fourByteUnsigned numIndicesDrawing);
 
 		// Specialized render call for [CookTorrancePBR]
-		void CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer, 
-								   ID3D11ShaderResourceView* lightBuffer, 
+		void CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer,
+								   ID3D11ShaderResourceView* lightBuffer,
 								   ID3D11DeviceContext* deviceContext,
 								   DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 								   fourByteUnsigned numIndicesDrawing);
 
 		// Specialized render call for [ProceduralShadowMapper]
-		void ProceduralShadowMapperRenderer(Material& renderableMaterial, 
+		void ProceduralShadowMapperRenderer(Material& renderableMaterial,
 											ID3D11DeviceContext* deviceContext,
 											DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 											fourByteUnsigned numIndicesDrawing);
 
 		// Specialized render call for [Bloom]
-		void BloomRender(ID3D11ShaderResourceView* rasterBuffer, 
-						 ID3D11ShaderResourceView* lightBuffer, 
-						 ID3D11ShaderResourceView* postBuffer, 
+		void BloomRender(ID3D11ShaderResourceView* rasterBuffer,
+						 ID3D11ShaderResourceView* lightBuffer,
+						 ID3D11ShaderResourceView* postBuffer,
 						 ID3D11DeviceContext* deviceContext,
 						 DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 						 fourByteUnsigned numIndicesDrawing);
 
 		// Specialized render call for [DepthOfField]
-		void DepthOfFieldRender(ID3D11ShaderResourceView* rasterBuffer, 
-								ID3D11ShaderResourceView* lightBuffer, 
-								ID3D11ShaderResourceView* postBuffer, 
+		void DepthOfFieldRender(ID3D11ShaderResourceView* rasterBuffer,
+								ID3D11ShaderResourceView* lightBuffer,
+								ID3D11ShaderResourceView* postBuffer,
 								ID3D11DeviceContext* deviceContext,
 								DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 								fourByteUnsigned numIndicesDrawing);
@@ -186,15 +186,15 @@ class RenderManager
 		// Object shader render function pointer array, used to branchlessly (touch wood) call the
 		// correct render function (with appropriate arguments) for any given shader applied to the given
 		// boxecule
-		void(RenderManager::*objectShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER])(Material& renderableMaterial, 
+		void(RenderManager::*objectShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER])(Material& renderableMaterial,
 																														ID3D11DeviceContext* deviceContext,
 																														DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 																														fourByteUnsigned numIndicesDrawing);
 
 		// Lighting shader render function pointer array, used to branchlessly (touch wood) call the
 		// correct render function (with appropriate arguments) for any lighting shader applied to the scene
-		void(RenderManager::*lightingShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_LIGHTING_SHADERS::NULL_SHADER])(ID3D11ShaderResourceView* rasterBuffer, 
-																															ID3D11ShaderResourceView* lightBuffer, 
+		void(RenderManager::*lightingShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_LIGHTING_SHADERS::NULL_SHADER])(ID3D11ShaderResourceView* rasterBuffer,
+																															ID3D11ShaderResourceView* lightBuffer,
 																															ID3D11DeviceContext* deviceContext,
 																															DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 																															fourByteUnsigned numIndicesDrawing);
@@ -202,16 +202,16 @@ class RenderManager
 		// Shadow shader render function pointer array, used to branchlessly (touch wood) call the
 		// correct render function (with appropriate arguments) for any given shadow shader applied to the
 		// scene
-		void(RenderManager::*shadowShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_SHADOW_SHADERS::NULL_SHADER])(Material& renderableMaterial, 
+		void(RenderManager::*shadowShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_SHADOW_SHADERS::NULL_SHADER])(Material& renderableMaterial,
 																														ID3D11DeviceContext* deviceContext,
 																														DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 																														fourByteUnsigned numIndicesDrawing);
 
 		// Post effect render function pointer array, used to branchlessly (touch wood) call the
 		// correct render function (with appropriate arguments) for every post effect applied to the scene
-		void(RenderManager::*postEffectRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_POST_EFFECTS::NULL_EFFECT])(ID3D11ShaderResourceView* rasterBuffer, 
-																													ID3D11ShaderResourceView* lightBuffer, 
-																													ID3D11ShaderResourceView* postBuffer, 
+		void(RenderManager::*postEffectRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_POST_EFFECTS::NULL_EFFECT])(ID3D11ShaderResourceView* rasterBuffer,
+																													ID3D11ShaderResourceView* lightBuffer,
+																													ID3D11ShaderResourceView* postBuffer,
 																													ID3D11DeviceContext* deviceContext,
 																													DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 																													fourByteUnsigned numIndicesDrawing);
