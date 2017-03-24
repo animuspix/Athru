@@ -353,7 +353,7 @@ bool RenderManager::BoxeculeCache(Boxecule* boxecule, fourByteUnsigned unculledC
 bool RenderManager::DirectionalCullFailed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter) { return false; }
 bool RenderManager::DirectionalCullPassed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter)
 {
-	byteUnsigned dispatchIndex = (byteUnsigned)(boxecule->GetMaterial().GetColorData()[3] != 0);
+	byteUnsigned dispatchIndex = (byteUnsigned)(boxecule->GetMaterial().GetColorData().z != 0);
 	return (this->*(this->coreBoxeculeDispatch[dispatchIndex]))(boxecule, unculledCounter);
 }
 

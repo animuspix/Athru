@@ -168,6 +168,7 @@
     <ClCompile Include="CookTorrancePBR.cpp" />
     <ClCompile Include="DepthOfField.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
+    <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Planet.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="RenderManager.cpp" />
@@ -180,12 +181,17 @@
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Sound.cpp" />
+    <ClCompile Include="Sphere.cpp" />
     <ClCompile Include="StackAllocator.cpp" />
     <ClCompile Include="ServiceCentre.cpp" />
     <ClCompile Include="Boxecule.cpp" />
     <ClCompile Include="StarSystem.cpp" />
     <ClCompile Include="SubChunk.cpp" />
     <ClCompile Include="TexturedRasterizer.cpp" />
+    <ClCompile Include="TextureManager.cpp" />
+    <ClCompile Include="Vertex.cpp" />
+    <ClCompile Include="VertexAnimator.cpp" />
+    <ClCompile Include="VertexBlend.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="AthruGlobals.h" />
@@ -198,6 +204,8 @@
     <ClInclude Include="CookTorrancePBR.h" />
     <ClInclude Include="DepthOfField.h" />
     <ClInclude Include="DirectionalLight.h" />
+    <ClInclude Include="Mesh.h" />
+    <ClInclude Include="NormalBuilder.h" />
     <ClInclude Include="PlanarUnwrapper.h" />
     <ClInclude Include="Planet.h" />
     <ClInclude Include="Rasterizer.h" />
@@ -216,6 +224,7 @@
     <ClInclude Include="KnownLengthArray.h" />
     <ClInclude Include="Material.h" />
     <ClInclude Include="Sound.h" />
+    <ClInclude Include="Sphere.h" />
     <ClInclude Include="SQT.h" />
     <ClInclude Include="StackAllocator.h" />
     <ClInclude Include="ServiceCentre.h" />
@@ -223,8 +232,11 @@
     <ClInclude Include="StarSystem.h" />
     <ClInclude Include="SubChunk.h" />
     <ClInclude Include="TexturedRasterizer.h" />
+    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="Typedefs.h" />
     <ClInclude Include="Vertex.h" />
+    <ClInclude Include="VertexAnimator.h" />
+    <ClInclude Include="VertexBlend.h" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="BloomEffect.hlsl">

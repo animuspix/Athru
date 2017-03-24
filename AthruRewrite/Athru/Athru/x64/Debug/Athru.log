@@ -1,1 +1,27 @@
-﻿  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
+﻿  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\BloomEffect.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\BufferColorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Colorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\LightPlotter.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Texturizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\VertPlotter.cso
+  VertexBlend.cpp
+  VertexAnimator.cpp
+  Vertex.cpp
+  TextureManager.cpp
+  TexturedRasterizer.cpp
+  SubChunk.cpp
+  StarSystem.cpp
+  Boxecule.cpp
+  ServiceCentre.cpp
+  StackAllocator.cpp
+  Sphere.cpp
+  Sound.cpp
+  Material.cpp
+  Logger.cpp
+  Input.cpp
+  Graphics.cpp
+  Direct3D.cpp
+  ConsolePrinter.cpp
+  Shader.cpp
+  SceneManager.cpp
+  Running Code Analysis for C/C++...

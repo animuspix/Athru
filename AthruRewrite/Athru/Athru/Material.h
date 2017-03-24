@@ -23,7 +23,7 @@ class Material
 		Sound& GetSonicData();
 
 		// Retrieve the base color of [this]
-		float* GetColorData();
+		DirectX::XMFLOAT4 GetColorData();
 
 		// Retrieve the raw texture associated with [this]
 		AthruTexture& GetTexture();
@@ -41,7 +41,7 @@ class Material
 
 	private:
 		Sound sonicData;
-		float color[4];
+		DirectX::XMFLOAT4 color;
 		AthruTexture texture;
 		DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShaderSet[5];
 		FORWARD::AVAILABLE_OBJECT_SHADERS forwardShaderSet[5];

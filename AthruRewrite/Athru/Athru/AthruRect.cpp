@@ -2,32 +2,50 @@
 #include "AthruRect.h"
 
 AthruRect::AthruRect(Material rectMaterial, 
-					 float baseWidth, float baseHeight)
+					 float baseWidth, float baseHeight):
+					 Mesh(rectMaterial)
 {
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
-	// Initialise the material associated with [this]
-	material = rectMaterial;
+	// Material associated in the initializer list, so no need to do that here
 
 	// Cache the color associated with [this]
-	float* color = material.GetColorData();
+	DirectX::XMFLOAT4 color = material.GetColorData();
+
+	// Store min bounding cube position, max bounding cube position, and the difference (range) between them
+	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4((baseWidth / 2) * -1, (baseHeight / 2) * -1, 0.0f, 1);
+	DirectX::XMFLOAT4 maxBoundingPos = DirectX::XMFLOAT4(baseWidth / 2, baseHeight / 2, 0.0f, 1);
+	DirectX::XMFLOAT4 boundingRange = DirectX::XMFLOAT4(maxBoundingPos.x - minBoundingPos.x,
+														maxBoundingPos.y - minBoundingPos.y,
+														maxBoundingPos.z - minBoundingPos.z, 1);
+
+	// Generate + cache vertex positions
+	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4((baseWidth / 2) * -1, baseHeight / 2, 0.0f, 1); // Upper left (v0)
+	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(baseWidth / 2, baseHeight / 2, 0.0f, 1); // Upper right (v1)
+	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4((baseWidth / 2) * -1, (baseHeight / 2) * -1, 0.0f, 1); // Lower left (v2)
+	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(baseWidth / 2, (baseHeight / 2) * -1, 0.0f, 1); // Lower right (v3)
 
 	// Initialise vertices
-	// X and Y coordinates look a helluva lot like magic numbers; they were basically
-	// chosen out of trial and error while I was looking for points that'd line up
-	// into a reasonable cube on a 16:9 screen without too much distortion
-	Vertex vertices[4] = { Vertex((baseWidth / 2) * -1, baseHeight / 2, 0.0f,
-								   color), // Front plane, upper left (v0)
+	Vertex vertices[4] = { Vertex(vert0Pos,
+								  color,
+								  NormalBuilder::ForRegular(vert0Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos)), // Upper left (v0)
 
-						   Vertex(baseWidth / 2, baseHeight / 2, 0.0f,
-								  color), // Front plane, upper right (v1)
+						   Vertex(vert0Pos,
+							      color,
+							      NormalBuilder::ForRegular(vert1Pos),
+							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos)), // Upper right (v1)
 
-						   Vertex((baseWidth / 2) * -1, (baseHeight / 2) * -1, 0.0f,
-								   color), // Front plane, lower left (v2)
+						   Vertex(vert0Pos,
+							      color,
+							      NormalBuilder::ForRegular(vert2Pos),
+							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos)), // Lower left (v2)
 
-						   Vertex(baseWidth / 2, (baseHeight / 2) * -1, 0.0f,
-								  color), }; // Front plane, lower right (v3)
+						   Vertex(vert0Pos,
+								  color,
+								  NormalBuilder::ForRegular(vert3Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos)) }; // Lower right (v3)
 
 	// Initialise indices
 	// Each set of three values is one triangle
@@ -42,10 +60,10 @@ AthruRect::AthruRect(Material rectMaterial,
 
 	// Set up the description of the static vertex buffer
 	D3D11_BUFFER_DESC vertBufferDesc;
-	vertBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	vertBufferDesc.ByteWidth = sizeof(Vertex) * 4;
 	vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertBufferDesc.CPUAccessFlags = 0;
+	vertBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	vertBufferDesc.MiscFlags = 0;
 	vertBufferDesc.StructureByteStride = 0;
 
@@ -86,61 +104,4 @@ AthruRect::AthruRect(Material rectMaterial,
 
 AthruRect::~AthruRect()
 {
-	// Release the index buffer
-	indexBuffer->Release();
-	indexBuffer = 0;
-
-	// Release the vertex buffer
-	vertBuffer->Release();
-	vertBuffer = 0;
-}
-
-void AthruRect::PassToGPU(ID3D11DeviceContext* deviceContext)
-{
-	// Set vertex buffer stride and offset.
-	unsigned int stride = sizeof(Vertex);
-	unsigned int offset = 0;
-
-	// Set the vertex buffer to active in the input assembler so it can be rendered
-	deviceContext->IASetVertexBuffers(0, 1, &vertBuffer, &stride, &offset);
-
-	// Set the index buffer to active in the input assembler so it can be rendered
-	deviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
-	// Set the 2D primitive type used to create the boxecule; we're making one boxecule,
-	// so triangular primitives make the most sense :P
-	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-}
-
-void AthruRect::SetMaterial(Material& freshMaterial)
-{
-	material = freshMaterial;
-}
-
-Material& AthruRect::GetMaterial()
-{
-	return material;
-}
-
-SQT& AthruRect::FetchTransformations()
-{
-	return transformations;
-}
-
-DirectX::XMMATRIX AthruRect::GetTransform()
-{
-	return transformations.asMatrix();
-}
-
-// Push constructions for this class through Athru's custom allocator
-void* AthruRect::operator new(size_t size)
-{
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<AthruRect>(), false);
-}
-
-// We aren't expecting to use [delete], so overload it to do nothing;
-void AthruRect::operator delete(void* target)
-{
-	return;
 }
