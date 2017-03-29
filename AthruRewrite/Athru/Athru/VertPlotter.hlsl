@@ -12,22 +12,24 @@ cbuffer MatBuffer
 // could be extended)
 cbuffer LightBuffer
 {
-    float4 dirIntensity;
+    float dirIntensity;
+    float3 dirPadding;
     float4 dirDirection;
     float4 dirDiffuse;
     float4 dirAmbient;
     float4 dirPos;
-    float4 pointIntensity[MAX_POINT_LIGHT_COUNT];
+    float pointIntensity[MAX_POINT_LIGHT_COUNT];
+    float3 pointPaddingA;
     float4 pointDiffuse[MAX_POINT_LIGHT_COUNT];
     float4 pointPos[MAX_POINT_LIGHT_COUNT];
-    int numPointLights;
-    float3 pointPadding;
+    uint numPointLights;
+    float4 pointPaddingB;
     float4 spotIntensity[MAX_SPOT_LIGHT_COUNT];
     float4 spotDiffuse[MAX_SPOT_LIGHT_COUNT];
     float4 spotPos[MAX_SPOT_LIGHT_COUNT];
     float4 spotDirection[MAX_SPOT_LIGHT_COUNT];
     float spotCutoffRadians;
-    int numSpotLights;
+    uint numSpotLights;
     float2 spotPadding;
     float4 viewVec;
 };

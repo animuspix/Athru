@@ -87,13 +87,6 @@ void RenderManager::RasterizerRender(Material& renderableMaterial, Material& dir
 									 ID3D11DeviceContext* deviceContext,
 									 fourByteUnsigned numIndicesDrawing)
 {
-	// Cache a local copy of the light intensity so we can avoid calling
-	// [GetLightData(...)] once per input element (DirectionalLight keeps
-	// all it's properties in 16-byte alignment for efficiency, which
-	// means scalars get distributed across four-element shader input
-	// types)
-	float localIntensity = directionalMaterial.GetLightData().intensity;
-
 	// Pass the given light position into a shader-friendly [XMFLOAT4]
 	DirectX::XMFLOAT4 lightPos;
 	DirectX::XMStoreFloat4(&lightPos, directionalPosition);
