@@ -1,21 +1,57 @@
+#define MAX_POINT_LIGHT_COUNT 10
+#define MAX_SPOT_LIGHT_COUNT 10
+
 // Mark [texIn] as a resource bound to the zeroth texture register ([register(t0)])
 Texture2D texIn : register(t0);
 
 // Mark [wrapSampler] as a resource bound to the zeroth sampler register ([register(s0)])
 SamplerState wrapSampler : register(s0);
 
+// Buffer for lighting data (only one directional light per scene atm, though that
+// could be extended)
+cbuffer LightBuffer
+{
+    float dirIntensity;
+    float3 dirIntensityPadding;
+
+    float4 dirDirection;
+    float4 dirDiffuse;
+    float4 dirAmbient;
+    float4 dirPos;
+
+    float pointIntensity[MAX_POINT_LIGHT_COUNT];
+    float3 pointIntensityPadding[MAX_POINT_LIGHT_COUNT];
+
+    float4 pointDiffuse[MAX_POINT_LIGHT_COUNT];
+    float4 pointPos[MAX_POINT_LIGHT_COUNT];
+
+    uint numPointLights;
+    float3 numPointLightPadding;
+
+    float spotIntensity[MAX_SPOT_LIGHT_COUNT];
+    float spotIntensityPadding[MAX_SPOT_LIGHT_COUNT];
+
+    float4 spotDiffuse[MAX_SPOT_LIGHT_COUNT];
+    float4 spotPos[MAX_SPOT_LIGHT_COUNT];
+    float4 spotDirection[MAX_SPOT_LIGHT_COUNT];
+
+    float spotCutoffRadians;
+    float3 spotCutoffRadiansPadding;
+
+    uint numSpotLights;
+    float3 numSpotLightPadding;
+
+    float4 viewVec;
+};
+
 struct Pixel
 {
-    float4 pos : SV_POSITION;
+    float4 pos : SV_POSITION0;
     float4 color : COLOR0;
-    float4 normal : NORMAL;
+    float4 normal : NORMAL0;
     float2 texCoord : TEXCOORD0;
     float grain : COLOR1;
     float reflectFactor : COLOR2;
-    float4 avgLightDirection : NORMAL1;
-    float4 avgLightIntensity : COLOR3;
-    float4 avgLightDiffuse : COLOR3;
-    float4 ambientLighting : COLOR4;
 };
 
 // Output the result of Oren-Nayar processing for the given roughness, pixel normal,
@@ -23,7 +59,7 @@ struct Pixel
 // the normalized average light direction after clamping between [1] and [0]; didn't
 // really want to calculate it twice (first time was to get pre-Oren-Nayar pixel
 // exposure) so passing it in here instead)
-float4 OrenNayar(float4 pixGrain, float4 pixNorm, float4 avgLightDirectionNorm, float4 lambert)
+float4 OrenNayar(float pixGrain, float4 pixNorm, float4 surfaceViewVector, float4 avgLightDirectionNorm, float lambert)
 {
     // Calculate the [A] term for the Oren-Nayar reflectance model
     float grainSqr = pixGrain * pixGrain;
@@ -31,9 +67,6 @@ float4 OrenNayar(float4 pixGrain, float4 pixNorm, float4 avgLightDirectionNorm, 
 
     // Calculate the [B] term for the Oren-Nayar reflectance model
     float orenNayarB = 0.45 * (grainSqr / (grainSqr + 0.09f));
-
-    // Generate a vector from the surface to the camera view
-    float4 surfaceViewVector = normalize(pixNorm - viewVec);
 
     // Calculate the amount of light backscattered towards the camera
     float4 cameraBackscatter = surfaceViewVector - (pixNorm * dot(surfaceViewVector, pixNorm));
@@ -69,24 +102,17 @@ float4 CookTorrance()
     return 0;
 }
 
-float4 main(Pixel pixIn) : SV_TARGET
+float Lighting(Pixel pixIn, float4 lightDiffuse, float lightIntensity, float4 lightDirection)
 {
-    // Generate base color...
-    float4 pixOut = pixIn.color * texIn.Sample(wrapSampler, pixIn.texCoord);
-
-    // Initialise the average light color
-    // with the given ambient tinting
-    float4 lightColor = pixIn.ambientLighting;
-
     // Calculate pixel exposure with the overall light direction
-    float lambertTerm = saturate(dot(pixIn.normal, pixIn.avgLightDirection));
-    float currPixelExposure = lambertTerm * pixIn.avgLightIntensity;
+    float lambertTerm = saturate(dot(pixIn.normal, lightDirection));
+    float currPixelExposure = lambertTerm * lightIntensity;
 
     // Diffuse lighting
 
     // Cache the result of the Oren-Nayar function in a specific modifier for easy access
     // when we compute the output lighting equation :)
-    float4 orenNayarModifier = OrenNayar(pixIn.grain, pixIn.normal, pixIn.avgLightDirection, lambertTerm);
+    float4 orenNayarModifier = OrenNayar(pixIn.grain, pixIn.normal, , lightDirection, lambertTerm);
 
     // Specular lighting
 
@@ -111,11 +137,115 @@ float4 main(Pixel pixIn) : SV_TARGET
     // multiplicative blend of the diffuse color and the exposure level
     // into the output color; afterward, guarantee that each component of
     // the result is between [0] and [1] with the [saturate] function
-    lightColor += (pixIn.avgLightDiffuse * currPixelExposure) * (currPixelExposure > 0.0f);
-    lightColor = saturate(lightColor);
+    return (lightDiffuse * currPixelExposure) * (currPixelExposure > 0.0f);
+}
 
-    // Complete the lighting equation by applying the generated diffuse light color to the
-    // output pixel defined above
+float DirLightColorCumulative(float localLightColor)
+{
+    localLightColor = Lighting();
+    return saturate(localLightColor);
+}
+
+float PointLightColorCumulative(float localLightColor)
+{
+    for ()
+    {
+        // Calculate pixel exposure with the overall light direction
+        float lambertTerm = saturate(dot(pixIn.normal, pixIn.avgLightDirection));
+        float currPixelExposure = lambertTerm * pixIn.avgLightIntensity;
+
+        // Diffuse lighting
+
+        // Cache the result of the Oren-Nayar function in a specific modifier for easy access
+        // when we compute the output lighting equation :)
+        float4 orenNayarModifier = OrenNayar(pixIn.grain, pixIn.normal, pixIn.surfaceToView, pixIn.avgLightDirection, lambertTerm);
+
+        // Specular lighting
+
+        // Cache the result of the Cook-Torrance function in a specific modifier
+        // that we can combine with the Oren-Nayar modifier above to generate
+        // a mixed diffuse/specular PBR value that we can apply to the raw
+        // pixel exposure calculated earlier
+        float cookTorranceModifier = CookTorrance();
+
+        // Combine diffuse/specular lighting
+
+        // Sum the Cook-Torrance modifier with the Oren-Nayar modifier, then apply the result
+        // to the exposure for the current pixel
+        currPixelExposure *= (orenNayarModifier + cookTorranceModifier);
+
+        // Use the generated exposure value to modify the diffuse light color applied to the
+        // current [Pixel]
+        // ...unless the [Pixel] exposure is less than zero; don't do anything in that case,
+        // negative lighting would be weird :P
+
+        // If the current [Pixel] is facing towards the light source, add the
+        // multiplicative blend of the diffuse color and the exposure level
+        // into the output color; afterward, guarantee that each component of
+        // the result is between [0] and [1] with the [saturate] function
+        localLightColor += (pointDiffuse[i] * currPixelExposure) * (currPixelExposure > 0.0f);
+    }
+
+    return saturate(localLightColor);
+}
+
+
+float SpotLightColorCumulative(float localLightColor)
+{
+    for ()
+    {
+        // Calculate pixel exposure with the overall light direction
+        float lambertTerm = saturate(dot(pixIn.normal, pixIn.avgLightDirection));
+        float currPixelExposure = lambertTerm * pixIn.avgLightIntensity;
+
+        // Diffuse lighting
+
+        // Cache the result of the Oren-Nayar function in a specific modifier for easy access
+        // when we compute the output lighting equation :)
+        float4 orenNayarModifier = OrenNayar(pixIn.grain, pixIn.normal, pixIn.surfaceToView, pixIn.avgLightDirection, lambertTerm);
+
+        // Specular lighting
+
+        // Cache the result of the Cook-Torrance function in a specific modifier
+        // that we can combine with the Oren-Nayar modifier above to generate
+        // a mixed diffuse/specular PBR value that we can apply to the raw
+        // pixel exposure calculated earlier
+        float cookTorranceModifier = CookTorrance();
+
+        // Combine diffuse/specular lighting
+
+        // Sum the Cook-Torrance modifier with the Oren-Nayar modifier, then apply the result
+        // to the exposure for the current pixel
+        currPixelExposure *= (orenNayarModifier + cookTorranceModifier);
+
+        // Use the generated exposure value to modify the diffuse light color applied to the
+        // current [Pixel]
+        // ...unless the [Pixel] exposure is less than zero; don't do anything in that case,
+        // negative lighting would be weird :P
+
+        // If the current [Pixel] is facing towards the light source, add the
+        // multiplicative blend of the diffuse color and the exposure level
+        // into the output color; afterward, guarantee that each component of
+        // the result is between [0] and [1] with the [saturate] function
+        localLightColor += (pointDiffuse[i] * currPixelExposure) * (currPixelExposure > 0.0f);
+    }
+
+    return saturate(localLightColor);
+}
+
+float4 main(Pixel pixIn) : SV_TARGET
+{
+    // Generate base color...
+    float4 pixOut = pixIn.color * texIn.Sample(wrapSampler, pixIn.texCoord);
+
+    // Initialise the average light color
+    // with the given ambient tinting
+    float4 lightColor = dirAmbient;
+
+    // Generate mixed diffuse/specular colors from all scene lights, then
+    // describe the cumulative effect of those lights on the current pixel by
+    // adding the sum of the diffuse/specular colors into [lightColor]
+    lightColor += (DirLightColorCumulative() + PointLightColorCumulative() + SpotLightColorCumulative());
 
     // Return final color as a (clamped with [saturate]) multiplicative blend
     // between the raw material color ([pixOut]) and the average light color

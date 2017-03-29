@@ -58,16 +58,15 @@ Rasterizer::~Rasterizer()
 
 void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 						float dirLightIntensity, DirectX::XMFLOAT4 dirLightDirection,
-						DirectX::XMFLOAT4 dirLightDiffuse, DirectX::XMFLOAT4 dirLightAmbient, 
+						DirectX::XMFLOAT4 dirLightDiffuse, DirectX::XMFLOAT4 dirLightAmbient,
 						DirectX::XMFLOAT4 dirLightPos,
 						float* pointLightIntensities, DirectX::XMFLOAT4* pointLightDiffuseColors,
-						DirectX::XMFLOAT4* pointLightPositions, fourByteUnsigned pointLightCount,
-						fourByteUnsigned numPointLights,
+						DirectX::XMFLOAT4* pointLightPositions, fourByteUnsigned numPointLights,
 						float* spotLightIntensities, DirectX::XMFLOAT4* spotLightDiffuseColors,
-						DirectX::XMFLOAT4* spotLightPositions, fourByteUnsigned spotLightCount,
+						DirectX::XMFLOAT4* spotLightPositions, DirectX::XMFLOAT4* spotLightDirections,
 						fourByteUnsigned numSpotLights,
-					    DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-					    ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawing)
+						DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
+						ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawing)
 {
 	// Call the base parameter setter to initialise the vertex shader's matrix cbuffer
 	// with the world/view/projection matrices
@@ -87,10 +86,10 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	assert(SUCCEEDED(result));
 
 	// Cast the raw data mapped onto [mappedResource] into a pointer formatted
-	// with it's original type (LightBuffer) which can be used to edit the 
+	// with it's original type (LightBuffer) which can be used to edit the
 	// data itself
 	LightBuffer* lightBufferData = (LightBuffer*)mappedResource.pData;
-	
+
 	// Write directional-light data to the light-buffer via [lightBufferData]
 	lightBufferData->dirIntensity = dirLightIntensity;
 	lightBufferData->dirDirection = dirLightDirection;
@@ -115,6 +114,7 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 		lightBufferData->spotIntensity[i] = spotLightIntensities[i];
 		lightBufferData->spotDiffuse[i] = spotLightDiffuseColors[i];
 		lightBufferData->spotPos[i] = spotLightPositions[i];
+		lightBufferData->spotDirection[i] = spotLightDirections[i];
 	}
 
 	// Store the spot-light cutoff angle in the light-buffer via [lightBufferData]
@@ -152,7 +152,7 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	deviceContext->Unmap(lightBufferPttr, 0);
 
 	// Update the pixel shader with the edited light buffer
-	deviceContext->VSSetConstantBuffers(1, 1, &lightBufferPttr);
+	deviceContext->PSSetConstantBuffers(1, 1, &lightBufferPttr);
 
 	// Render the newest boxecule on the pipeline with [this]
 	Shader::RenderShader(deviceContext, numIndicesDrawing);

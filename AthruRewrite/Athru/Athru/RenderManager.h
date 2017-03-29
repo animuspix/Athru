@@ -136,7 +136,9 @@ class RenderManager
 							  Material* pointLightMaterials, Material* spotLightMaterials,
 							  DirectX::XMVECTOR& directionalPosition, DirectX::XMVECTOR& directionalRotationQtn,
 							  DirectX::XMVECTOR* pointLightPositions, DirectX::XMVECTOR* pointLightRotationQtns,
+							  fourByteUnsigned numPointLights,
 							  DirectX::XMVECTOR* spotLightPositions, DirectX::XMVECTOR* spotLightRotationQtns,
+							  fourByteUnsigned numSpotLights,
 							  DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 							  ID3D11DeviceContext* deviceContext,
 							  fourByteUnsigned numIndicesDrawing);

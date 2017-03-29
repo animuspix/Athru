@@ -45,8 +45,8 @@ void Chunk::Update(DirectX::XMVECTOR& playerPosition)
 	// with a more permanent solution (e.g. nothing moves at all,
 	// terrain + lighting is streamed to the player's "position" on the
 	// planet) as soon as possible
-	//Boxecule* directionalLightBoxecule = subChunks[SUB_CHUNKS_PER_CHUNK - 1]->GetStoredBoxecules()[CHUNK_WIDTH / 2];
-	//subChunks[SUB_CHUNKS_PER_CHUNK - 1]->GetStoredBoxecules()[CHUNK_WIDTH / 2]->FetchTransformations().pos = _mm_add_ps(playerPosition, _mm_set_ps(0, 1, 3, 1));
+	Boxecule* directionalLightBoxecule = subChunks[SUB_CHUNKS_PER_CHUNK - 1]->GetStoredBoxecules()[CHUNK_WIDTH / 2];
+	subChunks[SUB_CHUNKS_PER_CHUNK - 1]->GetStoredBoxecules()[CHUNK_WIDTH / 2]->FetchTransformations().pos = _mm_add_ps(playerPosition, _mm_set_ps(0, 1, 3, 1));
 }
 
 bool Chunk::GetVisibility(Camera* mainCamera)

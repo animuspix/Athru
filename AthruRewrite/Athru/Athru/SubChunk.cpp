@@ -28,18 +28,19 @@ SubChunk::SubChunk(Chunk* parent,
 		float alpha = (float)(index <= (SUB_CHUNKS_PER_CHUNK / 2) || i == 2);
 
 		// Minor color variance to show individual blocks within the plane
-		float red = 1.0f / (rand() % 10);
-		float green = 0.4f;
-		float blue = 0.4f;
+		//float red = 1.0f / (rand() % 10);
+		//float green = 0.4f;
+		//float blue = 0.4f;
 
 		// Set up boxecule lighting properties
 		// Only allow visible boxecules (that are hovering above the main visible plane) to illuminate
 		// other boxecules
 		// Faintly randomize for some interesting intensity variations
-		float illumIntensity = (alpha && (index > SUB_CHUNKS_PER_CHUNK - (SUB_CHUNKS_PER_CHUNK / 4))) * (float)(1 / ((rand() % 10) + 1));
+		// Zeroed out for now; strange and mysterious memory overflows occur if anything non-zero is assigned into it :|
+		float illumIntensity = (((byteUnsigned)alpha) && (index > SUB_CHUNKS_PER_CHUNK / 2)) * (float)(1 / ((rand() % 10) + 1));
 
 		// Point lights on one side, spot-lights on the other
-		AVAILABLE_LIGHTING_SHADERS lightType = (AVAILABLE_LIGHTING_SHADERS)(((parentOffsetX < 0) + (1 * (!(parentOffsetX >= 0)))) + 1);
+		AVAILABLE_LIGHTING_SHADERS lightType = (AVAILABLE_LIGHTING_SHADERS)(((parentOffsetX < 0) + (2 * (parentOffsetX >= 0))));
 
 		// Construct illumination data from the values above
 		Luminance illumination = Luminance(illumIntensity, lightType);
@@ -74,7 +75,7 @@ SubChunk::SubChunk(Chunk* parent,
 		{
 			storedBoxecules[i] = new Boxecule(Material(activeTone,
 												       illumination,
-												       red, green, blue, alpha,
+												       1.0f, 1.0f, 1.0f, alpha,
 													   0.8f,
 													   0.2f,
 												       AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER,

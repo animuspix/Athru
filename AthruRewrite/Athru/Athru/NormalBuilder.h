@@ -24,6 +24,9 @@ struct NormalBuilder
 		DirectX::XMFLOAT4 normalFloat;
 		DirectX::XMStoreFloat4(&normalFloat, normalVector);
 
+		// Reset the [w]-value to 1
+		normalFloat.w = 1;
+
 		// Return the generated normal
 		return normalFloat;
 	}

@@ -82,14 +82,16 @@ void RenderManager::RasterizerRender(Material& renderableMaterial, Material& dir
 									 Material* pointLightMaterials, Material* spotLightMaterials,
 									 DirectX::XMVECTOR& directionalPosition, DirectX::XMVECTOR& directionalRotationQtn,
 									 DirectX::XMVECTOR* pointLightPositions, DirectX::XMVECTOR* pointLightRotationQtns,
+									 fourByteUnsigned numPointLights,
 									 DirectX::XMVECTOR* spotLightPositions, DirectX::XMVECTOR* spotLightRotationQtns,
+									 fourByteUnsigned numSpotLights,
 									 DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 									 ID3D11DeviceContext* deviceContext,
 									 fourByteUnsigned numIndicesDrawing)
 {
 	// Pass the given light position into a shader-friendly [XMFLOAT4]
-	DirectX::XMFLOAT4 lightPos;
-	DirectX::XMStoreFloat4(&lightPos, directionalPosition);
+	DirectX::XMFLOAT4 dirLightPos;
+	DirectX::XMStoreFloat4(&dirLightPos, directionalPosition);
 
 	// Apply the light's rotation to the global Z-vector to generate a
 	// value representing it's local Z-vector (you could call this it's
@@ -99,24 +101,57 @@ void RenderManager::RasterizerRender(Material& renderableMaterial, Material& dir
 	DirectX::XMVECTOR globalZ = _mm_set_ps(1, 1, 0, 0);
 	DirectX::XMVECTOR localZ = DirectX::XMVector3Rotate(globalZ, directionalRotationQtn);
 
-	// Yep, light direction is locked at local-Z for simplicity and to avoid storing
-	// too many variants of [Luminance]/storing a directional value for point lights
-	// that definitely won't use it; this is the part where we take the local-Z
+	// Yep, directional light direction is locked at local-Z for simplicity and to avoid
+	// storing too many variants of [Luminance]/storing a directional value for point
+	// lights that definitely won't use it; this is the part where we take the local-Z
 	// vector from above and store it in a shader-friendly [XMFLOAT4]
-	DirectX::XMFLOAT4 lightDirection;
-	DirectX::XMStoreFloat4(&lightDirection, localZ);
+	DirectX::XMFLOAT4 dirLightDirection;
+	DirectX::XMStoreFloat4(&dirLightDirection, localZ);
 
-	// No point or spot light processing for now; get the single-shader system working
-	// with a directional light first, /then/ upgrade it :)
+	float pointLightIntensities[MAX_POINT_LIGHT_COUNT];
+	DirectX::XMFLOAT4 pointLightDiffuseColors[MAX_POINT_LIGHT_COUNT];
+	DirectX::XMFLOAT4 pointLightLocations[MAX_POINT_LIGHT_COUNT];
+	for (fourByteUnsigned i = 0; i < numPointLights; i += 1)
+	{
+		pointLightIntensities[i] = pointLightMaterials[i].GetLightData().intensity;
+		pointLightDiffuseColors[i] = pointLightMaterials[i].GetColorData();
+		DirectX::XMStoreFloat4(&(pointLightLocations[i]), pointLightPositions[i]);
+	}
+
+	// Cache spot light intensities, diffuse colors, positions, and
+	// directions
+	float spotLightIntensities[MAX_SPOT_LIGHT_COUNT];
+	DirectX::XMFLOAT4 spotLightDiffuseColors[MAX_SPOT_LIGHT_COUNT];
+	DirectX::XMFLOAT4 spotLightLocations[MAX_SPOT_LIGHT_COUNT];
+	DirectX::XMFLOAT4 spotLightDirections[MAX_SPOT_LIGHT_COUNT];
+	DirectX::XMVECTOR globalNegaY = _mm_set_ps(1, 0, -1, 0);
+	for (fourByteUnsigned i = 0; i < numPointLights; i += 1)
+	{
+		spotLightIntensities[i] = spotLightMaterials[i].GetLightData().intensity;
+		spotLightDiffuseColors[i] = spotLightMaterials[i].GetColorData();
+		DirectX::XMStoreFloat4(&(spotLightLocations[i]), spotLightPositions[i]);
+
+		// Directional lights always point "forward" (along the local-Z axis) relative to their orientation;
+		// similarly, spot light direction is locked at negative-local-Y ("downward") for simplicity and to avoid
+		// storing too many variants of [Luminance]/storing a directional value for point lights that
+		// definitely won't use it
+		DirectX::XMVECTOR localNegaY = DirectX::XMVector3Rotate(globalNegaY, spotLightRotationQtns[i]);
+		DirectX::XMStoreFloat4(&(spotLightDirections[i]), localNegaY);
+	}
 
 	// Cache the directional light's diffuse color and use it to generate the ambient light for this render
-	DirectX::XMFLOAT4 diffuse = directionalMaterial.GetColorData();
-	DirectX::XMFLOAT4 ambient = DirectX::XMFLOAT4(diffuse.x * AMBIENT_DIFFUSE_RATIO, diffuse.y * AMBIENT_DIFFUSE_RATIO,
-												  diffuse.z * AMBIENT_DIFFUSE_RATIO, 1.0f);
+	DirectX::XMFLOAT4 dirDiffuse = directionalMaterial.GetColorData();
+	DirectX::XMFLOAT4 dirAmbient = DirectX::XMFLOAT4(dirDiffuse.x * AMBIENT_DIFFUSE_RATIO, dirDiffuse.y * AMBIENT_DIFFUSE_RATIO,
+													 dirDiffuse.z * AMBIENT_DIFFUSE_RATIO, 1.0f);
 
 	rasterizer->Render(deviceContext,
-					   DirectX::XMFLOAT4(localIntensity, localIntensity, localIntensity, localIntensity),
-					   lightDirection, diffuse, ambient, lightPos,
+					   directionalMaterial.GetLightData().intensity, dirLightDirection,
+					   dirDiffuse, dirAmbient, dirLightPos,
+					   pointLightIntensities, pointLightDiffuseColors, pointLightLocations,
+					   numPointLights,
+					   spotLightIntensities, spotLightDiffuseColors, spotLightLocations,
+					   spotLightDirections,
+					   numSpotLights,
 					   worldByModel, view, projection,
 					   renderableMaterial.GetTexture().asShaderResource,
 					   numIndicesDrawing);
@@ -207,17 +242,20 @@ void RenderManager::Render(Camera* mainCamera,
 
 	// Render each boxecule in the render queue
 	DirectX::XMVECTOR& cameraPos = mainCamera->GetTranslation();
-	for (fourByteSigned i = 0; i < renderQueueLength; i += 1)
+	if (directionalCount > 0)
 	{
-		Boxecule* renderable = renderQueue[i];
-		renderable->PassToGPU(deviceContext);
-		RasterizerRender(renderable->GetMaterial(), directionalMaterials[0], pointMaterials, spotMaterials,
-						 DirectX::XMVector3Transform(directionalLightPositions[0], world), directionalLightRotationQtns[0],
-						 pointLightPositions, pointLightRotationQtns,
-						 spotLightPositions, spotLightRotationQtns,
-						 world * renderable->GetTransform(), view, projection,
-						 deviceContext,
-						 BOXECULE_INDEX_COUNT);
+		for (fourByteSigned i = 0; i < renderQueueLength; i += 1)
+		{
+			Boxecule* renderable = renderQueue[i];
+			renderable->PassToGPU(deviceContext);
+			RasterizerRender(renderable->GetMaterial(), directionalMaterials[0], pointMaterials, spotMaterials,
+							 DirectX::XMVector3Transform(directionalLightPositions[0], world), directionalLightRotationQtns[0],
+							 pointLightPositions, pointLightRotationQtns, pointCount,
+							 spotLightPositions, spotLightRotationQtns, spotCount,
+							 world * renderable->GetTransform(), view, projection,
+							 deviceContext,
+							 BOXECULE_INDEX_COUNT);
+		}
 	}
 
 	// Nothing left to draw on this pass, so zero the length of the render queue

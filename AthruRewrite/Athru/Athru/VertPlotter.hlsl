@@ -1,6 +1,3 @@
-#define MAX_POINT_LIGHT_COUNT 10
-#define MAX_SPOT_LIGHT_COUNT 10
-
 cbuffer MatBuffer
 {
     matrix world;
@@ -8,37 +5,11 @@ cbuffer MatBuffer
     matrix projection;
 };
 
-// Buffer for lighting data (only one directional light per scene atm, though that
-// could be extended)
-cbuffer LightBuffer
-{
-    float dirIntensity;
-    float3 dirPadding;
-    float4 dirDirection;
-    float4 dirDiffuse;
-    float4 dirAmbient;
-    float4 dirPos;
-    float pointIntensity[MAX_POINT_LIGHT_COUNT];
-    float3 pointPaddingA;
-    float4 pointDiffuse[MAX_POINT_LIGHT_COUNT];
-    float4 pointPos[MAX_POINT_LIGHT_COUNT];
-    uint numPointLights;
-    float4 pointPaddingB;
-    float4 spotIntensity[MAX_SPOT_LIGHT_COUNT];
-    float4 spotDiffuse[MAX_SPOT_LIGHT_COUNT];
-    float4 spotPos[MAX_SPOT_LIGHT_COUNT];
-    float4 spotDirection[MAX_SPOT_LIGHT_COUNT];
-    float spotCutoffRadians;
-    uint numSpotLights;
-    float2 spotPadding;
-    float4 viewVec;
-};
-
 struct Vertex
 {
-    float4 pos : POSITION;
+    float4 pos : POSITION0;
     float4 color : COLOR0;
-    float4 normal : NORMAL;
+    float4 normal : NORMAL0;
     float2 texCoord : TEXCOORD0;
     float grain : COLOR1;
     float reflectFactor : COLOR2;
@@ -46,26 +17,24 @@ struct Vertex
 
 struct Pixel
 {
-    float4 pos : SV_POSITION;
+    float4 pos : SV_POSITION0;
     float4 color : COLOR0;
-    float4 normal : NORMAL;
+    float4 normal : NORMAL0;
     float2 texCoord : TEXCOORD0;
     float grain : COLOR1;
     float reflectFactor : COLOR2;
-    float4 avgLightDirection : NORMAL1;
-    float4 avgLightIntensity : COLOR3;
-    float4 avgLightDiffuse : COLOR3;
-    float4 ambientLighting : COLOR4;
 };
 
 struct AvgLightInfluence
 {
-    float4 avgPosition = float4(0, 0, 0, 0);
-    float4 avgDiffuse = float4(0, 0, 0, 0);
-    float avgIntensity = 0;
+    float4 avgPosition;
+    float4 avgDiffuse;
+    float avgIntensity;
 };
 
-AvgLightInfluence GetPointInfluence(float4 positions[], float4 diffuseColors[], float intensities[], int numLights, float4 vertWorldPos)
+AvgLightInfluence GetPointInfluence(float4 positions[MAX_POINT_LIGHT_COUNT], float4 diffuseColors[MAX_POINT_LIGHT_COUNT],
+                                    float intensities[MAX_POINT_LIGHT_COUNT], uint numLights,
+                                    float4 vertWorldPos, float4 surfaceViewVec)
 {
     // Return mean values within an [AvgLightInfluence] object
     AvgLightInfluence lightInfluence;
@@ -79,26 +48,23 @@ AvgLightInfluence GetPointInfluence(float4 positions[], float4 diffuseColors[], 
 
     // Store normalized averages of the positions, intensities, and
     // diffuse color of each visible point light
-    for (int i = 0; i < numLights; i += 1)
+    for (uint i = 0; i < numLights; i += 1)
     {
-        avgPosition += pointPos[i];
-
-        // Intensity and diffuse color are proximity-weighted so that
+        // Light properties are proximity-weighted so that
         // close lights have more emphasis than far ones
-        avgDiffuse += pointDiffuse[i] * length(pointPos[i]);
-        avgIntensity += pointIntensity[i][0] * length(pointPos[i]);
+        avgPosition += pointPos[i] * (1 / length(surfaceViewVec) * 10);
+        avgDiffuse += pointDiffuse[i] * (1 / length(surfaceViewVec) * 10);
+        avgIntensity += pointIntensity[i] * (1 / length(surfaceViewVec) * 10);
     }
 
     // Retrieve mean from summed positions
-    avgPosition /= numPointLights;
-    avgPosition = normalize(avgPosition);
+    avgPosition /= numLights;
 
     // Retrieve mean from summed diffuse colors
-    avgDiffuse /= numPointLights;
-    avgDiffuse = normalize(avgDiffuse);
+    avgDiffuse /= numLights;
 
     // Retrieve mean from summed intensities
-    avgIntensity /= numPointLights;
+    avgIntensity /= numLights;
 
     // Store the generated averages within [lightInfluence]
     lightInfluence.avgPosition = avgPosition;
@@ -109,7 +75,9 @@ AvgLightInfluence GetPointInfluence(float4 positions[], float4 diffuseColors[], 
     return lightInfluence;
 }
 
-AvgLightInfluence GetSpotInfluence(float4 positions[], float4 diffuseColors[], float intensities[], int numLights, float4 vertWorldPos)
+AvgLightInfluence GetSpotInfluence(float4 positions[MAX_SPOT_LIGHT_COUNT], float4 diffuseColors[MAX_SPOT_LIGHT_COUNT],
+                                   float intensities[MAX_SPOT_LIGHT_COUNT], uint numLights, float4 vertWorldPos,
+                                   float4 surfaceViewVec)
 {
     // Return mean values within an [AvgLightInfluence] object
     AvgLightInfluence lightInfluence;
@@ -130,36 +98,33 @@ AvgLightInfluence GetSpotInfluence(float4 positions[], float4 diffuseColors[], f
     // directly from the emitter to a given vertex
     float4 lightVector;
 
-    for (int i = 0; i < numSpotLights; i += 1)
+    for (uint i = 0; i < numLights; i += 1)
     {
         // Calculate the vector from the current spot light to [vertWorldPos]
-        lightVector = normalize(vertWorldPos - spotPos[i]);
+        lightVector = normalize(vertWorldPos - positions[i]);
 
         // Skip any spot lights where the angle between [spotDirection] and the
         // light vector itself (defined as acos(dot(normalize(spotDirection), normalize(spotPosition))))
         // is greater than the cuttoff angle [spotRadius]
-        float angleVertCos = dot(normalize(spotDirection[i]), normalize(positions[i]));
-        float angleToVert = acos(angleToVert);
+        float angleVertCos = dot(normalize(spotDirection[i]), lightVector);
+        float angleToVert = acos(angleVertCos);
         bool isInsideCutoff = (angleToVert < spotCutoffRadians);
 
-        avgPosition += spotPos[i] * float4(isInsideCutoff, isInsideCutoff, isInsideCutoff, isInsideCutoff);
-
-        // Intensity and diffuse color are proximity-weighted so that
+        // Light properties proximity-weighted so that
         // close lights have more emphasis than far ones
-        avgIntensity += spotIntensity[i][0] * length(lightVector) * isInsideCutoff;
-        avgDiffuse += spotDiffuse[i] * length(lightVector) * float4(isInsideCutoff, isInsideCutoff, isInsideCutoff, isInsideCutoff);
+        avgPosition += spotPos[i] * (1 / length(surfaceViewVec) * 10) * isInsideCutoff; //float4(isInsideCutoff, isInsideCutoff, isInsideCutoff, isInsideCutoff);
+        avgIntensity += spotIntensity[i] * (1 / length(surfaceViewVec) * 10) * isInsideCutoff;
+        avgDiffuse += spotDiffuse[i] * (1 / length(surfaceViewVec) * 10) * isInsideCutoff;
     }
 
     // Retrieve mean from summed positions
-    avgPosition /= numPointLights;
-    avgPosition = normalize(avgPosition);
+    avgPosition /= numLights;
 
     // Retrieve mean from summed diffuse colors
-    avgDiffuse /= numPointLights;
-    avgDiffuse = normalize(avgDiffuse);
+    avgDiffuse /= numLights;
 
     // Retrieve mean from summed intensities
-    avgIntensity /= numPointLights;
+    avgIntensity /= numLights;
 
     // Store the generated averages within [lightInfluence]
     lightInfluence.avgPosition = avgPosition;
@@ -206,24 +171,29 @@ Pixel main(Vertex vertIn)
     // into the output [Pixel]
     output.reflectFactor = vertIn.reflectFactor;
 
+    // Generate a vector from the surface to the camera view
+    float4 surfaceToView = output.normal - viewVec;
+
     // Store a normalized copy of the directional light direction
     float4 normDirDirection = normalize(dirDirection);
 
     // Calculate the average pixel influence of the visible point lights
-    AvgLightInfluence pointLightInfluence = GetPointInfluence(pointPos, pointDiffuse, pointIntensity, numPointLights, mul(vertIn.pos, world));
+    AvgLightInfluence pointLightInfluence = GetPointInfluence(pointPos, pointDiffuse, pointIntensity, numPointLights,
+                                                              mul(vertIn.pos, world), surfaceToView);
 
     // Calculate the average pixel influence of the visible spot lights
-    AvgLightInfluence spotLightInfluence = GetSpotInfluence(pointPos, pointDiffuse, pointIntensity, numPointLights, mul(vertIn.pos, world));
+    AvgLightInfluence spotLightInfluence = GetSpotInfluence(pointPos, pointDiffuse, pointIntensity, numSpotLights,
+                                                            mul(vertIn.pos, world), surfaceToView);
 
     // Calculate the normalized mean of the directional light direction, the average point direction, and the
     // average spot direction
-    float4 avgLightDirection = normalize((normDirDirection + pointLightInfluence.avgPosition + spotLightInfluence.avgPosition) / 3);
+    float4 avgLightDirection = normalize((normDirDirection/* + pointLightInfluence.avgPosition*/ + spotLightInfluence.avgPosition) / 2);
 
     // Calculate the mean of the directional light intensity, the average point intensity, and the
     // average spot intensity
     // Weighting intensities by position will have knocked a few components out of the [0...1] range, so fix that by
     // clamping them with [saturate]
-    float4 avgLightIntensity = (dirIntensity[0] + saturate(pointLightInfluence.avgIntensity) + saturate(spotLightInfluence.avgIntensity)) / 3;
+    float avgLightIntensity = (dirIntensity /*+ saturate(pointLightInfluence.avgIntensity)*/ + saturate(spotLightInfluence.avgIntensity)) / 2;
 
     // Calculate the clamped mean of the directional light diffuse color, the average point diffuse color, and the
     // average spot diffuse color
@@ -231,13 +201,14 @@ Pixel main(Vertex vertIn)
     // clamping them with [saturate]
     // Clamping instead of normalization because we don't want to lose magnitude like we do with direction, but we
     // do want to guarantee that none of our lights will have diffuse components outside the expected [0...1] range
-    float4 avgLightDiffuse = saturate((dirDiffuse + saturate(pointLightInfluence.avgDiffuse) + saturate(spotLightInfluence.avgDiffuse)) / 3);
+    float4 avgLightDiffuse = saturate((dirDiffuse /*+ saturate(pointLightInfluence.avgDiffuse)*/ + saturate(spotLightInfluence.avgDiffuse)) / 2);
 
     // Pass generated lighting data into the output [Pixel]
     output.avgLightDirection = avgLightDirection;
-    output.avgLightIntensity = avgLightIntensity;
+    output.avgLightIntensity = 1.0f; //float4(avgLightIntensity, avgLightIntensity, avgLightIntensity, avgLightIntensity);
     output.avgLightDiffuse = avgLightDiffuse;
     output.ambientLighting = dirAmbient;
+    output.surfaceToView = normalize(surfaceToView);
 
     // Pass the output [Pixel] along to
     // the pixel shader

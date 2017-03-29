@@ -16,13 +16,12 @@ class Rasterizer : public Shader
 		// Force render calls to go through here
 		void Render(ID3D11DeviceContext* deviceContext,
 					float dirLightIntensity, DirectX::XMFLOAT4 dirLightDirection,
-					DirectX::XMFLOAT4 dirLightDiffuse, DirectX::XMFLOAT4 dirLightAmbient, 
+					DirectX::XMFLOAT4 dirLightDiffuse, DirectX::XMFLOAT4 dirLightAmbient,
 					DirectX::XMFLOAT4 dirLightPos,
 					float* pointLightIntensities, DirectX::XMFLOAT4* pointLightDiffuseColors,
-					DirectX::XMFLOAT4* pointLightPositions, fourByteUnsigned pointLightCount,
-					fourByteUnsigned numPointLights,
+					DirectX::XMFLOAT4* pointLightPositions, fourByteUnsigned numPointLights,
 					float* spotLightIntensities, DirectX::XMFLOAT4* spotLightDiffuseColors,
-					DirectX::XMFLOAT4* spotLightPositions, fourByteUnsigned spotLightCount,
+					DirectX::XMFLOAT4* spotLightPositions, DirectX::XMFLOAT4* spotLightDirections,
 					fourByteUnsigned numSpotLights,
 					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
 					ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawing);
@@ -32,24 +31,35 @@ class Rasterizer : public Shader
 		{
 			// Lots of padding here to maintain 16-byte alignment
 			float dirIntensity;
-			DirectX::XMFLOAT3 dirPadding;
+			DirectX::XMFLOAT3 dirIntensityPadding;
+
 			DirectX::XMFLOAT4 dirDirection;
 			DirectX::XMFLOAT4 dirDiffuse;
 			DirectX::XMFLOAT4 dirAmbient;
 			DirectX::XMFLOAT4 dirPos;
+
 			float pointIntensity[MAX_POINT_LIGHT_COUNT];
-			DirectX::XMFLOAT3 pointPaddingA;
+			DirectX::XMFLOAT3 pointIntensityPadding[MAX_POINT_LIGHT_COUNT];
+
 			DirectX::XMFLOAT4 pointDiffuse[MAX_POINT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 pointPos[MAX_POINT_LIGHT_COUNT];
+
 			fourByteUnsigned numPointLights;
-			DirectX::XMFLOAT3 pointPaddingB;
-			DirectX::XMFLOAT4 spotIntensity[MAX_SPOT_LIGHT_COUNT];
+			DirectX::XMFLOAT3 numPointLightPadding;
+
+			float spotIntensity[MAX_SPOT_LIGHT_COUNT];
+			DirectX::XMFLOAT3 spotIntensityPadding[MAX_SPOT_LIGHT_COUNT];
+
 			DirectX::XMFLOAT4 spotDiffuse[MAX_SPOT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 spotPos[MAX_SPOT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 spotDirection[MAX_SPOT_LIGHT_COUNT];
+
 			float spotCutoffRadians;
+			DirectX::XMFLOAT3 spotCutoffRadiansPadding;
+
 			fourByteUnsigned numSpotLights;
-			DirectX::XMFLOAT2 spotPadding;
+			DirectX::XMFLOAT3 numSpotLightPadding;
+
 			DirectX::XMFLOAT4 viewVec;
 		};
 
