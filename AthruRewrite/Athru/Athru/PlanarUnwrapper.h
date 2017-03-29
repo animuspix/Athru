@@ -10,7 +10,7 @@ struct PlanarUnwrapper
 	{
 		// Unwrap algorithm found on the devmaster.net forums; published by TheNut (see:
 		// http://forum.devmaster.net/t/uvw-unwrap-algorithms/21409)
-		
+
 		DirectX::XMVECTOR vertLowerCoordDiff = _mm_sub_ps(DirectX::XMLoadFloat4(&startingVert), DirectX::XMLoadFloat4(&minBoundingCoord));
 		DirectX::XMFLOAT4 outputUVW; // Prefer to do this inline, but [XMStoreFloat4] returns [void]
 		DirectX::XMStoreFloat4(&outputUVW, _mm_div_ps(vertLowerCoordDiff, DirectX::XMLoadFloat4(&boundingCoordRange)));

@@ -1,6 +1,5 @@
 #pragma once
 
-#include "DirectionalLight.h"
 #include "Planet.h"
 
 class StarSystem
@@ -11,7 +10,7 @@ class StarSystem
 
 	private:
 		// The star associated with this system
-		DirectionalLight sun;
+		Boxecule sun;
 
 		// The planets associated with this system
 		Planet* planets;

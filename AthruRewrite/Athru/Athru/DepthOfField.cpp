@@ -8,6 +8,4 @@ DepthOfField::DepthOfField(ID3D11Device* device, HWND windowHandle,
 
 DepthOfField::~DepthOfField()
 {
-	// Call the parent destructor
-	Shader::~Shader();
 }

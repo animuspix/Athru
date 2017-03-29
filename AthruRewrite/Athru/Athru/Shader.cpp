@@ -25,7 +25,7 @@ Shader::Shader(ID3D11Device* device, HWND windowHandle,
 
 	// Set up the vertex input layout description
 	// This setup needs to match the Vertex struct in Boxecule + each shader
-	D3D11_INPUT_ELEMENT_DESC polygonLayout[4];
+	D3D11_INPUT_ELEMENT_DESC polygonLayout[6];
 	polygonLayout[0].SemanticName = "POSITION";
 	polygonLayout[0].SemanticIndex = 0;
 	polygonLayout[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
@@ -57,6 +57,22 @@ Shader::Shader(ID3D11Device* device, HWND windowHandle,
 	polygonLayout[3].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	polygonLayout[3].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
 	polygonLayout[3].InstanceDataStepRate = 0;
+
+	polygonLayout[4].SemanticName = "COLOR";
+	polygonLayout[4].SemanticIndex = 1;
+	polygonLayout[4].Format = DXGI_FORMAT_R32G32_FLOAT;
+	polygonLayout[4].InputSlot = 0;
+	polygonLayout[4].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	polygonLayout[4].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	polygonLayout[4].InstanceDataStepRate = 0;
+
+	polygonLayout[5].SemanticName = "COLOR";
+	polygonLayout[5].SemanticIndex = 2;
+	polygonLayout[5].Format = DXGI_FORMAT_R32_FLOAT;
+	polygonLayout[5].InputSlot = 0;
+	polygonLayout[5].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	polygonLayout[5].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	polygonLayout[5].InstanceDataStepRate = 0;
 
 	// Count the number of elements in the vertex input layout
 	fourByteUnsigned numElements = sizeof(polygonLayout) / sizeof(polygonLayout[0]);
@@ -114,7 +130,7 @@ void Shader::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 	// Long integer used to store success/failure for DirectX operations
 	HRESULT result;
 
-	// Transpose the matrices to prepare them for the shader.
+	// Transpose the matrices to prepare them for the shader
 	world = XMMatrixTranspose(world);
 	view = XMMatrixTranspose(view);
 	projection = XMMatrixTranspose(projection);

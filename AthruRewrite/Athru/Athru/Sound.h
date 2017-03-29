@@ -3,7 +3,7 @@
 class Sound
 {
 	public:
-		Sound();
+		Sound(float baseFreq, float baseVol);
 		~Sound();
 
 	private:

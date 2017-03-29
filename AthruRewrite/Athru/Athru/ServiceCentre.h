@@ -5,6 +5,7 @@
 #include "Input.h"
 #include "Application.h"
 #include "Direct3D.h"
+#include "TextureManager.h"
 #include "RenderManager.h"
 #include "Graphics.h"
 #include "SceneManager.h"
@@ -38,11 +39,13 @@ class ServiceCentre
 			// service
 			graphicsPttr = new Graphics(appPttr->GetHWND());
 
-			// Attempt to create and register the render manager
+			// Attempt to create and register the texture manager
 			Direct3D* d3DPttr = graphicsPttr->GetD3D();
-			renderManagerPttr = new RenderManager(d3DPttr->GetDeviceContext(), d3DPttr->GetDevice(), d3DPttr->GetViewport(),
-												  DEFERRED::AVAILABLE_POST_EFFECTS::BLOOM, DEFERRED::AVAILABLE_POST_EFFECTS::DEPTH_OF_FIELD, DEFERRED::AVAILABLE_POST_EFFECTS::NULL_EFFECT,
-												  DEFERRED::AVAILABLE_LIGHTING_SHADERS::COOK_TORRANCE_PBR);
+			textureManagerPttr = new TextureManager(d3DPttr->GetDevice());
+
+			// Attempt to create and register the render manager
+			renderManagerPttr = new RenderManager(d3DPttr->GetDeviceContext(), d3DPttr->GetDevice(),
+												  AVAILABLE_POST_EFFECTS::BLOOM, AVAILABLE_POST_EFFECTS::DEPTH_OF_FIELD, AVAILABLE_POST_EFFECTS::NULL_EFFECT);
 
 			// Attempt to create and register the scene manager
 			sceneManagerPttr = new SceneManager();
@@ -57,6 +60,7 @@ class ServiceCentre
 		{
 			sceneManagerPttr->~SceneManager();
 			renderManagerPttr->~RenderManager();
+			textureManagerPttr->~TextureManager();
 			graphicsPttr->~Graphics();
 			appPttr->~Application();
 			inputPttr->~Input();
@@ -66,6 +70,7 @@ class ServiceCentre
 			inputPttr = nullptr;
 			appPttr = nullptr;
 			graphicsPttr = nullptr;
+			textureManagerPttr = nullptr;
 			renderManagerPttr = nullptr;
 			sceneManagerPttr = nullptr;
 
@@ -98,6 +103,11 @@ class ServiceCentre
 			return graphicsPttr;
 		}
 
+		static TextureManager* AccessTextureManager()
+		{
+			return textureManagerPttr;
+		}
+
 		static RenderManager* AccessRenderManager()
 		{
 			return renderManagerPttr;
@@ -115,6 +125,7 @@ class ServiceCentre
 		static Input* inputPttr;
 		static Application* appPttr;
 		static Graphics* graphicsPttr;
+		static TextureManager* textureManagerPttr;
 		static RenderManager* renderManagerPttr;
 		static SceneManager* sceneManagerPttr;
 };

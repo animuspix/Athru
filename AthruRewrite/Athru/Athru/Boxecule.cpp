@@ -1,22 +1,26 @@
 #include "ServiceCentre.h"
 #include "Boxecule.h"
 
-Boxecule::Boxecule(Material boxeculeMaterial) : 
-				   Mesh(boxeculeMaterial)
+Boxecule::Boxecule(Material boxeculeMaterial)
 {
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
-	// Material associated in the initializer list, so no need to do that here
+	// Store the given material
+	material = boxeculeMaterial;
 
 	// Cache the color associated with [this]
 	DirectX::XMFLOAT4 vertColor = material.GetColorData();
+
+	// Cache the roughness and reflectiveness associated with [this]
+	float vertRoughness = material.GetRoughness();
+	float vertReflectiveness = material.GetReflectiveness();
 
 	// Store min bounding cube position, max bounding cube position, and the difference (range) between them
 	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-0.5f, -0.5f, -0.5f, 1);
 	DirectX::XMFLOAT4 maxBoundingPos = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1);
 	DirectX::XMFLOAT4 boundingRange = DirectX::XMFLOAT4(maxBoundingPos.x - minBoundingPos.x,
-														maxBoundingPos.y - minBoundingPos.y, 
+														maxBoundingPos.y - minBoundingPos.y,
 														maxBoundingPos.z - minBoundingPos.z, 1);
 
 	// Generate + cache vertex positions
@@ -31,91 +35,107 @@ Boxecule::Boxecule(Material boxeculeMaterial) :
 
 	// Initialise vertices
 	Vertex vertices[8] = { Vertex(vert0Pos, // Front plane, upper left (v0)
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert0Pos), 
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos)),
+								  vertColor,
+								  NormalBuilder::ForRegular(vert0Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos),
+								  vertRoughness,
+								  vertReflectiveness),
 
 						   Vertex(vert1Pos, // Front plane, upper right (v1)
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert1Pos), 
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos)),
+								  vertColor,
+								  NormalBuilder::ForRegular(vert1Pos),
+							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos),
+								  vertRoughness,
+								  vertReflectiveness),
 
 						   Vertex(vert2Pos, // Front plane, lower left (v2)
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert2Pos), 
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos)),
+								  vertColor,
+								  NormalBuilder::ForRegular(vert2Pos),
+							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
+								  vertRoughness,
+								  vertReflectiveness),
 
 						   Vertex(vert3Pos, // Front plane, lower right (v3)
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert3Pos), 
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos)),
+								  vertColor,
+								  NormalBuilder::ForRegular(vert3Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos),
+								  vertRoughness,
+								  vertReflectiveness),
 
 						   Vertex(vert4Pos, // Back plane, lower right (v4)
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert4Pos), 
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert4Pos)),
+								  vertColor,
+								  NormalBuilder::ForRegular(vert4Pos),
+							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert4Pos),
+								  vertRoughness,
+								  vertReflectiveness),
 
 						   Vertex(vert5Pos, // Back plane, upper right (v5)
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert5Pos), 
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert5Pos)),
+								  vertColor,
+								  NormalBuilder::ForRegular(vert5Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert5Pos),
+							      vertRoughness,
+								  vertReflectiveness),
 
-						   Vertex(vert6Pos, // Back plane, upper left (v6) 
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert6Pos), 
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert6Pos)),
+						   Vertex(vert6Pos, // Back plane, upper left (v6)
+								  vertColor,
+								  NormalBuilder::ForRegular(vert6Pos),
+							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert6Pos),
+								  vertRoughness,
+								  vertReflectiveness),
 
-						   Vertex(vert6Pos, // Back plane, lower left (v7)
-								  vertColor, 
-								  NormalBuilder::ForRegular(vert7Pos), 
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert7Pos)) };
+						   Vertex(vert7Pos, // Back plane, lower left (v7)
+								  vertColor,
+								  NormalBuilder::ForRegular(vert7Pos),
+							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert7Pos),
+								  vertRoughness,
+								  vertReflectiveness) };
 
 	// Initialise indices
 	// Each set of three values is one triangle
 	long indices[BOXECULE_INDEX_COUNT] = { 0,
 										   1,
 										   2,
-										   
+
 										   2,
 										   1,
 										   3,
-										   
+
 										   2,
 										   3,
 										   4,
-										   
+
 										   4,
 										   3,
 										   1,
-										   
+
 										   4,
 										   1,
 										   5,
-										   
+
 										   5,
 										   1,
 										   0,
-										   
+
 										   5,
 										   0,
 										   6,
-										   
+
 										   6,
 										   0,
 										   2,
-										   
+
 										   6,
 										   2,
 										   7,
-										   
+
 										   2,
 										   4,
 										   7,
-										   
+
 										   7,
 										   4,
 										   6,
-										   
+
 										   4,
 										   5,
 										   6 };
@@ -174,4 +194,67 @@ Boxecule::~Boxecule()
 	// Release the vertex buffer
 	vertBuffer->Release();
 	vertBuffer = 0;
+}
+
+void Boxecule::PassToGPU(ID3D11DeviceContext* deviceContext)
+{
+	// Set vertex buffer stride and offset.
+	unsigned int stride = sizeof(Vertex);
+	unsigned int offset = 0;
+
+	// Set the vertex buffer to active in the input assembler so it can be rendered
+	deviceContext->IASetVertexBuffers(0, 1, &vertBuffer, &stride, &offset);
+
+	// Set the index buffer to active in the input assembler so it can be rendered
+	deviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	// Set the 2D primitive type used to create the boxecule; we're making one boxecule,
+	// so triangular primitives make the most sense :P
+	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
+}
+
+void Boxecule::SetMaterial(Material& freshMaterial)
+{
+	material = freshMaterial;
+}
+
+Material& Boxecule::GetMaterial()
+{
+	return material;
+}
+
+SQT& Boxecule::FetchTransformations()
+{
+	return transformations;
+}
+
+DirectX::XMMATRIX Boxecule::GetTransform()
+{
+	return transformations.asMatrix();
+}
+
+// Push constructions for this class through Athru's custom allocator
+void* Boxecule::operator new(size_t size)
+{
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Boxecule>(), false);
+}
+
+// Push constructions for this class through Athru's custom allocator
+void* Boxecule::operator new[](size_t size)
+{
+	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Boxecule>(), false);
+}
+
+// We aren't expecting to use [delete], so overload it to do nothing
+void Boxecule::operator delete(void* target)
+{
+	return;
+}
+
+// We aren't expecting to use [delete[]], so overload it to do nothing
+void Boxecule::operator delete[](void* target)
+{
+	return;
 }

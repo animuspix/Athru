@@ -4,6 +4,10 @@ TexturedRasterizer::TexturedRasterizer(ID3D11Device* device, HWND windowHandle,
 									   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath) :
 									   Shader(device, windowHandle, vertexShaderFilePath, pixelShaderFilePath)
 {
+	// Long integer used for storing success/failure for different
+	// DirectX operations
+	HRESULT result;
+
 	// Setup the texture sampler state description
 	// (we're using wrap sampling atm)
 	D3D11_SAMPLER_DESC samplerDesc;
@@ -21,8 +25,8 @@ TexturedRasterizer::TexturedRasterizer(ID3D11Device* device, HWND windowHandle,
 	samplerDesc.MinLOD = 0;
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
-	// Create the texture sampler state.
-	HRESULT result = device->CreateSamplerState(&samplerDesc, &wrapSamplerState);
+	// Create the texture sampler state
+	result = device->CreateSamplerState(&samplerDesc, &wrapSamplerState);
 
 	// Test if anything broke :)
 	assert(SUCCEEDED(result));
@@ -31,9 +35,6 @@ TexturedRasterizer::TexturedRasterizer(ID3D11Device* device, HWND windowHandle,
 
 TexturedRasterizer::~TexturedRasterizer()
 {
-	// Call the parent destructor
-	Shader::~Shader();
-
 	// Release the texture sampler state
 	wrapSamplerState->Release();
 	wrapSamplerState = nullptr;
@@ -41,7 +42,7 @@ TexturedRasterizer::~TexturedRasterizer()
 
 void TexturedRasterizer::Render(ID3D11DeviceContext* deviceContext,
 								DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-							    ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawings)
+							    ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawing)
 {
 	// Call the base parameter setter to initialise the vertex shader's matrix cbuffer
 	// with the world/view/projection matrices
@@ -54,5 +55,5 @@ void TexturedRasterizer::Render(ID3D11DeviceContext* deviceContext,
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
 	// Render the newest boxecule on the pipeline with [this]
-	Shader::RenderShader(deviceContext, numIndicesDrawings);
+	Shader::RenderShader(deviceContext, numIndicesDrawing);
 }

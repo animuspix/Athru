@@ -6,120 +6,24 @@
 // Shaders (object first, then lighting, then post-effects)
 #include "Rasterizer.h"
 #include "TexturedRasterizer.h"
-#include "BufferRasterizer.h"
-#include "CookTorrancePBR.h"
+#include "DirectionalLight.h"
+#include "PointLight.h"
+#include "SpotLight.h"
 #include "Bloom.h"
 #include "DepthOfField.h"
 
 // Generic objects relevant to [this]
-#include "AthruRect.h"
 #include "Boxecule.h"
 #include "Camera.h"
 
 // The header containing declarations used by [this]
 #include "RenderManager.h"
 
-RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device* d3dDevice, D3D11_VIEWPORT& viewport,
-							 DEFERRED::AVAILABLE_POST_EFFECTS defaultPostEffectA, DEFERRED::AVAILABLE_POST_EFFECTS defaultPostEffectB, DEFERRED::AVAILABLE_POST_EFFECTS defaultPostEffectC,
-							 DEFERRED::AVAILABLE_LIGHTING_SHADERS defaultLightingShader) :
-							 deviceContext(d3dDeviceContext), viewportRef(viewport)
+RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device* d3dDevice,
+							 AVAILABLE_POST_EFFECTS defaultPostEffectA, AVAILABLE_POST_EFFECTS defaultPostEffectB, AVAILABLE_POST_EFFECTS defaultPostEffectC)
 {
-	// Initialise core rendering objects/properties
-
-	// Long integer used to store success/failure for different DirectX operations
-	HRESULT result;
-
-	// Setup render-buffer (raw texture view) description
-	D3D11_TEXTURE2D_DESC renderBufferDesc;
-	ZeroMemory(&renderBufferDesc, sizeof(renderBufferDesc));
-	renderBufferDesc.Width = DISPLAY_WIDTH;
-	renderBufferDesc.Height = DISPLAY_HEIGHT;
-	renderBufferDesc.MipLevels = 1;
-	renderBufferDesc.ArraySize = 1;
-	renderBufferDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-	renderBufferDesc.SampleDesc.Count = 1;
-	renderBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	renderBufferDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
-	renderBufferDesc.CPUAccessFlags = 0;
-	renderBufferDesc.MiscFlags = 0;
-
-	// Create render-buffers
-	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	result = d3dDevice->CreateTexture2D(&renderBufferDesc, NULL, &renderBufferTextures[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	// Setup render-buffer (target view) description
-	D3D11_RENDER_TARGET_VIEW_DESC renderTargetViewDesc;
-	ZeroMemory(&renderTargetViewDesc, sizeof(renderTargetViewDesc));
-	renderTargetViewDesc.Format = renderBufferDesc.Format;
-	renderTargetViewDesc.ViewDimension = D3D11_RTV_DIMENSION_TEXTURE2D;
-	renderTargetViewDesc.Texture2D.MipSlice = 0;
-
-	// Create render-buffer targets
-	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[0], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[1], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	result = d3dDevice->CreateRenderTargetView(renderBufferTextures[2], &renderTargetViewDesc, &renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	// Setup render-buffer (shader resource view) description
-	D3D11_SHADER_RESOURCE_VIEW_DESC shaderResourceViewDesc;
-	ZeroMemory(&shaderResourceViewDesc, sizeof(shaderResourceViewDesc));
-	shaderResourceViewDesc.Format = renderBufferDesc.Format;
-	shaderResourceViewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
-	shaderResourceViewDesc.Texture2D.MostDetailedMip = 0;
-	shaderResourceViewDesc.Texture2D.MipLevels = 1;
-
-	// Create render-buffer shader resources
-	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[0], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[1], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	result = d3dDevice->CreateShaderResourceView(renderBufferTextures[2], &shaderResourceViewDesc, &renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER]);
-	assert(SUCCEEDED(result));
-
-	// Setup the description for the local depth-stencil buffer (raw texture view)
-	D3D11_TEXTURE2D_DESC depthStencilBufferDesc;
-	ZeroMemory(&depthStencilBufferDesc, sizeof(depthStencilBufferDesc));
-	depthStencilBufferDesc.Width = DISPLAY_WIDTH;
-	depthStencilBufferDesc.Height = DISPLAY_WIDTH;
-	depthStencilBufferDesc.MipLevels = 1;
-	depthStencilBufferDesc.ArraySize = 1;
-	depthStencilBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilBufferDesc.SampleDesc.Count = 1;
-	depthStencilBufferDesc.SampleDesc.Quality = 0;
-	depthStencilBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	depthStencilBufferDesc.BindFlags = D3D11_BIND_DEPTH_STENCIL;
-	depthStencilBufferDesc.CPUAccessFlags = 0;
-	depthStencilBufferDesc.MiscFlags = 0;
-
-	// Create the local depth-stencil buffer
-	result = d3dDevice->CreateTexture2D(&depthStencilBufferDesc, NULL, &localDepthStencilTexture);
-	assert(SUCCEEDED(result));
-
-	// Setup the description for the local depth-stencil buffer (depth-stencil view)
-	D3D11_DEPTH_STENCIL_VIEW_DESC depthStencilViewDesc;
-	ZeroMemory(&depthStencilViewDesc, sizeof(depthStencilViewDesc));
-	depthStencilViewDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
-	depthStencilViewDesc.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-	depthStencilViewDesc.Texture2D.MipSlice = 0;
-
-	// Create the local depth stencil
-	result = d3dDevice->CreateDepthStencilView(localDepthStencilTexture, &depthStencilViewDesc, &localDepthStencil);
-	assert(SUCCEEDED(result));
-
-	// The device context + viewport references were cached in the member initialization list,
-	// so no need to do that here
+	// Cache a class-scope reference to the device context
+	deviceContext = d3dDeviceContext;
 
 	// Initialise render queue + shaders
 
@@ -129,37 +33,17 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 	// Memoize the window handle (required for shader initialisation)
 	HWND windowHandle = ServiceCentre::AccessApp()->GetHWND();
 
-	// Initialise the buffer rasterizer (used to draw the final render buffer to a rect that can be sent to the window
-	// with ordinary forward rendering)
-	bufferRasterizer = new BufferRasterizer(d3dDevice, windowHandle, L"VertPlotter.cso", L"BufferColorizer.cso");
-
-	// Initialise object shaders
+	// Initialise the object shader
 	rasterizer = new Rasterizer(d3dDevice, windowHandle, L"VertPlotter.cso", L"Colorizer.cso");
-	texturedRasterizer = new TexturedRasterizer(d3dDevice, windowHandle, L"VertPlotter.cso", L"Texturizer.cso");
-	objectShaderCount = 1;
 
-	// Initialise lighting shaders + store the default lighting
-	// shader
-	cookTorrancePBR = new CookTorrancePBR(d3dDevice, windowHandle, L"LightPlotter.cso", L"CookTorranceLighting.cso");
-	lightingShaderCount = 1;
-	currentLightingShader = defaultLightingShader;
-
-	// Initialise the array of shadow shaders
-	// No idea how to do shadows atm - come back to this after deferred rendering + lighting :)
-	//availableShadowShaders = new Shader*[(byteUnsigned)DEFERRED::AVAILABLE_SHADOW_SHADERS::NULL_SHADER];
-	//availableShadowShaders[(byteUnsigned)DEFERRED::AVAILABLE_SHADOW_SHADERS::PROCEDURAL_SHADOW_MAPPER] = new ProceduralShadowMapper(d3dDevice, windowHandle, L"ShadowPlotter.cso", L"ProceduralShadowPainter.cso");
-	//shadowShaderCount = 1;
-
-	// Initialise post-processing effects + define which post-processing
-	// effects are active by default
-	bloom = new Bloom(d3dDevice, windowHandle, L"PostEffectPlotter.cso", L"BloomEffect.cso");
-	depthOfField = new DepthOfField(d3dDevice, windowHandle, L"PostEffectPlotter.cso", L"DepthOfFieldEffect.cso");
-	activePostEffects[0] = defaultPostEffectA;
-	activePostEffects[1] = defaultPostEffectB;
-	activePostEffects[2] = defaultPostEffectC;
-	postEffectCount = 0;
+	// Initialise lighting data
+	visibleLights = new fourByteUnsigned[MAX_POINT_LIGHT_COUNT + MAX_SPOT_LIGHT_COUNT + MAX_DIRECTIONAL_LIGHT_COUNT];
+	visibleLightCount = 0;
 
 	// Initialise culling function pointers
+
+	lightingShaderFilterDispatch[0] = &RenderManager::LightDiscard;
+	lightingShaderFilterDispatch[1] = &RenderManager::LightCache;
 
 	basicBoxeculeDispatch[0] = &RenderManager::DirectionalCullFailed;
 	basicBoxeculeDispatch[1] = &RenderManager::DirectionalCullPassed;
@@ -176,12 +60,8 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 
 RenderManager::~RenderManager()
 {
-	// Delete heap-allocated data within each object shader
+	// Delete heap-allocated data within the object shader
 	rasterizer->~Rasterizer();
-	texturedRasterizer->~TexturedRasterizer();
-
-	// Delete heap-allocated data within each lighting shader
-	cookTorrancePBR->~CookTorrancePBR();
 
 	// Delete heap-allocated data within each shadow shader
 	//for (byteUnsigned i = 0; i < shadowShaderCount; i += 1)
@@ -190,40 +70,66 @@ RenderManager::~RenderManager()
 	//}
 
 	// Delete heap-allocated data within each post-effect shader
-	bloom->~Bloom();
-	depthOfField->~DepthOfField();
+	//bloom->~Bloom();
+	//depthOfField->~DepthOfField();
 
 	// Delete the render queue, then send it to [nullptr]
 	delete renderQueue;
 	renderQueue = nullptr;
 }
 
-void RenderManager::RasterizerRender(Material& renderableMaterial, 
-									 ID3D11DeviceContext* deviceContext,
+void RenderManager::RasterizerRender(Material& renderableMaterial, Material& directionalMaterial,
+									 Material* pointLightMaterials, Material* spotLightMaterials,
+									 DirectX::XMVECTOR& directionalPosition, DirectX::XMVECTOR& directionalRotationQtn,
+									 DirectX::XMVECTOR* pointLightPositions, DirectX::XMVECTOR* pointLightRotationQtns,
+									 DirectX::XMVECTOR* spotLightPositions, DirectX::XMVECTOR* spotLightRotationQtns,
 									 DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+									 ID3D11DeviceContext* deviceContext,
 									 fourByteUnsigned numIndicesDrawing)
 {
-	rasterizer->Render(deviceContext, worldByModel, view, projection, numIndicesDrawing);
+	// Cache a local copy of the light intensity so we can avoid calling
+	// [GetLightData(...)] once per input element (DirectionalLight keeps
+	// all it's properties in 16-byte alignment for efficiency, which
+	// means scalars get distributed across four-element shader input
+	// types)
+	float localIntensity = directionalMaterial.GetLightData().intensity;
+
+	// Pass the given light position into a shader-friendly [XMFLOAT4]
+	DirectX::XMFLOAT4 lightPos;
+	DirectX::XMStoreFloat4(&lightPos, directionalPosition);
+
+	// Apply the light's rotation to the global Z-vector to generate a
+	// value representing it's local Z-vector (you could call this it's
+	// "forward" vector, since we generally think of "forward" as
+	// "towards the viewing horizon" and the viewing horizon is
+	// perpendicular to Z in DirectX)
+	DirectX::XMVECTOR globalZ = _mm_set_ps(1, 1, 0, 0);
+	DirectX::XMVECTOR localZ = DirectX::XMVector3Rotate(globalZ, directionalRotationQtn);
+
+	// Yep, light direction is locked at local-Z for simplicity and to avoid storing
+	// too many variants of [Luminance]/storing a directional value for point lights
+	// that definitely won't use it; this is the part where we take the local-Z
+	// vector from above and store it in a shader-friendly [XMFLOAT4]
+	DirectX::XMFLOAT4 lightDirection;
+	DirectX::XMStoreFloat4(&lightDirection, localZ);
+
+	// No point or spot light processing for now; get the single-shader system working
+	// with a directional light first, /then/ upgrade it :)
+
+	// Cache the directional light's diffuse color and use it to generate the ambient light for this render
+	DirectX::XMFLOAT4 diffuse = directionalMaterial.GetColorData();
+	DirectX::XMFLOAT4 ambient = DirectX::XMFLOAT4(diffuse.x * AMBIENT_DIFFUSE_RATIO, diffuse.y * AMBIENT_DIFFUSE_RATIO,
+												  diffuse.z * AMBIENT_DIFFUSE_RATIO, 1.0f);
+
+	rasterizer->Render(deviceContext,
+					   DirectX::XMFLOAT4(localIntensity, localIntensity, localIntensity, localIntensity),
+					   lightDirection, diffuse, ambient, lightPos,
+					   worldByModel, view, projection,
+					   renderableMaterial.GetTexture().asShaderResource,
+					   numIndicesDrawing);
 }
 
-void RenderManager::TexturedRasterizerRender(Material& renderableMaterial, 
-											 ID3D11DeviceContext* deviceContext,
-										     DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-											 fourByteUnsigned numIndicesDrawing)
-{
-	texturedRasterizer->Render(deviceContext, worldByModel, view, projection, renderableMaterial.GetTexture().asShaderResource, numIndicesDrawing);
-}
-
-void RenderManager::CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer, 
-										  ID3D11ShaderResourceView* lightBuffer, 
-										  ID3D11DeviceContext* deviceContext,
-										  DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-										  fourByteUnsigned numIndicesDrawing)
-{
-	cookTorrancePBR->Render(deviceContext, worldByModel, view, projection, numIndicesDrawing);
-}
-
-void RenderManager::ProceduralShadowMapperRenderer(Material& renderableMaterial, 
+void RenderManager::ProceduralShadowMapperRenderer(Material& renderableMaterial,
 												   ID3D11DeviceContext* deviceContext,
 												   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 												   fourByteUnsigned numIndicesDrawing)
@@ -231,9 +137,9 @@ void RenderManager::ProceduralShadowMapperRenderer(Material& renderableMaterial,
 	// Nothing for now...
 }
 
-void RenderManager::BloomRender(ID3D11ShaderResourceView* rasterBuffer, 
-								ID3D11ShaderResourceView* lightBuffer, 
-								ID3D11ShaderResourceView* postBuffer, 
+void RenderManager::BloomRender(ID3D11ShaderResourceView* rasterBuffer,
+								ID3D11ShaderResourceView* lightBuffer,
+								ID3D11ShaderResourceView* postBuffer,
 								ID3D11DeviceContext* deviceContext,
 							    DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 							    fourByteUnsigned numIndicesDrawing)
@@ -241,9 +147,9 @@ void RenderManager::BloomRender(ID3D11ShaderResourceView* rasterBuffer,
 	// Nothing for now...
 }
 
-void RenderManager::DepthOfFieldRender(ID3D11ShaderResourceView* rasterBuffer, 
-									   ID3D11ShaderResourceView* lightBuffer, 
-									   ID3D11ShaderResourceView* postBuffer, 
+void RenderManager::DepthOfFieldRender(ID3D11ShaderResourceView* rasterBuffer,
+									   ID3D11ShaderResourceView* lightBuffer,
+									   ID3D11ShaderResourceView* postBuffer,
 									   ID3D11DeviceContext* deviceContext,
 									   DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 									   fourByteUnsigned numIndicesDrawing)
@@ -251,109 +157,103 @@ void RenderManager::DepthOfFieldRender(ID3D11ShaderResourceView* rasterBuffer,
 	// Nothing for now...
 }
 
-void RenderManager::Render(Direct3D* d3DPttr, Camera* mainCamera, 
+void RenderManager::Render(Camera* mainCamera,
 						   DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	// Get each item from the render queue
 	// Pass it to the GPU
-	// Render the relevant shaders
+	// Render it with the Rasterizer (basically an all-in-one shader)
 
-	// Begin rendering by pushing the deferred render buffers onto the GPU
-	BuffersToGPU();
+	// Cache arrays of the materials associated with every visible light
+	// Also cache arrays of light positions and rotations
 
-	// Disable Z-buffering before 2D rendering
-	// Might not actually do this, see what everything looks like without it first
+	Material directionalMaterials[MAX_DIRECTIONAL_LIGHT_COUNT];
+	DirectX::XMVECTOR directionalLightPositions[MAX_DIRECTIONAL_LIGHT_COUNT];
+	DirectX::XMVECTOR directionalLightRotationQtns[MAX_DIRECTIONAL_LIGHT_COUNT];
+	byteUnsigned directionalCount = 0;
 
-	// Then get rid of any data from the last frame by flushing them with a
-	// given color + clearing the depth buffer
-	ClearBuffers(0.4f, 0.6f, 0.2f, 1.0f);
+	Material pointMaterials[MAX_POINT_LIGHT_COUNT];
+	DirectX::XMVECTOR pointLightPositions[MAX_POINT_LIGHT_COUNT];
+	DirectX::XMVECTOR pointLightRotationQtns[MAX_POINT_LIGHT_COUNT];
+	byteUnsigned pointCount = 0;
 
-	// Render each boxecule within the render queue into the raster buffer
-	for (fourByteSigned i = 0; i < renderQueueLength; i += 1)
+	Material spotMaterials[MAX_SPOT_LIGHT_COUNT];
+	DirectX::XMVECTOR spotLightPositions[MAX_SPOT_LIGHT_COUNT];
+	DirectX::XMVECTOR spotLightRotationQtns[MAX_SPOT_LIGHT_COUNT];
+	byteUnsigned spotCount = 0;
+
+	for (fourByteUnsigned j = 0; j < visibleLightCount; j += 1)
 	{
-		Boxecule* renderable = renderQueue[i];
-		DEFERRED::AVAILABLE_OBJECT_SHADERS* shaders = renderable->GetMaterial().GetDeferredShaderSet();
-		renderable->PassToGPU(deviceContext);
-
-		byteUnsigned j = 0;
-		while (shaders[j] != DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER)
+		Material lightMaterial = renderQueue[visibleLights[j]]->GetMaterial();
+		DirectX::XMVECTOR& lightPosition = renderQueue[visibleLights[j]]->FetchTransformations().pos;
+		DirectX::XMVECTOR& lightRotation = renderQueue[visibleLights[j]]->FetchTransformations().rotationQuaternion;
+		if (lightMaterial.GetLightData().illuminationType == AVAILABLE_LIGHTING_SHADERS::DIRECTIONAL_LIGHT)
 		{
-			(this->*(this->objectShaderRenderDispatch[j]))(renderable->GetMaterial(), deviceContext, world * renderable->GetTransform(), view, projection, BOXECULE_INDEX_COUNT);
-			j += 1;
+			directionalMaterials[directionalCount] = lightMaterial;
+			directionalLightPositions[directionalCount] = lightPosition;
+			directionalLightRotationQtns[directionalCount] = lightRotation;
+			directionalCount += 1;
+		}
+
+		else if (lightMaterial.GetLightData().illuminationType == AVAILABLE_LIGHTING_SHADERS::POINT_LIGHT)
+		{
+			pointMaterials[pointCount] = lightMaterial;
+			pointLightPositions[pointCount] = lightPosition;
+			pointLightRotationQtns[pointCount] = lightRotation;
+			pointCount += 1;
+		}
+
+		else if (lightMaterial.GetLightData().illuminationType == AVAILABLE_LIGHTING_SHADERS::SPOT_LIGHT)
+		{
+			spotMaterials[spotCount] = lightMaterial;
+			spotLightPositions[spotCount] = lightPosition;
+			spotLightRotationQtns[spotCount] = lightRotation;
+			spotCount += 1;
 		}
 	}
 
-	// Apply lighting effects as appropriate for each vertex in the pipeline and output the results to
-	// each pixel in the post buffer
-	(this->*(this->lightingShaderRenderDispatch[(byteUnsigned)currentLightingShader]))(renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER], 
-																					   renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER], 
-																					   deviceContext, 
-																					   world, view, projection, 
-																					   RECT_INDEX_COUNT);
-
-	// Apply the currently-active post effects as appropriate for each pixel of the post buffer
-	byteUnsigned i = 0;
-	while (activePostEffects[i] != DEFERRED::AVAILABLE_POST_EFFECTS::NULL_EFFECT)
+	// Render each boxecule in the render queue
+	DirectX::XMVECTOR& cameraPos = mainCamera->GetTranslation();
+	for (fourByteSigned i = 0; i < renderQueueLength; i += 1)
 	{
-		(this->*(this->postEffectRenderDispatch[i]))(renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER], 
-													 renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER],
-													 renderBufferShaderResources[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER],
-													 deviceContext, 
-													 world, view, projection, 
-													 RECT_INDEX_COUNT);
+		Boxecule* renderable = renderQueue[i];
+		renderable->PassToGPU(deviceContext);
+		RasterizerRender(renderable->GetMaterial(), directionalMaterials[0], pointMaterials, spotMaterials,
+						 DirectX::XMVector3Transform(directionalLightPositions[0], world), directionalLightRotationQtns[0],
+						 pointLightPositions, pointLightRotationQtns,
+						 spotLightPositions, spotLightRotationQtns,
+						 world * renderable->GetTransform(), view, projection,
+						 deviceContext,
+						 BOXECULE_INDEX_COUNT);
 	}
 
-	// Tell Direct3D to start rendering to the screen again
-	d3DPttr->ResetRenderTargets();
-
-	// Pass the camera's viewfinder (screen rect) onto the GPU
-	mainCamera->GetViewFinder().PassToGPU(deviceContext);
-
-	// Render the camera's viewfinder with [bufferRasterizer(...)]
-	bufferRasterizer->Render(deviceContext, world, view, d3DPttr->GetOrthoProjector(), RECT_INDEX_COUNT);
-
-	// Nothing left to draw on this pass, so re-enable the z-buffer (if needed) and 
-	// zero the length of the render queue
+	// Nothing left to draw on this pass, so zero the length of the render queue
 	renderQueueLength = 0;
+
+	// Also zero the visible light counter
+	visibleLightCount = 0;
 }
 
-void RenderManager::BuffersToGPU()
+void RenderManager::LightDiscard(fourByteUnsigned boxeculeIndex) {}
+void RenderManager::LightCache(fourByteUnsigned boxeculeIndex)
 {
-	// Push the array of render buffers + the depth stencil buffer onto the GPU
-	deviceContext->OMSetRenderTargets(RENDER_BUFFER_COUNT, renderBufferTargets, localDepthStencil);
-
-	// Set the viewport
-	//deviceContext->RSSetViewports(1, &m_viewport);
-}
-
-void RenderManager::ClearBuffers(float r, float g, float b, float a)
-{
-	// Flush the render buffers
-	float color[4] = { r, g, b, a };
-	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::RASTER_BUFFER], color);
-	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::LIGHT_BUFFER], color);
-	deviceContext->ClearRenderTargetView(renderBufferTargets[(byteUnsigned)DEFERRED::DEFERRED_BUFFER_TYPES::POST_BUFFER], color);
-
-	// Clear the local depth-stencil buffer (depth-stencil view)
-	deviceContext->ClearDepthStencilView(localDepthStencil, D3D11_CLEAR_DEPTH, 1.0f, 0);
-}
-
-ID3D11ShaderResourceView* RenderManager::GetShaderResourceView(DEFERRED::DEFERRED_BUFFER_TYPES deferredBuffer)
-{
-	return renderBufferShaderResources[(byteUnsigned)deferredBuffer];
+	visibleLights[visibleLightCount] = boxeculeIndex;
+	visibleLightCount += 1;
 }
 
 bool RenderManager::BoxeculeDiscard(Boxecule* boxecule, fourByteUnsigned unculledCounter) { return false; }
 bool RenderManager::BoxeculeCache(Boxecule* boxecule, fourByteUnsigned unculledCounter)
 {
 	renderQueue[unculledCounter] = boxecule;
+	byteUnsigned dispatchIndex = (byteUnsigned)(boxecule->GetMaterial().GetLightData().intensity != 0);
+	(this->*(this->lightingShaderFilterDispatch[dispatchIndex]))(unculledCounter); // Only unculled boxecules will enter the render-queue, so treating [unculledCounter] like an index should be fine
 	return true;
 }
 
 bool RenderManager::DirectionalCullFailed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter) { return false; }
 bool RenderManager::DirectionalCullPassed(Boxecule* boxecule, Camera* mainCamera, fourByteUnsigned unculledCounter)
 {
-	byteUnsigned dispatchIndex = (byteUnsigned)(boxecule->GetMaterial().GetColorData().z != 0);
+	byteUnsigned dispatchIndex = (byteUnsigned)(boxecule->GetMaterial().GetColorData().w != 0);
 	return (this->*(this->coreBoxeculeDispatch[dispatchIndex]))(boxecule, unculledCounter);
 }
 

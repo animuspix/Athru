@@ -94,7 +94,7 @@ void Graphics::Frame()
 void Graphics::Render()
 {
 	d3D->BeginScene();
-	renderManagerPttr->Render(d3D, camera, d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
+	renderManagerPttr->Render(camera, d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
 	d3D->EndScene();
 }
 
@@ -110,7 +110,7 @@ void* Graphics::operator new(size_t size)
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
 }
 
-// We aren't expecting to use [delete], so overload it to do nothing;
+// We aren't expecting to use [delete], so overload it to do nothing
 void Graphics::operator delete(void* target)
 {
 	return;

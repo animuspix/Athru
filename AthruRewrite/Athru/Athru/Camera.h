@@ -2,7 +2,6 @@
 
 #include <directxmath.h>
 #include "Graphics.h"
-#include "AthruRect.h"
 
 class Input;
 class Camera
@@ -22,7 +21,6 @@ class Camera
 		DirectX::XMMATRIX GetViewMatrix();
 
 		void MouseLook(Input* inputPttr);
-		AthruRect& GetViewFinder();
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
@@ -35,10 +33,6 @@ class Camera
 		DirectX::XMVECTOR rotationQuaternion;
 		DirectX::XMFLOAT3 rotationEuler;
 		DirectX::XMMATRIX viewMatrix;
-
-		// Rect tracking the camera view and holding the output from 
-		// each deferred-render pass
-		AthruRect viewFinder;
 
 		// The mouse position (smoothed) captured last time
 		// MouseLook(...) was called

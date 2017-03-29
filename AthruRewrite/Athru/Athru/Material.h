@@ -3,6 +3,7 @@
 #include "Typedefs.h"
 #include "RenderManager.h"
 #include "AthruTexture.h"
+#include "Luminance.h"
 #include "Sound.h"
 
 class Material
@@ -10,12 +11,11 @@ class Material
 	public:
 		Material();
 		Material(Sound sonicStuff,
+				 Luminance lightStuff,
 				 float r, float g, float b, float a,
-				 DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader0, DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader1,
-				 DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader2, DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader3,
-				 DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShader4, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader0, 
-				 FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader1, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader2, 
-				 FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader3, FORWARD::AVAILABLE_OBJECT_SHADERS forwardShader4, 
+				 float baseRoughness,
+				 float baseReflectiveness,
+				 AVAILABLE_OBJECT_SHADERS objectShader,
 				 AthruTexture baseTexture);
 		~Material();
 
@@ -23,7 +23,16 @@ class Material
 		Sound& GetSonicData();
 
 		// Retrieve the base color of [this]
-		DirectX::XMFLOAT4 GetColorData();
+		DirectX::XMFLOAT4& GetColorData();
+
+		// Retrieve the roughness of [this]
+		float& GetRoughness();
+
+		// Retrieve the reflectiveness of [this]
+		float& GetReflectiveness();
+
+		// Retrieve the illumination data associated with [this]
+		Luminance& GetLightData();
 
 		// Retrieve the raw texture associated with [this]
 		AthruTexture& GetTexture();
@@ -31,19 +40,24 @@ class Material
 		// Retrieve the raw texture associated with [this]
 		void SetTexture(AthruTexture suppliedTexture);
 
-		// Retrieve the array of deferred rendering shaders associated with
-		// [this]
-		DEFERRED::AVAILABLE_OBJECT_SHADERS* GetDeferredShaderSet();
-
-		// Retrieve the array of forward rendering shaders associated with
-		// [this]
-		FORWARD::AVAILABLE_OBJECT_SHADERS* GetForwardShaderSet();
+		// Retrieve the shader associated with [this]
+		AVAILABLE_OBJECT_SHADERS GetShader();
 
 	private:
+		// Reflectiveness should really expand into its own struct
+		// with properties for reflection and refraction, but I don't
+		// have the time to do that and I'd prefer to write a working
+		// light system that only works with opaque materials than an
+		// unfinished lighting system that works with nothing :P
+		// That said, I'll look into adding it after submission
+		// (since this is doubling as an assignment project)
+
 		Sound sonicData;
+		Luminance lightData;
 		DirectX::XMFLOAT4 color;
+		float roughness;
+		float reflectiveness;
 		AthruTexture texture;
-		DEFERRED::AVAILABLE_OBJECT_SHADERS deferredShaderSet[5];
-		FORWARD::AVAILABLE_OBJECT_SHADERS forwardShaderSet[5];
+		AVAILABLE_OBJECT_SHADERS shader;
 };
 

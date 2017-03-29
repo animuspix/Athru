@@ -3,55 +3,41 @@
 #include <d3d11.h>
 #include <directxmath.h>
 #include "Typedefs.h"
-#include "DeferredRenderer.h"
 #include "Shader.h"
 
-#define RENDER_BUFFER_COUNT 3
+#define MAX_POINT_LIGHT_COUNT 10
+#define MAX_SPOT_LIGHT_COUNT 10
+#define MAX_DIRECTIONAL_LIGHT_COUNT 1
 
-namespace FORWARD
+enum class AVAILABLE_OBJECT_SHADERS
 {
-	enum class AVAILABLE_OBJECT_SHADERS
-	{
-		BUFFER_RASTERIZER,
-		NULL_SHADER
-	};
-}
+	RASTERIZER,
+	TEXTURED_RASTERIZER,
+	SPHERICAL_RASTERIZER,
+	TEXTURED_SPHERICAL_RASTERIZER,
+	NULL_SHADER
+};
 
-namespace DEFERRED
+enum class AVAILABLE_LIGHTING_SHADERS
 {
-	enum class AVAILABLE_OBJECT_SHADERS
-	{
-		RASTERIZER,
-		TEXTURED_RASTERIZER,
-		NULL_SHADER
-	};
+	DIRECTIONAL_LIGHT,
+	POINT_LIGHT,
+	SPOT_LIGHT,
+	NULL_SHADER
+};
 
-	enum class AVAILABLE_LIGHTING_SHADERS
-	{
-		COOK_TORRANCE_PBR,
-		NULL_SHADER
-	};
+enum class AVAILABLE_SHADOW_SHADERS
+{
+	PROCEDURAL_SHADOW_MAPPER,
+	NULL_SHADER
+};
 
-	enum class AVAILABLE_SHADOW_SHADERS
-	{
-		PROCEDURAL_SHADOW_MAPPER,
-		NULL_SHADER
-	};
-
-	enum class AVAILABLE_POST_EFFECTS
-	{
-		BLOOM,
-		DEPTH_OF_FIELD,
-		NULL_EFFECT
-	};
-
-	enum class DEFERRED_BUFFER_TYPES
-	{
-		RASTER_BUFFER,
-		LIGHT_BUFFER,
-		POST_BUFFER
-	};
-}
+enum class AVAILABLE_POST_EFFECTS
+{
+	BLOOM,
+	DEPTH_OF_FIELD,
+	NULL_EFFECT
+};
 
 class Direct3D;
 class Camera;
@@ -61,32 +47,27 @@ class Chunk;
 class SubChunk;
 class Rasterizer;
 class TexturedRasterizer;
-class BufferRasterizer;
-class CookTorrancePBR;
+class DirectionalLight;
+class PointLight;
+class SpotLight;
 class ProceduralShadowMapper;
 class Bloom;
 class DepthOfField;
 class RenderManager
 {
 	public:
-		RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device* d3dDevice, D3D11_VIEWPORT& viewport,
-					  DEFERRED::AVAILABLE_POST_EFFECTS postEffectA, DEFERRED::AVAILABLE_POST_EFFECTS postEffectB, DEFERRED::AVAILABLE_POST_EFFECTS postEffectC,
-					  DEFERRED::AVAILABLE_LIGHTING_SHADERS defaultLightingShader);
+		RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device* d3dDevice,
+					  AVAILABLE_POST_EFFECTS postEffectA, AVAILABLE_POST_EFFECTS postEffectB, AVAILABLE_POST_EFFECTS postEffectC);
 		~RenderManager();
 
 		// Iterate through the contents of the render queue and pass each item to the GPU before
 		// drawing it with the relevant shaders
-		void Render(Direct3D* d3DPttr, Camera* mainCamera,
+		void Render(Camera* mainCamera,
 					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
 
 		// Prepare a series of boxecules for rendering, culling every item outside the main
 		// camera's view frustum in the process
 		void Prepare(Chunk** boxeculeChunks, Camera* mainCamera, twoByteUnsigned boxeculeDensity);
-
-		// Get a shader-friendly version of the the texture output by the specified render-buffer
-		// Useful for retrieving the output of a specific render-pass, e.g. rasterization,
-		// lighting, post-processing, etc.
-		ID3D11ShaderResourceView* GetShaderResourceView(DEFERRED::DEFERRED_BUFFER_TYPES deferredBuffer);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
@@ -94,6 +75,12 @@ class RenderManager
 
 	private:
 		// Culling functions/function pointer arrays, accessed within [Prepare(...)]
+
+		// Store the render-queue index of a light with non-zero-intensity within [visibleLights]
+		void LightCache(fourByteUnsigned boxeculeIndex);
+
+		// Do nothing; null function called if a boxecule has zero lighting intensity
+		void LightDiscard(fourByteUnsigned boxeculeIndex);
 
 		// Do nothing; null function called if a boxecule processed during [Prepare(...)]
 		// is invisible or positioned outside the camera frustum
@@ -136,28 +123,23 @@ class RenderManager
 		// Core boxecule-processing function pointer array
 		bool(RenderManager::*coreBoxeculeDispatch[2])(Boxecule* boxecule, fourByteUnsigned unculledCounter);
 
+		// Luminance-processing function pointer array
+		void(RenderManager::*lightingShaderFilterDispatch[2])(fourByteUnsigned boxeculeIndex);
+
 		// Render functions + variables, accessed within [Render(...)]
+		ID3D11DeviceContext* deviceContext;
 
 		// Specialized shader render calls
 
 		// Specialized render call for [TexturedRasterizer]
-		void RasterizerRender(Material& renderableMaterial,
+		void RasterizerRender(Material& renderableMaterial, Material& directionalMaterial,
+							  Material* pointLightMaterials, Material* spotLightMaterials,
+							  DirectX::XMVECTOR& directionalPosition, DirectX::XMVECTOR& directionalRotationQtn,
+							  DirectX::XMVECTOR* pointLightPositions, DirectX::XMVECTOR* pointLightRotationQtns,
+							  DirectX::XMVECTOR* spotLightPositions, DirectX::XMVECTOR* spotLightRotationQtns,
+							  DirectX::XMMATRIX& worldByModel, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 							  ID3D11DeviceContext* deviceContext,
-							  DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
 							  fourByteUnsigned numIndicesDrawing);
-
-		// Specialized render call for [Rasterizer]
-		void TexturedRasterizerRender(Material& renderableMaterial,
-									  ID3D11DeviceContext* deviceContext,
-									  DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-									  fourByteUnsigned numIndicesDrawing);
-
-		// Specialized render call for [CookTorrancePBR]
-		void CookTorrancePBRRender(ID3D11ShaderResourceView* rasterBuffer,
-								   ID3D11ShaderResourceView* lightBuffer,
-								   ID3D11DeviceContext* deviceContext,
-								   DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-								   fourByteUnsigned numIndicesDrawing);
 
 		// Specialized render call for [ProceduralShadowMapper]
 		void ProceduralShadowMapperRenderer(Material& renderableMaterial,
@@ -184,98 +166,55 @@ class RenderManager
 		// Shader render dispatchers
 
 		// Object shader render function pointer array, used to branchlessly (touch wood) call the
-		// correct render function (with appropriate arguments) for any given shader applied to the given
-		// boxecule
-		void(RenderManager::*objectShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER])(Material& renderableMaterial,
-																														ID3D11DeviceContext* deviceContext,
-																														DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-																														fourByteUnsigned numIndicesDrawing);
+		// correct render function (with appropriate arguments) for any given shader accessed by the
+		// given material
+		void(RenderManager::*objectShaderRenderDispatch[(byteUnsigned)AVAILABLE_OBJECT_SHADERS::NULL_SHADER])(Material& renderableMaterial,
+																											  ID3D11DeviceContext* deviceContext,
+																											  DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+																											  fourByteUnsigned numIndicesDrawing);
 
 		// Lighting shader render function pointer array, used to branchlessly (touch wood) call the
-		// correct render function (with appropriate arguments) for any lighting shader applied to the scene
-		void(RenderManager::*lightingShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_LIGHTING_SHADERS::NULL_SHADER])(ID3D11ShaderResourceView* rasterBuffer,
-																															ID3D11ShaderResourceView* lightBuffer,
-																															ID3D11DeviceContext* deviceContext,
-																															DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-																															fourByteUnsigned numIndicesDrawing);
+		// correct render function (with appropriate arguments) for any lighting shader described in
+		// [lightData] and emanating from [lightPosition]
+		void(RenderManager::*lightingShaderRenderDispatch[(byteUnsigned)AVAILABLE_LIGHTING_SHADERS::NULL_SHADER])(Material& emitterMaterial,
+																												  DirectX::XMVECTOR& lightPosition,
+																												  DirectX::XMVECTOR& lightRotationQtn,
+																												  DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
+																												  ID3D11DeviceContext* deviceContext,
+																												  fourByteUnsigned numIndicesDrawing);
 
 		// Shadow shader render function pointer array, used to branchlessly (touch wood) call the
 		// correct render function (with appropriate arguments) for any given shadow shader applied to the
 		// scene
-		void(RenderManager::*shadowShaderRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_SHADOW_SHADERS::NULL_SHADER])(Material& renderableMaterial,
-																														ID3D11DeviceContext* deviceContext,
-																														DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-																														fourByteUnsigned numIndicesDrawing);
+		void(RenderManager::*shadowShaderRenderDispatch[(byteUnsigned)AVAILABLE_SHADOW_SHADERS::NULL_SHADER])(Material& renderableMaterial,
+																											  ID3D11DeviceContext* deviceContext,
+																											  DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+																											  fourByteUnsigned numIndicesDrawing);
 
 		// Post effect render function pointer array, used to branchlessly (touch wood) call the
 		// correct render function (with appropriate arguments) for every post effect applied to the scene
-		void(RenderManager::*postEffectRenderDispatch[(byteUnsigned)DEFERRED::AVAILABLE_POST_EFFECTS::NULL_EFFECT])(ID3D11ShaderResourceView* rasterBuffer,
-																													ID3D11ShaderResourceView* lightBuffer,
-																													ID3D11ShaderResourceView* postBuffer,
-																													ID3D11DeviceContext* deviceContext,
-																													DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
-																													fourByteUnsigned numIndicesDrawing);
-
-		// Pass the deffered rendering buffers used by [this] to the GPU
-		void BuffersToGPU();
-
-		// Flush each deferred rendering buffer with the given color, then
-		// clear the depth stencil buffer
-		void ClearBuffers(float r, float g, float b, float a);
-
-		// Reference to the DirectX device context
-		ID3D11DeviceContext* deviceContext;
-
-		// Lots of references to "views" below; they're a fairly abstract DirectX concept
-		// that's kinda hard to explain, but there's an excellent description from StackOverflow
-		// available over here:
-		// http://stackoverflow.com/questions/20106440/what-is-a-depth-stencil-view#20130381
-
-		// Array of textures used as render targets during deferred rendering
-		// Render targets are basically chunks of in-game image data that can be used
-		// as output locations by Direct3D; the default render target is the screen,
-		// but any chunk of image data (e.g. a texture) can be used instead
-		ID3D11Texture2D* renderBufferTextures[RENDER_BUFFER_COUNT];
-
-		// [renderBuffers] interpreted as an array of render targets
-		// rather than an array of textures
-		ID3D11RenderTargetView* renderBufferTargets[RENDER_BUFFER_COUNT];
-
-		// [renderBuffers] interpreted as an array of shader resources; this
-		// version is explicitly designed for shader i/o, whereas the others are more
-		// abstract models of the render-buffers used in the deferred rendering process
-		ID3D11ShaderResourceView* renderBufferShaderResources[RENDER_BUFFER_COUNT];
-
-		// Texture representing the depth stencil accessed during deferred rendering
-		// (while drawing to the raster buffer)
-		ID3D11Texture2D* localDepthStencilTexture;
-
-		// [localDepthStencilTexture] interpreted as a depth-stencil object rather than a
-		// texture
-		ID3D11DepthStencilView* localDepthStencil;
-
-		// Reference to the Direct3D viewport accessed by [this]
-		D3D11_VIEWPORT& viewportRef;
-
-		// Storage for the buffer rasterizer (used to draw the output data stored in [renderBufferShaderResources[2]] onto
-		// the screen rect)
-		BufferRasterizer* bufferRasterizer;
+		void(RenderManager::*postEffectRenderDispatch[(byteUnsigned)AVAILABLE_POST_EFFECTS::NULL_EFFECT])(ID3D11ShaderResourceView* rasterBuffer,
+																										  ID3D11ShaderResourceView* lightBuffer,
+																										  ID3D11ShaderResourceView* postBuffer,
+																										  ID3D11DeviceContext* deviceContext,
+																										  DirectX::XMMATRIX& world, DirectX::XMMATRIX& view, DirectX::XMMATRIX& projection,
+																										  fourByteUnsigned numIndicesDrawing);
 
 		// Render-item storage + length tracker
-		Boxecule** renderQueue;
-		fourByteSigned renderQueueLength;
+		Boxecule** renderQueue; // Big box of things to render, not actually a queue ("queue" sounds nicer than "stack" tho :P)
+		fourByteSigned renderQueueLength; // Total number of things to render
+		fourByteUnsigned* visibleLights; // Fake associative array; stores the indices of active lights within [renderQueue]
+		fourByteUnsigned visibleLightCount; // Store the number of active lights within [renderQueue]
 
 		// Object shader storage + length tracker
 		Rasterizer* rasterizer;
 		TexturedRasterizer* texturedRasterizer;
 		byteUnsigned objectShaderCount;
 
-		// Lighting shader storage + length tracker
-		CookTorrancePBR* cookTorrancePBR;
-		byteUnsigned lightingShaderCount;
-
-		// The current lighting model (Cook-Torrance PBR, Phong, etc)
-		DEFERRED::AVAILABLE_LIGHTING_SHADERS currentLightingShader;
+		// Lighting shader storage
+		DirectionalLight* directionalLight;
+		PointLight* pointLight;
+		SpotLight* spotLight;
 
 		// Shadow shader storage + length tracker
 		// --no defined shadow shaders atm--
@@ -285,7 +224,4 @@ class RenderManager
 		Bloom* bloom;
 		DepthOfField* depthOfField;
 		byteUnsigned postEffectCount;
-
-		// Array of active post-processing effects
-		DEFERRED::AVAILABLE_POST_EFFECTS activePostEffects[3];
 };

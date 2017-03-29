@@ -4,6 +4,7 @@
 #include "Typedefs.h"
 #include "Boxecule.h"
 #include "Chunk.h"
+#include "StarSystem.h"
 
 #define CHUNK_COUNT 9
 #define HOME_CHUNK_INDEX 4

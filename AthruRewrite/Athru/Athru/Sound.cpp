@@ -1,9 +1,9 @@
 #include "Sound.h"
 
-Sound::Sound()
+Sound::Sound(float baseFreq, float baseVol)
 {
-	freq = 0.5f;
-	vol = 0.5f;
+	freq = baseFreq;
+	vol = baseVol;
 }
 
 Sound::~Sound()

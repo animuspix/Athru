@@ -13,32 +13,83 @@ SubChunk::SubChunk(Chunk* parent,
 {
 	// Calls to procedural-generation subsystems would happen here,
 	// but I should be focussing on rendering stuffs for now; the
-	// chunk will just contain a plane instead :P
+	// sub-chunk will just contain a plane with occasional towers instead :P
 	storedBoxecules = DEBUG_NEW Boxecule*[SUB_CHUNK_VOLUME];
 
+	// Cache a local reference to the texture manager
+	TextureManager* textureManagerPttr = ServiceCentre::AccessTextureManager();
+
+	// Build chunks
 	for (eightByteSigned i = 0; i < SUB_CHUNK_VOLUME; i += 1)
 	{
-		float alpha = (float)(index <= (SUB_CHUNKS_PER_CHUNK / 2));
-		float red = 1.0f / (rand() % 10);
-		storedBoxecules[i] = new Boxecule(Material(Sound(),
-												   red, 0.6f, 0.4f, alpha,
-												   DEFERRED::AVAILABLE_OBJECT_SHADERS::RASTERIZER,
-												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   DEFERRED::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   FORWARD::AVAILABLE_OBJECT_SHADERS::NULL_SHADER,
-												   AthruTexture()));
+		// Make boxecules invisible unless [this] contains y-values below [SUB_CHUNKS_PER_CHUNK / 2]
+		// OR the iterator is equal to [2]; this produces a flat plane with nice floating boxecules that
+		// can be used for lighting demonstrations
+		float alpha = (float)(index <= (SUB_CHUNKS_PER_CHUNK / 2) || i == 2);
 
+		// Minor color variance to show individual blocks within the plane
+		float red = 1.0f / (rand() % 10);
+		float green = 0.4f;
+		float blue = 0.4f;
+
+		// Set up boxecule lighting properties
+		// Only allow visible boxecules (that are hovering above the main visible plane) to illuminate
+		// other boxecules
+		// Faintly randomize for some interesting intensity variations
+		float illumIntensity = (alpha && (index > SUB_CHUNKS_PER_CHUNK - (SUB_CHUNKS_PER_CHUNK / 4))) * (float)(1 / ((rand() % 10) + 1));
+
+		// Point lights on one side, spot-lights on the other
+		AVAILABLE_LIGHTING_SHADERS lightType = (AVAILABLE_LIGHTING_SHADERS)(((parentOffsetX < 0) + (1 * (!(parentOffsetX >= 0)))) + 1);
+
+		// Construct illumination data from the values above
+		Luminance illumination = Luminance(illumIntensity, lightType);
+
+		// Set up the average sound to play when the boxecule interacts
+		// with its environment
+		Sound activeTone = Sound(0.5f, 0.5f);
+
+		// Core boxecule construction
+		// Sun generation is temporary; I'd much rather make an actual SkyChunk that can handle clouds and things
+		// as well
+		// But I made the decision to do my long-term commercial project for schoolwork, and now it's two days behind
+		// schedule, so just go with the mediocre hacky option for now :P
+		// Make a sun instead of an ordinary boxecule if [this] is the uppermost index,
+		// the iterator is halfway across the sub-chunk, and [this] is inside the home chunk
+		DirectX::XMVECTOR boxeculeRot;
+		if ((index == (SUB_CHUNKS_PER_CHUNK - 1)) && (i == CHUNK_WIDTH / 2) && (parentOffsetX == 0 && parentOffsetZ == 0))
+		{
+			storedBoxecules[i] = new Boxecule(Material(Sound(0.5f, 0.5f),
+													   Luminance(0.8f, AVAILABLE_LIGHTING_SHADERS::DIRECTIONAL_LIGHT),
+													   1.0f, 1.0f, 1.0f, 1.0f,
+													   0.0f,
+													   0.0f,
+													   AVAILABLE_OBJECT_SHADERS::RASTERIZER,
+													   AthruTexture(ServiceCentre::AccessTextureManager()->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE))));
+
+			// Rotate the pseudo-sun 22.5 degrees about [y]
+			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(22.5, 0, 0);
+		}
+
+		else
+		{
+			storedBoxecules[i] = new Boxecule(Material(activeTone,
+												       illumination,
+												       red, green, blue, alpha,
+													   0.8f,
+													   0.2f,
+												       AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER,
+												       textureManagerPttr->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE)));
+
+			// Apply neutral rotation to non-sun boxecules
+			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
+		}
+
+		// Place the generated boxecule somewhere within the plane (the towers aren't actually separate units, they've just been
+		// highlighted by making them the only opaque boxecules above "ground level" ([SUB_CHUNKS_PER_CHUNK] / 2)
 		DirectX::XMVECTOR boxeculePos = _mm_set_ps(1, ((float)((i / (CHUNK_WIDTH * SUB_CHUNK_DEPTH)) % (CHUNK_WIDTH))) + parentOffsetZ,
-												       (float)(((i / CHUNK_WIDTH) % SUB_CHUNK_DEPTH) + index * SUB_CHUNK_DEPTH),
+													   (float)(((i / CHUNK_WIDTH) % SUB_CHUNK_DEPTH) + index * SUB_CHUNK_DEPTH),
 													   (float)(i % CHUNK_WIDTH) + parentOffsetX);
 
-		DirectX::XMVECTOR boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 		storedBoxecules[i]->FetchTransformations() = SQT(boxeculeRot, boxeculePos, 1);
  	}
 }

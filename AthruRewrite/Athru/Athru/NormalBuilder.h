@@ -8,7 +8,7 @@ struct NormalBuilder
 	static DirectX::XMFLOAT4 ForRegular(DirectX::XMFLOAT4 coreVert)
 	{
 		// All regular forms can be defined as subsets of the unit sphere
-		// Points on the sphere (if defined relative to the origin) are 
+		// Points on the sphere (if defined relative to the origin) are
 		// also valid normals
 		// Thus, the normals of any regular shape will be equal to it's
 		// normalized constituent points as long as the points are relative
@@ -24,7 +24,7 @@ struct NormalBuilder
 		DirectX::XMFLOAT4 normalFloat;
 		DirectX::XMStoreFloat4(&normalFloat, normalVector);
 
-		// Return the generated norma
+		// Return the generated normal
 		return normalFloat;
 	}
 };

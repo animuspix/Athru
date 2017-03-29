@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Third Party">
+      <UniqueIdentifier>{ebe77608-980c-4df6-a7fc-7d34652c0699}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Athru.cpp">
@@ -75,9 +78,6 @@
     <ClCompile Include="Planet.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="DirectionalLight.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="StarSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -87,37 +87,28 @@
     <ClCompile Include="Bloom.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CookTorrancePBR.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="DepthOfField.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="TexturedRasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="AthruRect.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="BufferRasterizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TextureManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="VertexAnimator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Sphere.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Mesh.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VertexBlend.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Vertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="DirectionalLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SpotLight.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PointLight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -197,9 +188,6 @@
     <ClInclude Include="Planet.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="DirectionalLight.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="StarSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -209,25 +197,16 @@
     <ClInclude Include="Bloom.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="CookTorrancePBR.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="DepthOfField.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TexturedRasterizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AthruRect.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Vertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="AthruTexture.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="BufferRasterizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PlanarUnwrapper.h">
@@ -239,16 +218,19 @@
     <ClInclude Include="TextureManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VertexAnimator.h">
+    <ClInclude Include="..\..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="DirectionalLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Sphere.h">
+    <ClInclude Include="SpotLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VertexBlend.h">
+    <ClInclude Include="PointLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Mesh.h">
+    <ClInclude Include="Luminance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -256,11 +238,6 @@
     <FxCompile Include="Colorizer.hlsl" />
     <FxCompile Include="VertPlotter.hlsl" />
     <FxCompile Include="BloomEffect.hlsl" />
-    <FxCompile Include="CookTorranceLighting.hlsl" />
     <FxCompile Include="DepthOfFieldEffect.hlsl" />
-    <FxCompile Include="LightPlotter.hlsl" />
-    <FxCompile Include="PostEffectPlotter.hlsl" />
-    <FxCompile Include="Texturizer.hlsl" />
-    <FxCompile Include="BufferColorizer.hlsl" />
   </ItemGroup>
 </Project>

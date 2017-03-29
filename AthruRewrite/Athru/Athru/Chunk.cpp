@@ -39,6 +39,14 @@ void Chunk::Update(DirectX::XMVECTOR& playerPosition)
 	// storage (if terrain is never passed to disk then it won't
 	// persist between plays) will happen here in the future;
 	// sticking to a simple lit + shadowed bumpy plane for now :)
+
+	// Realllllllllly hacky way to keep the demo directional light
+	// within the FOV so it can't be culled; this needs to be replaced
+	// with a more permanent solution (e.g. nothing moves at all,
+	// terrain + lighting is streamed to the player's "position" on the
+	// planet) as soon as possible
+	//Boxecule* directionalLightBoxecule = subChunks[SUB_CHUNKS_PER_CHUNK - 1]->GetStoredBoxecules()[CHUNK_WIDTH / 2];
+	//subChunks[SUB_CHUNKS_PER_CHUNK - 1]->GetStoredBoxecules()[CHUNK_WIDTH / 2]->FetchTransformations().pos = _mm_add_ps(playerPosition, _mm_set_ps(0, 1, 3, 1));
 }
 
 bool Chunk::GetVisibility(Camera* mainCamera)
