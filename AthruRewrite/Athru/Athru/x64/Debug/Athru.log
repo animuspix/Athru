@@ -1,8 +1,2 @@
-﻿C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.hlsl(74,11-67): warning X3206: implicit truncation of vector type
-C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.hlsl(88,11-47): warning X3206: implicit truncation of vector type
-C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.hlsl(94,5-67): warning X3206: implicit truncation of vector type
-C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.hlsl(105,5-75): warning X3206: implicit truncation of vector type
-  
-  compilation object save succeeded; see C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.cso
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.pdb (Full PDB)
+﻿  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.cso
+  Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe

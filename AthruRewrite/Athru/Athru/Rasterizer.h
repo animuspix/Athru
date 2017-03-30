@@ -45,7 +45,7 @@ class Rasterizer : public Shader
 			DirectX::XMFLOAT4 pointPos[MAX_POINT_LIGHT_COUNT];
 
 			fourByteUnsigned numPointLights;
-			DirectX::XMFLOAT3 numPointLightPadding;
+			DirectX::XMUINT3 numPointLightPadding;
 
 			float spotIntensity[MAX_SPOT_LIGHT_COUNT];
 			DirectX::XMFLOAT3 spotIntensityPadding[MAX_SPOT_LIGHT_COUNT];
@@ -54,13 +54,11 @@ class Rasterizer : public Shader
 			DirectX::XMFLOAT4 spotPos[MAX_SPOT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 spotDirection[MAX_SPOT_LIGHT_COUNT];
 
-			float spotCutoffRadians;
+			float spotCutoffRadians;										
 			DirectX::XMFLOAT3 spotCutoffRadiansPadding;
 
 			fourByteUnsigned numSpotLights;
-			DirectX::XMFLOAT3 numSpotLightPadding;
-
-			DirectX::XMFLOAT4 viewVec;
+			DirectX::XMUINT3 numSpotLightPadding;												
 		};
 
 		// Overload ordinary external shader render to do nothing
@@ -74,7 +72,7 @@ class Rasterizer : public Shader
 
 		// Per-frame storage for light properties (intensity, direction, diffuse/ambient tint,
 		// and position; strictly speaking directional lights don't have a positional component, but adding
-		// one heavily simplifies the math for diffuse/specular PBR)
+		// one nicely simplifies the math for diffuse/specular PBR) (used by the pixel shader)
 		ID3D11Buffer* lightBufferPttr;
 };
 

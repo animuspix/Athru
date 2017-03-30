@@ -76,7 +76,7 @@ SubChunk::SubChunk(Chunk* parent,
 			storedBoxecules[i] = new Boxecule(Material(activeTone,
 												       illumination,
 												       1.0f, 1.0f, 1.0f, alpha,
-													   0.8f,
+													   0.81f,
 													   0.2f,
 												       AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER,
 												       textureManagerPttr->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE)));

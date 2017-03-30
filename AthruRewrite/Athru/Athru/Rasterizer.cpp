@@ -30,7 +30,7 @@ Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 	result = device->CreateSamplerState(&samplerDesc, &wrapSamplerState);
 	assert(SUCCEEDED(result));
 
-	// Setup the directional light-buffer description
+	// Setup the light-buffer description
 	D3D11_BUFFER_DESC lightBufferDesc;
 	lightBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
 	lightBufferDesc.ByteWidth = sizeof(LightBuffer);
@@ -51,7 +51,7 @@ Rasterizer::~Rasterizer()
 	wrapSamplerState->Release();
 	wrapSamplerState = nullptr;
 
-	// Release the directional light-buffer
+	// Release the light-buffer
 	lightBufferPttr->Release();
 	lightBufferPttr = nullptr;
 }
@@ -71,12 +71,6 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// Call the base parameter setter to initialise the vertex shader's matrix cbuffer
 	// with the world/view/projection matrices
 	Shader::SetShaderParameters(deviceContext, world, view, projection);
-
-	// Initialise the pixel shader's texture input with the given texture
-	deviceContext->PSSetShaderResources(0, 1, &texture);
-
-	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
-	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
 	// Make the light buffer writable by mapping it's data onto a local variable,
 	// then store the success/failure of the operation so it can be validated with
@@ -121,38 +115,14 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	lightBufferData->spotCutoffRadians = SPOT_CUTOFF_RADIANS;
 
 	// Store the spot light count in the light-buffer via [lightBufferData]
-	lightBufferData->numPointLights = numPointLights;
+	lightBufferData->numSpotLights = numSpotLights;
 
-	// Extract the look-at vector from the view matrix
-	DirectX::XMFLOAT4 viewRow0;
-	DirectX::XMFLOAT4 viewRow1;
-	DirectX::XMFLOAT4 viewRow2;
-	DirectX::XMStoreFloat4(&viewRow0, view.r[0]);
-	DirectX::XMStoreFloat4(&viewRow1, view.r[1]);
-	DirectX::XMStoreFloat4(&viewRow2, view.r[2]);
-	DirectX::XMFLOAT4 lookAt = DirectX::XMFLOAT4(viewRow0.z,
-												 viewRow1.z,
-												 viewRow2.z,
-												 1);
-
-	// Normalize the look-at vector to generate a view-vector
-	float lookAtMag = sqrt((lookAt.x * lookAt.x) +
-						   (lookAt.y * lookAt.y) +
-						   (lookAt.z * lookAt.z));
-
-	DirectX::XMFLOAT4 viewVector = DirectX::XMFLOAT4(lookAt.x / lookAtMag,
-													 lookAt.y / lookAtMag,
-													 lookAt.z / lookAtMag, 1);
-
-	// Store the view-vector within the light-buffer via [lightBufferData]
-	lightBufferData->viewVec = viewVector;
-
-	// Discard the mapping between the GPU-side [directionalBuffer] and the CPU-side
+	// Discard the mapping between the GPU-side [lightBufferPttr] and the CPU-side
 	// [mappedResource]
 	deviceContext->Unmap(lightBufferPttr, 0);
 
 	// Update the pixel shader with the edited light buffer
-	deviceContext->PSSetConstantBuffers(1, 1, &lightBufferPttr);
+	deviceContext->PSSetConstantBuffers(0, 1, &lightBufferPttr);
 
 	// Render the newest boxecule on the pipeline with [this]
 	Shader::RenderShader(deviceContext, numIndicesDrawing);
