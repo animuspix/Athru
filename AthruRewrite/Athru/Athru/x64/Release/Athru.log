@@ -1,29 +1,42 @@
-﻿  Application.cpp
+﻿  compilation object save succeeded; see C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Colorizer.cso
+  compilation object save succeeded; see C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\VertPlotter.cso
+  WICTextureLoader.cpp
   Athru.cpp
+  Application.cpp
   AthruGlobals.cpp
-  Boxecule.cpp
+  Bloom.cpp
   Camera.cpp
   Chunk.cpp
-  ConsolePrinter.cpp
-  CookTorranceLighting.cpp
-  DeferredRenderer.cpp
-  Direct3D.cpp
+  Critter.cpp
+  DepthOfField.cpp
   DirectionalLight.cpp
-  Graphics.cpp
-  Input.cpp
-  Logger.cpp
-  Material.cpp
   Planet.cpp
+  PointLight.cpp
   Rasterizer.cpp
   RenderManager.cpp
   SceneManager.cpp
-  ServiceCentre.cpp
+  Shader.cpp
+  ConsolePrinter.cpp
+  Direct3D.cpp
+  Graphics.cpp
+  Input.cpp
   Running Code Analysis for C/C++...
   Compiling...
-  Shader.cpp
+  Logger.cpp
+  Material.cpp
   Sound.cpp
+  SpotLight.cpp
   StackAllocator.cpp
+  ServiceCentre.cpp
+  Boxecule.cpp
   StarSystem.cpp
+  SubChunk.cpp
+  TexturedRasterizer.cpp
+  TextureManager.cpp
+  Vertex.cpp
   Running Code Analysis for C/C++...
-Direct3D.obj : error LNK2001: unresolved external symbol "public: union __m128 const & __cdecl Matrix4::GetVector(char)" (?GetVector@Matrix4@@QEAAAEBT__m128@@D@Z)
-C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.exe : fatal error LNK1120: 1 unresolved externals
+  Generating code
+  All 552 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
+  Finished generating code
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.exe
+  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.pdb (Full PDB)

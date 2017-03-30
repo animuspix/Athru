@@ -30,6 +30,7 @@ Graphics::~Graphics()
 
 void Graphics::Frame()
 {
+	ServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
 	ServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
 
 	// Cache a local reference to the Input service

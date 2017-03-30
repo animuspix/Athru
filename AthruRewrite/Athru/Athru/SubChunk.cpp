@@ -1,10 +1,12 @@
 #include "ServiceCentre.h"
 #include "Camera.h"
+#include "Critter.h"
 #include "Chunk.h"
 #include "SubChunk.h"
 
 SubChunk::SubChunk(Chunk* parent,
-				   float index, float parentOffsetX, float parentOffsetZ) :
+				   float index, float parentOffsetX, float parentOffsetZ,
+				   Critter* testCritter) :
 				   superChunk(parent),
 				   subChunkPoints{ _mm_set_ps(1, parentOffsetZ + CHUNK_WIDTH, index * SUB_CHUNK_DEPTH, parentOffsetX + (CHUNK_WIDTH / 2)),
 								   _mm_set_ps(1, parentOffsetZ - CHUNK_WIDTH, index * SUB_CHUNK_DEPTH, parentOffsetX + (CHUNK_WIDTH / 2)),
@@ -28,19 +30,18 @@ SubChunk::SubChunk(Chunk* parent,
 		float alpha = (float)(index <= (SUB_CHUNKS_PER_CHUNK / 2) || i == 2);
 
 		// Minor color variance to show individual blocks within the plane
-		//float red = 1.0f / (rand() % 10);
-		//float green = 0.4f;
-		//float blue = 0.4f;
+		float red = 1.0f / (float)(rand() % 10);
+		float green = 0.4f;
+		float blue = 0.4f;
 
 		// Set up boxecule lighting properties
 		// Only allow visible boxecules (that are hovering above the main visible plane) to illuminate
 		// other boxecules
 		// Faintly randomize for some interesting intensity variations
-		// Zeroed out for now; strange and mysterious memory overflows occur if anything non-zero is assigned into it :|
 		float illumIntensity = (((byteUnsigned)alpha) && (index > SUB_CHUNKS_PER_CHUNK / 2)) * (float)(1 / ((rand() % 10) + 1));
 
 		// Point lights on one side, spot-lights on the other
-		AVAILABLE_LIGHTING_SHADERS lightType = (AVAILABLE_LIGHTING_SHADERS)(((parentOffsetX < 0) + (2 * (parentOffsetX >= 0))));
+		AVAILABLE_LIGHTING_SHADERS lightType = AVAILABLE_LIGHTING_SHADERS::POINT_LIGHT;//(AVAILABLE_LIGHTING_SHADERS)(((parentOffsetX < 0) + (2 * (parentOffsetX >= 0))));
 
 		// Construct illumination data from the values above
 		Luminance illumination = Luminance(illumIntensity, lightType);
@@ -52,11 +53,11 @@ SubChunk::SubChunk(Chunk* parent,
 		// Core boxecule construction
 		// Sun generation is temporary; I'd much rather make an actual SkyChunk that can handle clouds and things
 		// as well
-		// But I made the decision to do my long-term commercial project for schoolwork, and now it's two days behind
+		// But I made the decision to do my long-term commercial project for schoolwork, and now it's four-ish days behind
 		// schedule, so just go with the mediocre hacky option for now :P
 		// Make a sun instead of an ordinary boxecule if [this] is the uppermost index,
 		// the iterator is halfway across the sub-chunk, and [this] is inside the home chunk
-		DirectX::XMVECTOR boxeculeRot;
+		DirectX::XMVECTOR boxeculeRot = _mm_set_ps(0, 0, 0, 0);
 		if ((index == (SUB_CHUNKS_PER_CHUNK - 1)) && (i == CHUNK_WIDTH / 2) && (parentOffsetX == 0 && parentOffsetZ == 0))
 		{
 			storedBoxecules[i] = new Boxecule(Material(Sound(0.5f, 0.5f),
@@ -71,13 +72,21 @@ SubChunk::SubChunk(Chunk* parent,
 			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(22.5, 0, 0);
 		}
 
+		else if (testCritter != nullptr && i <= (testCritter->GetTorsoTransformations().pos.m128_f32[1]))
+		{
+			storedBoxecules[i] = new Boxecule(testCritter->GetCritterMaterial());
+
+			// Copy rotation out of [torsoTransformations]
+			boxeculeRot = testCritter->GetTorsoTransformations().rotationQuaternion;
+		}
+
 		else
 		{
 			storedBoxecules[i] = new Boxecule(Material(activeTone,
 												       illumination,
-												       1.0f, 1.0f, 1.0f, alpha,
-													   0.81f,
-													   0.2f,
+												       red, green, blue, alpha,
+													   (1.0f / (float)(rand() % 10)) + 0.2f, // Randomize roughness to somewhere between 0.2f and 1.0f
+													   red, // Tie reflectiveness to the red channel
 												       AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER,
 												       textureManagerPttr->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE)));
 

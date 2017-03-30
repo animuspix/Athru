@@ -1,17 +1,20 @@
 #include "ServiceCentre.h"
+#include "Critter.h"
 #include "SceneManager.h"
 
 SceneManager::SceneManager()
 {
-	nearChunks[0] = new Chunk(-1 * CHUNK_WIDTH, CHUNK_WIDTH);
-	nearChunks[1] = new Chunk(0, CHUNK_WIDTH);
-	nearChunks[2] = new Chunk(CHUNK_WIDTH, CHUNK_WIDTH);
-	nearChunks[3] = new Chunk(-1 * CHUNK_WIDTH, 0);
-	nearChunks[4] = new Chunk(0, 0);
-	nearChunks[5] = new Chunk(CHUNK_WIDTH, 0);
-	nearChunks[6] = new Chunk(-1 * CHUNK_WIDTH, -1 * CHUNK_WIDTH);
-	nearChunks[7] = new Chunk(0, -1 * CHUNK_WIDTH);
-	nearChunks[8] = new Chunk(CHUNK_WIDTH, -1 * CHUNK_WIDTH);
+	Critter localTestCritter;
+
+	nearChunks[0] = new Chunk(-1 * CHUNK_WIDTH, CHUNK_WIDTH, localTestCritter, 0);
+	nearChunks[1] = new Chunk(0, CHUNK_WIDTH, localTestCritter, 1);
+	nearChunks[2] = new Chunk(CHUNK_WIDTH, CHUNK_WIDTH, localTestCritter, 2);
+	nearChunks[3] = new Chunk(-1 * CHUNK_WIDTH, 0, localTestCritter, 3);
+	nearChunks[4] = new Chunk(0, 0, localTestCritter, 4);
+	nearChunks[5] = new Chunk(CHUNK_WIDTH, 0, localTestCritter, 5);
+	nearChunks[6] = new Chunk(-1 * CHUNK_WIDTH, -1 * CHUNK_WIDTH, localTestCritter, 6);
+	nearChunks[7] = new Chunk(0, -1 * CHUNK_WIDTH, localTestCritter, 7);
+	nearChunks[8] = new Chunk(CHUNK_WIDTH, -1 * CHUNK_WIDTH, localTestCritter, 8);
 
 	boxeculeDensity = 1;
 }

@@ -3,9 +3,10 @@
 #include <cstdlib>
 #include "Camera.h"
 #include "Boxecule.h"
+#include "Critter.h"
 #include "Chunk.h"
 
-Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
+Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ, Critter& testCritter, byteUnsigned chunkIndex)
 {
 	chunkPoints[0] = _mm_set_ps(0, (float)(offsetFromHomeZ), 0, (float)offsetFromHomeX);
 	chunkPoints[1] = _mm_set_ps(0, (float)(offsetFromHomeZ - CHUNK_WIDTH), 0, (float)offsetFromHomeX);
@@ -16,7 +17,16 @@ Chunk::Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ)
 
 	for (byteUnsigned i = 0; i < SUB_CHUNKS_PER_CHUNK; i += 1)
 	{
-		subChunks[i] = new SubChunk(this, i, offsetFromHomeX, offsetFromHomeZ);
+		if (chunkIndex == testCritter.GetTorsoTransformations().pos.m128_f32[3] &&
+			i == testCritter.GetTorsoTransformations().pos.m128_f32[2])
+		{
+			subChunks[i] = new SubChunk(this, i, offsetFromHomeX, offsetFromHomeZ, &testCritter);
+		}
+
+		else
+		{
+			subChunks[i] = new SubChunk(this, i, offsetFromHomeX, offsetFromHomeZ, nullptr);
+		}
 	}
 }
 

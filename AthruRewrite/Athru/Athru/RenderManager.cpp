@@ -62,6 +62,11 @@ RenderManager::~RenderManager()
 {
 	// Delete heap-allocated data within the object shader
 	rasterizer->~Rasterizer();
+	rasterizer = nullptr;
+
+	// Delete visible-light array
+	delete visibleLights;
+	visibleLights = nullptr;
 
 	// Delete heap-allocated data within each shadow shader
 	//for (byteUnsigned i = 0; i < shadowShaderCount; i += 1)
@@ -125,7 +130,7 @@ void RenderManager::RasterizerRender(Material& renderableMaterial, Material& dir
 	DirectX::XMFLOAT4 spotLightLocations[MAX_SPOT_LIGHT_COUNT];
 	DirectX::XMFLOAT4 spotLightDirections[MAX_SPOT_LIGHT_COUNT];
 	DirectX::XMVECTOR globalNegaY = _mm_set_ps(1, 0, -1, 0);
-	for (fourByteUnsigned i = 0; i < numPointLights; i += 1)
+	for (fourByteUnsigned i = 0; i < numSpotLights; i += 1)
 	{
 		spotLightIntensities[i] = spotLightMaterials[i].GetLightData().intensity;
 		spotLightDiffuseColors[i] = spotLightMaterials[i].GetColorData();

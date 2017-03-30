@@ -16,7 +16,8 @@ class Chunk
 {
 	public:
 		Chunk() {}
-		Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ);
+		Chunk(byteSigned offsetFromHomeX, byteSigned offsetFromHomeZ,
+			  Critter& testCritter, byteUnsigned chunkIndex);
 		~Chunk();
 
 		void Update(DirectX::XMVECTOR& playerPosition);

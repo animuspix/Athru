@@ -1,9 +1,0 @@
-﻿  stdafx.cpp
-  Line.cpp
-  Matrix4.cpp
-  Quaternion.cpp
-  SQTTransformer.cpp
-  Vector2.cpp
-  Vector3.cpp
-  Vector4.cpp
-  MathsLib.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru Maths\MathsLib\x64\Release\MathsLib.lib

@@ -72,6 +72,12 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// with the world/view/projection matrices
 	Shader::SetShaderParameters(deviceContext, world, view, projection);
 
+	// Initialise the pixel shader's texture input with the given texture
+	deviceContext->PSSetShaderResources(0, 1, &texture);
+
+	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
+	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
+
 	// Make the light buffer writable by mapping it's data onto a local variable,
 	// then store the success/failure of the operation so it can be validated with
 	// an [assert]
@@ -82,10 +88,11 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// Cast the raw data mapped onto [mappedResource] into a pointer formatted
 	// with it's original type (LightBuffer) which can be used to edit the
 	// data itself
+	// Very strange bug here, everything besides directional data is discarded
 	LightBuffer* lightBufferData = (LightBuffer*)mappedResource.pData;
 
 	// Write directional-light data to the light-buffer via [lightBufferData]
-	lightBufferData->dirIntensity = dirLightIntensity;
+	lightBufferData->dirIntensity = DirectX::XMFLOAT4(dirLightIntensity, 0, 0, 0);
 	lightBufferData->dirDirection = dirLightDirection;
 	lightBufferData->dirDiffuse = dirLightDiffuse;
 	lightBufferData->dirAmbient = dirLightAmbient;
@@ -94,28 +101,31 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// Write point-light data to the light-buffer via [lightBufferData]
 	for (fourByteUnsigned i = 0; i < numPointLights; i += 1)
 	{
-		lightBufferData->pointIntensity[i] = pointLightIntensities[i];
+		lightBufferData->pointIntensity[i] = DirectX::XMFLOAT4(pointLightIntensities[i], 0, 0, 0);
 		lightBufferData->pointDiffuse[i] = pointLightDiffuseColors[i];
 		lightBufferData->pointPos[i] = pointLightPositions[i];
 	}
 
 	// Store the point-light count in the light-buffer via [lightBufferData]
-	lightBufferData->numPointLights = numPointLights;
+	lightBufferData->numPointLights = DirectX::XMUINT4(numPointLights, 0, 0, 0);
 
 	// Write spot-light data to the light-buffer via [lightBufferData]
 	for (fourByteUnsigned i = 0; i < numSpotLights; i += 1)
 	{
-		lightBufferData->spotIntensity[i] = spotLightIntensities[i];
+		lightBufferData->spotIntensity[i] = DirectX::XMFLOAT4(spotLightIntensities[i], 0, 0, 0);
 		lightBufferData->spotDiffuse[i] = spotLightDiffuseColors[i];
 		lightBufferData->spotPos[i] = spotLightPositions[i];
 		lightBufferData->spotDirection[i] = spotLightDirections[i];
 	}
 
 	// Store the spot-light cutoff angle in the light-buffer via [lightBufferData]
-	lightBufferData->spotCutoffRadians = SPOT_CUTOFF_RADIANS;
+	lightBufferData->spotCutoffRadians = DirectX::XMFLOAT4(SPOT_CUTOFF_RADIANS, 0, 0, 0);
 
 	// Store the spot light count in the light-buffer via [lightBufferData]
-	lightBufferData->numSpotLights = numSpotLights;
+	lightBufferData->numSpotLights = DirectX::XMUINT4(numSpotLights, 0, 0, 0);
+
+	// Store a copy of the world matrix for use in lighting calculations
+	lightBufferData->worldMat = world;
 
 	// Discard the mapping between the GPU-side [lightBufferPttr] and the CPU-side
 	// [mappedResource]
@@ -124,6 +134,6 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// Update the pixel shader with the edited light buffer
 	deviceContext->PSSetConstantBuffers(0, 1, &lightBufferPttr);
 
-	// Render the newest boxecule on the pipeline with [this]
+	// Render the newest boxe cule on the pipeline with [this]
 	Shader::RenderShader(deviceContext, numIndicesDrawing);
 }

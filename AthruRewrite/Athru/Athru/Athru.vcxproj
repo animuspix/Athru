@@ -108,13 +108,13 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>%userprofile%/documents/Github/Athru/AthruRewrite/Athru Maths/MathsLib/MathsLib;%userprofile%/documents/Github/Athru/AthruRewrite/ThirdParty/DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Athru Maths\MathsLib\MathsLib;$(SolutionDir)ThirdParty\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%userprofile%\documents\Github\Athru\AthruRewrite\Athru Maths\MathsLib\x64/Debug\MathsLib.lib;%userprofile%\documents\Github\Athru\AthruRewrite\ThirdParty\DirectXTex\DirectXTex\Bin\Desktop_2017\x64\Debug\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)Athru Maths\MathsLib\x64\Debug\MathsLib.lib;$(SolutionDir)ThirdParty\DirectXTex\DirectXTex\Bin\Desktop_2017\x64\Debug\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
@@ -150,24 +150,29 @@
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <EnablePREfast>true</EnablePREfast>
-      <AdditionalIncludeDirectories>%userprofile%\Documents\GitHub\Athru\AthruRewrite\Athru Maths\MathsLib\MathsLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Athru Maths\MathsLib\MathsLib;$(SolutionDir)ThirdParty\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>%userprofile%/documents/Github/Athru/AthruRewrite/Athru Maths/MathsLib/x64/Release/MathsLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)Athru Maths\MathsLib\x64\Release\MathsLib.lib;$(SolutionDir)ThirdParty\DirectXTex\DirectXTex\Bin\Desktop_2017\x64\Release\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
+    <FxCompile>
+      <DisableOptimizations>false</DisableOptimizations>
+      <ShaderModel>5.0</ShaderModel>
+    </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
+    <ClCompile Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
     <ClCompile Include="Athru.cpp" />
     <ClCompile Include="Application.cpp" />
     <ClCompile Include="AthruGlobals.cpp" />
     <ClCompile Include="Bloom.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
+    <ClCompile Include="Critter.cpp" />
     <ClCompile Include="DepthOfField.cpp" />
     <ClCompile Include="DirectionalLight.cpp" />
     <ClCompile Include="Planet.cpp" />
@@ -194,12 +199,13 @@
     <ClCompile Include="Vertex.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
+    <ClInclude Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
     <ClInclude Include="AthruGlobals.h" />
     <ClInclude Include="AthruTexture.h" />
     <ClInclude Include="Bloom.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Chunk.h" />
+    <ClInclude Include="Critter.h" />
     <ClInclude Include="DepthOfField.h" />
     <ClInclude Include="DirectionalLight.h" />
     <ClInclude Include="Luminance.h" />
@@ -236,20 +242,12 @@
     <ClInclude Include="Vertex.h" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="BloomEffect.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </FxCompile>
     <FxCompile Include="Colorizer.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Pixel</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Pixel</ShaderType>
       <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">false</ExcludedFromBuild>
-    </FxCompile>
-    <FxCompile Include="DepthOfFieldEffect.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">true</ExcludedFromBuild>
     </FxCompile>
     <FxCompile Include="VertPlotter.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Vertex</ShaderType>

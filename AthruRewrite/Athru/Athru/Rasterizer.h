@@ -29,36 +29,28 @@ class Rasterizer : public Shader
 	private:
 		struct LightBuffer
 		{
-			// Lots of padding here to maintain 16-byte alignment
-			float dirIntensity;
-			DirectX::XMFLOAT3 dirIntensityPadding;
-
+			// Adding your own padding messes up DirectX's mapping between
+			// CPU-side structs and GPU-side HLSL cbuffers, so just store
+			// every element within 16-byte aligned types instead :P
+			DirectX::XMFLOAT4 dirIntensity;
 			DirectX::XMFLOAT4 dirDirection;
 			DirectX::XMFLOAT4 dirDiffuse;
 			DirectX::XMFLOAT4 dirAmbient;
 			DirectX::XMFLOAT4 dirPos;
 
-			float pointIntensity[MAX_POINT_LIGHT_COUNT];
-			DirectX::XMFLOAT3 pointIntensityPadding[MAX_POINT_LIGHT_COUNT];
-
+			DirectX::XMFLOAT4 pointIntensity[MAX_POINT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 pointDiffuse[MAX_POINT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 pointPos[MAX_POINT_LIGHT_COUNT];
+			DirectX::XMUINT4 numPointLights;
 
-			fourByteUnsigned numPointLights;
-			DirectX::XMUINT3 numPointLightPadding;
-
-			float spotIntensity[MAX_SPOT_LIGHT_COUNT];
-			DirectX::XMFLOAT3 spotIntensityPadding[MAX_SPOT_LIGHT_COUNT];
-
+			DirectX::XMFLOAT4 spotIntensity[MAX_SPOT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 spotDiffuse[MAX_SPOT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 spotPos[MAX_SPOT_LIGHT_COUNT];
 			DirectX::XMFLOAT4 spotDirection[MAX_SPOT_LIGHT_COUNT];
+			DirectX::XMFLOAT4 spotCutoffRadians;
+			DirectX::XMUINT4 numSpotLights;
 
-			float spotCutoffRadians;										
-			DirectX::XMFLOAT3 spotCutoffRadiansPadding;
-
-			fourByteUnsigned numSpotLights;
-			DirectX::XMUINT3 numSpotLightPadding;												
+			DirectX::XMMATRIX worldMat;
 		};
 
 		// Overload ordinary external shader render to do nothing

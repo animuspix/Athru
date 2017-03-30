@@ -1,5 +1,5 @@
-#define MAX_POINT_LIGHT_COUNT 10
-#define MAX_SPOT_LIGHT_COUNT 10
+#define MAX_POINT_LIGHT_COUNT 16
+#define MAX_SPOT_LIGHT_COUNT 16
 
 cbuffer MatBuffer
 {
@@ -39,7 +39,7 @@ Pixel main(Vertex vertIn)
     //pixOut.pointLightVecs = { 0 };
 
     // Cache a copy of the vertex position in world coordinates
-    // (needed for transforming the point into screen space + 
+    // (needed for transforming the point into screen space +
     // calculating relative light vectors)
     float4 vertWorldPos = mul(vertIn.pos, world);
 

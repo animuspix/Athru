@@ -99,9 +99,6 @@
     <ClCompile Include="Vertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
-      <Filter>Third Party</Filter>
-    </ClCompile>
     <ClCompile Include="DirectionalLight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -110,6 +107,12 @@
     </ClCompile>
     <ClCompile Include="PointLight.cpp">
       <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Critter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
+      <Filter>Third Party</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -218,9 +221,6 @@
     <ClInclude Include="TextureManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h">
-      <Filter>Third Party</Filter>
-    </ClInclude>
     <ClInclude Include="DirectionalLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -233,11 +233,15 @@
     <ClInclude Include="Luminance.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Critter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Colorizer.hlsl" />
     <FxCompile Include="VertPlotter.hlsl" />
-    <FxCompile Include="BloomEffect.hlsl" />
-    <FxCompile Include="DepthOfFieldEffect.hlsl" />
   </ItemGroup>
 </Project>

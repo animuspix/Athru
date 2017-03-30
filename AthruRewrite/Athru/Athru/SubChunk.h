@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Boxecule.h"
+#include "Critter.h"
 
 class Chunk;
 class SubChunk
@@ -8,7 +9,8 @@ class SubChunk
 	public:
 		SubChunk() {}
 		SubChunk(Chunk* parent,
-				 float index, float parentOffsetX, float parentOffsetZ);
+				 float index, float parentOffsetX, float parentOffsetZ,
+				 Critter* testCritter);
 		~SubChunk();
 
 		bool GetVisibility(Camera* mainCamera);

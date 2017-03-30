@@ -5,8 +5,8 @@
 #include "Typedefs.h"
 #include "Shader.h"
 
-#define MAX_POINT_LIGHT_COUNT 10
-#define MAX_SPOT_LIGHT_COUNT 10
+#define MAX_POINT_LIGHT_COUNT 16
+#define MAX_SPOT_LIGHT_COUNT 16
 #define MAX_DIRECTIONAL_LIGHT_COUNT 1
 
 enum class AVAILABLE_OBJECT_SHADERS
