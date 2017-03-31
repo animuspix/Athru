@@ -13,6 +13,9 @@
 // Mark [texIn] as a resource bound to the zeroth texture register ([register(t0)])
 Texture2D texIn : register(t0);
 
+// Mark [normMapIn] as a resource bound to the first texture register ([register(t1)])
+Texture2D normMapIn : register(t1);
+
 // Mark [wrapSampler] as a resource bound to the zeroth sampler register ([register(s0)])
 SamplerState wrapSampler : register(s0);
 
@@ -233,7 +236,7 @@ float4 SpotLightColorCumulative(Pixel pixIn)
         // is greater than the cuttoff angle [spotRadius]
         float angleVertCos = dot(normalize(spotDirection[j]), pixIn.vertWorldPos - mul(spotPos[j], worldMat));
         float angleToVert = acos(angleVertCos);
-        bool isInsideCutoff = (angleToVert < spotCutoffRadians[0]);
+        bool isInsideCutoff = (angleToVert < spotCutoffRadians[0]);   
 
         if (isInsideCutoff)
         {
@@ -248,6 +251,17 @@ float4 main(Pixel pixIn) : SV_TARGET
 {
     // Generate base color
     float4 pixOut = pixIn.color * texIn.Sample(wrapSampler, pixIn.texCoord);
+
+    // Set pixel normal from the given normal map
+    // Easy enough to modify texture coordinates relative to the current face,
+    // but we can't get face data without a geometry shader; since it makes the
+    // most sense to research all the abstract shaders (geometry, hull, domain,
+    // compute, effect, etc.) together than to dive into them individually, I
+    // might as well go through that stuff after the weekend when I have more
+    // time and I can start cleaning up + optimising the engine overall
+    //float pixNormalW = pixIn.normal.w;
+    //pixIn.normal = normalize(mul(normMapIn.Sample(wrapSampler, pixIn.texCoord), worldMat));
+    //pixIn.normal.w = pixNormalW;
 
     // Initialise the average light color
     // with the given ambient tinting

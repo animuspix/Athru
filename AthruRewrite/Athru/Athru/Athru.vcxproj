@@ -114,7 +114,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)Athru Maths\MathsLib\x64\Debug\MathsLib.lib;$(SolutionDir)ThirdParty\DirectXTex\DirectXTex\Bin\Desktop_2017\x64\Debug\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)Athru Maths\MathsLib\x64\Debug\MathsLib.lib;$(SolutionDir)ThirdParty\DirectXTex\DirectXTex\Bin\Desktop_2015\x64\Debug\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>

@@ -74,6 +74,7 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 
 	// Initialise the pixel shader's texture input with the given texture
 	deviceContext->PSSetShaderResources(0, 1, &texture);
+	deviceContext->PSSetShaderResources(1, 1, &(ServiceCentre::AccessTextureManager()->GetTexture(AVAILABLE_TEXTURES::CUBE_NORMAL).asShaderResource));
 
 	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);

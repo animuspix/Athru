@@ -52,6 +52,7 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 
 	// Store texture locations
 	textureLocations[(byteUnsigned)AVAILABLE_TEXTURES::BLANK_WHITE] = L"baseTex.bmp";
+	textureLocations[(byteUnsigned)AVAILABLE_TEXTURES::CUBE_NORMAL] = L"normMapFront.bmp";
 
 	// Build textures
 	byteUnsigned i = 0;

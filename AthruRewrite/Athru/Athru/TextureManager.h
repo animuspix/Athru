@@ -4,11 +4,12 @@
 #include "d3d11.h"
 #include "AthruTexture.h"
 
-#define MAX_TEXTURE_SIZE (4096 * 4096)
+#define MAX_TEXTURE_SIZE (32684 * 32684)
 
 enum class AVAILABLE_TEXTURES
 {
 	BLANK_WHITE,
+	CUBE_NORMAL,
 	NULL_TEXTURE
 };
 
