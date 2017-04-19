@@ -1,15 +1,6 @@
 #define MAX_POINT_LIGHT_COUNT 16
 #define MAX_SPOT_LIGHT_COUNT 16
 
-// NOTE
-// As far as I know, the lighting calculations below are valid (touch wood) for
-// directional, point, and spot lights using PBR for diffuse (Oren-Nayar) and
-// specular (Cook-Torrance) shading; however, all the input light data below
-// [dirPos] is lost when the [cbuffer] is initialized (no, I don't understand
-// it either), which means that the functions evaluating point and spot
-// lighting never actually run. I'll continue working on this, and I'll update
-// you + demonstrate the post-patch code if I manage to find a solution :)
-
 // Mark [texIn] as a resource bound to the zeroth texture register ([register(t0)])
 Texture2D texIn : register(t0);
 
@@ -62,17 +53,18 @@ float OrenNayar(float pixGrain, float4 pixNorm, float4 surfaceViewVector, float4
 {
     // Calculate the [A] term for the Oren-Nayar reflectance model
     float grainSqr = pixGrain * pixGrain;
-    float orenNayarA = 1 - (0.5 * (grainSqr / (grainSqr + 0.57f)));
+    grainSqr = max(grainSqr, 0.001f);
+    float orenNayarA = 1.0f - (0.5f * (grainSqr / (grainSqr + 0.57f)));
 
     // Calculate the [B] term for the Oren-Nayar reflectance model
     float orenNayarB = 0.45 * (grainSqr / (grainSqr + 0.09f));
 
     // Calculate the amount of light backscattered towards the camera
-    float4 cameraBackscatter = surfaceViewVector - (pixNorm * dot(surfaceViewVector, pixNorm));
+    float4 cameraBackscatter = normalize(surfaceViewVector - (pixNorm * dot(pixNorm, surfaceViewVector)));
 
     // Calculate the amount of light backscatterered towards the overall light
     // source
-    float4 sourceBackscatter = surfaceLightVector - (pixNorm * dot(surfaceLightVector, pixNorm));
+    float4 sourceBackscatter = normalize(surfaceLightVector - (pixNorm * dot(surfaceLightVector, pixNorm)));
 
     // Calculate the amount of light radiated directly from the current pixel
     // after backscattering
@@ -91,7 +83,7 @@ float OrenNayar(float pixGrain, float4 pixNorm, float4 surfaceViewVector, float4
 
     // Aggregate all the relevant values into the actual Oren-Nayar
     // function, then return the result to the calling location :)
-    return (orenNayarA + orenNayarB * max(0.0f, gamma) * (sin(alpha) * tan(beta)));
+    return (orenNayarA + (orenNayarB * max(0.0f, gamma) * (sin(alpha) * tan(beta))));
 }
 
 float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
@@ -99,6 +91,7 @@ float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
 {
     // Calculate different parts of the beckmann distribution
     float grainSqr = pixGrain * pixGrain;
+    grainSqr = max(grainSqr, 0.001f);
     float4 halfVec = normalize(surfaceLightVector + surfaceViewVector);
     float normDotHalf = clamp(dot(pixNorm, halfVec), 0, 1);
     float normDotHalfSqr = normDotHalf * normDotHalf;
@@ -106,7 +99,7 @@ float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
 
     // Calculate the alpha term + store the constant [e] for easy reference
     float alpha = (-1 * (1 - normDotHalfSqr)) / ((normDotHalfSqr) * grainSqr);
-    float e = 2.71828182845904523536;
+    float e = 2.71828182845904523536f;
 
     // Express the distribution in functional form and store it's value for
     // the given roughness, surface-to-view vector, and surface-to-light vector
@@ -124,8 +117,8 @@ float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
     // + physics behind it available over on Wikipedia:
     // https://en.wikipedia.org/wiki/Specular_reflection
     float normDotView = dot(pixNorm, surfaceViewVector);
-    float approxFresLHS = pixReflectFactor + (1 - pixReflectFactor);
-    float approxFresRHS = pow(1 - normDotView, 5);
+    float approxFresLHS = pixReflectFactor;
+    float approxFresRHS = (1 - pixReflectFactor) * pow(1 - normDotView, 5);
     float approxFres = approxFresLHS * approxFresRHS;
 
     // Calculate the geometric attenuation factor
@@ -159,14 +152,24 @@ float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
 
     // Aggregate all the relevant values into the actual Cook-Torrance
     // function, then return the result to the calling location :)
-    float pi = 3.14159265358979323846;
-    return (beckmann * approxFres * geoAttenuationFactor) / (pi * surfaceViewDotNorm);
+    float pi = 3.14159265358979323846f;
+    return (beckmann * approxFres * geoAttenuationFactor) / (pi * surfaceViewDotNorm); //* dot(pixNorm, surfaceLightVector);
 }
 
 float4 Lighting(Pixel pixIn, float4 lightDiffuse, float lightIntensity, float4 lightDirection)
 {
+    // Extract local face normals from the given vertex normal
+    float4 localXNorm = normalize(mul(float4(pixIn.normal.x, 0, 0, 1), worldMat));
+    float4 localYNorm = normalize(mul(float4(0, pixIn.normal.y, 0, 1), worldMat));
+    float4 localZNorm = normalize(mul(float4(0, 0, pixIn.normal.z, 1), worldMat));
+
+    float lambertX = dot(localXNorm, lightDirection);
+    float lambertY = dot(localYNorm, lightDirection);
+    float lambertZ = dot(localZNorm, lightDirection);
+    float avgLambert = (lambertX + lambertY + lambertZ) / 3;
+
     // Calculate pixel exposure with the overall light direction
-    float lambertTerm = saturate(dot(pixIn.normal, lightDirection));
+    float lambertTerm = saturate(avgLambert);
     float currPixelExposure = lambertTerm * lightIntensity;
 
     // Diffuse lighting
@@ -180,7 +183,7 @@ float4 Lighting(Pixel pixIn, float4 lightDiffuse, float lightIntensity, float4 l
 
     // Cache the result of the Cook-Torrance function in a specific modifier
     // that we can combine with the Oren-Nayar modifier above to generate
-    // a mixed diffuse/specular PBR value that we can apply to the raw
+    // a mixed diffuse/specular PBR value that we can apply to the rawq
     // pixel exposure calculated earlier
     float cookTorranceModifier = CookTorrance(pixIn.grain, pixIn.reflectFactor, pixIn.normal, pixIn.surfaceView,
                                               lightDirection);
@@ -216,7 +219,8 @@ float4 PointLightColorCumulative(Pixel pixIn)
 
     for (uint i = 0; i != numPointLights[0]; i += 1)
     {
-        internalLightColor += Lighting(pixIn, pointDiffuse[i], pointIntensity[i][0], (mul(pointPos[i], worldMat) - pixIn.vertWorldPos));
+        float4 surfaceToLight = mul(pointPos[i], worldMat) - pixIn.vertWorldPos;
+        internalLightColor += Lighting(pixIn, pointDiffuse[i], pointIntensity[i][0], surfaceToLight);
     }
 
     return saturate(internalLightColor);
@@ -237,7 +241,7 @@ float4 SpotLightColorCumulative(Pixel pixIn)
 
         if (isInsideCutoff)
         {
-            internalLightColor += Lighting(pixIn, pointDiffuse[j], pointIntensity[j][0], (mul(pointPos[j], worldMat) - pixIn.vertWorldPos));
+            internalLightColor += Lighting(pixIn, spotDiffuse[j], spotIntensity[j][0], (mul(spotPos[j], worldMat) - pixIn.vertWorldPos));
         }
     }
 
@@ -251,12 +255,12 @@ float4 main(Pixel pixIn) : SV_TARGET
 
     // Initialise the average light color
     // with the given ambient tinting
-    float4 lightColor = dirAmbient;
+    float4 lightColor = dirAmbient; //float4(0, 0, 0, 1);
 
     // Generate mixed diffuse/specular colors from all scene lights, then
     // describe the cumulative effect of those lights on the current pixel by
     // adding the sum of the diffuse/specular colors into [lightColor]
-    lightColor += (DirLightColorCumulative(pixIn) + PointLightColorCumulative(pixIn) + SpotLightColorCumulative(pixIn));
+    lightColor += DirLightColorCumulative(pixIn) + PointLightColorCumulative(pixIn); //+ SpotLightColorCumulative(pixIn);
 
     // Return final color as a (clamped with [saturate]) multiplicative blend
     // between the raw material color ([pixOut]) and the average light color

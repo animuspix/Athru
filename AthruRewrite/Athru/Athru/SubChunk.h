@@ -13,7 +13,6 @@ class SubChunk
 				 Critter* testCritter);
 		~SubChunk();
 
-		bool GetVisibility(Camera* mainCamera);
 		Boxecule** GetStoredBoxecules();
 
 		// Overload the standard allocation/de-allocation operators

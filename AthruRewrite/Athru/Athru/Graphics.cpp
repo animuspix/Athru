@@ -5,12 +5,7 @@
 
 Graphics::Graphics(HWND windowHandle)
 {
-	// Eww, eww, eww
-	// Ask Adam about ways to refactor my memory manager so I can avoid this sort of thing
 	d3D = DEBUG_NEW Direct3D(windowHandle);
-
-	// Create the camera object
-	camera = new Camera(d3D->GetPerspProjector());
 }
 
 void Graphics::FetchDependencies()
@@ -20,6 +15,11 @@ void Graphics::FetchDependencies()
 
 	// Retrieve a pointer to the scene manager from the service centre
 	sceneManagerPttr = ServiceCentre::AccessSceneManager();
+
+	// Create the camera object (involves fetching textures from the texture manager,
+	// which can't be created before [this] because it needs to access [d3D] at
+	// construction)
+	camera = new Camera(d3D->GetDevice());
 }
 
 Graphics::~Graphics()
@@ -73,7 +73,7 @@ void Graphics::Frame()
 
 	// Update the camera's view matrix to
 	// reflect the translation + rotation above
-	camera->RefreshViewMatrix();
+	camera->RefreshViewData();
 
 	// Update the scene (generate terrain/organisms, update organism statuses,
 	// simulate physics for visible areas, etc.)
@@ -94,8 +94,24 @@ void Graphics::Frame()
 
 void Graphics::Render()
 {
-	d3D->BeginScene();
-	renderManagerPttr->Render(camera, d3D->GetWorldMatrix(), camera->GetViewMatrix(), d3D->GetPerspProjector());
+	// Cache a reference to the camera's viewfinder (the screen rect)
+	AthruRect* viewFinderPttr = camera->GetViewFinder();
+
+	// Cache references to the world matrix, the camera's view matrix,
+	// and the perspective projection matrix
+	DirectX::XMMATRIX& world = d3D->GetWorldMatrix();
+	DirectX::XMMATRIX& view = camera->GetViewMatrix();
+	DirectX::XMMATRIX& perspProjector = d3D->GetPerspProjector();
+
+	// Perform initial render
+	d3D->BeginScene(viewFinderPttr->GetRenderTarget());
+	renderManagerPttr->Render(camera, world, view, perspProjector);
+
+	// Perform post-processing through the screen rect (the camera's viewfinder)
+	d3D->BeginPost();
+	renderManagerPttr->PostProcess(viewFinderPttr, world, view, perspProjector);
+
+	// Display the post-processed data by pushing the camera's viewfinder to the screen
 	d3D->EndScene();
 }
 

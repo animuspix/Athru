@@ -4,7 +4,7 @@
 #include "Typedefs.h"
 #include "SubChunk.h"
 
-#define CHUNK_WIDTH 16
+#define CHUNK_WIDTH 4
 #define CHUNK_VOLUME CHUNK_WIDTH * CHUNK_WIDTH * CHUNK_WIDTH
 
 #define SUB_CHUNK_DEPTH 2
@@ -21,7 +21,6 @@ class Chunk
 		~Chunk();
 
 		void Update(DirectX::XMVECTOR& playerPosition);
-		bool GetVisibility(Camera* mainCamera);
 		DirectX::XMVECTOR* GetChunkPoints();
 		SubChunk** GetSubChunks();
 

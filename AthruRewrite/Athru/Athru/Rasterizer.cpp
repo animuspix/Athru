@@ -134,6 +134,6 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// Update the pixel shader with the edited light buffer
 	deviceContext->PSSetConstantBuffers(0, 1, &lightBufferPttr);
 
-	// Render the newest boxe cule on the pipeline with [this]
+	// Render the newest boxecule on the pipeline with [this]
 	Shader::RenderShader(deviceContext, numIndicesDrawing);
 }

@@ -35,9 +35,6 @@ Pixel main(Vertex vertIn)
     // Create a returnable [Pixel]
     Pixel pixOut;
 
-    // Safely initialise [pointLightVecs] and [spotLightVecs]
-    //pixOut.pointLightVecs = { 0 };
-
     // Cache a copy of the vertex position in world coordinates
     // (needed for transforming the point into screen space +
     // calculating relative light vectors)

@@ -93,7 +93,7 @@ Direct3D::Direct3D(HWND hwnd)
 	// in [nullptr] (the program isn't allowed to de-reference null pointers, so the best
 	// way to stop that from happening is to stamp out )
 	assert(backBufferPtr != nullptr);
-	result = device->CreateRenderTargetView(backBufferPtr, NULL, &renderTargetView);
+	result = device->CreateRenderTargetView(backBufferPtr, NULL, &defaultRenderTarget);
 
 	// No more need for a pointer to the back buffer, so release it
 	backBufferPtr->Release();
@@ -174,7 +174,7 @@ Direct3D::Direct3D(HWND hwnd)
 	assert(SUCCEEDED(result));
 
 	// Send the render target view and depth stencil buffer into the output render pipeline
-	deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+	deviceContext->OMSetRenderTargets(1, &defaultRenderTarget, depthStencilView);
 
 	// Struct containing a description of the rasterizer state
 	D3D11_RASTERIZER_DESC rasterDesc;
@@ -263,8 +263,8 @@ Direct3D::~Direct3D()
 	depthStencilBuffer->Release();
 	depthStencilBuffer = nullptr;
 
-	renderTargetView->Release();
-	renderTargetView = nullptr;
+	defaultRenderTarget->Release();
+	defaultRenderTarget = nullptr;
 
 	deviceContext->Release();
 	deviceContext = nullptr;
@@ -276,13 +276,31 @@ Direct3D::~Direct3D()
 	swapChain = nullptr;
 }
 
-void Direct3D::BeginScene()
+void Direct3D::BeginScene(ID3D11RenderTargetView* renderTargetTexture)
 {
+	// Pass the given render target onto the GPU
+	deviceContext->OMSetRenderTargets(1, &renderTargetTexture, depthStencilView);
+
 	// The color to display before anything is drawn to the scene
 	float color[4] = { 0.0f, 0.6f, 0.6f, 1.0f };
 
 	// Clear the back buffer and flush the view with [color]
-	deviceContext->ClearRenderTargetView(renderTargetView, color);
+	deviceContext->ClearRenderTargetView(renderTargetTexture, color);
+
+	// Clear the depth buffer
+	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+}
+
+void Direct3D::BeginPost()
+{
+	// Pass the default render target back onto the GPU
+	deviceContext->OMSetRenderTargets(1, &defaultRenderTarget, depthStencilView);
+
+	// The color to display before anything is drawn to the scene
+	float color[4] = { 0.6f, 0.0f, 0.6f, 1.0f };
+
+	// Clear the back buffer and flush the view with [color]
+	deviceContext->ClearRenderTargetView(defaultRenderTarget, color);
 
 	// Clear the depth buffer
 	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -298,11 +316,6 @@ void Direct3D::EndScene()
 	// If vsync is disabled (read: equal to [false] or [0]), present it as
 	// fast as possible
 	swapChain->Present(VSYNC_ENABLED, 0);
-}
-
-void Direct3D::ResetRenderTargets()
-{
-	deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 }
 
 ID3D11Device* Direct3D::GetDevice()

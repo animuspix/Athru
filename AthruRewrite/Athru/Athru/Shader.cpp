@@ -60,7 +60,7 @@ Shader::Shader(ID3D11Device* device, HWND windowHandle,
 
 	polygonLayout[4].SemanticName = "COLOR";
 	polygonLayout[4].SemanticIndex = 1;
-	polygonLayout[4].Format = DXGI_FORMAT_R32G32_FLOAT;
+	polygonLayout[4].Format = DXGI_FORMAT_R32_FLOAT;
 	polygonLayout[4].InputSlot = 0;
 	polygonLayout[4].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
 	polygonLayout[4].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;

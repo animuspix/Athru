@@ -59,50 +59,6 @@ void Chunk::Update(DirectX::XMVECTOR& playerPosition)
 	subChunks[SUB_CHUNKS_PER_CHUNK - 1]->GetStoredBoxecules()[CHUNK_WIDTH / 2]->FetchTransformations().pos = _mm_add_ps(playerPosition, _mm_set_ps(0, 1, 3, 1));
 }
 
-bool Chunk::GetVisibility(Camera* mainCamera)
-{
-	// Generate a 2D view triangle so we can check chunk visibility
-	// without expensive frustum testing (chunks are parallel to ZX
-	// anyways, so there's nothing really lost by only checking for
-	// intersections within that plane)
-
-	// Point/triangle culling algorithm found here:
-	// http://www.nerdparadise.com/math/pointinatriangle
-
-	// Cache camera position + rotation
-	DirectX::XMVECTOR cameraPos = mainCamera->GetTranslation();
-	DirectX::XMVECTOR cameraRotation = mainCamera->GetRotationQuaternion();
-
-	// Construct the view triangle
-	DirectX::XMVECTOR viewTriVertA = cameraPos;
-	DirectX::XMVECTOR viewTriVertB = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, tan(HORI_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR)), cameraRotation);
-	DirectX::XMVECTOR viewTriVertC = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, 0, (tan(HORI_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR) * -1)), cameraRotation);
-
-	// Test chunk points against the view triangle
-	float crossProductMagnitudesZX[4][3];
-	for (byteUnsigned i = 0; i < 4; i += 1)
-	{
-		DirectX::XMVECTOR vectorDiffZXA = _mm_sub_ps(chunkPoints[i], viewTriVertA);
-		DirectX::XMVECTOR vectorDiffZXB = _mm_sub_ps(viewTriVertB, viewTriVertA);
-		DirectX::XMVECTOR vectorDiffZXC = _mm_sub_ps(chunkPoints[i], viewTriVertB);
-
-		DirectX::XMVECTOR vectorDiffZXD = _mm_sub_ps(viewTriVertC, viewTriVertB);
-		DirectX::XMVECTOR vectorDiffZXE = _mm_sub_ps(chunkPoints[i], viewTriVertC);
-		DirectX::XMVECTOR vectorDiffZXF = _mm_sub_ps(viewTriVertA, viewTriVertC);
-
-		crossProductMagnitudesZX[i][0] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffZXA, vectorDiffZXB)));
-		crossProductMagnitudesZX[i][1] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffZXC, vectorDiffZXD)));
-		crossProductMagnitudesZX[i][2] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffZXE, vectorDiffZXF)));
-	}
-
-	// Return visibility
-	// (defined as whether any chunk point is within the view triangle;
-	// see the algorithm link above for how that's evaluated)
-	return std::signbit(crossProductMagnitudesZX[0][0]) == std::signbit(crossProductMagnitudesZX[1][0]) == std::signbit(crossProductMagnitudesZX[2][0]) == std::signbit(crossProductMagnitudesZX[3][0]) ||
-		   std::signbit(crossProductMagnitudesZX[0][1]) == std::signbit(crossProductMagnitudesZX[1][1]) == std::signbit(crossProductMagnitudesZX[2][1]) == std::signbit(crossProductMagnitudesZX[3][1]) ||
-		   std::signbit(crossProductMagnitudesZX[0][2]) == std::signbit(crossProductMagnitudesZX[1][2]) == std::signbit(crossProductMagnitudesZX[2][2]) == std::signbit(crossProductMagnitudesZX[3][2]);
-}
-
 DirectX::XMVECTOR* Chunk::GetChunkPoints()
 {
 	return chunkPoints;

@@ -84,12 +84,6 @@
     <ClCompile Include="SubChunk.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Bloom.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DepthOfField.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TexturedRasterizer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -97,9 +91,6 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Vertex.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="DirectionalLight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SpotLight.cpp">
@@ -113,6 +104,15 @@
     </ClCompile>
     <ClCompile Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
       <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="AthruRect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Mesh.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcessor.cpp">
+      <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -197,19 +197,10 @@
     <ClInclude Include="SubChunk.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Bloom.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DepthOfField.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TexturedRasterizer.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Vertex.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AthruTexture.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PlanarUnwrapper.h">
@@ -219,9 +210,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="TextureManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="DirectionalLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SpotLight.h">
@@ -239,9 +227,23 @@
     <ClInclude Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h">
       <Filter>Third Party</Filter>
     </ClInclude>
+    <ClInclude Include="AthruRect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Mesh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AthruTexture2D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Colorizer.hlsl" />
     <FxCompile Include="VertPlotter.hlsl" />
+    <FxCompile Include="PostVertPlotter.hlsl" />
+    <FxCompile Include="PostColorizer.hlsl" />
   </ItemGroup>
 </Project>

@@ -51,35 +51,73 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 	assert(SUCCEEDED(result));
 
 	// Store texture locations
-	textureLocations[(byteUnsigned)AVAILABLE_TEXTURES::BLANK_WHITE] = L"baseTex.bmp";
+	textureLocations[(byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE] = L"baseTex.bmp";
 
-	// Build textures
+	// Build external textures
 	byteUnsigned i = 0;
-	while (i < (byteUnsigned)AVAILABLE_TEXTURES::NULL_TEXTURE)
+	while (i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE)
 	{
 		result = DirectX::CreateWICTextureFromFile(d3dDevice, textureLocations[i],
-												   (ID3D11Resource**)(&(availableTextures[i].raw)), &(availableTextures[i].asShaderResource),
-												   MAX_TEXTURE_SIZE);
+												   (ID3D11Resource**)(&(availableExternalTextures[i].raw)), &(availableExternalTextures[i].asShaderResource),
+												   MAX_TEXTURE_SIZE_2D);
 
 		assert(SUCCEEDED(result));
 		i += 1;
 	}
+
+	// Build internal textures
+
+	// Create post-processing texture description
+	D3D11_TEXTURE2D_DESC screenTextureDesc;
+	screenTextureDesc.Width = DISPLAY_WIDTH;
+	screenTextureDesc.Height = DISPLAY_HEIGHT;
+	screenTextureDesc.MipLevels = 1;
+	screenTextureDesc.ArraySize = 1;
+	screenTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	screenTextureDesc.SampleDesc.Count = 1;
+	screenTextureDesc.SampleDesc.Quality = 0;
+	screenTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	screenTextureDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+	screenTextureDesc.CPUAccessFlags = 0;
+	screenTextureDesc.MiscFlags = 0;
+
+	// Build raw post-processing texture
+	byteUnsigned screenTextureID = (byteUnsigned)AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE;
+	result = d3dDevice->CreateTexture2D(&screenTextureDesc, nullptr, &(availableInternalTextures[screenTextureID].raw));
+	assert(SUCCEEDED(result));
+
+	// Extract a shader-friendly resource view from the generated texture
+	result = d3dDevice->CreateShaderResourceView(availableInternalTextures[screenTextureID].raw, nullptr, &(availableInternalTextures[screenTextureID].asShaderResource));
+	assert(SUCCEEDED(result));
 }
 
 TextureManager::~TextureManager()
 {
 	byteUnsigned i = 0;
-	while (i < (byteUnsigned)AVAILABLE_TEXTURES::NULL_TEXTURE)
+	while (i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE)
 	{
-		availableTextures[i].raw->Release();
-		availableTextures[i].asShaderResource->Release();
+		availableExternalTextures[i].raw->Release();
+		availableExternalTextures[i].asShaderResource->Release();
 		i += 1;
+	}
+
+	byteUnsigned j = 0;
+	while (j < (byteUnsigned)AVAILABLE_INTERNAL_TEXTURES::NULL_TEXTURE)
+	{
+		availableExternalTextures[j].raw->Release();
+		availableExternalTextures[j].asShaderResource->Release();
+		j += 1;
 	}
 }
 
-AthruTexture& TextureManager::GetTexture(AVAILABLE_TEXTURES textureID)
+AthruTexture2D& TextureManager::GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES textureID)
 {
-	return availableTextures[(byteUnsigned)textureID];
+	return availableExternalTextures[(byteUnsigned)textureID];
+}
+
+AthruTexture2D& TextureManager::GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES textureID)
+{
+	return availableInternalTextures[(byteUnsigned)textureID];
 }
 
 // Push constructions for this class through Athru's custom allocator

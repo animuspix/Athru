@@ -43,9 +43,9 @@ Critter::Critter()
 
 	// Construct [critterMaterialData] with the properties extracted above
 	critterMaterialData = Material(Sound(soundFreq, soundAmp),
-								   Luminance(0.0f, AVAILABLE_LIGHTING_SHADERS::POINT_LIGHT),
+								   Luminance(0.0f, AVAILABLE_ILLUMINATION_TYPES::POINT),
 								   redColorChannel, greenColorChannel, blueColorChannel, alphaColorChannel,
-								   0.8f, 0.3f, AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER, ServiceCentre::AccessTextureManager()->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE));
+								   0.8f, 0.3f, AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER, ServiceCentre::AccessTextureManager()->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE));
 
 	// Extract torso position from the critter file
 

@@ -1,0 +1,128 @@
+#include "ServiceCentre.h"
+#include "AthruRect.h"
+
+AthruRect::AthruRect(ID3D11Device* d3dDevice)
+{
+	// Long integer used to represent success/failure for different DirectX operations
+	HRESULT result;
+
+	// Store the given material
+	material = Material();
+	material.SetTexture(ServiceCentre::AccessTextureManager()->GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE));
+
+	// Create a render-target-view from the texture set above
+	d3dDevice->CreateRenderTargetView(material.GetTexture().raw, nullptr, &renderTarget);
+
+	// Cache the color associated with [this]
+	DirectX::XMFLOAT4 vertColor = material.GetColorData();
+
+	// Cache the roughness and reflectiveness associated with [this]
+	float vertRoughness = material.GetRoughness();
+	float vertReflectiveness = material.GetReflectiveness();
+
+	// Store min bounding cube position, max bounding cube position, and the difference (range) between them
+	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-0.5f, -0.5f, -0.5f, 1);
+	DirectX::XMFLOAT4 maxBoundingPos = DirectX::XMFLOAT4(0.5f, 0.5f, -0.5f, 1);
+	DirectX::XMFLOAT4 boundingRange = DirectX::XMFLOAT4(maxBoundingPos.x - minBoundingPos.x,
+														maxBoundingPos.y - minBoundingPos.y,
+														maxBoundingPos.z - minBoundingPos.z, 1);
+
+	// Generate + cache vertex positions
+	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4(0.5f, 0.5f, 0.0f, 1); // Front plane, upper left (v0)
+	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(-0.5f, 0.5f, 0.0f, 1); // Front plane, upper right (v1)
+	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.0f, 1); // Front plane, lower left (v2)
+	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(0.5f, -0.5f, 0.0f, 1); // Front plane, lower right (v3)
+
+	// Initialise vertices
+	Vertex vertices[3] = { Vertex(vert0Pos, // Upper left (v0)
+								  vertColor,
+								  NormalBuilder::ForRegular(vert0Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos),
+								  vertRoughness,
+								  vertReflectiveness),
+
+						   Vertex(vert1Pos, // Upper right (v1)
+								  vertColor,
+								  NormalBuilder::ForRegular(vert1Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos),
+								  vertRoughness,
+								  vertReflectiveness),
+
+						   Vertex(vert2Pos, // Lower left (v2)
+								  vertColor,
+								  NormalBuilder::ForRegular(vert2Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
+								  vertRoughness,
+								  vertReflectiveness) };
+
+						 //  Vertex(vert3Pos, // Lower right (v3)
+						 // 		  vertColor,
+						 // 		  NormalBuilder::ForRegular(vert3Pos),
+						 // 		  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos),
+						 // 		  vertRoughness,
+						 // 		  vertReflectiveness) };
+
+	// Initialise indices
+	// Each set of three values is one triangle
+	long indices[/*ATHRU_RECT_INDEX_COUNT*/3] = { 0,
+										     1,
+										     2,
+
+										     /*2,*/
+										     /*1,*/
+										     /*3 */};
+
+
+	// Set up the description of the static vertex buffer
+	D3D11_BUFFER_DESC vertBufferDesc;
+	vertBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	vertBufferDesc.ByteWidth = sizeof(Vertex) * 8;
+	vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	vertBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	vertBufferDesc.MiscFlags = 0;
+	vertBufferDesc.StructureByteStride = 0;
+
+	// Place a reference to the vertices in a subresource structure
+	D3D11_SUBRESOURCE_DATA vertData;
+	vertData.pSysMem = vertices;
+	vertData.SysMemPitch = 0;
+	vertData.SysMemSlicePitch = 0;
+
+	// Create the vertex buffer
+	result = d3dDevice->CreateBuffer(&vertBufferDesc, &vertData, &vertBuffer);
+
+	// Set up the description of the static index buffer
+	D3D11_BUFFER_DESC indexBufferDesc;
+	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	indexBufferDesc.ByteWidth = sizeof(unsigned long) * BOXECULE_INDEX_COUNT;
+	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	indexBufferDesc.CPUAccessFlags = 0;
+	indexBufferDesc.MiscFlags = 0;
+	indexBufferDesc.StructureByteStride = 0;
+
+	// Place a reference to the vertex indices in a subresource structure
+	D3D11_SUBRESOURCE_DATA indexData;
+	indexData.pSysMem = indices;
+	indexData.SysMemPitch = 0;
+	indexData.SysMemSlicePitch = 0;
+
+	// Create the index buffer
+	result = d3dDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
+
+	// Check if anything failed during the geometry setup
+	assert(SUCCEEDED(result));
+
+	// Initialise the scale, rotation, and position of [this]
+	transformations = SQT();
+}
+
+AthruRect::~AthruRect()
+{
+	// Release the render target view
+	renderTarget->Release();
+}
+
+ID3D11RenderTargetView* AthruRect::GetRenderTarget()
+{
+	return renderTarget;
+}

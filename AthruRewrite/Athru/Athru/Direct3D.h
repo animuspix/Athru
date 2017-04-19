@@ -16,15 +16,14 @@ class Direct3D
 		Direct3D(HWND hwnd);
 		~Direct3D();
 
-		// Begin a draw session (wipe the screen and clear the depth buffer)
-		void BeginScene();
+		// Begin a draw session (flush the render texture and clear the depth buffer)
+		void BeginScene(ID3D11RenderTargetView* renderTarget);
+
+		// Begin post processing (flush the default render target and clear the depth buffer)
+		void BeginPost();
 
 		// End a draw session (publish to the screen and close the draw buffer)
 		void EndScene();
-
-		// Reset the render target to the window after render-to-texture
-		// operations have completed
-		void ResetRenderTargets();
 
 		// Retrieve the device/device context
 		ID3D11Device* GetDevice();
@@ -57,7 +56,7 @@ class Direct3D
 		IDXGISwapChain* swapChain;
 		ID3D11Device* device;
 		ID3D11DeviceContext* deviceContext;
-		ID3D11RenderTargetView* renderTargetView;
+		ID3D11RenderTargetView* defaultRenderTarget;
 		ID3D11Texture2D* depthStencilBuffer;
 		ID3D11DepthStencilState* depthStencilState;
 		ID3D11DepthStencilView* depthStencilView;
