@@ -28,6 +28,7 @@ class Direct3D;
 class Camera;
 class Material;
 class Boxecule;
+class DemoMeshImport;
 class AthruRect;
 class Chunk;
 class SubChunk;
@@ -126,4 +127,7 @@ class RenderManager
 		// Shader storage
 		Rasterizer* rasterizer;
 		PostProcessor* postProcessor;
+
+		// Storage for temporary demo mesh
+		DemoMeshImport* tempExternalMesh;
 };

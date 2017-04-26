@@ -173,6 +173,7 @@
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Critter.cpp" />
+    <ClCompile Include="DemoMeshImport.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="Planet.cpp" />
     <ClCompile Include="PointLight.cpp" />
@@ -188,7 +189,6 @@
     <ClCompile Include="Logger.cpp" />
     <ClCompile Include="Material.cpp" />
     <ClCompile Include="Sound.cpp" />
-    <ClCompile Include="SpotLight.cpp" />
     <ClCompile Include="StackAllocator.cpp" />
     <ClCompile Include="ServiceCentre.cpp" />
     <ClCompile Include="Boxecule.cpp" />
@@ -206,6 +206,7 @@
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Chunk.h" />
     <ClInclude Include="Critter.h" />
+    <ClInclude Include="DemoMeshImport.h" />
     <ClInclude Include="Luminance.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="NormalBuilder.h" />

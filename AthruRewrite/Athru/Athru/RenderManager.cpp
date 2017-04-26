@@ -9,6 +9,7 @@
 
 // Generic objects relevant to [this]
 #include "Boxecule.h"
+#include "DemoMeshImport.h"
 #include "Camera.h"
 
 // The header containing declarations used by [this]
@@ -47,6 +48,12 @@ RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device
 
 	coreBoxeculeDispatch[0] = &RenderManager::BoxeculeDiscard;
 	coreBoxeculeDispatch[1] = &RenderManager::BoxeculeCache;
+
+	// Build temporary imported mesh
+	tempExternalMesh = new DemoMeshImport(d3dDevice);
+
+	// Translate the imported mesh so it sits outside of the boxecule cube
+	tempExternalMesh->FetchTransformations().pos = _mm_set_ps(1, 0, CHUNK_WIDTH * 2, 0);
 }
 
 RenderManager::~RenderManager()
@@ -55,6 +62,10 @@ RenderManager::~RenderManager()
 	rasterizer->~Rasterizer();
 	rasterizer = nullptr;
 
+	// Delete heap-allocated data within the post-processing shader
+	postProcessor->~PostProcessor();
+	postProcessor = nullptr;
+
 	// Delete visible-light array
 	delete visibleLights;
 	visibleLights = nullptr;
@@ -62,6 +73,14 @@ RenderManager::~RenderManager()
 	// Delete the render queue, then send it to [nullptr]
 	delete renderQueue;
 	renderQueue = nullptr;
+
+	// Delete the external mesh, then send it to [nullptr]
+	delete tempExternalMesh;
+	tempExternalMesh = nullptr;
+
+	// Flush any pipeline data associated with [this]
+	//ServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->ClearState();
+	//ServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->Flush();
 }
 
 void RenderManager::RasterizerRender(Material& renderableMaterial, Material& directionalMaterial,
@@ -198,7 +217,7 @@ void RenderManager::Render(Camera* mainCamera,
 		}
 	}
 
-	// Render each boxecule in the render queue
+	// Render each boxecule in the render queue (+ the external mesh)
 	DirectX::XMVECTOR& cameraPos = mainCamera->GetTranslation();
 	if (directionalCount > 0)
 	{
@@ -214,6 +233,15 @@ void RenderManager::Render(Camera* mainCamera,
 							 deviceContext,
 							 BOXECULE_INDEX_COUNT);
 		}
+
+		tempExternalMesh->PassToGPU(deviceContext);
+		RasterizerRender(tempExternalMesh->GetMaterial(), directionalMaterials[0], pointMaterials, spotMaterials,
+						 DirectX::XMVector3Transform(directionalLightPositions[0], world), directionalLightRotationQtns[0],
+						 pointLightPositions, pointLightRotationQtns, pointCount,
+						 spotLightPositions, spotLightRotationQtns, spotCount,
+						 world * tempExternalMesh->GetTransform(), view, projection,
+						 deviceContext,
+						 tempExternalMesh->GetIndexCount());
 	}
 
 	// Nothing left to draw on this pass, so zero the length of the render queue

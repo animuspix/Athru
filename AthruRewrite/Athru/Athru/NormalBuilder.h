@@ -5,7 +5,7 @@
 
 struct NormalBuilder
 {
-	static DirectX::XMFLOAT4 ForRegular(DirectX::XMFLOAT4 coreVert)
+	static DirectX::XMFLOAT4 BuildNormal(DirectX::XMFLOAT4 coreVert)
 	{
 		// All regular forms can be defined as subsets of the unit sphere
 		// Points on the sphere (if defined relative to the origin) are

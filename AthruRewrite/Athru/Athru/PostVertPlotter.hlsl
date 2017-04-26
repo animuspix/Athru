@@ -3,16 +3,19 @@ cbuffer MatBuffer
     matrix world;
     matrix view;
     matrix projection;
+    float4 animTimeStep;
 };
 
 struct Vertex
 {
     float4 pos : POSITION0;
+    float4 targPos : POSITION1;
     float4 color : COLOR0;
+    float4 targColor : COLOR1;
     float4 normal : NORMAL0;
     float2 texCoord : TEXCOORD0;
-    float grain : COLOR1;
-    float reflectFactor : COLOR2;
+    float grain : COLOR2;
+    float reflectFactor : COLOR3;
 };
 
 struct Pixel
@@ -42,9 +45,10 @@ Pixel main(Vertex vertIn)
     // parent space and sits inside the window's viewport,
     // then store the results within the output [Pixel]'s
     // position property
-    pixOut.pos = vertWorldPos;
-    pixOut.pos = mul(pixOut.pos, view);
-    pixOut.pos = mul(pixOut.pos, projection);
+    //pixOut.pos = vertIn.pos; //vertWorldPos;
+    //pixOut.pos = mul(pixOut.pos, view);
+    //pixOut.pos = mul(pixOut.pos, projection);
+    pixOut.pos = vertIn.pos; // No real reason to animate the screen-rect atm
 
     // No need to persist color since we're getting all our
     // base color information from the screen texture; initialise

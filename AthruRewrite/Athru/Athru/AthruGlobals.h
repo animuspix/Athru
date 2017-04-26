@@ -1,6 +1,10 @@
 #pragma once
 
 #include <chrono>
+#include <type_traits>
+#include <typeinfo>
+#include <directxmath.h>
+#include <math.h>
 #include "Typedefs.h"
 
 namespace TimeStuff
@@ -22,5 +26,16 @@ namespace TimeStuff
 	inline twoByteUnsigned FPS()
 	{
 		return (twoByteUnsigned)(1.0f / deltaTime());
+	}
+}
+
+namespace MathsStuff
+{
+	inline float sisdVectorMagnitude(DirectX::XMFLOAT4 sisdVector)
+	{
+		float sqrX = sisdVector.x * sisdVector.x;
+		float sqrY = sisdVector.y * sisdVector.y;
+		float sqrZ = sisdVector.z * sisdVector.z;
+		return sqrt(sqrX + sqrY + sqrZ);
 	}
 }

@@ -1,3 +1,4 @@
+#include "ServiceCentre.h"
 #include "AthruRect.h"
 #include "PostProcessor.h"
 
@@ -47,7 +48,7 @@ PostProcessor::~PostProcessor()
 }
 
 void PostProcessor::Render(ID3D11DeviceContext* deviceContext,
-						   DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
+	DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	// Call the base parameter setter to initialise the vertex shader's matrix cbuffer
 	// with the world/view/projection matrices
@@ -59,6 +60,16 @@ void PostProcessor::Render(ID3D11DeviceContext* deviceContext,
 	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
-	// Render the newest boxecule on the pipeline with [this]
-	Shader::RenderShader(deviceContext, 3);
+	// The object shader stores lighting data in a constant buffer that might still
+	// be on the pipeline; explicitly nullify it here
+	ID3D11Buffer* nullBuffer = nullptr;
+	deviceContext->PSSetConstantBuffers(0, 1, &nullBuffer);
+
+	// Render the screen-rect with [this]
+	Shader::RenderShader(deviceContext, ATHRU_RECT_INDEX_COUNT);
+
+	// Resources can't be render targets and shader resources simultaneously,
+	// so un-bind the post-processing texture here
+	ID3D11ShaderResourceView* nullSRV = nullptr;
+	deviceContext->PSSetShaderResources(0, 1, &nullSRV);
 }

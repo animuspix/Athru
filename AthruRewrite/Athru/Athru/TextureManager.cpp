@@ -52,6 +52,7 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 
 	// Store texture locations
 	textureLocations[(byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE] = L"baseTex.bmp";
+	textureLocations[(byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::IMPORTED_MESH_TEXTURE] = L"importedMeshTexture.bmp";
 
 	// Build external textures
 	byteUnsigned i = 0;
@@ -97,15 +98,22 @@ TextureManager::~TextureManager()
 	while (i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE)
 	{
 		availableExternalTextures[i].raw->Release();
+		availableExternalTextures[i].raw = nullptr;
+
 		availableExternalTextures[i].asShaderResource->Release();
+		availableExternalTextures[i].asShaderResource = nullptr;
 		i += 1;
 	}
 
 	byteUnsigned j = 0;
 	while (j < (byteUnsigned)AVAILABLE_INTERNAL_TEXTURES::NULL_TEXTURE)
 	{
-		availableExternalTextures[j].raw->Release();
-		availableExternalTextures[j].asShaderResource->Release();
+		availableInternalTextures[j].raw->Release();
+		availableInternalTextures[j].raw = nullptr;
+
+		availableInternalTextures[j].asShaderResource->Release();
+		availableInternalTextures[j].asShaderResource = nullptr;
+
 		j += 1;
 	}
 }

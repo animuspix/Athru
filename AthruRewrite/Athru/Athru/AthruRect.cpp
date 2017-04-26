@@ -6,7 +6,7 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
-	// Store the given material
+	// Assign a default material
 	material = Material();
 	material.SetTexture(ServiceCentre::AccessTextureManager()->GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE));
 
@@ -21,62 +21,74 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	float vertReflectiveness = material.GetReflectiveness();
 
 	// Store min bounding cube position, max bounding cube position, and the difference (range) between them
-	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-0.5f, -0.5f, -0.5f, 1);
-	DirectX::XMFLOAT4 maxBoundingPos = DirectX::XMFLOAT4(0.5f, 0.5f, -0.5f, 1);
+	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.1f, 1);
+	DirectX::XMFLOAT4 maxBoundingPos = DirectX::XMFLOAT4(0.5f, 0.5f, 0.1f, 1);
 	DirectX::XMFLOAT4 boundingRange = DirectX::XMFLOAT4(maxBoundingPos.x - minBoundingPos.x,
 														maxBoundingPos.y - minBoundingPos.y,
 														maxBoundingPos.z - minBoundingPos.z, 1);
 
 	// Generate + cache vertex positions
-	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4(0.5f, 0.5f, 0.0f, 1); // Front plane, upper left (v0)
-	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(-0.5f, 0.5f, 0.0f, 1); // Front plane, upper right (v1)
-	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.0f, 1); // Front plane, lower left (v2)
-	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(0.5f, -0.5f, 0.0f, 1); // Front plane, lower right (v3)
+	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4(0.5f, 0.5f, -0.5f, 1.0f); // Front plane, upper left (v0)
+	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(-0.5f, 0.5f, -0.5f, 1.0f); // Front plane, upper right (v1)
+	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4(0.5f, -0.5f, -0.5f, 1.0f); // Front plane, lower left (v2)
+	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, -0.5f, 1.0f); // Front plane, lower right (v3)
 
 	// Initialise vertices
-	Vertex vertices[3] = { Vertex(vert0Pos, // Upper left (v0)
+	Vertex vertices[4] = { Vertex(vert0Pos, // Upper left (v0)
+								  vert0Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert0Pos),
+								  vertColor,
+								  NormalBuilder::BuildNormal(vert0Pos),
+								  NormalBuilder::BuildNormal(vert0Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert1Pos, // Upper right (v1)
+								  vert1Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert1Pos),
+								  vertColor,
+								  NormalBuilder::BuildNormal(vert1Pos),
+								  NormalBuilder::BuildNormal(vert0Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert2Pos, // Lower left (v2)
+								  vert2Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert2Pos),
+								  vertColor,
+								  NormalBuilder::BuildNormal(vert2Pos),
+								  NormalBuilder::BuildNormal(vert0Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
 								  vertRoughness,
-								  vertReflectiveness) };
+								  vertReflectiveness),
 
-						 //  Vertex(vert3Pos, // Lower right (v3)
-						 // 		  vertColor,
-						 // 		  NormalBuilder::ForRegular(vert3Pos),
-						 // 		  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos),
-						 // 		  vertRoughness,
-						 // 		  vertReflectiveness) };
+						   Vertex(vert3Pos, // Lower right (v3)
+								  vert3Pos,
+						  		  vertColor,
+								  vertColor,
+						  		  NormalBuilder::BuildNormal(vert3Pos),
+								  NormalBuilder::BuildNormal(vert0Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos),
+						  		  vertRoughness,
+						  		  vertReflectiveness) };
 
 	// Initialise indices
 	// Each set of three values is one triangle
-	long indices[/*ATHRU_RECT_INDEX_COUNT*/3] = { 0,
+	long indices[ATHRU_RECT_INDEX_COUNT] = { 0,
 										     1,
 										     2,
 
-										     /*2,*/
-										     /*1,*/
-										     /*3 */};
+										     2,
+										     3,
+										     1 };
 
 
 	// Set up the description of the static vertex buffer
 	D3D11_BUFFER_DESC vertBufferDesc;
 	vertBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	vertBufferDesc.ByteWidth = sizeof(Vertex) * 8;
+	vertBufferDesc.ByteWidth = sizeof(Vertex) * 4;
 	vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	vertBufferDesc.MiscFlags = 0;
@@ -94,7 +106,7 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	// Set up the description of the static index buffer
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	indexBufferDesc.ByteWidth = sizeof(unsigned long) * BOXECULE_INDEX_COUNT;
+	indexBufferDesc.ByteWidth = sizeof(unsigned long) * ATHRU_RECT_INDEX_COUNT;
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.CPUAccessFlags = 0;
 	indexBufferDesc.MiscFlags = 0;

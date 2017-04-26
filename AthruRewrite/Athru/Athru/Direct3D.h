@@ -61,6 +61,7 @@ class Direct3D
 		ID3D11DepthStencilState* depthStencilState;
 		ID3D11DepthStencilView* depthStencilView;
 		ID3D11RasterizerState* rasterState;
+		ID3D11Debug* debugDevice;
 
 		// Transformation matrices to convert data to a perspective 2D
 		// projection or orthographic (flat 2D) projection

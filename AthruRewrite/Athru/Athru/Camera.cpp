@@ -52,7 +52,7 @@ Camera::Camera(ID3D11Device* d3dDevice)
 
 Camera::~Camera()
 {
-
+	viewfinder->~AthruRect();
 }
 
 void Camera::Translate(DirectX::XMVECTOR displacement)

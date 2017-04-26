@@ -35,57 +35,81 @@ Boxecule::Boxecule(Material boxeculeMaterial)
 
 	// Initialise vertices
 	Vertex vertices[8] = { Vertex(vert0Pos, // Front plane, upper left (v0)
+								  vert0Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert0Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert0Pos),
+								  NormalBuilder::BuildNormal(vert0Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert1Pos, // Front plane, upper right (v1)
+								  vert1Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert1Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert1Pos),
+								  NormalBuilder::BuildNormal(vert1Pos),
 							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert2Pos, // Front plane, lower left (v2)
+								  vert2Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert2Pos),
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert2Pos),
+								  NormalBuilder::BuildNormal(vert2Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert3Pos, // Front plane, lower right (v3)
+								  vert3Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert3Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert3Pos),
+								  NormalBuilder::BuildNormal(vert3Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert4Pos, // Back plane, lower right (v4)
+								  vert4Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert4Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert4Pos),
+								  NormalBuilder::BuildNormal(vert4Pos),
 							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert4Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert5Pos, // Back plane, upper right (v5)
+								  vert5Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert5Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert5Pos),
+								  NormalBuilder::BuildNormal(vert5Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert5Pos),
 							      vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert6Pos, // Back plane, upper left (v6)
+								  vert6Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert6Pos),
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert6Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert6Pos),
+								  NormalBuilder::BuildNormal(vert6Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert6Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert7Pos, // Back plane, lower left (v7)
+								  vert7Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert7Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert7Pos),
+								  NormalBuilder::BuildNormal(vert7Pos),
 							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert7Pos),
 								  vertRoughness,
 								  vertReflectiveness) };

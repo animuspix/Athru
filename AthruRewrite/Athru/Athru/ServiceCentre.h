@@ -9,8 +9,8 @@
 #include "RenderManager.h"
 #include "Graphics.h"
 #include "SceneManager.h"
-#include "PlanarUnwrapper.h"
 #include "NormalBuilder.h"
+#include "PlanarUnwrapper.h"
 #include "AthruGlobals.h"
 
 class ServiceCentre

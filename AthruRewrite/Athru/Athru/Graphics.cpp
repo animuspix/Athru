@@ -24,6 +24,17 @@ void Graphics::FetchDependencies()
 
 Graphics::~Graphics()
 {
+	// Flush any pipeline data associated with [this]
+	d3D->GetDeviceContext()->ClearState();
+	d3D->GetDeviceContext()->Flush();
+
+	// Call the camera object's destructor (although most of it's
+	// data is tracked and controlled by [StackAllocator], some
+	// stuff (e.g. the render target associated with [viewfinder])
+	// is controlled by the system and must be cleared manually)
+	camera->~Camera();
+
+	// Release the Direct3D handler class
 	delete d3D;
 	d3D = nullptr;
 }
@@ -69,7 +80,7 @@ void Graphics::Frame()
 	}
 
 	// Rotate the camera with mouse input
-	//camera->MouseLook(localInput);
+	camera->MouseLook(localInput);
 
 	// Update the camera's view matrix to
 	// reflect the translation + rotation above
