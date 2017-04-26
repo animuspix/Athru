@@ -4,7 +4,7 @@
 #include "MathIncludes.h"
 
 #define AMBIENT_DIFFUSE_RATIO 0.4f
-#define SPOT_CUTOFF_RADIANS PI / 2
+#define SPOT_CUTOFF_RADIANS PI / 8
 
 class Rasterizer : public Shader
 {

@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "MathIncludes.h"
-#include "typedefs.h"
+#include "Typedefs.h"
+#include "ServiceCentre.h"
 #include "Graphics.h"
 #include "Direct3D.h"
 
@@ -80,10 +81,16 @@ Direct3D::Direct3D(HWND hwnd)
 	// Instantiate the swap chain, Direct3D device, and Direct3D device context
 	deviceContext = nullptr;
 	swapChain = nullptr;
-	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, 0, &featureLevel, 1,
+	result = D3D11CreateDeviceAndSwapChain(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, &featureLevel, 1,
 										   D3D11_SDK_VERSION, &swapChainDesc, &swapChain, &device, NULL, &deviceContext);
 
 	assert(SUCCEEDED(result));
+
+	// Set up the DirectX debug layer
+	debugDevice = nullptr;
+	result = device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debugDevice));
+	debugDevice->Release();
+	assert(SUCCEEDED(result));;
 
 	// Cache the address of the back buffer
 	ID3D11Texture2D* backBufferPtr;
@@ -93,7 +100,7 @@ Direct3D::Direct3D(HWND hwnd)
 	// in [nullptr] (the program isn't allowed to de-reference null pointers, so the best
 	// way to stop that from happening is to stamp out )
 	assert(backBufferPtr != nullptr);
-	result = device->CreateRenderTargetView(backBufferPtr, NULL, &renderTargetView);
+	result = device->CreateRenderTargetView(backBufferPtr, NULL, &defaultRenderTarget);
 
 	// No more need for a pointer to the back buffer, so release it
 	backBufferPtr->Release();
@@ -174,7 +181,7 @@ Direct3D::Direct3D(HWND hwnd)
 	assert(SUCCEEDED(result));
 
 	// Send the render target view and depth stencil buffer into the output render pipeline
-	deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
+	deviceContext->OMSetRenderTargets(1, &defaultRenderTarget, depthStencilView);
 
 	// Struct containing a description of the rasterizer state
 	D3D11_RASTERIZER_DESC rasterDesc;
@@ -201,23 +208,27 @@ Direct3D::Direct3D(HWND hwnd)
 	deviceContext->RSSetState(rasterState);
 
 	// Setup alpha blending description
-	D3D11_BLEND_DESC BlendState;
-	ZeroMemory(&BlendState, sizeof(D3D11_BLEND_DESC));
-	BlendState.RenderTarget[0].BlendEnable = TRUE;
-	BlendState.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
-	BlendState.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
-	BlendState.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
-	BlendState.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
-	BlendState.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
-	BlendState.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
-	BlendState.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
+	D3D11_BLEND_DESC blendStateDesc;
+	ZeroMemory(&blendStateDesc, sizeof(D3D11_BLEND_DESC));
+	blendStateDesc.RenderTarget[0].BlendEnable = TRUE;
+	blendStateDesc.RenderTarget[0].SrcBlend = D3D11_BLEND_SRC_ALPHA;
+	blendStateDesc.RenderTarget[0].DestBlend = D3D11_BLEND_INV_SRC_ALPHA;
+	blendStateDesc.RenderTarget[0].BlendOp = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].SrcBlendAlpha = D3D11_BLEND_ONE;
+	blendStateDesc.RenderTarget[0].DestBlendAlpha = D3D11_BLEND_ZERO;
+	blendStateDesc.RenderTarget[0].BlendOpAlpha = D3D11_BLEND_OP_ADD;
+	blendStateDesc.RenderTarget[0].RenderTargetWriteMask = D3D11_COLOR_WRITE_ENABLE_ALL;
 
 	// Instantiate the blend state
-	ID3D11BlendState* g_pBlendStateBlending = NULL;
-	device->CreateBlendState(&BlendState, &g_pBlendStateBlending);
+	ID3D11BlendState* blendState = NULL;
+	device->CreateBlendState(&blendStateDesc, &blendState);
 
 	// Match the internal blend state to the blend state instantiated above
-	deviceContext->OMSetBlendState(g_pBlendStateBlending, NULL, 0xffffffff);
+	deviceContext->OMSetBlendState(blendState, NULL, 0xffffffff);
+
+	// The blend-state's been set inside the device context, so release
+	// the original
+	blendState->Release();
 
 	// Struct representing a DirectX11 viewport
 	D3D11_VIEWPORT viewport;
@@ -248,9 +259,6 @@ Direct3D::Direct3D(HWND hwnd)
 
 Direct3D::~Direct3D()
 {
-	// Set the application to windowed mode; otherwise, releasing the swap chain throws an exception
-	//swapChain->SetFullscreenState(false, NULL);
-
 	rasterState->Release();
 	rasterState = nullptr;
 
@@ -263,26 +271,52 @@ Direct3D::~Direct3D()
 	depthStencilBuffer->Release();
 	depthStencilBuffer = nullptr;
 
-	renderTargetView->Release();
-	renderTargetView = nullptr;
+	defaultRenderTarget->Release();
+	defaultRenderTarget = nullptr;
 
+	deviceContext->Flush();
+	deviceContext->ClearState();
 	deviceContext->Release();
 	deviceContext = nullptr;
 
-	device->Release();
-	device = nullptr;
-
 	swapChain->Release();
 	swapChain = nullptr;
+
+	// Memory is shared between the debug-device and the core
+	// DirectX device object, so only one should be released
+	// during engine shutdown
+	debugDevice->Release();
+	debugDevice = nullptr;
+
+	//device->Release();
+	//device = nullptr;
 }
 
-void Direct3D::BeginScene()
+void Direct3D::BeginScene(ID3D11RenderTargetView* renderTargetTexture)
 {
+	// Pass the given render target onto the GPU
+	deviceContext->OMSetRenderTargets(1, &renderTargetTexture, depthStencilView);
+
 	// The color to display before anything is drawn to the scene
 	float color[4] = { 0.0f, 0.6f, 0.6f, 1.0f };
 
 	// Clear the back buffer and flush the view with [color]
-	deviceContext->ClearRenderTargetView(renderTargetView, color);
+	deviceContext->ClearRenderTargetView(renderTargetTexture, color);
+
+	// Clear the depth buffer
+	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
+}
+
+void Direct3D::BeginPost()
+{
+	// Pass the default render target back onto the GPU
+	deviceContext->OMSetRenderTargets(1, &defaultRenderTarget, depthStencilView);
+
+	// The color to display before anything is drawn to the scene
+	float color[4] = { 0.6f, 0.0f, 0.6f, 1.0f };
+
+	// Clear the back buffer and flush the view with [color]
+	deviceContext->ClearRenderTargetView(defaultRenderTarget, color);
 
 	// Clear the depth buffer
 	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
@@ -290,19 +324,13 @@ void Direct3D::BeginScene()
 
 void Direct3D::EndScene()
 {
-	// Finish the rendering pass by displaying the
-	// buffered draw data
+	// Finish the rendering pass by displaying the buffered draw data
 	// If vsync is enabled (read: equal to [true] or [1]), present the data
 	// in sync with the screen refresh rate
 	//
 	// If vsync is disabled (read: equal to [false] or [0]), present it as
 	// fast as possible
 	swapChain->Present(VSYNC_ENABLED, 0);
-}
-
-void Direct3D::ResetRenderTargets()
-{
-	deviceContext->OMSetRenderTargets(1, &renderTargetView, depthStencilView);
 }
 
 ID3D11Device* Direct3D::GetDevice()

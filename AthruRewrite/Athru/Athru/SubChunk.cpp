@@ -30,7 +30,7 @@ SubChunk::SubChunk(Chunk* parent,
 		float alpha = (float)(index <= (SUB_CHUNKS_PER_CHUNK / 2) || i == 2);
 
 		// Minor color variance to show individual blocks within the plane
-		float red = 1.0f / (float)(rand() % 10);
+		float red = 1.0f / (float)((rand() % 10) + 1);
 		float green = 0.4f;
 		float blue = 0.4f;
 
@@ -41,7 +41,7 @@ SubChunk::SubChunk(Chunk* parent,
 		float illumIntensity = (((byteUnsigned)alpha) && (index > SUB_CHUNKS_PER_CHUNK / 2)) * (float)(1 / ((rand() % 10) + 1));
 
 		// Point lights on one side, spot-lights on the other
-		AVAILABLE_LIGHTING_SHADERS lightType = AVAILABLE_LIGHTING_SHADERS::POINT_LIGHT;//(AVAILABLE_LIGHTING_SHADERS)(((parentOffsetX < 0) + (2 * (parentOffsetX >= 0))));
+		AVAILABLE_ILLUMINATION_TYPES lightType = AVAILABLE_ILLUMINATION_TYPES::POINT;//(AVAILABLE_ILLUMINATION_TYPES)(((parentOffsetX < 0) + (2 * (parentOffsetX >= 0))));
 
 		// Construct illumination data from the values above
 		Luminance illumination = Luminance(illumIntensity, lightType);
@@ -61,15 +61,15 @@ SubChunk::SubChunk(Chunk* parent,
 		if ((index == (SUB_CHUNKS_PER_CHUNK - 1)) && (i == CHUNK_WIDTH / 2) && (parentOffsetX == 0 && parentOffsetZ == 0))
 		{
 			storedBoxecules[i] = new Boxecule(Material(Sound(0.5f, 0.5f),
-													   Luminance(0.8f, AVAILABLE_LIGHTING_SHADERS::DIRECTIONAL_LIGHT),
+													   Luminance(10.0f, AVAILABLE_ILLUMINATION_TYPES::DIRECTIONAL),
 													   1.0f, 1.0f, 1.0f, 1.0f,
 													   0.0f,
 													   0.0f,
 													   AVAILABLE_OBJECT_SHADERS::RASTERIZER,
-													   AthruTexture(ServiceCentre::AccessTextureManager()->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE))));
+													   textureManagerPttr->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE)));
 
 			// Rotate the pseudo-sun 22.5 degrees about [y]
-			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(22.5, 0, 0);
+			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(PI, 0, 0);
 		}
 
 		else if (testCritter != nullptr && i <= (testCritter->GetTorsoTransformations().pos.m128_f32[1]))
@@ -85,10 +85,10 @@ SubChunk::SubChunk(Chunk* parent,
 			storedBoxecules[i] = new Boxecule(Material(activeTone,
 												       illumination,
 												       red, green, blue, alpha,
-													   (1.0f / (float)(rand() % 10)) + 0.2f, // Randomize roughness to somewhere between 0.2f and 1.0f
-													   red, // Tie reflectiveness to the red channel
+													   0.8f,//(1.0f / (float)(rand() % 10) + 1) + 0.2f, // Randomize roughness to somewhere between 0.2f and 1.0f
+													   0.8f,//red, // Tie reflectiveness to the red channel
 												       AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER,
-												       textureManagerPttr->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE)));
+												       textureManagerPttr->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE)));
 
 			// Apply neutral rotation to non-sun boxecules
 			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
@@ -113,50 +113,6 @@ SubChunk::~SubChunk()
 
 	delete storedBoxecules;
 	storedBoxecules = nullptr;
-}
-
-bool SubChunk::GetVisibility(Camera* mainCamera)
-{
-	// Generate a 2D view triangle so we can check sub-chunk visibility
-	// without expensive frustum testing (sub-chunks are parallel to ZY
-	// anyways, so there's nothing really lost by only checking for
-	// intersections within that plane)
-
-	// Point/triangle culling algorithm found here:
-	// http://www.nerdparadise.com/math/pointinatriangle
-
-	// Cache camera position + rotation
-	DirectX::XMVECTOR cameraPos = mainCamera->GetTranslation();
-	DirectX::XMVECTOR cameraRotation = mainCamera->GetRotationQuaternion();
-
-	// Construct the view triangle
-	DirectX::XMVECTOR viewTriVertA = cameraPos;
-	DirectX::XMVECTOR viewTriVertB = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, tan(VERT_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR, 0)), cameraRotation);
-	DirectX::XMVECTOR viewTriVertC = DirectX::XMVector3Rotate(_mm_add_ps(viewTriVertA, _mm_set_ps(0, SCREEN_FAR, (tan(VERT_FIELD_OF_VIEW_RADS / 2) * SCREEN_FAR) * -1, 0)), cameraRotation);
-
-	// Test sub-chunk points against the view triangle
-	float crossProductMagnitudes[4][3];
-	for (byteUnsigned i = 0; i < 4; i += 1)
-	{
-		DirectX::XMVECTOR vectorDiffA = _mm_sub_ps(subChunkPoints[i], viewTriVertA);
-		DirectX::XMVECTOR vectorDiffB = _mm_sub_ps(viewTriVertB, viewTriVertA);
-		DirectX::XMVECTOR vectorDiffC = _mm_sub_ps(subChunkPoints[i], viewTriVertB);
-
-		DirectX::XMVECTOR vectorDiffD = _mm_sub_ps(viewTriVertC, viewTriVertB);
-		DirectX::XMVECTOR vectorDiffE = _mm_sub_ps(subChunkPoints[i], viewTriVertC);
-		DirectX::XMVECTOR vectorDiffF = _mm_sub_ps(viewTriVertA, viewTriVertC);
-
-		crossProductMagnitudes[i][0] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffA, vectorDiffB)));
-		crossProductMagnitudes[i][1] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffC, vectorDiffD)));
-		crossProductMagnitudes[i][2] = _mm_cvtss_f32(DirectX::XMVector3Length(DirectX::XMVector3Cross(vectorDiffE, vectorDiffF)));
-	}
-
-	// Return visibility
-	// (defined as whether any sub-chunk point is within the view triangle;
-	// see the algorithm link above for how that's evaluated)
-	return std::signbit(crossProductMagnitudes[0][0]) == std::signbit(crossProductMagnitudes[1][0]) == std::signbit(crossProductMagnitudes[2][0]) == std::signbit(crossProductMagnitudes[3][0]) ||
-		   std::signbit(crossProductMagnitudes[0][1]) == std::signbit(crossProductMagnitudes[1][1]) == std::signbit(crossProductMagnitudes[2][1]) == std::signbit(crossProductMagnitudes[3][1]) ||
-		   std::signbit(crossProductMagnitudes[0][2]) == std::signbit(crossProductMagnitudes[1][2]) == std::signbit(crossProductMagnitudes[2][2]) == std::signbit(crossProductMagnitudes[3][2]);
 }
 
 Boxecule** SubChunk::GetStoredBoxecules()

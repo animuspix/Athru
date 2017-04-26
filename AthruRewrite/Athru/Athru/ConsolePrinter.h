@@ -8,5 +8,5 @@ class ConsolePrinter
 		static void OutputText(std::ostringstream* cStringStream);
 
 	private:
-		static char outputString[1023];
+		static char outputString[8191];
 };

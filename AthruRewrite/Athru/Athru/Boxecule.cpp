@@ -35,57 +35,81 @@ Boxecule::Boxecule(Material boxeculeMaterial)
 
 	// Initialise vertices
 	Vertex vertices[8] = { Vertex(vert0Pos, // Front plane, upper left (v0)
+								  vert0Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert0Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert0Pos),
+								  NormalBuilder::BuildNormal(vert0Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert1Pos, // Front plane, upper right (v1)
+								  vert1Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert1Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert1Pos),
+								  NormalBuilder::BuildNormal(vert1Pos),
 							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert2Pos, // Front plane, lower left (v2)
+								  vert2Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert2Pos),
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert2Pos),
+								  NormalBuilder::BuildNormal(vert2Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert3Pos, // Front plane, lower right (v3)
+								  vert3Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert3Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert3Pos),
+								  NormalBuilder::BuildNormal(vert3Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert4Pos, // Back plane, lower right (v4)
+								  vert4Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert4Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert4Pos),
+								  NormalBuilder::BuildNormal(vert4Pos),
 							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert4Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert5Pos, // Back plane, upper right (v5)
+								  vert5Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert5Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert5Pos),
+								  NormalBuilder::BuildNormal(vert5Pos),
 								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert5Pos),
 							      vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert6Pos, // Back plane, upper left (v6)
+								  vert6Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert6Pos),
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert6Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert6Pos),
+								  NormalBuilder::BuildNormal(vert6Pos),
+								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert6Pos),
 								  vertRoughness,
 								  vertReflectiveness),
 
 						   Vertex(vert7Pos, // Back plane, lower left (v7)
+								  vert7Pos,
 								  vertColor,
-								  NormalBuilder::ForRegular(vert7Pos),
+								  DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 0.5f),
+								  NormalBuilder::BuildNormal(vert7Pos),
+								  NormalBuilder::BuildNormal(vert7Pos),
 							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert7Pos),
 								  vertRoughness,
 								  vertReflectiveness) };
@@ -187,74 +211,5 @@ Boxecule::Boxecule(Material boxeculeMaterial)
 
 Boxecule::~Boxecule()
 {
-	// Release the index buffer
-	indexBuffer->Release();
-	indexBuffer = 0;
-
-	// Release the vertex buffer
-	vertBuffer->Release();
-	vertBuffer = 0;
-}
-
-void Boxecule::PassToGPU(ID3D11DeviceContext* deviceContext)
-{
-	// Set vertex buffer stride and offset.
-	unsigned int stride = sizeof(Vertex);
-	unsigned int offset = 0;
-
-	// Set the vertex buffer to active in the input assembler so it can be rendered
-	deviceContext->IASetVertexBuffers(0, 1, &vertBuffer, &stride, &offset);
-
-	// Set the index buffer to active in the input assembler so it can be rendered
-	deviceContext->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
-
-	// Set the 2D primitive type used to create the boxecule; we're making one boxecule,
-	// so triangular primitives make the most sense :P
-	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-}
-
-void Boxecule::SetMaterial(Material& freshMaterial)
-{
-	material = freshMaterial;
-}
-
-Material& Boxecule::GetMaterial()
-{
-	return material;
-}
-
-SQT& Boxecule::FetchTransformations()
-{
-	return transformations;
-}
-
-DirectX::XMMATRIX Boxecule::GetTransform()
-{
-	return transformations.asMatrix();
-}
-
-// Push constructions for this class through Athru's custom allocator
-void* Boxecule::operator new(size_t size)
-{
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Boxecule>(), false);
-}
-
-// Push constructions for this class through Athru's custom allocator
-void* Boxecule::operator new[](size_t size)
-{
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Boxecule>(), false);
-}
-
-// We aren't expecting to use [delete], so overload it to do nothing
-void Boxecule::operator delete(void* target)
-{
-	return;
-}
-
-// We aren't expecting to use [delete[]], so overload it to do nothing
-void Boxecule::operator delete[](void* target)
-{
-	return;
+	// Destructions handled within [Mesh]
 }

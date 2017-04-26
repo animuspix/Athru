@@ -54,6 +54,10 @@ Rasterizer::~Rasterizer()
 	// Release the light-buffer
 	lightBufferPttr->Release();
 	lightBufferPttr = nullptr;
+
+	// Flush any pipeline data associated with [this]
+	//ServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->ClearState();
+	//ServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->Flush();
 }
 
 void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
@@ -135,6 +139,6 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// Update the pixel shader with the edited light buffer
 	deviceContext->PSSetConstantBuffers(0, 1, &lightBufferPttr);
 
-	// Render the newest boxe cule on the pipeline with [this]
+	// Render the newest boxecule on the pipeline with [this]
 	Shader::RenderShader(deviceContext, numIndicesDrawing);
 }

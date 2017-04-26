@@ -1,5 +1,8 @@
 #pragma once
 
+#define VERTEX_PROPERTY_COUNT 9
+#define ANIM_DURATION_SECONDS 2
+
 #include <d3d11.h>
 #include <d3dcompiler.h>
 #include <directxmath.h>
@@ -27,6 +30,7 @@ class Shader
 			DirectX::XMMATRIX world;
 			DirectX::XMMATRIX view;
 			DirectX::XMMATRIX projection;
+			DirectX::XMFLOAT4 animTimeStep;
 		};
 
 		virtual void SetShaderParameters(ID3D11DeviceContext* deviceContext,
@@ -38,5 +42,15 @@ class Shader
 		ID3D11PixelShader* pixelShader;
 		ID3D11InputLayout* inputLayout;
 		ID3D11Buffer* matBufferLocal;
+
+	private:
+		enum class ACCUMULATOR_DIRECTION
+		{
+			RISING = 1,
+			FALLING = -1
+		};
+
+		float dtAccumulator;
+		ACCUMULATOR_DIRECTION accumulatorGrowth;
 };
 

@@ -87,7 +87,8 @@ void Input::CacheMousePos(float mouseX, float mouseY)
 
 DirectX::XMFLOAT2 Input::GetMousePos()
 {
-	return smoothedMousePos;
+	//return smoothedMousePos;
+	return mouseInfo.mousePos;
 }
 
 // Push constructions for this class through Athru's custom allocator

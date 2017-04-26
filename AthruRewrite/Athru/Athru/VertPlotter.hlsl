@@ -6,16 +6,20 @@ cbuffer MatBuffer
     matrix world;
     matrix view;
     matrix projection;
+    float4 animTimeStep;
 };
 
 struct Vertex
 {
     float4 pos : POSITION0;
+    float4 targPos : POSITION1;
     float4 color : COLOR0;
+    float4 targColor : COLOR1;
     float4 normal : NORMAL0;
+    float4 targNormal : NORMAL1;
     float2 texCoord : TEXCOORD0;
-    float grain : COLOR1;
-    float reflectFactor : COLOR2;
+    float grain : COLOR2;
+    float reflectFactor : COLOR3;
 };
 
 struct Pixel
@@ -35,8 +39,8 @@ Pixel main(Vertex vertIn)
     // Create a returnable [Pixel]
     Pixel pixOut;
 
-    // Safely initialise [pointLightVecs] and [spotLightVecs]
-    //pixOut.pointLightVecs = { 0 };
+    // Lerp the current vertex position towards it's animation target
+    vertIn.pos = lerp(vertIn.pos, vertIn.targPos, animTimeStep);
 
     // Cache a copy of the vertex position in world coordinates
     // (needed for transforming the point into screen space +
@@ -53,13 +57,14 @@ Pixel main(Vertex vertIn)
     pixOut.pos = mul(pixOut.pos, view);
     pixOut.pos = mul(pixOut.pos, projection);
 
-    // Mirror the input vert's color into the
-    // output [Pixel]
-    pixOut.color = vertIn.color;
+    // Lerp the current vertex color towards it's animation
+    // target, then store it in the output [Pixel]
+    pixOut.color = lerp(vertIn.color, vertIn.targColor, animTimeStep);
 
     // Update the input vert's normal with the
     // current world matrix, then re-normalize
     // it
+    vertIn.normal = lerp(vertIn.normal, vertIn.targNormal, animTimeStep);
     pixOut.normal = mul(vertIn.normal, world);
     pixOut.normal = normalize(pixOut.normal);
 

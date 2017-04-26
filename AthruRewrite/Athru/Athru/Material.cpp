@@ -2,13 +2,13 @@
 #include "Material.h"
 
 Material::Material() : sonicData(Sound(0.5f, 0.5f)),
-					   lightData(Luminance(0, AVAILABLE_LIGHTING_SHADERS::POINT_LIGHT)),
+					   lightData(Luminance(0, AVAILABLE_ILLUMINATION_TYPES::POINT)),
 					   color{ 1.0f, 1.0f, 1.0f, 0.6f },
 					   roughness(0),
 					   reflectiveness(0),
 					   shader(AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER)
 {
-	texture = ServiceCentre::AccessTextureManager()->GetTexture(AVAILABLE_TEXTURES::BLANK_WHITE);
+	texture = ServiceCentre::AccessTextureManager()->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE);
 }
 
 Material::Material(Sound sonicStuff,
@@ -17,7 +17,7 @@ Material::Material(Sound sonicStuff,
 				   float baseRoughness,
 				   float baseReflectiveness,
 				   AVAILABLE_OBJECT_SHADERS objectShader,
-				   AthruTexture baseTexture) :
+				   AthruTexture2D baseTexture) :
 				   sonicData(sonicStuff),
 				   lightData(lightStuff),
 				   color{ r, g, b, a },
@@ -55,12 +55,12 @@ Luminance& Material::GetLightData()
 	return lightData;
 }
 
-AthruTexture& Material::GetTexture()
+AthruTexture2D& Material::GetTexture()
 {
 	return texture;
 }
 
-void Material::SetTexture(AthruTexture suppliedTexture)
+void Material::SetTexture(AthruTexture2D suppliedTexture)
 {
 	texture = suppliedTexture;
 }

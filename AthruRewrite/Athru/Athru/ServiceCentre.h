@@ -9,8 +9,8 @@
 #include "RenderManager.h"
 #include "Graphics.h"
 #include "SceneManager.h"
-#include "PlanarUnwrapper.h"
 #include "NormalBuilder.h"
+#include "PlanarUnwrapper.h"
 #include "AthruGlobals.h"
 
 class ServiceCentre
@@ -44,8 +44,13 @@ class ServiceCentre
 			textureManagerPttr = new TextureManager(d3DPttr->GetDevice());
 
 			// Attempt to create and register the render manager
+			// Getting the post-processing texture is kinda hacky here;
+			// startup process/architecture should probably be adjusted so
+			// that [Direct3D] is a service in its own right and not a
+			// member of [Graphics]
 			renderManagerPttr = new RenderManager(d3DPttr->GetDeviceContext(), d3DPttr->GetDevice(),
-												  AVAILABLE_POST_EFFECTS::BLOOM, AVAILABLE_POST_EFFECTS::DEPTH_OF_FIELD, AVAILABLE_POST_EFFECTS::NULL_EFFECT);
+												  AVAILABLE_POST_EFFECTS::BLOOM, AVAILABLE_POST_EFFECTS::DEPTH_OF_FIELD,
+												  textureManagerPttr->GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE).asShaderResource);
 
 			// Attempt to create and register the scene manager
 			sceneManagerPttr = new SceneManager();

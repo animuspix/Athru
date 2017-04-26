@@ -2,7 +2,7 @@
 #include "Typedefs.h"
 #include "ConsolePrinter.h"
 
-char ConsolePrinter::outputString[1023];
+char ConsolePrinter::outputString[8191];
 void ConsolePrinter::OutputText(std::ostringstream* cStringStream)
 {
 	strcpy_s(outputString, cStringStream->str().c_str());

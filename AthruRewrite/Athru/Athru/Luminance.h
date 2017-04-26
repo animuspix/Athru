@@ -1,11 +1,16 @@
 #pragma once
 
-#include "RenderManager.h"
+enum class AVAILABLE_ILLUMINATION_TYPES
+{
+	DIRECTIONAL,
+	POINT,
+	SPOT
+};
 
 struct Luminance
 {
 	Luminance(float baseIntensity,
-			  AVAILABLE_LIGHTING_SHADERS baseIlluminationType) :
+			  AVAILABLE_ILLUMINATION_TYPES baseIlluminationType) :
 			  intensity(baseIntensity),
 			  illuminationType(baseIlluminationType) {}
 
@@ -19,6 +24,6 @@ struct Luminance
 	// ("downward")
 
 	float intensity;
-	AVAILABLE_LIGHTING_SHADERS illuminationType;
+	AVAILABLE_ILLUMINATION_TYPES illuminationType;
 };
 

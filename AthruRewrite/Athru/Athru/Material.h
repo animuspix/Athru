@@ -2,7 +2,7 @@
 
 #include "Typedefs.h"
 #include "RenderManager.h"
-#include "AthruTexture.h"
+#include "AthruTexture2D.h"
 #include "Luminance.h"
 #include "Sound.h"
 
@@ -16,7 +16,7 @@ class Material
 				 float baseRoughness,
 				 float baseReflectiveness,
 				 AVAILABLE_OBJECT_SHADERS objectShader,
-				 AthruTexture baseTexture);
+				 AthruTexture2D baseTexture);
 		~Material();
 
 		// Retrieve the sound associated with [this]
@@ -35,10 +35,10 @@ class Material
 		Luminance& GetLightData();
 
 		// Retrieve the raw texture associated with [this]
-		AthruTexture& GetTexture();
+		AthruTexture2D& GetTexture();
 
 		// Retrieve the raw texture associated with [this]
-		void SetTexture(AthruTexture suppliedTexture);
+		void SetTexture(AthruTexture2D suppliedTexture);
 
 		// Retrieve the shader associated with [this]
 		AVAILABLE_OBJECT_SHADERS GetShader();
@@ -57,7 +57,7 @@ class Material
 		DirectX::XMFLOAT4 color;
 		float roughness;
 		float reflectiveness;
-		AthruTexture texture;
+		AthruTexture2D texture;
 		AVAILABLE_OBJECT_SHADERS shader;
 };
 
