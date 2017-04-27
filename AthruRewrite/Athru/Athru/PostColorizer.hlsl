@@ -18,5 +18,5 @@ struct Pixel
 
 float4 main(Pixel pixIn) : SV_TARGET
 {
-	return float4(1.0f, 1.0f, 1.0f, 1.0f);
+    return texIn.Sample(wrapSampler, pixIn.texCoord);
 }

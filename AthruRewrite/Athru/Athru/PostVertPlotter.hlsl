@@ -56,7 +56,7 @@ Pixel main(Vertex vertIn)
     // to [0]
     pixOut.color = float4(0, 0, 0, 0);
     pixOut.normal = float4(0, 0, 0, 0);
-    pixOut.texCoord = float2(0, 0);
+    pixOut.texCoord = vertIn.texCoord;
     pixOut.grain = 0;
     pixOut.reflectFactor = 0;
     pixOut.surfaceView = float4(0, 0, 0, 0);

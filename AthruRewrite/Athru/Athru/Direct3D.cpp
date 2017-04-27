@@ -285,11 +285,11 @@ Direct3D::~Direct3D()
 	// Memory is shared between the debug-device and the core
 	// DirectX device object, so only one should be released
 	// during engine shutdown
-	debugDevice->Release();
-	debugDevice = nullptr;
+	//debugDevice->Release();
+	//debugDevice = nullptr;
 
-	//device->Release();
-	//device = nullptr;
+	device->Release();
+	device = nullptr;
 }
 
 void Direct3D::BeginScene(ID3D11RenderTargetView* renderTargetTexture)

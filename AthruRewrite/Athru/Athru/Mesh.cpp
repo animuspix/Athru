@@ -15,10 +15,6 @@ Mesh::~Mesh()
 	// Release the vertex buffer
 	vertBuffer->Release();
 	vertBuffer = 0;
-
-	// Flush any pipeline data associated with [this]
-	//ServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->ClearState();
-	//ServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->Flush();
 }
 
 void Mesh::PassToGPU(ID3D11DeviceContext* deviceContext)
