@@ -28,10 +28,10 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 														maxBoundingPos.z - minBoundingPos.z, 1);
 
 	// Generate + cache vertex positions
-	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4(0.5f, 0.5f, -0.5f, 1.0f); // Front plane, upper left (v0)
-	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(-0.5f, 0.5f, -0.5f, 1.0f); // Front plane, upper right (v1)
-	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4(0.5f, -0.5f, -0.5f, 1.0f); // Front plane, lower left (v2)
-	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, -0.5f, 1.0f); // Front plane, lower right (v3)
+	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4(-0.5f, 0.5f, 0.5f, 1.0f); // Front plane, upper left (v0)
+	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f); // Front plane, upper right (v1)
+	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.5f, 1.0f); // Front plane, lower left (v2)
+	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(0.5f, -0.5f, 0.5f, 1.0f); // Front plane, lower right (v3)
 
 	// Initialise vertices
 	Vertex vertices[4] = { Vertex(vert0Pos, // Upper left (v0)
