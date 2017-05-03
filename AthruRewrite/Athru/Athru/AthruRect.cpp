@@ -21,17 +21,17 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	float vertReflectiveness = material.GetReflectiveness();
 
 	// Store min bounding cube position, max bounding cube position, and the difference (range) between them
-	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.1f, 1);
-	DirectX::XMFLOAT4 maxBoundingPos = DirectX::XMFLOAT4(0.5f, 0.5f, 0.1f, 1);
+	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-1.0f, -1.0f, 0.1f, 1.0f);
+	DirectX::XMFLOAT4 maxBoundingPos = DirectX::XMFLOAT4(1.0f, 1.0f, 0.1f, 1.0f);
 	DirectX::XMFLOAT4 boundingRange = DirectX::XMFLOAT4(maxBoundingPos.x - minBoundingPos.x,
 														maxBoundingPos.y - minBoundingPos.y,
 														maxBoundingPos.z - minBoundingPos.z, 1);
 
 	// Generate + cache vertex positions
-	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4(-0.5f, 0.5f, 0.5f, 1.0f); // Front plane, upper left (v0)
-	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(0.5f, 0.5f, 0.5f, 1.0f); // Front plane, upper right (v1)
-	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.5f, 1.0f); // Front plane, lower left (v2)
-	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(0.5f, -0.5f, 0.5f, 1.0f); // Front plane, lower right (v3)
+	DirectX::XMFLOAT4 vert0Pos = DirectX::XMFLOAT4(-1.0f, 1.0f, 0.1f, 1.0f); // Front plane, upper left (v0)
+	DirectX::XMFLOAT4 vert1Pos = DirectX::XMFLOAT4(1.0f, 1.0f, 0.1f, 1.0f); // Front plane, upper right (v1)
+	DirectX::XMFLOAT4 vert2Pos = DirectX::XMFLOAT4(-1.0f, -1.0f, 0.1f, 1.0f); // Front plane, lower left (v2)
+	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(1.0f, -1.0f, 0.1f, 1.0f); // Front plane, lower right (v3)
 
 	// Initialise vertices
 	Vertex vertices[4] = { Vertex(vert0Pos, // Upper left (v0)

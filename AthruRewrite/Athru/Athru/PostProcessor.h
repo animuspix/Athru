@@ -13,14 +13,15 @@ class PostProcessor : public Shader
 
 		// Force render calls to go through here
 		void Render(ID3D11DeviceContext* deviceContext,
-					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
+					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
+					bool useBlur, bool useDrugs, bool brightenScene);
 
 	private:
 		struct EffectStatusBuffer
 		{
-			bool bloomActive;
-			bool depthOfFieldActive;
-			bool padding[14];
+			DirectX::XMINT4 blurActive;
+			DirectX::XMINT4 drugsActive;
+			DirectX::XMINT4 brightenActive;
 		};
 
 		// Overload ordinary external shader render to do nothing

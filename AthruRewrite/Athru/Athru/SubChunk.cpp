@@ -38,10 +38,11 @@ SubChunk::SubChunk(Chunk* parent,
 		// Only allow visible boxecules (that are hovering above the main visible plane) to illuminate
 		// other boxecules
 		// Faintly randomize for some interesting intensity variations
-		float illumIntensity = (((byteUnsigned)alpha) && (index > SUB_CHUNKS_PER_CHUNK / 2)) * (float)(1 / ((rand() % 10) + 1));
+		float illumIntensity = (((byteUnsigned)alpha) && (index > SUB_CHUNKS_PER_CHUNK / 2)) * ((float)(1 / ((rand() % 10) + 1)) * 5);
 
-		// Point lights on one side, spot-lights on the other
-		AVAILABLE_ILLUMINATION_TYPES lightType = AVAILABLE_ILLUMINATION_TYPES::POINT;//(AVAILABLE_ILLUMINATION_TYPES)(((parentOffsetX < 0) + (2 * (parentOffsetX >= 0))));
+		// All active non-directional lights are point lights 
+		// (spot lights are broken for mystical shader reasons (probably a bad lighting process + GPU buffer overflow))
+		AVAILABLE_ILLUMINATION_TYPES lightType = AVAILABLE_ILLUMINATION_TYPES::POINT;
 
 		// Construct illumination data from the values above
 		Luminance illumination = Luminance(illumIntensity, lightType);
@@ -85,8 +86,8 @@ SubChunk::SubChunk(Chunk* parent,
 			storedBoxecules[i] = new Boxecule(Material(activeTone,
 												       illumination,
 												       red, green, blue, alpha,
-													   0.8f,//(1.0f / (float)(rand() % 10) + 1) + 0.2f, // Randomize roughness to somewhere between 0.2f and 1.0f
-													   0.8f,//red, // Tie reflectiveness to the red channel
+													   (1.0f / (float)(rand() % 10) + 1) + 0.2f, // Randomize roughness to somewhere between 0.2f and 1.0f
+													   red, // Tie reflectiveness to the red channel
 												       AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER,
 												       textureManagerPttr->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE)));
 

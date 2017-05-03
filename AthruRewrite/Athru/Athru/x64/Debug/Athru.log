@@ -1,2 +1,43 @@
 ﻿  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\PostColorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\PostVertPlotter.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\VertPlotter.cso
+  Vertex.cpp
+  TextureManager.cpp
+  TexturedRasterizer.cpp
+  SubChunk.cpp
+  StarSystem.cpp
+  Boxecule.cpp
+  ServiceCentre.cpp
+  StackAllocator.cpp
+  Sound.cpp
+  Material.cpp
+  Logger.cpp
+  Input.cpp
+  Graphics.cpp
+  Direct3D.cpp
+  ConsolePrinter.cpp
+  Shader.cpp
+  SceneManager.cpp
+  RenderManager.cpp
+  Rasterizer.cpp
+  PostProcessor.cpp
+  Running Code Analysis for C/C++...
+  Generating Code...
+  Compiling...
+  PointLight.cpp
+  Planet.cpp
+  Mesh.cpp
+  DemoMeshImport.cpp
+  Critter.cpp
+  Chunk.cpp
+  Camera.cpp
+  AthruRect.cpp
+  AthruGlobals.cpp
+  Application.cpp
+  Athru.cpp
+  WICTextureLoader.cpp
+  Running Code Analysis for C/C++...
+  Generating Code...
+  LINK : C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe not found or not built by the last incremental link; performing full link
   Athru.vcxproj -> C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Debug\Athru.exe

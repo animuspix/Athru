@@ -256,7 +256,8 @@ void RenderManager::PostProcess(AthruRect* screenRect,
 {
 	// Pass the rect onto the GPU, then render it with the post-processing shader
 	screenRect->PassToGPU(deviceContext);
-	postProcessor->Render(deviceContext, world * screenRect->GetTransform(), view, projection);
+	postProcessor->Render(deviceContext, world * screenRect->GetTransform(), view, projection,
+						  true, false, false);
 }
 
 void RenderManager::LightDiscard(fourByteUnsigned boxeculeIndex) {}
