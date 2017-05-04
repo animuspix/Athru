@@ -1,4 +1,4 @@
-#include "ServiceCentre.h"
+#include "HiLevelServiceCentre.h"
 #include "Material.h"
 
 Material::Material() : sonicData(Sound(0.5f, 0.5f)),
@@ -8,7 +8,7 @@ Material::Material() : sonicData(Sound(0.5f, 0.5f)),
 					   reflectiveness(0),
 					   shader(AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER)
 {
-	texture = ServiceCentre::AccessTextureManager()->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE);
+	texture = HiLevelServiceCentre::AccessTextureManager()->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE);
 }
 
 Material::Material(Sound sonicStuff,

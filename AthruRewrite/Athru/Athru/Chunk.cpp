@@ -1,5 +1,4 @@
-#include "MathIncludes.h"
-#include "ServiceCentre.h"
+#include "HiLevelServiceCentre.h"
 #include <cstdlib>
 #include "Camera.h"
 #include "Boxecule.h"
@@ -72,7 +71,7 @@ SubChunk** Chunk::GetSubChunks()
 // Push constructions for this class through Athru's custom allocator
 void* Chunk::operator new(size_t size)
 {
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	StackAllocator* allocator = HiLevelServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Chunk>(), false);
 }
 

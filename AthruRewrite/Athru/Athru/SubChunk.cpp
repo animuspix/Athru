@@ -1,4 +1,4 @@
-#include "ServiceCentre.h"
+#include "HiLevelServiceCentre.h"
 #include "Camera.h"
 #include "Critter.h"
 #include "Chunk.h"
@@ -19,7 +19,7 @@ SubChunk::SubChunk(Chunk* parent,
 	storedBoxecules = DEBUG_NEW Boxecule*[SUB_CHUNK_VOLUME];
 
 	// Cache a local reference to the texture manager
-	TextureManager* textureManagerPttr = ServiceCentre::AccessTextureManager();
+	TextureManager* textureManagerPttr = HiLevelServiceCentre::AccessTextureManager();
 
 	// Build chunks
 	for (eightByteSigned i = 0; i < SUB_CHUNK_VOLUME; i += 1)
@@ -124,7 +124,7 @@ Boxecule** SubChunk::GetStoredBoxecules()
 // Push constructions for this class through Athru's custom allocator
 void* SubChunk::operator new(size_t size)
 {
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	StackAllocator* allocator = HiLevelServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<SubChunk>(), false);
 }
 

@@ -1,4 +1,4 @@
-#include "ServiceCentre.h"
+#include "HiLevelServiceCentre.h"
 #include "Critter.h"
 #include "SceneManager.h"
 
@@ -66,7 +66,7 @@ void SceneManager::Update(DirectX::XMVECTOR playerPosition)
 // Push constructions for this class through Athru's custom allocator
 void* SceneManager::operator new(size_t size)
 {
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	StackAllocator* allocator = HiLevelServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<SceneManager>(), false);
 }
 

@@ -1,5 +1,5 @@
 #include <intrin.h>
-#include "ServiceCentre.h"
+#include "HiLevelServiceCentre.h"
 #include "Camera.h"
 #include "Graphics.h"
 
@@ -11,10 +11,10 @@ Graphics::Graphics(HWND windowHandle)
 void Graphics::FetchDependencies()
 {
 	// Retrieve a pointer to the render manager from the service centre
-	renderManagerPttr = ServiceCentre::AccessRenderManager();
+	renderManagerPttr = HiLevelServiceCentre::AccessRenderManager();
 
 	// Retrieve a pointer to the scene manager from the service centre
-	sceneManagerPttr = ServiceCentre::AccessSceneManager();
+	sceneManagerPttr = HiLevelServiceCentre::AccessSceneManager();
 
 	// Create the camera object (involves fetching textures from the texture manager,
 	// which can't be created before [this] because it needs to access [d3D] at
@@ -41,11 +41,11 @@ Graphics::~Graphics()
 
 void Graphics::Frame()
 {
-	ServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
-	ServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
 
 	// Cache a local reference to the Input service
-	Input* localInput = ServiceCentre::AccessInput();
+	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
 
 	// Translate the camera with WASD
 	float speed = 10;
@@ -134,7 +134,7 @@ Direct3D* Graphics::GetD3D()
 // Push constructions for this class through Athru's custom allocator
 void* Graphics::operator new(size_t size)
 {
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Graphics>(), false);
 }
 

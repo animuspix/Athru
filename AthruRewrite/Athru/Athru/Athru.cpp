@@ -1,4 +1,4 @@
-#include "ServiceCentre.h"
+#include "HiLevelServiceCentre.h"
 #include "Application.h"
 #include "leakChecker.h"
 
@@ -8,14 +8,14 @@ int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _
 	_CrtSetDbgFlag(_CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF);
 
 	// Start the service centre
-	ServiceCentre::StartUp();
+	HiLevelServiceCentre::StartUp();
 
 	// Fetch the engine from the service centre, then start
 	// it
-	ServiceCentre::AccessApp()->Run();
+	HiLevelServiceCentre::AccessApp()->Run();
 
 	// Stop the service centre
-	ServiceCentre::ShutDown();
+	HiLevelServiceCentre::ShutDown();
 
 	// Exit the application
 	return 0;

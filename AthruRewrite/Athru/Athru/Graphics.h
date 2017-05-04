@@ -1,19 +1,7 @@
 #pragma once
 
 #include "Direct3D.h"
-#include "MathIncludes.h"
-
-#define FULL_SCREEN false
-#define VSYNC_ENABLED true
-#define DISPLAY_WIDTH 1024
-#define DISPLAY_HEIGHT 768
-#define DISPLAY_ASPECT_RATIO (DISPLAY_WIDTH / DISPLAY_HEIGHT)
-#define SCREEN_FAR 1000.0f
-#define SCREEN_NEAR 0.1f
-#define FRUSTUM_WIDTH_AT_NEAR ((2 * SCREEN_NEAR) * tan(VERT_FIELD_OF_VIEW_RADS * 0.5f))
-#define FRUSTUM_HEIGHT_AT_NEAR FRUSTUM_WIDTH_AT_NEAR / DISPLAY_ASPECT_RATIO
-#define VERT_FIELD_OF_VIEW_RADS (PI / 2)
-#define HORI_FIELD_OF_VIEW_RADS 2 * atan(tan(VERT_FIELD_OF_VIEW_RADS / 2) * DISPLAY_ASPECT_RATIO)
+#include "AthruGlobals.h"
 
 class RenderManager;
 class SceneManager;
