@@ -13,6 +13,8 @@ class Input
 		void KeyDown(fourByteUnsigned);
 		void KeyUp(fourByteUnsigned);
 		bool IsKeyDown(fourByteUnsigned);
+		void SetCloseFlag();
+		bool GetCloseFlag();
 
 		// Cache absolute mouse position within the window
 		void CacheMousePos(float mouseX, float mouseY);
@@ -56,6 +58,7 @@ class Input
 		};
 
 		bool keys[256];
+		bool closeFlag;
 		MouseData mouseInfo;
 		DirectX::XMFLOAT2 smoothedMousePos;
 };

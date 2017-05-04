@@ -16,7 +16,8 @@ class Graphics
 		void FetchDependencies();
 		~Graphics();
 
-		void Frame();
+		void Update();
+		void Draw();
 		Direct3D* GetD3D();
 
 		// Overload the standard allocation/de-allocation operators
@@ -24,8 +25,6 @@ class Graphics
 		void operator delete(void* target);
 
 	private:
-		void Render();
-
 		// Connection to the DirectX graphics processing backend
 		Direct3D* d3D;
 

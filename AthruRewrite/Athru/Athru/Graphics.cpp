@@ -39,7 +39,7 @@ Graphics::~Graphics()
 	d3D = nullptr;
 }
 
-void Graphics::Frame()
+void Graphics::Update()
 {
 	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
 	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
@@ -97,13 +97,9 @@ void Graphics::Frame()
 	// Record the time at this frame so we can calculate
 	// [deltaTime]
 	TimeStuff::timeAtLastFrame = std::chrono::steady_clock::now();
-
-	// No more updates, so pass control onto [Render()] and begin drawing to
-	// the screen :)
-	Render();
 }
 
-void Graphics::Render()
+void Graphics::Draw()
 {
 	// Cache a reference to the camera's viewfinder (the screen rect)
 	AthruRect* viewFinderPttr = camera->GetViewFinder();

@@ -54,6 +54,6 @@ void TexturedRasterizer::Render(ID3D11DeviceContext* deviceContext,
 	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
-	// Render the newest boxecule on the pipeline with [this]
+	// Draw the newest boxecule on the pipeline with [this]
 	Shader::RenderShader(deviceContext, numIndicesDrawing);
 }

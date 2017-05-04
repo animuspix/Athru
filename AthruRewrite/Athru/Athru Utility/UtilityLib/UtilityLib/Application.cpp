@@ -4,7 +4,13 @@
 Application::Application()
 {
 	// Create the window
-	BuildWindow(DISPLAY_WIDTH, DISPLAY_HEIGHT);
+	BuildWindow(GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT);
+
+	// Create the message structure + zero it's contents
+	// to prevent any pre-window-creation messages from being
+	// processed
+	msg = MSG();
+	ZeroMemory(&msg, sizeof(MSG));
 }
 
 Application::~Application()
@@ -13,73 +19,28 @@ Application::~Application()
 	CloseWindow();
 }
 
-bool Application::Frame()
+void Application::RelayOSMessages()
 {
-	// Exit the frame and return [false] (ending the game loop)
-	// if the player presses [Escape]
-	if (athruInput->IsKeyDown(VK_ESCAPE))
-	{
-		return false;
-	}
-
-	// Process the current frame through the Graphics class
-	athruGraphics->Frame();
-	return true;
-}
-
-void Application::Run()
-{
-	MSG msg;
-	bool done, result;
-
-	// Initialize the message structure.
+	// Remove older messages from memory by zeroing
+	// the contents of the message structure
 	ZeroMemory(&msg, sizeof(MSG));
 
-	// Generate private references to the input and graphics services
-	// over here, since they can't be generated in the constructor
-	// (the application constructor is called by the Service centre
-	// within ITS constructor, so generating these references there
-	// is a guaranteed way to create a dependency loop :P)
-	athruInput = ServiceCentre::AccessInput();
-	athruGraphics = ServiceCentre::AccessGraphics();
-	athruLogger = ServiceCentre::AccessLogger();
-
-	// Loop until there is a quit message from the window or the user.
-	done = false;
-	while (!done)
+	// Handle OS messages with [WndProc]
+	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
 	{
-		// Handle the windows messages.
-		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
-		{
-			TranslateMessage(&msg);
-			DispatchMessage(&msg);
-		}
-
-		// If windows signals to end the application then exit out.
-		if (msg.message == WM_QUIT)
-		{
-			done = true;
-		}
-		else
-		{
-			// Otherwise do the frame processing.
-			result = Frame();
-			if (!result)
-			{
-				done = true;
-			}
-		}
+		TranslateMessage(&msg);
+		DispatchMessage(&msg);
 	}
 }
 
 // Primary message handler; processes input messages received from the OS and
 // responds appropriately
-LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, LPARAM lparam)
+LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM messageParamA, LPARAM messageParamB)
 {
 	// Cache a local reference to the input handler
-	Input* localInput = ServiceCentre::AccessInput();
+	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
 
-	switch (umessage)
+	switch (message)
 	{
 		// Check if the window is being destroyed.
 		case WM_DESTROY:
@@ -95,11 +56,19 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 			return 0;
 		}
 
+		// Check if either WM_CLOSE or WM_DESTROY ran successfully
+		// and nullified the window handle
+		case WM_QUIT:
+		{
+			localInput->SetCloseFlag();
+			return 0;
+		}
+
 		// Check if a key has been pressed on the keyboard
 		case WM_KEYDOWN:
 		{
 			// If a key is pressed, send it to the input object so it can record that state
-			localInput->KeyDown((fourByteUnsigned)wparam);
+			localInput->KeyDown((fourByteUnsigned)messageParamA);
 			return 0;
 		}
 
@@ -107,7 +76,7 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 		case WM_KEYUP:
 		{
 			// If a key is released, send it to the input object so it can unset the state for that key
-			localInput->KeyUp((fourByteUnsigned)wparam);
+			localInput->KeyUp((fourByteUnsigned)messageParamA);
 			return 0;
 		}
 
@@ -115,15 +84,15 @@ LRESULT CALLBACK Application::WndProc(HWND hwnd, UINT umessage, WPARAM wparam, L
 		case WM_MOUSEMOVE:
 		{
 			// If the mouse has moved, store its coordinates in the input handler
-			float currMouseX = (float)GET_X_LPARAM(lparam);
-			float currMouseY = (float)GET_Y_LPARAM(lparam);
+			float currMouseX = (float)GET_X_LPARAM(messageParamA);
+			float currMouseY = (float)GET_Y_LPARAM(messageParamB);
 			localInput->CacheMousePos(currMouseX, currMouseY);
 		}
 
-		// Send any remaining messages back to Windows since we won't be using them
+		// Ignore any messages that haven't already been handled
 		default:
 		{
-			return DefWindowProc(hwnd, umessage, wparam, lparam);;
+			return DefWindowProc(windowHandle, message, messageParamA, messageParamB);
 		}
 	}
 }
@@ -161,7 +130,7 @@ void Application::BuildWindow(const int& windowedWidth, const int& windowedHeigh
 	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
 
 	// Setup the screen settings depending on whether it is running in full screen or in windowed mode.
-	if (FULL_SCREEN)
+	if (GraphicsStuff::FULL_SCREEN)
 	{
 		// If full screen set the screen to maximum size of the users desktop and 32bit.
 		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
@@ -210,7 +179,7 @@ void Application::CloseWindow()
 	ShowCursor(true);
 
 	// Fix the display settings if leaving full screen mode.
-	if (FULL_SCREEN)
+	if (GraphicsStuff::FULL_SCREEN)
 	{
 		ChangeDisplaySettings(NULL, 0);
 	}
@@ -232,7 +201,7 @@ HWND Application::GetHWND()
 // Push constructions for this class through Athru's custom allocator
 void* Application::operator new(size_t size)
 {
-	StackAllocator* allocator = ServiceCentre::AccessMemory();
+	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Application>(), false);
 }
 

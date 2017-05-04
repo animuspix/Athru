@@ -10,6 +10,10 @@ Input::Input()
 		keys[keySetter] = false;
 	}
 
+	// Initialise the flag storing whether or not the application
+	// has received a window-close message from the OS
+	closeFlag = false;
+
 	// Initialise mouse information
 	mouseInfo = MouseData();
 	smoothedMousePos = DirectX::XMFLOAT2(0, 0);
@@ -37,6 +41,16 @@ bool Input::IsKeyDown(fourByteUnsigned key)
 {
 	// Return what state the key is in (pressed/not pressed).
 	return keys[key];
+}
+
+void Input::SetCloseFlag()
+{
+	closeFlag = true;
+}
+
+bool Input::GetCloseFlag()
+{
+	return closeFlag;
 }
 
 void Input::CacheMousePos(float mouseX, float mouseY)
