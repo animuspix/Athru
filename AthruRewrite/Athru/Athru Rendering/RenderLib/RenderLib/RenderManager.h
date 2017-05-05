@@ -2,7 +2,7 @@
 
 #include <d3d11.h>
 #include <directxmath.h>
-#include "Typedefs.h"
+#include "AthruGlobals.h"
 
 #define MAX_POINT_LIGHT_COUNT 16
 #define MAX_SPOT_LIGHT_COUNT 16

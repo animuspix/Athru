@@ -24,22 +24,7 @@
     <ClCompile Include="Graphics.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Application.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="StackAllocator.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Material.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Sound.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Chunk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="SceneManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Planet.cpp">
@@ -48,13 +33,7 @@
     <ClCompile Include="StarSystem.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SubChunk.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TexturedRasterizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PointLight.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
@@ -68,34 +47,13 @@
     <ClInclude Include="Graphics.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Typedefs.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Application.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Dispatcher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="StackAllocator.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AthruGlobals.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Material.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Sound.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Chunk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="SQT.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Planet.h">
@@ -104,16 +62,7 @@
     <ClInclude Include="StarSystem.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SubChunk.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TexturedRasterizer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SpotLight.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PointLight.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h">

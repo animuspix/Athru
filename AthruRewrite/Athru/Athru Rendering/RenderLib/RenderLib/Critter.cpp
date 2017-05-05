@@ -1,5 +1,5 @@
 #include <fstream>
-#include "AthruUtilities::UtilityServiceCentre.h"
+#include "UtilityServiceCentre.h"
 #include "Critter.h"
 
 Critter::Critter()
@@ -41,14 +41,7 @@ Critter::Critter()
 	alphaFloat[2] = fileData[285];
 	float soundAmp = (float)(atof(alphaFloat));
 
-	// Construct [critterMaterialData] with the properties extracted above
-	critterMaterialData = Material(Sound(soundFreq, soundAmp),
-								   Luminance(0.0f, AVAILABLE_ILLUMINATION_TYPES::POINT),
-								   redColorChannel, greenColorChannel, blueColorChannel, alphaColorChannel,
-								   0.8f, 0.3f, AVAILABLE_OBJECT_SHADERS::TEXTURED_RASTERIZER, AthruUtilities::UtilityServiceCentre::AccessTextureManager()->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE));
-
 	// Extract torso position from the critter file
-
 	char* alphaIntDigit;
 	alphaIntDigit = &(fileData[354]);
 	fourByteUnsigned critterChunk = atoi(alphaIntDigit);
@@ -62,37 +55,10 @@ Critter::Critter()
 	alphaIntDigit = &(fileData[363]);
 	fourByteUnsigned critterPosW = atoi(alphaIntDigit);
 
-	// Construct [torsoTransformations] with the extracted
-	// torso position, a default rotation, and a default
-	// scale
-
-	// Store the extracted coordinates inside an [XMVECTOR]
-	DirectX::XMVECTOR critterPos = _mm_set_ps((float)critterPosW, (float)critterBoxeculeIndex, (float)critterSubChunk, (float)critterChunk);
-
-	// Store the bae rotation
-	DirectX::XMVECTOR baseCritterRotation = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
-
-	// Use the data generated above to construct [torsoTransformations]
-	torsoTransformations = SQT(baseCritterRotation, critterPos, 1.0f);
-
-	// Extract limb count from the critter file + store it within [limbCount]
-	alphaIntDigit = &(fileData[437]);
-	limbCount = (byteUnsigned)(atoi(alphaIntDigit));
-
 	delete[] fileData;
 	fileData = nullptr;
 }
 
 Critter::~Critter()
 {
-}
-
-SQT& Critter::GetTorsoTransformations()
-{
-	return torsoTransformations;
-}
-
-Material& Critter::GetCritterMaterial()
-{
-	return critterMaterialData;
 }

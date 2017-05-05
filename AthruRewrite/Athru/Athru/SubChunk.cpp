@@ -40,17 +40,6 @@ SubChunk::SubChunk(Chunk* parent,
 		// Faintly randomize for some interesting intensity variations
 		float illumIntensity = (((byteUnsigned)alpha) && (index > SUB_CHUNKS_PER_CHUNK / 2)) * ((float)(1 / ((rand() % 10) + 1)) * 5);
 
-		// All active non-directional lights are point lights 
-		// (spot lights are broken for mystical shader reasons (probably a bad lighting process + GPU buffer overflow))
-		AVAILABLE_ILLUMINATION_TYPES lightType = AVAILABLE_ILLUMINATION_TYPES::POINT;
-
-		// Construct illumination data from the values above
-		Luminance illumination = Luminance(illumIntensity, lightType);
-
-		// Set up the average sound to play when the boxecule interacts
-		// with its environment
-		Sound activeTone = Sound(0.5f, 0.5f);
-
 		// Core boxecule construction
 		// Sun generation is temporary; I'd much rather make an actual SkyChunk that can handle clouds and things
 		// as well
@@ -61,16 +50,10 @@ SubChunk::SubChunk(Chunk* parent,
 		DirectX::XMVECTOR boxeculeRot = _mm_set_ps(0, 0, 0, 0);
 		if ((index == (SUB_CHUNKS_PER_CHUNK - 1)) && (i == CHUNK_WIDTH / 2) && (parentOffsetX == 0 && parentOffsetZ == 0))
 		{
-			storedBoxecules[i] = new Boxecule(Material(Sound(0.5f, 0.5f),
-													   Luminance(10.0f, AVAILABLE_ILLUMINATION_TYPES::DIRECTIONAL),
-													   1.0f, 1.0f, 1.0f, 1.0f,
-													   0.0f,
-													   0.0f,
-													   AVAILABLE_OBJECT_SHADERS::RASTERIZER,
-													   textureManagerPttr->GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE)));
+			storedBoxecules[i] = new Boxecule();
 
 			// Rotate the pseudo-sun 22.5 degrees about [y]
-			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(PI, 0, 0);
+			boxeculeRot = DirectX::XMQuaternionRotationRollPitchYaw(MathsStuff::PI, 0, 0);
 		}
 
 		else if (testCritter != nullptr && i <= (testCritter->GetTorsoTransformations().pos.m128_f32[1]))
@@ -124,7 +107,7 @@ Boxecule** SubChunk::GetStoredBoxecules()
 // Push constructions for this class through Athru's custom allocator
 void* SubChunk::operator new(size_t size)
 {
-	StackAllocator* allocator = HiLevelServiceCentre::AccessMemory();
+	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<SubChunk>(), false);
 }
 

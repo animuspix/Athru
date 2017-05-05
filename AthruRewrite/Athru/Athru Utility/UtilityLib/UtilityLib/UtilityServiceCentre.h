@@ -14,11 +14,11 @@ namespace AthruUtilities
 			UtilityServiceCentre() = delete;
 			~UtilityServiceCentre() = delete;
 
-			static void Init()
+			static void Init(eightByteUnsigned& expectedMemoryUsage)
 			{
 				// Attempt to create and register the memory-management
 				// service
-				stackAllocatorPttr = new StackAllocator();
+				stackAllocatorPttr = new StackAllocator(expectedMemoryUsage);
 
 				// Attempt to create and register the logging
 				// service

@@ -17,7 +17,5 @@ const float GraphicsStuff::HORI_FIELD_OF_VIEW_RADS = 2 * atan(tan(GraphicsStuff:
 const float GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR = ((2 * GraphicsStuff::SCREEN_NEAR) * tan(GraphicsStuff::VERT_FIELD_OF_VIEW_RADS * 0.5f));
 const float GraphicsStuff::FRUSTUM_HEIGHT_AT_NEAR = GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR / GraphicsStuff::DISPLAY_ASPECT_RATIO;
 
-const byteUnsigned GraphicsStuff::NUM_VOXEL_GRID_TEXTURES = 5;
 const fourByteUnsigned GraphicsStuff::VOXEL_GRID_WIDTH = 4;
 const eightByteUnsigned GraphicsStuff::VOXEL_GRID_VOLUME = GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH;
-const eightByteUnsigned GraphicsStuff::VOXEL_GRID_COST_BYTES = VOXEL_GRID_VOLUME * NUM_VOXEL_GRID_TEXTURES * (sizeof(float) * 4);

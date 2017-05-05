@@ -1,7 +1,6 @@
 #pragma once
 
 #include <directxmath.h>
-#include "Graphics.h"
 #include "AthruRect.h"
 
 struct CameraLookData

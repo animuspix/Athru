@@ -116,7 +116,7 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)ThirdParty\DirectXTex\DirectXTex\Bin\Desktop_2015\x64\Debug\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)Third Party\DirectXTex\DirectXTex\Bin\Desktop_2015\x64\Debug\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerbose</ShowProgress>
     </Link>
     <FxCompile>
@@ -170,40 +170,23 @@
   <ItemGroup>
     <ClCompile Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
     <ClCompile Include="Athru.cpp" />
-    <ClCompile Include="Application.cpp" />
-    <ClCompile Include="Chunk.cpp" />
     <ClCompile Include="Planet.cpp" />
-    <ClCompile Include="PointLight.cpp" />
-    <ClCompile Include="SceneManager.cpp" />
     <ClCompile Include="Graphics.cpp" />
-    <ClCompile Include="Material.cpp" />
     <ClCompile Include="Sound.cpp" />
-    <ClCompile Include="StackAllocator.cpp" />
     <ClCompile Include="HiLevelServiceCentre.cpp" />
     <ClCompile Include="StarSystem.cpp" />
-    <ClCompile Include="SubChunk.cpp" />
     <ClCompile Include="TexturedRasterizer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
-    <ClInclude Include="AthruGlobals.h" />
-    <ClInclude Include="Chunk.h" />
     <ClInclude Include="Planet.h" />
-    <ClInclude Include="PointLight.h" />
-    <ClInclude Include="SceneManager.h" />
     <ClInclude Include="Dispatcher.h" />
-    <ClInclude Include="Application.h" />
     <ClInclude Include="Graphics.h" />
-    <ClInclude Include="Material.h" />
     <ClInclude Include="Sound.h" />
-    <ClInclude Include="SpotLight.h" />
     <ClInclude Include="SQT.h" />
-    <ClInclude Include="StackAllocator.h" />
     <ClInclude Include="HiLevelServiceCentre.h" />
     <ClInclude Include="StarSystem.h" />
-    <ClInclude Include="SubChunk.h" />
     <ClInclude Include="TexturedRasterizer.h" />
-    <ClInclude Include="Typedefs.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -83,8 +83,6 @@ namespace GraphicsStuff
 	extern const float HORI_FIELD_OF_VIEW_RADS;
 
 	// Voxel grid properties
-	extern const byteUnsigned NUM_VOXEL_GRID_TEXTURES;
 	extern const fourByteUnsigned VOXEL_GRID_WIDTH;
 	extern const eightByteUnsigned VOXEL_GRID_VOLUME;
-	extern const eightByteUnsigned VOXEL_GRID_COST_BYTES;
 }

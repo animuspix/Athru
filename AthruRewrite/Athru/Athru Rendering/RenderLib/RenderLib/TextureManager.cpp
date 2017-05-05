@@ -1,6 +1,5 @@
 #include <assert.h>
-#include "WICTextureLoader\WICTextureLoader.h"
-#include "UtilityServiceCentre.h"
+#include "stdafx.h"
 #include "TextureManager.h"
 
 // I decided that (since we're really only likely to use textures for
@@ -70,8 +69,8 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 
 	// Create post-processing texture description
 	D3D11_TEXTURE2D_DESC screenTextureDesc;
-	screenTextureDesc.Width = DISPLAY_WIDTH;
-	screenTextureDesc.Height = DISPLAY_HEIGHT;
+	screenTextureDesc.Width = GraphicsStuff::DISPLAY_WIDTH;
+	screenTextureDesc.Height = GraphicsStuff::DISPLAY_HEIGHT;
 	screenTextureDesc.MipLevels = 1;
 	screenTextureDesc.ArraySize = 1;
 	screenTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;

@@ -24,7 +24,10 @@ class HiLevelServiceCentre
 		{
 			// Attempt to create and register utility services 
 			// (memory, logging, input, the application)
-			AthruUtilities::UtilityServiceCentre::Init();
+			// Assume 2GB memory usage for now; update with better
+			// values when possible
+			eightByteUnsigned STARTING_HEAP = INT_MAX;
+			AthruUtilities::UtilityServiceCentre::Init(STARTING_HEAP);
 
 			// Attempt to create and register the primary graphics
 			// service

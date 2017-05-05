@@ -8,7 +8,6 @@ class Boxecule : public Mesh
 {
 	public:
 		Boxecule() {}
-		Boxecule(Material boxeculeMaterial);
 		~Boxecule();
 };
 

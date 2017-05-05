@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Shader.h"
-#include "MathIncludes.h"
+#include "AthruGlobals.h"
 
 #define AMBIENT_DIFFUSE_RATIO 0.4f
 #define SPOT_CUTOFF_RADIANS PI / 8

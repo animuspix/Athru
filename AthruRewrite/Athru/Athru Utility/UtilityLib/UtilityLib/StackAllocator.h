@@ -3,11 +3,6 @@
 #include <cstdlib>
 #include "AthruGlobals.h"
 
-// Use the first form once the voxel grid is set up and rendering; use the
-// second form until then so that there's /generally/ enough memory available
-// for anything I do until then
-//#define STARTING_HEAP (eightByteUnsigned)(VOXEL_GRID_COST_BYTES * 1.4)
-#define STARTING_HEAP (eightByteUnsigned)(INT_MAX)
 #define MAX_MARKER_COUNT 120
 #define MARKER_INDEX_TYPE byteSigned
 #define POINTER_LENGTH eightByteUnsigned
@@ -24,7 +19,7 @@ class StackAllocator
 	};
 
 	public:
-		StackAllocator();
+		StackAllocator(eightByteUnsigned& expectedMemoryUsage);
 		~StackAllocator();
 
 		// Allocate [bytes] from the available heap memory

@@ -1,4 +1,4 @@
-#include "UtilityServiceCentre.h"
+#include "stdafx.h"
 #include "Vertex.h"
 
 void* Vertex::operator new(size_t size)

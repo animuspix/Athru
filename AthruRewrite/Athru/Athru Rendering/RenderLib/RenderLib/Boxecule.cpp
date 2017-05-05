@@ -1,20 +1,19 @@
-#include "AthruUtilities::UtilityServiceCentre.h"
+#include "NormalBuilder.h"
+#include "PlanarUnwrapper.h"
+#include "UtilityServiceCentre.h"
 #include "Boxecule.h"
 
-Boxecule::Boxecule(Material boxeculeMaterial)
+Boxecule::Boxecule()
 {
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
-	// Store the given material
-	material = boxeculeMaterial;
-
 	// Cache the color associated with [this]
-	DirectX::XMFLOAT4 vertColor = material.GetColorData();
+	DirectX::XMFLOAT4 vertColor = DirectX::XMFLOAT4(1, 1, 1, 1);
 
 	// Cache the roughness and reflectiveness associated with [this]
-	float vertRoughness = material.GetRoughness();
-	float vertReflectiveness = material.GetReflectiveness();
+	float vertRoughness = 0.8f;
+	float vertReflectiveness = 0.8f;
 
 	// Store min bounding cube position, max bounding cube position, and the difference (range) between them
 	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-0.5f, -0.5f, -0.5f, 1);

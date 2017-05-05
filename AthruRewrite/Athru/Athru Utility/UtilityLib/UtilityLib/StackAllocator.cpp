@@ -2,9 +2,9 @@
 #include "stdafx.h"
 #include "StackAllocator.h"
 
-StackAllocator::StackAllocator()
+StackAllocator::StackAllocator(eightByteUnsigned& expectedMemoryUsage)
 {
-	stackStart = malloc(STARTING_HEAP);
+	stackStart = malloc(expectedMemoryUsage);
 	stackTop = stackStart;
 
 	for (MARKER_INDEX_TYPE i = 0; i < MAX_MARKER_COUNT; i += 1)
