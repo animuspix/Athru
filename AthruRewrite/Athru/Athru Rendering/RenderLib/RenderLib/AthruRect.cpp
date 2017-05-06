@@ -1,4 +1,6 @@
-#include "AthruUtilities::UtilityServiceCentre.h"
+#include "UtilityServiceCentre.h"
+#include "NormalBuilder.h"
+#include "PlanarUnwrapper.h"
 #include "AthruRect.h"
 
 AthruRect::AthruRect(ID3D11Device* d3dDevice)
@@ -6,19 +8,15 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
-	// Assign a default material
-	material = Material();
-	material.SetTexture(AthruUtilities::UtilityServiceCentre::AccessTextureManager()->GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE));
-
-	// Create a render-target-view from the texture set above
-	d3dDevice->CreateRenderTargetView(material.GetTexture().raw, nullptr, &renderTarget);
+	// Create a render-target-view from the screen texture
+	//d3dDevice->CreateRenderTargetView(TextureManager()->GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE).raw, nullptr, &renderTarget);
 
 	// Cache the color associated with [this]
-	DirectX::XMFLOAT4 vertColor = material.GetColorData();
+	DirectX::XMFLOAT4 vertColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
 	// Cache the roughness and reflectiveness associated with [this]
-	float vertRoughness = material.GetRoughness();
-	float vertReflectiveness = material.GetReflectiveness();
+	float vertRoughness = 1.0f;
+	float vertReflectiveness = 1.0f;
 
 	// Store min bounding cube position, max bounding cube position, and the difference (range) between them
 	DirectX::XMFLOAT4 minBoundingPos = DirectX::XMFLOAT4(-1.0f, -1.0f, 0.1f, 1.0f);
@@ -123,9 +121,6 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 
 	// Check if anything failed during the geometry setup
 	assert(SUCCEEDED(result));
-
-	// Initialise the scale, rotation, and position of [this]
-	transformations = SQT();
 }
 
 AthruRect::~AthruRect()

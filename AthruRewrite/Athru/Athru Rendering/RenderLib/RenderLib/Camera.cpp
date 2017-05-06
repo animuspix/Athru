@@ -1,12 +1,10 @@
-#include "AthruUtilities::UtilityServiceCentre.h"
-#include "Graphics.h"
-#include "Material.h"
+#include "UtilityServiceCentre.h"
 #include "Camera.h"
 
 Camera::Camera(ID3D11Device* d3dDevice)
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, 0, (CHUNK_WIDTH / 2) + 2, 0);
+	position = _mm_set_ps(0, 0, ((float)GraphicsStuff::VOXEL_GRID_WIDTH / 2) + 2, 0);
 
 	// Set the camera's default rotation
 	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
@@ -39,13 +37,6 @@ Camera::Camera(ID3D11Device* d3dDevice)
 	// Create the camera's viewfinder (screen rect)
 	viewfinder = new AthruRect(d3dDevice);
 
-	// Move the viewfinder so that it sits at the near plane
-	// of the camera frustum; also initialise rotation + scale
-	DirectX::XMVECTOR viewfinderPos = _mm_add_ps(position, _mm_set_ps(0, SCREEN_NEAR, 0, 0));
-	DirectX::XMVECTOR viewfinderRotation = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
-	float viewfinderScale = 1;
-	viewfinder->FetchTransformations() = SQT(viewfinderPos, viewfinderRotation, viewfinderScale);
-
 	// Initialise the spinSpeed modifier for mouse-look
 	spinSpeed = 1.8f;
 }
@@ -60,10 +51,6 @@ void Camera::Translate(DirectX::XMVECTOR displacement)
 	// Translate the software camera
 	DirectX::XMVECTOR positionCopy = position;
 	position = _mm_add_ps(positionCopy, displacement);
-
-	// Translate the view-finder
-	DirectX::XMVECTOR currRectPosition = viewfinder->FetchTransformations().pos;
-	viewfinder->FetchTransformations().pos = _mm_add_ps(currRectPosition, displacement);
 }
 
 DirectX::XMVECTOR Camera::GetTranslation()
@@ -76,9 +63,6 @@ void Camera::SetRotation(DirectX::XMFLOAT3 eulerAngles)
 	// Rotate the software camera
 	coreRotationEuler = eulerAngles;
 	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(coreRotationEuler.x, coreRotationEuler.y, coreRotationEuler.z);
-
-	// Match the viewfinder's rotation to the software camera
-	viewfinder->FetchTransformations().rotationQuaternion = coreRotationQuaternion;
 }
 
 DirectX::XMVECTOR Camera::GetRotationQuaternion()
@@ -94,8 +78,8 @@ DirectX::XMFLOAT3 Camera::GetRotationEuler()
 void Camera::MouseLook(Input* inputPttr)
 {
 	DirectX::XMFLOAT2 currMousePos = inputPttr->GetMousePos();
-	float mouseDispX = (currMousePos.x - (DISPLAY_WIDTH / 2));
-	float mouseDispY = (currMousePos.y - (DISPLAY_HEIGHT / 2));
+	float mouseDispX = (currMousePos.x - (GraphicsStuff::DISPLAY_WIDTH / 2));
+	float mouseDispY = (currMousePos.y - (GraphicsStuff::DISPLAY_HEIGHT / 2));
 
 	// Calculate magnitude
 	float dispMag = sqrt(mouseDispX * mouseDispX + mouseDispY * mouseDispY);

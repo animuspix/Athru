@@ -23,8 +23,8 @@ Direct3D::Direct3D(HWND hwnd)
 	swapChainDesc.BufferCount = 1;
 
 	// Set the width and height of the back buffer
-	swapChainDesc.BufferDesc.Width = DISPLAY_WIDTH;
-	swapChainDesc.BufferDesc.Height = DISPLAY_HEIGHT;
+	swapChainDesc.BufferDesc.Width = GraphicsStuff::DISPLAY_WIDTH;
+	swapChainDesc.BufferDesc.Height = GraphicsStuff::DISPLAY_HEIGHT;
 
 	// Set regular 32-bit surface for the back buffer
 	swapChainDesc.BufferDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
@@ -40,7 +40,7 @@ Direct3D::Direct3D(HWND hwnd)
 	swapChainDesc.SampleDesc.Quality = 0;
 
 	// Set fullscreen/windowed mode
-	swapChainDesc.Windowed = !FULL_SCREEN;
+	swapChainDesc.Windowed = !GraphicsStuff::FULL_SCREEN;
 
 	// Allow the rasterizer to decide the most appropriate scan-line ordering and scaling
 	// mode
@@ -53,7 +53,7 @@ Direct3D::Direct3D(HWND hwnd)
 	// Don't set any extra swap chain settings
 	swapChainDesc.Flags = 0;
 
-	if (VSYNC_ENABLED)
+	if (GraphicsStuff::VSYNC_ENABLED)
 	{
 		// Figure out the monitor refresh rate so we can implement vsync
 		DEVMODE displayData = DEVMODE();
@@ -111,8 +111,8 @@ Direct3D::Direct3D(HWND hwnd)
 	ZeroMemory(&depthStencilBufferDesc, sizeof(depthStencilBufferDesc));
 
 	// Set up the depth-stencil buffer description
-	depthStencilBufferDesc.Width = DISPLAY_WIDTH;
-	depthStencilBufferDesc.Height = DISPLAY_HEIGHT;
+	depthStencilBufferDesc.Width = GraphicsStuff::DISPLAY_WIDTH;
+	depthStencilBufferDesc.Height = GraphicsStuff::DISPLAY_HEIGHT;
 	depthStencilBufferDesc.MipLevels = 1;
 	depthStencilBufferDesc.ArraySize = 1;
 	depthStencilBufferDesc.Format = DXGI_FORMAT_D24_UNORM_S8_UINT;
@@ -232,8 +232,8 @@ Direct3D::Direct3D(HWND hwnd)
 	D3D11_VIEWPORT viewport;
 
 	// Setup the viewport for rendering
-	viewport.Width = (float)DISPLAY_WIDTH;
-	viewport.Height = (float)DISPLAY_HEIGHT;
+	viewport.Width = (float)GraphicsStuff::DISPLAY_WIDTH;
+	viewport.Height = (float)GraphicsStuff::DISPLAY_HEIGHT;
 	viewport.MinDepth = 0.0f;
 	viewport.MaxDepth = 1.0f;
 	viewport.TopLeftX = 0.0f;
@@ -243,13 +243,13 @@ Direct3D::Direct3D(HWND hwnd)
 	deviceContext->RSSetViewports(1, &viewport);
 
 	// Create the perspective projection matrix
-	perspProjector = DirectX::XMMatrixPerspectiveFovLH(VERT_FIELD_OF_VIEW_RADS, DISPLAY_ASPECT_RATIO, SCREEN_NEAR, SCREEN_FAR);
+	perspProjector = DirectX::XMMatrixPerspectiveFovLH(GraphicsStuff::VERT_FIELD_OF_VIEW_RADS, GraphicsStuff::DISPLAY_ASPECT_RATIO, GraphicsStuff::SCREEN_NEAR, GraphicsStuff::SCREEN_FAR);
 
 	// Create world matrix (initialized to the 4D identity matrix)
 	worldMatrix = DirectX::XMMatrixIdentity();
 
 	// Create orthographic projection matrix
-	orthoProjector = DirectX::XMMatrixOrthographicLH(FRUSTUM_WIDTH_AT_NEAR, FRUSTUM_HEIGHT_AT_NEAR, SCREEN_NEAR, SCREEN_FAR);
+	orthoProjector = DirectX::XMMatrixOrthographicLH(GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR, GraphicsStuff::FRUSTUM_HEIGHT_AT_NEAR, GraphicsStuff::SCREEN_NEAR, GraphicsStuff::SCREEN_FAR);
 
 	// Raise an error if any DirectX components failed to build
 	assert(SUCCEEDED(result));
@@ -328,7 +328,7 @@ void Direct3D::EndScene()
 	//
 	// If vsync is disabled (read: equal to [false] or [0]), present it as
 	// fast as possible
-	swapChain->Present(VSYNC_ENABLED, 0);
+	swapChain->Present(GraphicsStuff::VSYNC_ENABLED, 0);
 }
 
 ID3D11Device* Direct3D::GetDevice()

@@ -3,7 +3,7 @@
 #include "UtilityServiceCentre.h"
 #include "Boxecule.h"
 
-Boxecule::Boxecule()
+Boxecule::Boxecule(ID3D11Device* device)
 {
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
@@ -180,7 +180,6 @@ Boxecule::Boxecule()
 	vertData.SysMemSlicePitch = 0;
 
 	// Create the vertex buffer
-	ID3D11Device* device = AthruUtilities::UtilityServiceCentre::AccessGraphics()->GetD3D()->GetDevice();
 	result = device->CreateBuffer(&vertBufferDesc, &vertData, &vertBuffer);
 
 	// Set up the description of the static index buffer
@@ -203,9 +202,6 @@ Boxecule::Boxecule()
 
 	// Check if anything failed during the geometry setup
 	assert(SUCCEEDED(result));
-
-	// Initialise the scale, rotation, and position of [this]
-	transformations = SQT();
 }
 
 Boxecule::~Boxecule()

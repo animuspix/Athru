@@ -34,39 +34,19 @@ void Mesh::PassToGPU(ID3D11DeviceContext* deviceContext)
 	deviceContext->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 }
 
-void Mesh::SetMaterial(Material& freshMaterial)
-{
-	material = freshMaterial;
-}
-
-Material& Mesh::GetMaterial()
-{
-	return material;
-}
-
-SQT& Mesh::FetchTransformations()
-{
-	return transformations;
-}
-
-DirectX::XMMATRIX Mesh::GetTransform()
-{
-	return transformations.asMatrix();
-}
-
 // Very unsure about alignments here; ask around at AIE when possible
 
 // Push constructions for this class through Athru's custom allocator
 void* Mesh::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityAthruUtilities::UtilityServiceCentre::AccessMemory();
+	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Mesh>(), false);
 }
 
 // Push constructions for this class through Athru's custom allocator
 void* Mesh::operator new[](size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityAthruUtilities::UtilityServiceCentre::AccessMemory();
+	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
 	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Mesh>(), false);
 }
 

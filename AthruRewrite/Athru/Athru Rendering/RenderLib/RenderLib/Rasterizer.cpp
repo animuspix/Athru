@@ -1,4 +1,4 @@
-#include "AthruUtilities::UtilityServiceCentre.h"
+#include "UtilityServiceCentre.h"
 #include "Rasterizer.h"
 
 Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,

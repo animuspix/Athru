@@ -1,4 +1,4 @@
-#include "AthruUtilities::UtilityServiceCentre.h"
+#include "UtilityServiceCentre.h"
 #include "AthruRect.h"
 #include "PostProcessor.h"
 

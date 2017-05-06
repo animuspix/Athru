@@ -7,7 +7,7 @@
 class Boxecule : public Mesh
 {
 	public:
-		Boxecule() {}
+		Boxecule(ID3D11Device* device);
 		~Boxecule();
 };
 

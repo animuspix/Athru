@@ -2,9 +2,10 @@
 
 #include "Shader.h"
 #include "AthruGlobals.h"
+#include "RenderManager.h"
 
 #define AMBIENT_DIFFUSE_RATIO 0.4f
-#define SPOT_CUTOFF_RADIANS PI / 8
+#define SPOT_CUTOFF_RADIANS MathsStuff::PI / 8
 
 class Rasterizer : public Shader
 {
