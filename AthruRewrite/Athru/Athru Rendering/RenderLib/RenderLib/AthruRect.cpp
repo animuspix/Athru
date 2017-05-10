@@ -1,6 +1,5 @@
 #include "UtilityServiceCentre.h"
-#include "NormalBuilder.h"
-#include "PlanarUnwrapper.h"
+#include "RenderServiceCentre.h"
 #include "AthruRect.h"
 
 AthruRect::AthruRect(ID3D11Device* d3dDevice)
@@ -9,7 +8,7 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	HRESULT result;
 
 	// Create a render-target-view from the screen texture
-	//d3dDevice->CreateRenderTargetView(TextureManager()->GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE).raw, nullptr, &renderTarget);
+	d3dDevice->CreateRenderTargetView(AthruRendering::RenderServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).raw, nullptr, &renderTarget);
 
 	// Cache the color associated with [this]
 	DirectX::XMFLOAT4 vertColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
@@ -32,7 +31,7 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	DirectX::XMFLOAT4 vert3Pos = DirectX::XMFLOAT4(1.0f, -1.0f, 0.1f, 1.0f); // Front plane, lower right (v3)
 
 	// Initialise vertices
-	Vertex vertices[4] = { Vertex(vert0Pos, // Upper left (v0)
+	SceneVertex vertices[4] = { Vertex(vert0Pos, // Upper left (v0)
 								  vert0Pos,
 								  vertColor,
 								  vertColor,
@@ -86,7 +85,7 @@ AthruRect::AthruRect(ID3D11Device* d3dDevice)
 	// Set up the description of the static vertex buffer
 	D3D11_BUFFER_DESC vertBufferDesc;
 	vertBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	vertBufferDesc.ByteWidth = sizeof(Vertex) * 4;
+	vertBufferDesc.ByteWidth = sizeof(SceneVertex) * 4;
 	vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	vertBufferDesc.MiscFlags = 0;

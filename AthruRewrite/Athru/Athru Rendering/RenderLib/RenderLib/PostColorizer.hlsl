@@ -33,7 +33,7 @@ float4 Blur(float4 basePix, int blurRad, float2 flippedTexCoord)
         basePix += texIn.Sample(wrapSampler, float2(flippedTexCoord.x, flippedTexCoord.y + (texelVertSize * i)));
         basePix += texIn.Sample(wrapSampler, float2(flippedTexCoord.x, flippedTexCoord.y - (texelVertSize * i)));
     }
-    
+
     return basePix /= blurRad;
 }
 
@@ -53,7 +53,7 @@ float4 main(Pixel pixIn) : SV_TARGET
     // and UV space by flipping the given UV about the
     // Y-axis
     float2 flippedTexCoord = float2(pixIn.texCoord.x, 1 - pixIn.texCoord.y);
-    
+
     // Sample basic color data for the current pixel
     float4 pixAtCurrUV = texIn.Sample(wrapSampler, flippedTexCoord);
 

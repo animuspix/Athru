@@ -1,7 +1,8 @@
 #include "UtilityServiceCentre.h"
+#include "RenderServiceCentre.h"
 #include "Camera.h"
 
-Camera::Camera(ID3D11Device* d3dDevice)
+Camera::Camera()
 {
 	// Set the camera's default position
 	position = _mm_set_ps(0, 0, ((float)GraphicsStuff::VOXEL_GRID_WIDTH / 2) + 2, 0);
@@ -35,7 +36,7 @@ Camera::Camera(ID3D11Device* d3dDevice)
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
 	// Create the camera's viewfinder (screen rect)
-	viewfinder = new AthruRect(d3dDevice);
+	viewfinder = new AthruRect(AthruRendering::RenderServiceCentre::AccessD3D()->GetDevice());
 
 	// Initialise the spinSpeed modifier for mouse-look
 	spinSpeed = 1.8f;
@@ -44,6 +45,51 @@ Camera::Camera(ID3D11Device* d3dDevice)
 Camera::~Camera()
 {
 	viewfinder->~AthruRect();
+}
+
+void Camera::Update()
+{
+	// Cache a local reference to the Input service
+	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
+
+	// Translate the view in-game with WASD
+	float speed = 10;
+	if (localInput->IsKeyDown(87))
+	{
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), coreRotationQuaternion));
+	}
+
+	if (localInput->IsKeyDown(65))
+	{
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, (speed * TimeStuff::deltaTime()) * -1), coreRotationQuaternion));
+	}
+
+	if (localInput->IsKeyDown(83))
+	{
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, (speed * TimeStuff::deltaTime()) * -1, 0, 0), coreRotationQuaternion));
+	}
+
+	if (localInput->IsKeyDown(68))
+	{
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, speed * TimeStuff::deltaTime()), coreRotationQuaternion));
+	}
+
+	if (localInput->IsKeyDown(32))
+	{
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, speed * TimeStuff::deltaTime(), 0), coreRotationQuaternion));
+	}
+
+	if (localInput->IsKeyDown(17))
+	{
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, (speed * TimeStuff::deltaTime()) * -1, 0), coreRotationQuaternion));
+	}
+
+	// Rotate the view with mouse input
+	this->MouseLook(localInput);
+
+	// Update the view matrix to reflect
+	// the translation + rotation above
+	this->RefreshViewData();
 }
 
 void Camera::Translate(DirectX::XMVECTOR displacement)

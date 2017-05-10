@@ -24,7 +24,7 @@ Shader::Shader(ID3D11Device* device, HWND windowHandle,
 	result = device->CreatePixelShader(pixelShaderBuffer->GetBufferPointer(), pixelShaderBuffer->GetBufferSize(), NULL, &pixelShader);
 
 	// Set up the vertex input layout description
-	// This setup needs to match the Vertex struct in Boxecule + each shader
+	// This setup needs to match the SceneVertex struct in Boxecule + each shader
 	D3D11_INPUT_ELEMENT_DESC polygonLayout[VERTEX_PROPERTY_COUNT];
 	polygonLayout[0].SemanticName = "POSITION";
 	polygonLayout[0].SemanticIndex = 0;
@@ -122,9 +122,6 @@ Shader::Shader(ID3D11Device* device, HWND windowHandle,
 	// matrices into the vertex shader's cbuffer
 	result = device->CreateBuffer(&matrixBufferDesc, NULL, &matBufferLocal);
 
-	// Initialise the time-accumulator to [0]
-	dtAccumulator = 0;
-
 	// Test whether anything broke :P
 	assert(SUCCEEDED(result));
 }
@@ -146,93 +143,6 @@ Shader::~Shader()
 	// Release the vertex shader
 	vertShader->Release();
 	vertShader = nullptr;
-
-	// Flush any pipeline data associated with [this]
-	//AthruUtilities::UtilityServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->ClearState();
-	//AthruUtilities::UtilityServiceCentre::AccessGraphics()->GetD3D()->GetDeviceContext()->Flush();
-}
-
-void Shader::SetShaderParameters(ID3D11DeviceContext* deviceContext,
-								  DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
-{
-	// Long integer used to store success/failure for DirectX operations
-	HRESULT result;
-
-	// Transpose the matrices to prepare them for the shader
-	world = XMMatrixTranspose(world);
-	view = XMMatrixTranspose(view);
-	projection = XMMatrixTranspose(projection);
-
-	// Increment/decrement the time accumulator
-	// Lots of magic calculus here; probably a good idea to ask someone
-	// what's actually happening before I spend too much time
-	// documenting it :P
-	dtAccumulator += ((TimeStuff::deltaTime() * TimeStuff::deltaTime()) * (float)accumulatorGrowth);
-
-	// If more time has passed than the animation's duration, allow the
-	// accumulator to decrement back towards zero; when the value of the
-	// accumulator is less than or equal to zero, set the accumulator to
-	// begin incrementing back up towards the animation's duration
-	if (dtAccumulator > ANIM_DURATION_SECONDS)
-	{
-		accumulatorGrowth = ACCUMULATOR_DIRECTION::FALLING;
-	}
-
-	else if (dtAccumulator <= 0)
-	{
-		accumulatorGrowth = ACCUMULATOR_DIRECTION::RISING;
-	}
-
-	// Expose the local matrix buffer for writing
-	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	result = deviceContext->Map(matBufferLocal, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
-
-	// Get a pointer to the data in the local matrix buffer
-	MatBuffer* dataPtr;
-	dataPtr = (MatBuffer*)mappedResource.pData;
-
-	// Copy the world/view/projection matrices into the local matrix buffer
-	dataPtr->world = world;
-	dataPtr->view = view;
-	dataPtr->projection = projection;
-
-	// Also extract the current animation time-step and store it in the
-	// local matrix buffer
-	dataPtr->animTimeStep = DirectX::XMFLOAT4(dtAccumulator / ANIM_DURATION_SECONDS,
-											  dtAccumulator / ANIM_DURATION_SECONDS,
-											  dtAccumulator / ANIM_DURATION_SECONDS,
-											  dtAccumulator / ANIM_DURATION_SECONDS);
-
-	// Break the write-allowed connection to the local matrix buffer
-	deviceContext->Unmap(matBufferLocal, 0);
-
-	// Transfer the data in the local matrix buffer to the cbuffer within the
-	// vertex shader
-	deviceContext->VSSetConstantBuffers(0, 1, &matBufferLocal);
-
-	// Test whether anything broke :P
-	assert(SUCCEEDED(result));
-}
-
-void Shader::RenderShader(ID3D11DeviceContext* deviceContext, fourByteUnsigned numIndicesDrawing)
-{
-	// Set the vertex input layout.
-	deviceContext->IASetInputLayout(inputLayout);
-
-	// Set the vertex/pixel/compute shaders that will be used to render the boxecule
-	deviceContext->VSSetShader(vertShader, NULL, 0);
-	deviceContext->PSSetShader(pixelShader, NULL, 0);
-
-	// Render a boxecule
-	deviceContext->DrawIndexed(numIndicesDrawing, 0, 0);
-}
-
-void Shader::Render(ID3D11DeviceContext* deviceContext,
-					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-					fourByteUnsigned numIndicesDrawing)
-{
-	SetShaderParameters(deviceContext, world, view, projection);
-	RenderShader(deviceContext, numIndicesDrawing);
 }
 
 // Push constructions for this class through Athru's custom allocator

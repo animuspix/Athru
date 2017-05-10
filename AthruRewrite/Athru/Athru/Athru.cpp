@@ -1,12 +1,16 @@
 #include "HiLevelServiceCentre.h"
-#include "Application.h"
-#include "leakChecker.h"
 
 void GameLoop()
 {
+	// Cache local references to utility services
 	Application* athruApp = AthruUtilities::UtilityServiceCentre::AccessApp();
 	Input* athruInput = AthruUtilities::UtilityServiceCentre::AccessInput();
-	Graphics* athruGraphics = HiLevelServiceCentre::AccessGraphics();
+
+	// Cache a local reference to the render-manager
+	RenderManager* athruRendering = AthruRendering::RenderServiceCentre::AccessRenderManager();
+
+	// Cache a local reference to the high-level scene representation
+	Scene* athruScene = HiLevelServiceCentre::AccessScene();
 
 	bool gameExiting = false;
 	while (!gameExiting)
@@ -22,9 +26,17 @@ void GameLoop()
 			break;
 		}
 
+		// Log CPU-side FPS
+		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
+		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
+
 		// Perform update/draw operations here
-		athruGraphics->Update();
-		athruGraphics->Draw();
+		//athruScene->Update();
+		athruRendering->Render(athruScene->GetMainCamera());
+
+		// Record the time at this frame so we can calculate
+		// [deltaTime]
+		TimeStuff::timeAtLastFrame = std::chrono::steady_clock::now();
 	}
 }
 

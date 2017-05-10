@@ -1,7 +1,8 @@
-// Engine services; the only service used here is the
-// Athru custom memory allocator, but it's still best to
-// store/access them all in/from the same place
+// Athru utility services
 #include "UtilityServiceCentre.h"
+
+// Athru rendering services
+#include "RenderServiceCentre.h"
 
 // The Direct3D handler class
 #include "Direct3D.h"
@@ -17,20 +18,18 @@
 // The header containing declarations used by [this]
 #include "RenderManager.h"
 
-RenderManager::RenderManager(ID3D11DeviceContext* d3dDeviceContext, ID3D11Device* d3dDevice,
-							 AVAILABLE_POST_EFFECTS defaultPostEffectA, AVAILABLE_POST_EFFECTS defaultPostEffectB,
-							 ID3D11ShaderResourceView* postProcessShaderResource)
+RenderManager::RenderManager(ID3D11ShaderResourceView* postProcessShaderResource)
 {
-	// Cache a class-scope reference to the given device
-	device = d3dDevice;
-
-	// Cache a class-scope reference to the given device context
-	deviceContext = d3dDeviceContext;
-
-	// Initialise the object shader + the post-processing shader
-
 	// Cache a local copy of the window handle
 	HWND localWindowHandle = AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND();
+
+	// Cache a class-scope reference to the Direct3D handler class
+	d3D = AthruRendering::RenderServiceCentre::AccessD3D();
+
+	// Cache a local reference to the Direct3D rendering device
+	ID3D11Device* d3dDevice = d3D->GetDevice();
+
+	// Initialise the object shader + the post-processing shader
 	rasterizer = new Rasterizer(d3dDevice, localWindowHandle, L"VertPlotter.cso", L"Colorizer.cso");
 	postProcessor = new PostProcessor(d3dDevice, localWindowHandle, L"PostVertPlotter.cso", L"PostColorizer.cso",
 									  postProcessShaderResource);
@@ -47,32 +46,44 @@ RenderManager::~RenderManager()
 	postProcessor = nullptr;
 }
 
-void RenderManager::Render(Camera* mainCamera,
-						   DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
+void RenderManager::Render(Camera* mainCamera)
 {
-	// Sample terrain
-	// Compute lighting
-	// Render sampled terrain
+	// Cache a local reference to the camera's viewfinder
+	// (screen rect)
+	AthruRect* viewFinderPttr = mainCamera->GetViewFinder();
+
+	// Prepare DirectX for scene rendering
+	d3D->BeginScene(viewFinderPttr->GetRenderTarget());
+
+	// Compute scene data for the current main-camera position
+	//this->PreProcess();
+
+	// Render scene to the screen texture
+	//RenderScene();
+
+	// Prepare DirectX for post-processing
+	d3D->BeginPost();
+
 	// Post-process
+	this->PostProcess(viewFinderPttr, d3D->GetWorldMatrix(), mainCamera->GetViewMatrix(), d3D->GetPerspProjector());
+
+	// Present the post-processed scene to the display
+	d3D->EndScene();
 }
 
 void RenderManager::PostProcess(AthruRect* screenRect,
 								DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	// Pass the rect onto the GPU, then render it with the post-processing shader
-	screenRect->PassToGPU(deviceContext);
-	postProcessor->Render(deviceContext, world * screenRect->GetTransform(), view, projection,
+	ID3D11DeviceContext* context = d3D->GetDeviceContext();
+	screenRect->PassToGPU(context);
+	postProcessor->Render(context, world, view, projection,
 						  true, false, false);
 }
 
-ID3D11Device * RenderManager::GetD3DDevice()
+Direct3D* RenderManager::GetD3D()
 {
-	return device;
-}
-
-ID3D11DeviceContext * RenderManager::GetD3DDeviceContext()
-{
-	return deviceContext;
+	return d3D;
 }
 
 // Push constructions for this class through Athru's custom allocator

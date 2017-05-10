@@ -31,15 +31,15 @@ namespace TimeStuff
 
 namespace MathsStuff
 {
-	// An approximation of pi; stored as a number rather than an inline 
+	// An approximation of pi; stored as a number rather than an inline
 	// function to avoid repeated divisions and/or trig operations
 	extern const float PI;
 
 	// Calculate XMFLOAT4 magnitudes
 	// Implemented because I assumed float4s could only be
 	// set through XMFLOAT4's, but it seems like I was wrong
-	// about that; I should probably get rid of this and adjust 
-	// my process towards a pure-XMVECTOR system for greater 
+	// about that; I should probably get rid of this and adjust
+	// my process towards a pure-XMVECTOR system for greater
 	// efficiency
 	inline float sisdVectorMagnitude(DirectX::XMFLOAT4 sisdVector)
 	{
@@ -84,5 +84,6 @@ namespace GraphicsStuff
 
 	// Voxel grid properties
 	extern const fourByteUnsigned VOXEL_GRID_WIDTH;
+	extern const eightByteUnsigned VOXEL_GRID_AREA;
 	extern const eightByteUnsigned VOXEL_GRID_VOLUME;
 }

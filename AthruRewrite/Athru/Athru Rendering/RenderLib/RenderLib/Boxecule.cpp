@@ -33,7 +33,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 	DirectX::XMFLOAT4 vert7Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.5f, 1); // Back plane, lower left (v7)
 
 	// Initialise vertices
-	Vertex vertices[8] = { Vertex(vert0Pos, // Front plane, upper left (v0)
+	SceneVertex vertices[8] = { Vertex(vert0Pos, // Front plane, upper left (v0)
 								  vert0Pos,
 								  vertColor,
 								  vertColor,
@@ -167,7 +167,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 	// Set up the description of the static vertex buffer
 	D3D11_BUFFER_DESC vertBufferDesc;
 	vertBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	vertBufferDesc.ByteWidth = sizeof(Vertex) * 8;
+	vertBufferDesc.ByteWidth = sizeof(SceneVertex) * 8;
 	vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	vertBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	vertBufferDesc.MiscFlags = 0;

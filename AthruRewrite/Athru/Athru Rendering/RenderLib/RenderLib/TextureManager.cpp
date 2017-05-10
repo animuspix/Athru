@@ -51,23 +51,21 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 
 	// Store texture locations
 	textureLocations[(byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE] = L"baseTex.bmp";
-	textureLocations[(byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::IMPORTED_MESH_TEXTURE] = L"importedMeshTexture.bmp";
 
 	// Build external textures
-	byteUnsigned i = 0;
-	while (i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE)
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE; i += 1)
 	{
 		result = DirectX::CreateWICTextureFromFile(d3dDevice, textureLocations[i],
-												   (ID3D11Resource**)(&(availableExternalTextures[i].raw)), &(availableExternalTextures[i].asShaderResource),
+												   (ID3D11Resource**)(&(availableExternalTextures[i].raw)), &(availableExternalTextures[i].asRenderedShaderResource),
 												   MAX_TEXTURE_SIZE_2D);
 
 		assert(SUCCEEDED(result));
 		i += 1;
 	}
 
-	// Build internal textures
+	// Build display textures
 
-	// Create post-processing texture description
+	// Create display texture description
 	D3D11_TEXTURE2D_DESC screenTextureDesc;
 	screenTextureDesc.Width = GraphicsStuff::DISPLAY_WIDTH;
 	screenTextureDesc.Height = GraphicsStuff::DISPLAY_HEIGHT;
@@ -81,39 +79,127 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 	screenTextureDesc.CPUAccessFlags = 0;
 	screenTextureDesc.MiscFlags = 0;
 
-	// Build raw post-processing texture
-	byteUnsigned screenTextureID = (byteUnsigned)AVAILABLE_INTERNAL_TEXTURES::SCREEN_TEXTURE;
-	result = d3dDevice->CreateTexture2D(&screenTextureDesc, nullptr, &(availableInternalTextures[screenTextureID].raw));
-	assert(SUCCEEDED(result));
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_DISPLAY_TEXTURES::NULL_TEXTURE; i += 1)
+	{
+		// If the current texture is an effect mask, adjust the texture format
+		// to match
+		screenTextureDesc.Format = DXGI_FORMAT_R32_FLOAT;
 
-	// Extract a shader-friendly resource view from the generated texture
-	result = d3dDevice->CreateShaderResourceView(availableInternalTextures[screenTextureID].raw, nullptr, &(availableInternalTextures[screenTextureID].asShaderResource));
-	assert(SUCCEEDED(result));
+		// Build texture
+		result = d3dDevice->CreateTexture2D(&screenTextureDesc, nullptr, &(availableInternalTextures2D[i].raw));
+		assert(SUCCEEDED(result));
+
+		// Extract a shader-friendly resource view from the generated texture
+		result = d3dDevice->CreateShaderResourceView(availableInternalTextures2D[i].raw, nullptr, &(availableInternalTextures2D[i].asRenderedShaderResource));
+		assert(SUCCEEDED(result));
+	}
+
+	// Build scene textures
+
+	// Material properties stored in volume textures
+	// - Color (including alpha)
+	// - PBR (roughness/reflectance)
+	// - Emissive intensity
+
+	// Create scene texture description
+	D3D11_TEXTURE3D_DESC sceneTextureDesc;
+	sceneTextureDesc.Width = GraphicsStuff::VOXEL_GRID_WIDTH;
+	sceneTextureDesc.Height = GraphicsStuff::VOXEL_GRID_WIDTH;
+	sceneTextureDesc.Depth = GraphicsStuff::VOXEL_GRID_WIDTH;
+	sceneTextureDesc.MipLevels = 1;
+	sceneTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	sceneTextureDesc.Usage = D3D11_USAGE_DEFAULT;
+	sceneTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	sceneTextureDesc.CPUAccessFlags = 0;
+	sceneTextureDesc.MiscFlags = 0;
+
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_VOLUME_TEXTURES::NULL_TEXTURE; i += 1)
+	{
+		// Set the number of active elements within each channel of the current texture
+		byteUnsigned elementsPerChannel = 4;
+		sceneTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+		if ((AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_EMISSIVITY_TEXTURE ||
+			(AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_CRITTER_DIST_TEXTURE)
+		{
+			elementsPerChannel = 1;
+			sceneTextureDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		}
+
+		else if ((AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_PBR_TEXTURE)
+		{
+			elementsPerChannel = 2;
+			sceneTextureDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
+		}
+
+		// Build texture
+		result = d3dDevice->CreateTexture3D(&sceneTextureDesc, nullptr, &(availableInternalTextures3D[i].raw));
+		assert(SUCCEEDED(result));
+
+		// Extract a shader-friendly resource view from the generated texture
+		result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].raw, nullptr, &(availableInternalTextures3D[i].asRenderedShaderResource));
+		assert(SUCCEEDED(result));
+
+		// Build compute-friendly color buffer description
+		D3D11_BUFFER_DESC sceneBufferDesc;
+		sceneBufferDesc.ByteWidth = (sizeof(float) * elementsPerChannel) * GraphicsStuff::VOXEL_GRID_VOLUME;
+		sceneBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		sceneBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+		sceneBufferDesc.StructureByteStride = sizeof(float) * elementsPerChannel;
+		sceneBufferDesc.CPUAccessFlags = 0;
+		sceneBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+
+		// Build a compute-friendly buffer with the raw texture data
+		D3D11_SUBRESOURCE_DATA textureData;
+		textureData.pSysMem = availableInternalTextures3D[i].raw;
+		textureData.SysMemPitch = GraphicsStuff::VOXEL_GRID_WIDTH;
+		textureData.SysMemSlicePitch = GraphicsStuff::VOXEL_GRID_AREA;
+		result = d3dDevice->CreateBuffer(&sceneBufferDesc, &textureData, &(availableInternalTextures3D[i].asStructuredBuffer));
+		assert(SUCCEEDED(result));
+
+		// Extract a compute-friendly resource view from the generated buffer
+		result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].raw, nullptr, &(availableInternalTextures3D[i].asComputeShaderResource));
+		assert(SUCCEEDED(result));
+	}
 }
 
 TextureManager::~TextureManager()
 {
-	byteUnsigned i = 0;
-	while (i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE)
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE; i += 1)
 	{
 		availableExternalTextures[i].raw->Release();
 		availableExternalTextures[i].raw = nullptr;
 
-		availableExternalTextures[i].asShaderResource->Release();
-		availableExternalTextures[i].asShaderResource = nullptr;
+		availableExternalTextures[i].asRenderedShaderResource->Release();
+		availableExternalTextures[i].asRenderedShaderResource = nullptr;
 		i += 1;
 	}
 
-	byteUnsigned j = 0;
-	while (j < (byteUnsigned)AVAILABLE_INTERNAL_TEXTURES::NULL_TEXTURE)
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_DISPLAY_TEXTURES::NULL_TEXTURE; i += 1)
 	{
-		availableInternalTextures[j].raw->Release();
-		availableInternalTextures[j].raw = nullptr;
+		availableInternalTextures2D[i].raw->Release();
+		availableInternalTextures2D[i].raw = nullptr;
 
-		availableInternalTextures[j].asShaderResource->Release();
-		availableInternalTextures[j].asShaderResource = nullptr;
+		availableInternalTextures2D[i].asRenderedShaderResource->Release();
+		availableInternalTextures2D[i].asRenderedShaderResource = nullptr;
 
-		j += 1;
+		i += 1;
+	}
+
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_VOLUME_TEXTURES::NULL_TEXTURE; i += 1)
+	{
+		availableInternalTextures3D[i].raw->Release();
+		availableInternalTextures3D[i].raw = nullptr;
+
+		availableInternalTextures3D[i].asRenderedShaderResource->Release();
+		availableInternalTextures3D[i].asRenderedShaderResource = nullptr;
+
+		availableInternalTextures3D[i].asStructuredBuffer->Release();
+		availableInternalTextures3D[i].asStructuredBuffer = nullptr;
+
+		availableInternalTextures3D[i].asComputeShaderResource->Release();
+		availableInternalTextures3D[i].asComputeShaderResource = nullptr;
+
+		i += 1;
 	}
 }
 
@@ -122,9 +208,14 @@ AthruTexture2D& TextureManager::GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES
 	return availableExternalTextures[(byteUnsigned)textureID];
 }
 
-AthruTexture2D& TextureManager::GetInternalTexture2D(AVAILABLE_INTERNAL_TEXTURES textureID)
+AthruTexture2D& TextureManager::GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES textureID)
 {
-	return availableInternalTextures[(byteUnsigned)textureID];
+	return availableInternalTextures2D[(byteUnsigned)textureID];
+}
+
+AthruTexture3D& TextureManager::GetVolumeTexture(AVAILABLE_VOLUME_TEXTURES textureID)
+{
+	return availableInternalTextures3D[(byteUnsigned)textureID];
 }
 
 // Push constructions for this class through Athru's custom allocator

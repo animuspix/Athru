@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Vertex.h"
+#include "SceneVertex.h"
 #include "d3d11.h"
 
 class Mesh

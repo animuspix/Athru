@@ -18,8 +18,9 @@ class Input;
 class Camera
 {
 	public:
-		Camera(ID3D11Device* d3dDevice);
+		Camera();
 		~Camera();
+		void Update();
 
 		// Set/get camera world position
 		void Translate(DirectX::XMVECTOR displacement);

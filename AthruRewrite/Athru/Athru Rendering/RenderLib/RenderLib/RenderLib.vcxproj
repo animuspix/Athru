@@ -97,6 +97,7 @@
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
+      <ObjectFileOutput>%userprofile%/Documents/GitHub/Athru/AthruRewrite/Athru/Athru/%(Filename).cso</ObjectFileOutput>
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -132,8 +133,10 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClInclude Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
     <ClInclude Include="AthruRect.h" />
     <ClInclude Include="AthruTexture2D.h" />
+    <ClInclude Include="AthruTexture3D.h" />
     <ClInclude Include="Boxecule.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Critter.h" />
@@ -142,15 +145,18 @@
     <ClInclude Include="NormalBuilder.h" />
     <ClInclude Include="PlanarUnwrapper.h" />
     <ClInclude Include="PostProcessor.h" />
+    <ClInclude Include="PostVertex.h" />
     <ClInclude Include="Rasterizer.h" />
     <ClInclude Include="RenderManager.h" />
+    <ClInclude Include="RenderServiceCentre.h" />
     <ClInclude Include="Shader.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TextureManager.h" />
-    <ClInclude Include="Vertex.h" />
+    <ClInclude Include="SceneVertex.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
     <ClCompile Include="AthruRect.cpp" />
     <ClCompile Include="Boxecule.cpp" />
     <ClCompile Include="Camera.cpp" />
@@ -158,8 +164,10 @@
     <ClCompile Include="Direct3D.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PostProcessor.cpp" />
+    <ClCompile Include="PostVertex.cpp" />
     <ClCompile Include="Rasterizer.cpp" />
     <ClCompile Include="RenderManager.cpp" />
+    <ClCompile Include="RenderServiceCentre.cpp" />
     <ClCompile Include="Shader.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
@@ -168,7 +176,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="TextureManager.cpp" />
-    <ClCompile Include="Vertex.cpp" />
+    <ClCompile Include="SceneVertex.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Colorizer.hlsl">
@@ -179,6 +187,36 @@
     </FxCompile>
     <FxCompile Include="PostVertPlotter.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="PlanetarySceneBuilder.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="PracticeSceneBuilder.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
+    </FxCompile>
+    <FxCompile Include="SceneIlluminator.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
+      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="VertPlotter.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>

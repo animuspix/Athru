@@ -13,6 +13,9 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Third Party">
+      <UniqueIdentifier>{1b5367a1-6d76-407d-9fbd-5df1a2a431e4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="stdafx.h">
@@ -63,7 +66,19 @@
     <ClInclude Include="TextureManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Vertex.h">
+    <ClInclude Include="RenderServiceCentre.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.h">
+      <Filter>Third Party</Filter>
+    </ClInclude>
+    <ClInclude Include="AthruTexture3D.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PostVertex.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SceneVertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -104,7 +119,16 @@
     <ClCompile Include="TextureManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Vertex.cpp">
+    <ClCompile Include="RenderServiceCentre.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
+      <Filter>Third Party</Filter>
+    </ClCompile>
+    <ClCompile Include="PostVertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneVertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -113,5 +137,8 @@
     <FxCompile Include="PostColorizer.hlsl" />
     <FxCompile Include="PostVertPlotter.hlsl" />
     <FxCompile Include="VertPlotter.hlsl" />
+    <FxCompile Include="SceneIlluminator.hlsl" />
+    <FxCompile Include="PlanetarySceneBuilder.hlsl" />
+    <FxCompile Include="PracticeSceneBuilder.hlsl" />
   </ItemGroup>
 </Project>

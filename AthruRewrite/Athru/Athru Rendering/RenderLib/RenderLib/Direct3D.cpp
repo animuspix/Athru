@@ -87,8 +87,7 @@ Direct3D::Direct3D(HWND hwnd)
 	// Set up the DirectX debug layer
 	debugDevice = nullptr;
 	result = device->QueryInterface(__uuidof(ID3D11Debug), reinterpret_cast<void**>(&debugDevice));
-	debugDevice->Release();
-	assert(SUCCEEDED(result));;
+	assert(SUCCEEDED(result));
 
 	// Cache the address of the back buffer
 	ID3D11Texture2D* backBufferPtr;
@@ -280,11 +279,8 @@ Direct3D::~Direct3D()
 	swapChain->Release();
 	swapChain = nullptr;
 
-	// Memory is shared between the debug-device and the core
-	// DirectX device object, so only one should be released
-	// during engine shutdown
-	//debugDevice->Release();
-	//debugDevice = nullptr;
+	debugDevice->Release();
+	debugDevice = nullptr;
 
 	device->Release();
 	device = nullptr;

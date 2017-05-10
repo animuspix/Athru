@@ -116,8 +116,8 @@
     <Link>
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)Third Party\DirectXTex\DirectXTex\Bin\Desktop_2015\x64\Debug\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <ShowProgress>LinkVerbose</ShowProgress>
+      <AdditionalDependencies>$(SolutionDir)Athru Rendering\RenderLib\x64\Debug\RenderLib.lib;$(SolutionDir)Athru Utility\UtilityLib\x64\Debug\UtilityLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
@@ -168,25 +168,13 @@
     </FxCompile>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
     <ClCompile Include="Athru.cpp" />
-    <ClCompile Include="Planet.cpp" />
-    <ClCompile Include="Graphics.cpp" />
-    <ClCompile Include="Sound.cpp" />
+    <ClCompile Include="Scene.cpp" />
     <ClCompile Include="HiLevelServiceCentre.cpp" />
-    <ClCompile Include="StarSystem.cpp" />
-    <ClCompile Include="TexturedRasterizer.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\ThirdParty\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
-    <ClInclude Include="Planet.h" />
-    <ClInclude Include="Dispatcher.h" />
-    <ClInclude Include="Graphics.h" />
-    <ClInclude Include="Sound.h" />
-    <ClInclude Include="SQT.h" />
+    <ClInclude Include="Scene.h" />
     <ClInclude Include="HiLevelServiceCentre.h" />
-    <ClInclude Include="StarSystem.h" />
-    <ClInclude Include="TexturedRasterizer.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

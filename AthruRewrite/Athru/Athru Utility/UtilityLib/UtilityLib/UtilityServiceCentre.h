@@ -1,6 +1,7 @@
 #pragma once
 
 #include "StackAllocator.h"
+#include "leakChecker.h"
 #include "Logger.h"
 #include "Input.h"
 #include "Application.h"

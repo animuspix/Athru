@@ -20,7 +20,7 @@ Mesh::~Mesh()
 void Mesh::PassToGPU(ID3D11DeviceContext* deviceContext)
 {
 	// Set vertex buffer stride and offset.
-	unsigned int stride = sizeof(Vertex);
+	unsigned int stride = sizeof(SceneVertex);
 	unsigned int offset = 0;
 
 	// Set the vertex buffer to active in the input assembler so it can be rendered

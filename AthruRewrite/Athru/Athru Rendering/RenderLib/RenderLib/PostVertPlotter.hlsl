@@ -6,16 +6,10 @@ cbuffer MatBuffer
     float4 animTimeStep;
 };
 
-struct Vertex
+struct PostVertex
 {
     float4 pos : POSITION0;
-    float4 targPos : POSITION1;
-    float4 color : COLOR0;
-    float4 targColor : COLOR1;
-    float4 normal : NORMAL0;
-    float2 texCoord : TEXCOORD0;
-    float grain : COLOR2;
-    float reflectFactor : COLOR3;
+    float4 texCoord : TEXCOORD0;
 };
 
 struct Pixel
@@ -24,7 +18,7 @@ struct Pixel
     float2 texCoord : TEXCOORD0;
 };
 
-Pixel main(Vertex vertIn)
+Pixel main(PostVertex vertIn)
 {
 	// Create a returnable [Pixel]
     Pixel pixOut;
@@ -37,7 +31,7 @@ Pixel main(Vertex vertIn)
     // base color information from the screen texture; initialise
     // that and everything else mostly associated with boxecules
     // to [0]
-    pixOut.texCoord = vertIn.texCoord;
+    pixOut.texCoord = float2(vertIn.texCoord.x, vertIn.texCoord.y);
 
     // Pass the output [Pixel] along to the pixel shader
     return pixOut;

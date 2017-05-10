@@ -17,7 +17,7 @@
 #include "Shader.h"
 #include "Rasterizer.h"
 #include "PostProcessor.h"
-#include "Vertex.h"
+#include "SceneVertex.h"
 #include "Mesh.h"
 #include "Boxecule.h"
 #include "AthruRect.h"

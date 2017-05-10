@@ -30,27 +30,11 @@ class Shader
 			DirectX::XMMATRIX world;
 			DirectX::XMMATRIX view;
 			DirectX::XMMATRIX projection;
-			DirectX::XMFLOAT4 animTimeStep;
 		};
-
-		virtual void SetShaderParameters(ID3D11DeviceContext* deviceContext,
-										 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
-
-		virtual void RenderShader(ID3D11DeviceContext* deviceContext, fourByteUnsigned numIndicesDrawing);
 
 		ID3D11VertexShader* vertShader;
 		ID3D11PixelShader* pixelShader;
 		ID3D11InputLayout* inputLayout;
 		ID3D11Buffer* matBufferLocal;
-
-	private:
-		enum class ACCUMULATOR_DIRECTION
-		{
-			RISING = 1,
-			FALLING = -1
-		};
-
-		float dtAccumulator;
-		ACCUMULATOR_DIRECTION accumulatorGrowth;
 };
 
