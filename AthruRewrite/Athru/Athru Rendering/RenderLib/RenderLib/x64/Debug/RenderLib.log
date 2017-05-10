@@ -1,8 +1,0 @@
-﻿  stdafx.cpp
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\rasterizer.h(41): error C2065: 'MAX_POINT_LIGHT_COUNT': undeclared identifier
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\rasterizer.h(42): error C2065: 'MAX_POINT_LIGHT_COUNT': undeclared identifier
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\rasterizer.h(43): error C2065: 'MAX_POINT_LIGHT_COUNT': undeclared identifier
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\rasterizer.h(46): error C2065: 'MAX_SPOT_LIGHT_COUNT': undeclared identifier
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\rasterizer.h(47): error C2065: 'MAX_SPOT_LIGHT_COUNT': undeclared identifier
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\rasterizer.h(48): error C2065: 'MAX_SPOT_LIGHT_COUNT': undeclared identifier
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\rasterizer.h(49): error C2065: 'MAX_SPOT_LIGHT_COUNT': undeclared identifier

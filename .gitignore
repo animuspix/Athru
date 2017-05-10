@@ -1,7 +1,56 @@
-﻿################################################################################
+################################################################################
 # This .gitignore file was automatically created by Microsoft(R) Visual Studio.
 ################################################################################
 
 /AthruRewrite/Athru/Athru.VC.VC.opendb
 
 AthruRewrite/Athru/Athru/x64/
+AthruRewrite/Athru/.vs/Athru/v15/Solution.VC.db
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/ATHRU-6d894b22/HILEVELSERVICECENTRE-dfaf1d10/HILEVELSERVICECENTRE.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/ATHRU-6d894b22/PLANET-c497f7d9/PLANET.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/ATHRU-6d894b22/SCENE-7f3bf923/SCENE.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/ATHRU-6d894b22/TEXTUREDRASTERIZER-9adee03a/TEXTUREDRASTERIZER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/ATHRURECT-199574eb/ATHRURECT.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/BOXECULE-9d4885d0/BOXECULE.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/GEOVERTEX-d15a112/GEOVERTEX.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/MESH-b7c211c6/MESH.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/POSTVERTEX-72f845fd/POSTVERTEX.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/RASTERIZER-b704aba4/RASTERIZER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/RENDERMANAGER-d4a70494/RENDERMANAGER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/RENDERSERVICECENTRE-bf77aeab/RENDERSERVICECENTRE.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/SCENEVERTEX-77e7eea5/SCENEVERTEX.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/SHADER-8c5baeb0/SHADER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/TEXTUREMANAGER-b5de1e5/TEXTUREMANAGER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/VERTEX-bb759117/VERTEX.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/RENDERLIB-ef657539/VERTPLOTTER-a6cd6c54/VERTPLOTTER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/_SFI_7E48AA89-ED62-49BC-9B30-CA350C69E6E5_-4cf1d41c/DIRECT3D-3f664d4b/DIRECT3D.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/_SFI_7E48AA89-ED62-49BC-9B30-CA350C69E6E5_-4cf1d41c/STACKALLOCATOR-9f3347ee/STACKALLOCATOR.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/_SFI_7E48AA89-ED62-49BC-9B30-CA350C69E6E5_-4cf1d41c/TEXTUREMANAGER-b5de1e5/TEXTUREMANAGER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/_SFI_7E48AA89-ED62-49BC-9B30-CA350C69E6E5_-4cf1d41c/WICTEXTURELOADER-4d07a1ee/WICTEXTURELOADER.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/UTILITYLIB-ed4bfb4b/UTILITYLIB-3175e4d5.ipch
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/Lib-link.read.1.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/Lib-link.write.1.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/lib.command.1.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/FXC.write.1.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/RenderLib.lastbuildstate
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/RenderLib.write.1u.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/fxc.read.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib.VC.db
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.idb
+AthruRewrite/Athru/.vs/Athru/v15/Browse.VC.db
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/ATHRU-6d894b22/ATHRU-f0400ad9/ATHRU.ipch
+AthruRewrite/Athru/.vs/Athru/v15/ipch/AutoPCH/ATHRU-6d894b22/GRAPHICS-431c1946/GRAPHICS.ipch
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib.VC.db
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.idb
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/CL.command.1.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/CL.read.1.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/CL.write.1.tlog
+AthruRewrite/Athru/Athru Rendering/RenderLib/RenderLib/x64/Debug/RenderLib.tlog/FXC.command.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.tlog/CL.command.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.tlog/CL.read.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.tlog/CL.write.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.tlog/Lib-link.read.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.tlog/Lib-link.write.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.tlog/UtilityLib.lastbuildstate
+AthruRewrite/Athru/Athru Utility/UtilityLib/UtilityLib/x64/Debug/UtilityLib.tlog/lib.command.1.tlog
+AthruRewrite/Athru/Athru Utility/UtilityLib/ipch/UTILITYLIB-ed4bfb4b/UTILITYLIB-3175e4d5.ipch
