@@ -33,7 +33,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 	DirectX::XMFLOAT4 vert7Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.5f, 1); // Back plane, lower left (v7)
 
 	// Initialise vertices
-	SceneVertex vertices[8] = { Vertex(vert0Pos, // Front plane, upper left (v0)
+	SceneVertex vertices[8] = { SceneVertex(vert0Pos, // Front plane, upper left (v0)
 								  vert0Pos,
 								  vertColor,
 								  vertColor,
@@ -43,7 +43,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 								  vertRoughness,
 								  vertReflectiveness),
 
-						   Vertex(vert1Pos, // Front plane, upper right (v1)
+						        SceneVertex(vert1Pos, // Front plane, upper right (v1)
 								  vert1Pos,
 								  vertColor,
 								  vertColor,
@@ -53,7 +53,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 								  vertRoughness,
 								  vertReflectiveness),
 
-						   Vertex(vert2Pos, // Front plane, lower left (v2)
+								SceneVertex(vert2Pos, // Front plane, lower left (v2)
 								  vert2Pos,
 								  vertColor,
 								  vertColor,
@@ -63,7 +63,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 								  vertRoughness,
 								  vertReflectiveness),
 
-						   Vertex(vert3Pos, // Front plane, lower right (v3)
+								SceneVertex(vert3Pos, // Front plane, lower right (v3)
 								  vert3Pos,
 								  vertColor,
 								  vertColor,
@@ -73,7 +73,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 								  vertRoughness,
 								  vertReflectiveness),
 
-						   Vertex(vert4Pos, // Back plane, lower right (v4)
+								SceneVertex(vert4Pos, // Back plane, lower right (v4)
 								  vert4Pos,
 								  vertColor,
 								  vertColor,
@@ -83,7 +83,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 								  vertRoughness,
 								  vertReflectiveness),
 
-						   Vertex(vert5Pos, // Back plane, upper right (v5)
+								SceneVertex(vert5Pos, // Back plane, upper right (v5)
 								  vert5Pos,
 								  vertColor,
 								  vertColor,
@@ -93,7 +93,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 							      vertRoughness,
 								  vertReflectiveness),
 
-						   Vertex(vert6Pos, // Back plane, upper left (v6)
+								SceneVertex(vert6Pos, // Back plane, upper left (v6)
 								  vert6Pos,
 								  vertColor,
 								  vertColor,
@@ -103,7 +103,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 								  vertRoughness,
 								  vertReflectiveness),
 
-						   Vertex(vert7Pos, // Back plane, lower left (v7)
+								SceneVertex(vert7Pos, // Back plane, lower left (v7)
 								  vert7Pos,
 								  vertColor,
 								  vertColor,

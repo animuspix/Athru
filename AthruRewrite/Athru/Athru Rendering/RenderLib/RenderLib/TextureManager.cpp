@@ -118,8 +118,7 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 		// Set the number of active elements within each channel of the current texture
 		byteUnsigned elementsPerChannel = 4;
 		sceneTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
-		if ((AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_EMISSIVITY_TEXTURE ||
-			(AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_CRITTER_DIST_TEXTURE)
+		if ((AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_EMISSIVITY_TEXTURE)
 		{
 			elementsPerChannel = 1;
 			sceneTextureDesc.Format = DXGI_FORMAT_R32_FLOAT;

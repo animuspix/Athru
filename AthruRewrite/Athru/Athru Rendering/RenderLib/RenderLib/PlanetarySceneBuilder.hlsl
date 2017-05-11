@@ -16,8 +16,8 @@ RWStructuredBuffer<float2> pbrTexBuf : register(u2);
 // Scene emissivity texture buffer
 RWStructuredBuffer<float> emissTexBuf : register(u3);
 
-// Scene critter-distribution texture buffer
-RWStructuredBuffer<float> critterDistTexBuf : register(u3);
+// Scene weather pattern texture buffer
+RWStructuredBuffer<float> weatherTexBuf : register(u3);
 
 // Camera position buffer; defined here so the planetary
 // sampler can easily displace the camera if it intersects
@@ -41,62 +41,59 @@ cbuffer PlanetProps
 [numthreads(8, 8, 16)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
-    // Sample alpha variance from the delta-color texture segment
-    // Check if the camera is inside the variated terrain; if it is,
-    // displace it out above the closest point on the surface
+    // No gravity, so transform the player coordinates to wrap
+    // onto the planet's bounding sphere instead
 
-    // Resolve a temperature for each voxel in the current scene, then
-    // use that information to adjust critter distributions, local
-    // colour, local emissivity, etc.
+    // Sample terrain parameters for every voxel position rendered
+    // into the scene, then modify the given textures as appropriate
 
-    // Unsure about megatexture sampling vs. mixed delta-texture/scene-texture
-    // sampling vs. pure function-to-scene-texture sampling; ask Adam when possible
+    // Assumption: Players can only modify voxels visibly contiguous with an
+    // above-ground "foundation block" that defines their "base" on each planet
+    // This means we can avoid storing permanent data for the entire planet and
+    // just maintain a single smaller volume texture for the base + other
+    // smaller textures for areas known to be affected by natural disasters,
+    // player-alterable space stations, player spaceships, etc.
 
-    // Static distributions are not a problem
-    // Animal/plant distributions can be calculated statistically from short functions
-    // given enough initial data, also can be made context-sensitive so that they vary
-    // depending on time of day, distributions of prey species, etc.
+    // Note:
+    // Emissivity should be per-face, not boxecule; there's also six faces in
+    // each cube, so the best approach is probably to make the emissivity
+    // texture six times larger than the voxel grid width and process each
+    // set of six emissivity voxels as the left, right, top, bottom, front,
+    // and back faces for a single boxecule
 
-    // Dynamic distributions are harder
-    // Why? Distributions calculated per-frame are equivalent to dynamic distributions
-    // Sequential distribution calculation can even allow chaotic species models, where
-    // the combination of solar and/or weather change results in local migrations
-    // Animals generally move in groups
-    // Animal-type critter distributions can be modulated by density + food availability
+    // Planetary scene breakdown
+    // Geological sampling
+    // - Tectonic feature sampling
+    // - Surface/sub-surface feature generation + refinement
+    // - Geological material (roughness, reflectance, color) sampling
+    // - Don't go into this yet, but lake/ocean simulation will
+    //   probably be a good idea at some point; lake/ocean water should
+    //   be slightly less intangible than void (voxels with zero alpha)
+    //   is atm
+    // - Should implement weather sampling at some point...
+    //
+    // Critter distribution sampling
+    // - Not much value performing that here; sampled weather data should
+    //   be passed into a texture and sent along to a dedicated critter
+    //   population modelling shader
+    //
+    // Stellar emissivity calculations
+    // - Create stellar scene lighting from relative orientations of
+    //   voxel normals and the local sun(s)
 
-    // But what about animations?
-    // Critters are assumed to take up an arbitrary given total volume (a bounding box)
-    // Animation is permitted within a critter's volume
-    // Animations are only tracked while critters are within the scene
-    // Critter animations are (initially) defined as morphs between different base forms
-    // More complex animations may be defined by algebraic distortions applied to critter
-    // functions; probably better to focus on basic morphs before considering that :P
+    // Geological terrain sampling breakdown:
+    // - Alpha sampled from a pre-defined 2D map of tectonic boundaries and
+    //   plate interactions
+    // - Sub-surface alpha (caves and lava tubes) defined by l-systems
+    //   branching off from the appropriate tectonic regions/events
+    // - Roughness/reflectance can vary relative to local tectonic pressure;
+    //   we might need a set of defined mineral types to really flesh either
+    //   out and I kinda ceebs doing that for now
+    // - RGB and non-zero alpha can be calculated from known mineral types
+    // - Emissivity taken from the dot-product of the sun's position and the
+    //   normals of each boxecule face in the scene (their lambert terms)
 
-    // Critter distributions can be solved with system modelling and statistics
-    // Voxel distributions may be harder (e.g. after displacement)
-    // This basically entails either (a) modelling entire planets with megatextures or
-    // (b) modelling the terrain of each planet as a complex system
-    // Complex system modelling is very expensive
-    // But can easily represent nearly any displacement
-    // Can it be performed in discrete tiles?
-    // If so, tiled distributions may be an option
-    // Possibly also take up an old idea and model each 1x1x1m cube as a set of smaller
-    // grains, then model each 1x1x1m cube as a grain within the scene
-    // Alternatively: compute scene flow from raw forces in a separate shader, then
-    // import the results and apply each vector to the appropriate area of the scene
-    // (displacement can be represented with selective opacity masking)
-    // Flowmaps would have to be calculated per-planet-tile and alternately
-    // loaded/cached/saved/unloaded as the player moved around the map
-    // Tiles in a 3x3 grid surrounding the player could be interpolated to provide
-    // smooth displacement changes as the player transitioned between tiles
-
-    // Flowmaps are a *static* distribution technique; however, re-calculating them each
-    // frame /should/ result in the separate static moments blending together and producing
-    // a dynamic effect
-
-    // Flowmaps and critter statistics sound good, but more research into voxel animation is
-    // probably a good idea; once I know how my approach stacks up against published
-    // alternatives I can move forward and define the relevant critter properties, define a
-    // critter buffer inside the critter-building shader, and work out how to interpret
-    // the turtle-functions used to define each critter
+    // Flowmaps are _probably_ a good approach to physics and animation, but
+    // take the time to research volumetric physics/animation in general
+    // before settling on any particular technique
 }

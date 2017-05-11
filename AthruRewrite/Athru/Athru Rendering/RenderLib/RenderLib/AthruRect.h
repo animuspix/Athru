@@ -1,7 +1,5 @@
 #pragma once
 
-#define ATHRU_RECT_INDEX_COUNT 6
-
 #include "Mesh.h"
 #include "AthruTexture2D.h"
 

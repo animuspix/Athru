@@ -1,4 +1,5 @@
 #include "UtilityServiceCentre.h"
+#include "Boxecule.h"
 #include "Rasterizer.h"
 
 Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
@@ -87,7 +88,7 @@ void Rasterizer::RenderShader(ID3D11DeviceContext* deviceContext)
 	deviceContext->PSSetShader(pixelShader, NULL, 0);
 
 	// Render a boxecule
-	deviceContext->DrawInstanced(8, GraphicsStuff::VOXEL_GRID_VOLUME, 0, 0);
+	deviceContext->DrawIndexedInstanced(BOXECULE_INDEX_COUNT, GraphicsStuff::VOXEL_GRID_VOLUME, 0, 0, 0);
 }
 
 void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
@@ -99,11 +100,11 @@ void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
 	SetShaderParameters(deviceContext, world, view, projection);
 
 	// Initialise the pixel shader's texture input with the given texture
-	deviceContext->PSSetShaderResources(0, 1, &texture);
+	deviceContext->PSSetShaderResources(0, 1, &sceneColorTexture);
 
 	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
 	// Render the newest boxecule on the pipeline with [this]
-	Shader::RenderShader(deviceContext);
+	RenderShader(deviceContext);
 }

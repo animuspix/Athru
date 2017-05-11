@@ -14,18 +14,13 @@ class Rasterizer : public Shader
 				   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
 		~Rasterizer();
 
+		void SetShaderParameters(ID3D11DeviceContext * deviceContext, DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
+		void RenderShader(ID3D11DeviceContext * deviceContext);
+
 		// Force render calls to go through here
 		void Render(ID3D11DeviceContext* deviceContext,
-					float dirLightIntensity, DirectX::XMFLOAT4 dirLightDirection,
-					DirectX::XMFLOAT4 dirLightDiffuse, DirectX::XMFLOAT4 dirLightAmbient,
-					DirectX::XMFLOAT4 dirLightPos,
-					float* pointLightIntensities, DirectX::XMFLOAT4* pointLightDiffuseColors,
-					DirectX::XMFLOAT4* pointLightPositions, fourByteUnsigned numPointLights,
-					float* spotLightIntensities, DirectX::XMFLOAT4* spotLightDiffuseColors,
-					DirectX::XMFLOAT4* spotLightPositions, DirectX::XMFLOAT4* spotLightDirections,
-					fourByteUnsigned numSpotLights,
 					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-					ID3D11ShaderResourceView* texture, fourByteUnsigned numIndicesDrawing);
+					ID3D11ShaderResourceView* sceneColorTexture);
 
 	private:
 		struct LightBuffer

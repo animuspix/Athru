@@ -9,5 +9,11 @@ class Boxecule : public Mesh
 	public:
 		Boxecule(ID3D11Device* device);
 		~Boxecule();
+
+	private:
+		struct BoxeculeInstance
+		{
+			// Instance-specific data here...
+		};
 };
 
