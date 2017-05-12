@@ -1,0 +1,12 @@
+﻿C:\Program Files (x86)\MSBuild\Microsoft.Cpp\v4.0\V140\Microsoft.CppClean.targets(76,5): warning : The process cannot access the file 'c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.pch' because it is being used by another process.
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\Colorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\PostColorizer.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\PostVertPlotter.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\PlanetarySceneBuilder.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\PracticeSceneBuilder.cso
+  compilation object save succeeded; see C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru\VertPlotter.cso
+  stdafx.cpp
+  SceneVertex.cpp
+  TextureManager.cpp
+  Shader.cpp
+  RenderServiceCentre.cpp

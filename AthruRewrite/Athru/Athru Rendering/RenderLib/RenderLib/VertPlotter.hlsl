@@ -27,7 +27,7 @@ Pixel main(SceneVertex vertIn)
     Pixel pixOut;
 
     // Lerp the current vertex position towards it's animation target
-    vertIn.pos = lerp(vertIn.pos, vertIn.targPos, animTimeStep);
+    vertIn.pos = vertIn.pos;
 
     // Cache a copy of the vertex position in world coordinates
     // (needed for transforming the point into screen space +

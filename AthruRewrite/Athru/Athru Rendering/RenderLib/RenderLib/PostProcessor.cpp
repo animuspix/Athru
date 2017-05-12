@@ -1,5 +1,5 @@
 #include "UtilityServiceCentre.h"
-#include "AthruRect.h"
+#include "ScreenRect.h"
 #include "PostProcessor.h"
 
 PostProcessor::PostProcessor(ID3D11Device* device, HWND windowHandle,
@@ -61,14 +61,23 @@ PostProcessor::~PostProcessor()
 	effectStatusBufferPttr = nullptr;
 }
 
+void PostProcessor::RenderShader(ID3D11DeviceContext* deviceContext)
+{
+	// Set the vertex input layout.
+	deviceContext->IASetInputLayout(inputLayout);
+
+	// Set the vertex/pixel shaders that will be used to render the boxecule
+	deviceContext->VSSetShader(vertShader, NULL, 0);
+	deviceContext->PSSetShader(pixelShader, NULL, 0);
+
+	// Render a boxecule
+	deviceContext->DrawIndexed(SCREEN_RECT_INDEX_COUNT, 0, 0);
+}
+
 void PostProcessor::Render(ID3D11DeviceContext* deviceContext,
 						   DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
 						   bool useBlur, bool useDrugs, bool brightenScene)
 {
-	// Call the base parameter setter to initialise the vertex shader's matrix cbuffer
-	// with the world/view/projection matrices
-	Shader::SetShaderParameters(deviceContext, world, view, projection);
-
 	// Initialise the pixel shader's texture input with the given texture
 	deviceContext->PSSetShaderResources(0, 1, &postProcessInputResource);
 
@@ -101,7 +110,7 @@ void PostProcessor::Render(ID3D11DeviceContext* deviceContext,
 	deviceContext->PSSetConstantBuffers(0, 1, &effectStatusBufferPttr);
 
 	// Render the screen-rect with [this]
-	Shader::RenderShader(deviceContext, ATHRU_RECT_INDEX_COUNT);
+	RenderShader(deviceContext);
 
 	// Resources can't be render targets and shader resources simultaneously,
 	// so un-bind the post-processing texture here

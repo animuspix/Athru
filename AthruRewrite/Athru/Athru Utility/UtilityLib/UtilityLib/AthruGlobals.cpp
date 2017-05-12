@@ -18,5 +18,5 @@ const float GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR = ((2 * GraphicsStuff::SCREEN_N
 const float GraphicsStuff::FRUSTUM_HEIGHT_AT_NEAR = GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR / GraphicsStuff::DISPLAY_ASPECT_RATIO;
 
 const fourByteUnsigned GraphicsStuff::VOXEL_GRID_WIDTH = 200;
-const eightByteUnsigned GraphicsStuff::VOXEL_GRID_AREA = VOXEL_GRID_WIDTH * VOXEL_GRID_WIDTH;
+const eightByteUnsigned GraphicsStuff::VOXEL_GRID_AREA = GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH;
 const eightByteUnsigned GraphicsStuff::VOXEL_GRID_VOLUME = GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH;

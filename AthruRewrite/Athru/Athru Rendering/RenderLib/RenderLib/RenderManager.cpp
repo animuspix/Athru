@@ -50,7 +50,7 @@ void RenderManager::Render(Camera* mainCamera)
 {
 	// Cache a local reference to the camera's viewfinder
 	// (screen rect)
-	AthruRect* viewFinderPttr = mainCamera->GetViewFinder();
+	ScreenRect* viewFinderPttr = mainCamera->GetViewFinder();
 
 	// Prepare DirectX for scene rendering
 	d3D->BeginScene(viewFinderPttr->GetRenderTarget());
@@ -71,7 +71,7 @@ void RenderManager::Render(Camera* mainCamera)
 	d3D->EndScene();
 }
 
-void RenderManager::PostProcess(AthruRect* screenRect,
+void RenderManager::PostProcess(ScreenRect* screenRect,
 								DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	// Pass the rect onto the GPU, then render it with the post-processing shader

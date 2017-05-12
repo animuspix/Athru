@@ -16,10 +16,6 @@ class Shader
 			   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
 		~Shader();
 
-		virtual void Render(ID3D11DeviceContext* deviceContext,
-							DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-							fourByteUnsigned numIndicesDrawing);
-
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);

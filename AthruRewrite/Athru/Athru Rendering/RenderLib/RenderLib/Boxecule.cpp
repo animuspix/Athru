@@ -33,135 +33,64 @@ Boxecule::Boxecule(ID3D11Device* device)
 	DirectX::XMFLOAT4 vert7Pos = DirectX::XMFLOAT4(-0.5f, -0.5f, 0.5f, 1); // Back plane, lower left (v7)
 
 	// Initialise vertices
-	SceneVertex vertices[8] = { SceneVertex(vert0Pos, // Front plane, upper left (v0)
-								  vert0Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert0Pos),
-								  NormalBuilder::BuildNormal(vert0Pos),
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert0Pos),
-								  vertRoughness,
-								  vertReflectiveness),
-
-						        SceneVertex(vert1Pos, // Front plane, upper right (v1)
-								  vert1Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert1Pos),
-								  NormalBuilder::BuildNormal(vert1Pos),
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert1Pos),
-								  vertRoughness,
-								  vertReflectiveness),
-
-								SceneVertex(vert2Pos, // Front plane, lower left (v2)
-								  vert2Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert2Pos),
-								  NormalBuilder::BuildNormal(vert2Pos),
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert2Pos),
-								  vertRoughness,
-								  vertReflectiveness),
-
-								SceneVertex(vert3Pos, // Front plane, lower right (v3)
-								  vert3Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert3Pos),
-								  NormalBuilder::BuildNormal(vert3Pos),
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert3Pos),
-								  vertRoughness,
-								  vertReflectiveness),
-
-								SceneVertex(vert4Pos, // Back plane, lower right (v4)
-								  vert4Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert4Pos),
-								  NormalBuilder::BuildNormal(vert4Pos),
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert4Pos),
-								  vertRoughness,
-								  vertReflectiveness),
-
-								SceneVertex(vert5Pos, // Back plane, upper right (v5)
-								  vert5Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert5Pos),
-								  NormalBuilder::BuildNormal(vert5Pos),
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert5Pos),
-							      vertRoughness,
-								  vertReflectiveness),
-
-								SceneVertex(vert6Pos, // Back plane, upper left (v6)
-								  vert6Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert6Pos),
-								  NormalBuilder::BuildNormal(vert6Pos),
-								  PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert6Pos),
-								  vertRoughness,
-								  vertReflectiveness),
-
-								SceneVertex(vert7Pos, // Back plane, lower left (v7)
-								  vert7Pos,
-								  vertColor,
-								  vertColor,
-								  NormalBuilder::BuildNormal(vert7Pos),
-								  NormalBuilder::BuildNormal(vert7Pos),
-							      PlanarUnwrapper::Unwrap(minBoundingPos, maxBoundingPos, boundingRange, vert7Pos),
-								  vertRoughness,
-								  vertReflectiveness) };
+	SceneVertex vertices[8] = { SceneVertex(vert0Pos),    // Front plane, upper left (v0)
+								SceneVertex(vert1Pos),    // Front plane, upper right (v1)
+								SceneVertex(vert2Pos),    // Front plane, lower left (v2)
+								SceneVertex(vert3Pos),    // Front plane, lower right (v3)
+								SceneVertex(vert4Pos),    // Back plane, lower right (v4)
+								SceneVertex(vert5Pos),    // Back plane, upper right (v5)
+								SceneVertex(vert6Pos),    // Back plane, upper left (v6)
+								SceneVertex(vert7Pos), }; // Back plane, lower left (v7))
 
 	// Initialise indices
 	// Each set of three values is one triangle
-	long indices[BOXECULE_INDEX_COUNT] = { 0,
-										   1,
-										   2,
-
-										   2,
-										   3,
-										   1,
-
-										   2,
-										   3,
-										   4,
-
-										   4,
-										   3,
-										   1,
-
-										   4,
-										   1,
-										   5,
-
-										   5,
-										   1,
-										   0,
-
-										   5,
-										   0,
-										   6,
-
-										   6,
-										   0,
-										   2,
-
-										   6,
-										   2,
-										   7,
-
-										   2,
-										   4,
-										   7,
-
-										   7,
-										   4,
-										   6,
-
-										   4,
-										   5,
-										   6 };
+	fourByteUnsigned indices[BOXECULE_INDEX_COUNT] = { 0,
+													   1,
+													   2,
+													   
+													   2,
+													   3,
+													   1,
+													   
+													   2,
+													   3,
+													   4,
+													   
+													   4,
+													   3,
+													   1,
+													   
+													   4,
+													   1,
+													   5,
+													   
+													   5,
+													   1,
+													   0,
+													   
+													   5,
+													   0,
+													   6,
+													   
+													   6,
+													   0,
+													   2,
+													   
+													   6,
+													   2,
+													   7,
+													   
+													   2,
+													   4,
+													   7,
+													   
+													   7,
+													   4,
+													   6,
+													   
+													   4,
+													   5,
+													   6 };
 
 
 	// Set up the description of the static vertex buffer
@@ -185,7 +114,7 @@ Boxecule::Boxecule(ID3D11Device* device)
 	// Set up the description of the static index buffer
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	indexBufferDesc.ByteWidth = sizeof(unsigned long) * BOXECULE_INDEX_COUNT;
+	indexBufferDesc.ByteWidth = sizeof(fourByteUnsigned) * BOXECULE_INDEX_COUNT;
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.CPUAccessFlags = 0;
 	indexBufferDesc.MiscFlags = 0;
@@ -200,6 +129,45 @@ Boxecule::Boxecule(ID3D11Device* device)
 	// Create the index buffer
 	result = device->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
 
+	// Initialise instances on the heap
+	
+	// Allocate memory
+	BoxeculeInstance* instances = new BoxeculeInstance[GraphicsStuff::VOXEL_GRID_VOLUME];
+
+	// Generate + define 3D texture coordinates for each instance
+	float u;
+	float v;
+	float w;
+	for (eightByteUnsigned i = 0; i < GraphicsStuff::VOXEL_GRID_WIDTH; i += 1)
+	{
+		for (eightByteUnsigned j = 0; j < GraphicsStuff::VOXEL_GRID_WIDTH; j += 1)
+		{
+			for (eightByteUnsigned k = 0; k < GraphicsStuff::VOXEL_GRID_WIDTH; k += 1)
+			{
+				// Generate u by compressing i into the interval 0...1
+				u = (float)i / pow(10.0f, (float)floor(log10(i)) + 1.0f);
+				
+				// Generate v by compressing j into the interval 0...1
+				v = (float)j / pow(10.0f, (float)floor(log10(i)) + 1.0f);
+
+				// Generate w by compressing k into the interval 0...1
+				w = (float)k / pow(10.0f, (float)floor(log10(i)) + 1.0f);
+
+				// Extract a flattened index from the values of i, j, and k
+				eightByteUnsigned linearIndex = i + (j * GraphicsStuff::VOXEL_GRID_WIDTH) + (k * GraphicsStuff::VOXEL_GRID_WIDTH);
+				
+				// Use the flattened index to construct the relevant instance
+				// with the coordinates generated above
+				instances[linearIndex] = DirectX::XMFLOAT3(u, v, w);
+			}
+		}
+	}
+
+	// No reason to keep the instance heap-array around, so release it + send the
+	// associated reference to [nullptr]
+	delete instances;
+	instances = nullptr;
+
 	// Check if anything failed during the geometry setup
 	assert(SUCCEEDED(result));
 }
@@ -207,4 +175,8 @@ Boxecule::Boxecule(ID3D11Device* device)
 Boxecule::~Boxecule()
 {
 	// Destructions handled within [Mesh]
+}
+
+void Boxecule::PassToGPU(ID3D11DeviceContext * deviceContext)
+{
 }

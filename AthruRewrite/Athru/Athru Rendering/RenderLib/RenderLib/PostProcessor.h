@@ -11,7 +11,6 @@ class PostProcessor : public Shader
 					  ID3D11ShaderResourceView* postProcessShaderResource);
 		~PostProcessor();
 
-		// Force render calls to go through here
 		void Render(ID3D11DeviceContext* deviceContext,
 					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
 					bool useBlur, bool useDrugs, bool brightenScene);
@@ -24,11 +23,10 @@ class PostProcessor : public Shader
 			DirectX::XMINT4 brightenActive;
 		};
 
-		// Overload ordinary external shader render to do nothing
-		// Also place the overload in [private] so it becomes inaccessible
-		void Render(ID3D11DeviceContext* deviceContext,
-					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-					fourByteUnsigned numIndicesDrawing) {};
+		// Rendering helper function, used to actually render out the
+		// shader after the public [Render()] function passes it's
+		// input values onto the pipeline
+		void RenderShader(ID3D11DeviceContext * deviceContext);
 
 		// A reference to the shader resource associated with the screen texture
 		// (used to persist render information after the initial pass so that it

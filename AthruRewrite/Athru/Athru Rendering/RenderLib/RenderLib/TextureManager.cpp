@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "stdafx.h"
+#include "UtilityServiceCentre.h"
 #include "TextureManager.h"
 
 // I decided that (since we're really only likely to use textures for
@@ -140,7 +141,7 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 
 		// Build compute-friendly color buffer description
 		D3D11_BUFFER_DESC sceneBufferDesc;
-		sceneBufferDesc.ByteWidth = (sizeof(float) * elementsPerChannel) * GraphicsStuff::VOXEL_GRID_VOLUME;
+		sceneBufferDesc.ByteWidth = (fourByteUnsigned)((sizeof(float) * elementsPerChannel) * GraphicsStuff::VOXEL_GRID_VOLUME);
 		sceneBufferDesc.Usage = D3D11_USAGE_DEFAULT;
 		sceneBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 		sceneBufferDesc.StructureByteStride = sizeof(float) * elementsPerChannel;
@@ -149,9 +150,9 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 
 		// Build a compute-friendly buffer with the raw texture data
 		D3D11_SUBRESOURCE_DATA textureData;
-		textureData.pSysMem = availableInternalTextures3D[i].raw;
-		textureData.SysMemPitch = GraphicsStuff::VOXEL_GRID_WIDTH;
-		textureData.SysMemSlicePitch = GraphicsStuff::VOXEL_GRID_AREA;
+		textureData.pSysMem = &(availableInternalTextures3D[i].raw);
+		textureData.SysMemPitch = (fourByteUnsigned)GraphicsStuff::VOXEL_GRID_WIDTH;
+		textureData.SysMemSlicePitch = (fourByteUnsigned)GraphicsStuff::VOXEL_GRID_AREA;
 		result = d3dDevice->CreateBuffer(&sceneBufferDesc, &textureData, &(availableInternalTextures3D[i].asStructuredBuffer));
 		assert(SUCCEEDED(result));
 
@@ -186,6 +187,8 @@ TextureManager::~TextureManager()
 
 	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_VOLUME_TEXTURES::NULL_TEXTURE; i += 1)
 	{
+		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(i, Logger::DESTINATIONS::LOG_FILE);
+
 		availableInternalTextures3D[i].raw->Release();
 		availableInternalTextures3D[i].raw = nullptr;
 

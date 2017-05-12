@@ -1,10 +1,3 @@
-cbuffer MatBuffer
-{
-    matrix world;
-    matrix view;
-    matrix projection;
-    float4 animTimeStep;
-};
 
 struct PostVertex
 {

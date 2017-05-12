@@ -5,13 +5,12 @@
 struct SceneVertex
 {
 	SceneVertex() {};
-	SceneVertex(DirectX::XMFLOAT4 pos,
-				DirectX::XMFLOAT3 UV) :
-				position{ pos.x, pos.y, pos.z, 1 },
-				texCoord{ UV.x, UV.y, UV.z } {}
+	SceneVertex(DirectX::XMFLOAT4 pos) :
+				position{ pos.x, pos.y, pos.z, 1 } {}
 
+	// EVERYTHING is stored in 3D textures, so no need for
+	// anything other than position in each vertex
 	DirectX::XMFLOAT4 position;
-	DirectX::XMFLOAT3 texCoord;
 
 	void* operator new(size_t size);
 	void operator delete(void* target);

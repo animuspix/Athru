@@ -36,7 +36,7 @@ Camera::Camera()
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
 	// Create the camera's viewfinder (screen rect)
-	viewfinder = new AthruRect(AthruRendering::RenderServiceCentre::AccessD3D()->GetDevice());
+	viewfinder = new ScreenRect(AthruRendering::RenderServiceCentre::AccessD3D()->GetDevice());
 
 	// Initialise the spinSpeed modifier for mouse-look
 	spinSpeed = 1.8f;
@@ -44,7 +44,7 @@ Camera::Camera()
 
 Camera::~Camera()
 {
-	viewfinder->~AthruRect();
+	viewfinder->~ScreenRect();
 }
 
 void Camera::Update()
@@ -192,7 +192,7 @@ CameraLookData Camera::GetLookData()
 	return lookInfo;
 }
 
-AthruRect* Camera::GetViewFinder()
+ScreenRect* Camera::GetViewFinder()
 {
 	return viewfinder;
 }

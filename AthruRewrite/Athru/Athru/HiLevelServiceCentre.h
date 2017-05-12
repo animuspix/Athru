@@ -34,15 +34,16 @@ class HiLevelServiceCentre
 
 		static void ShutDown()
 		{
+			// Free any un-managed memory allocated to rendering services;
+			// also send the references stored for each rendering service to
+			// [nullptr]
+			AthruRendering::RenderServiceCentre::DeInit();
+
 			// Free any un-managed memory allocated to utility services;
 			// also send the references stored for each utility to [nullptr]
 			AthruUtilities::UtilityServiceCentre::DeInitApp();
 			AthruUtilities::UtilityServiceCentre::DeInitInput();
 			AthruUtilities::UtilityServiceCentre::DeInitLogger();
-
-			// Free any un-managed memory allocated to rendering services;
-			// also send the references stored for each utility to [nullptr]
-			AthruRendering::RenderServiceCentre::DeInit();
 
 			// Free any un-managed memory allocated to higher-level services,
 			// then send the references stored for each service to [nullptr]

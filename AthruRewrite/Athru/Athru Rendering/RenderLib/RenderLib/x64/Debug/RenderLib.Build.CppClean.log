@@ -1,8 +1,42 @@
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\x64\debug\colorizer.cso
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\x64\debug\postcolorizer.cso
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\x64\debug\postvertplotter.cso
-c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\x64\debug\vertplotter.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.pch
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.pdb
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.idb
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\stdafx.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\wictextureloader.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\screenrect.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\boxecule.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\camera.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\critter.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\direct3d.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\mesh.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\postprocessor.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\postvertex.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\rasterizer.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\rendermanager.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderservicecentre.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\shader.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\texturemanager.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\scenevertex.obj
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\colorizer.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\postcolorizer.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\postvertplotter.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\planetaryscenebuilder.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\practicescenebuilder.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru\vertplotter.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.lib
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\%userprofile%\documents\github\athru\athrurewrite\athru\athru\colorizer.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\%userprofile%\documents\github\athru\athrurewrite\athru\athru\postcolorizer.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\%userprofile%\documents\github\athru\athrurewrite\athru\athru\postvertplotter.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\%userprofile%\documents\github\athru\athrurewrite\athru\athru\planetaryscenebuilder.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\%userprofile%\documents\github\athru\athrurewrite\athru\athru\practicescenebuilder.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\%userprofile%\documents\github\athru\athrurewrite\athru\athru\vertplotter.cso
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\cl.command.1.tlog
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\cl.read.1.tlog
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\cl.write.1.tlog
 c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\fxc.command.1.tlog
 c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\fxc.read.1.tlog
 c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\fxc.write.1.tlog
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\lib-link.read.1.tlog
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\lib-link.write.1.tlog
+c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\lib.command.1.tlog
 c:\users\s171519\documents\github\athru\athrurewrite\athru\athru rendering\renderlib\renderlib\x64\debug\renderlib.tlog\renderlib.write.1u.tlog

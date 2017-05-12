@@ -26,7 +26,7 @@ enum class AVAILABLE_POST_EFFECTS
 class Direct3D;
 class Camera;
 class Boxecule;
-class AthruRect;
+class ScreenRect;
 class Rasterizer;
 class PostProcessor;
 class RenderManager
@@ -39,7 +39,7 @@ class RenderManager
 		void Render(Camera* mainCamera);
 
 		// Perform post-processing and draw the result to the screen
-		void PostProcess(AthruRect* screenRect,
+		void PostProcess(ScreenRect* screenRect,
 					     DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
 
 		// Retrieve a reference to the Direct3D handler class associated with [this]

@@ -279,6 +279,8 @@ Direct3D::~Direct3D()
 	swapChain->Release();
 	swapChain = nullptr;
 
+	debugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+
 	debugDevice->Release();
 	debugDevice = nullptr;
 

@@ -20,7 +20,7 @@
 #include "SceneVertex.h"
 #include "Mesh.h"
 #include "Boxecule.h"
-#include "AthruRect.h"
+#include "ScreenRect.h"
 #include "Camera.h"
 #include "Critter.h"
 #include "RenderManager.h"

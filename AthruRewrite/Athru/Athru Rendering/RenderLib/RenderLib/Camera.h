@@ -1,7 +1,7 @@
 #pragma once
 
 #include <directxmath.h>
-#include "AthruRect.h"
+#include "ScreenRect.h"
 
 struct CameraLookData
 {
@@ -39,7 +39,7 @@ class Camera
 		CameraLookData GetLookData();
 
 		// Fetch the viewfinder (screen rect) for post-processing/rendering
-		AthruRect* GetViewFinder();
+		ScreenRect* GetViewFinder();
 
 		// Classical mouse-look function; causes the camera to rotate
 		// horizontally (about local-Y) when the mouse moves
@@ -67,7 +67,7 @@ class Camera
 
 		// A rect (one-sided square) projected onto the screen; used to render the screen
 		// texture after post-processing
-		AthruRect* viewfinder;
+		ScreenRect* viewfinder;
 
 		// How quickly the camera should rotate after accounting
 		// for displacement and deltatime (only used by MouseLook(...))

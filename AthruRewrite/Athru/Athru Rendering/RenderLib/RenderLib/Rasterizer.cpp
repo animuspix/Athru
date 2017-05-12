@@ -37,10 +37,6 @@ Rasterizer::~Rasterizer()
 	// Release the texture sampler state
 	wrapSamplerState->Release();
 	wrapSamplerState = nullptr;
-
-	// Release the light-buffer
-	lightBufferPttr->Release();
-	lightBufferPttr = nullptr;
 }
 
 void Rasterizer::SetShaderParameters(ID3D11DeviceContext* deviceContext,
@@ -88,7 +84,7 @@ void Rasterizer::RenderShader(ID3D11DeviceContext* deviceContext)
 	deviceContext->PSSetShader(pixelShader, NULL, 0);
 
 	// Render a boxecule
-	deviceContext->DrawIndexedInstanced(BOXECULE_INDEX_COUNT, GraphicsStuff::VOXEL_GRID_VOLUME, 0, 0, 0);
+	deviceContext->DrawIndexedInstanced(BOXECULE_INDEX_COUNT, (fourByteUnsigned)GraphicsStuff::VOXEL_GRID_VOLUME, 0, 0, 0);
 }
 
 void Rasterizer::Render(ID3D11DeviceContext* deviceContext,

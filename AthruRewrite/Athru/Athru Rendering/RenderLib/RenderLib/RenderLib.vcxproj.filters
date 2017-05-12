@@ -24,9 +24,6 @@
     <ClInclude Include="targetver.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AthruRect.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="AthruTexture2D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -81,12 +78,12 @@
     <ClInclude Include="SceneVertex.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ScreenRect.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="AthruRect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Boxecule.cpp">
@@ -131,13 +128,15 @@
     <ClCompile Include="SceneVertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="ScreenRect.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="Colorizer.hlsl" />
     <FxCompile Include="PostColorizer.hlsl" />
     <FxCompile Include="PostVertPlotter.hlsl" />
     <FxCompile Include="VertPlotter.hlsl" />
-    <FxCompile Include="SceneIlluminator.hlsl" />
     <FxCompile Include="PlanetarySceneBuilder.hlsl" />
     <FxCompile Include="PracticeSceneBuilder.hlsl" />
   </ItemGroup>
