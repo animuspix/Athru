@@ -52,11 +52,14 @@ class Camera
 		void operator delete(void* target);
 
 	private:
-		// Camera position, rotation (as a quaternion), rotation
-		// (in Euler angles), and view-space projection (view matrix)
+		// Virtual camera position, rotation (as a quaternion), rotation
+		// (in Euler angles), fixed viewing position (so the player can't
+		// travel outside the voxel grid used to store data sampled from
+		// the scene), and view-space projection (view matrix)
 		DirectX::XMVECTOR position;
 		DirectX::XMVECTOR coreRotationQuaternion;
 		DirectX::XMFLOAT3 coreRotationEuler;
+		DirectX::XMVECTOR fixedViewPosition;
 		DirectX::XMMATRIX viewMatrix;
 
 		// Where the camera is _looking_ at any particular time (direction and focal position)

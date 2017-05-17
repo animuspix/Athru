@@ -5,7 +5,7 @@
 Camera::Camera()
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, 0, ((float)GraphicsStuff::VOXEL_GRID_WIDTH / 2) + 2, 0);
+	position = _mm_set_ps(0, 0, 0, 0);
 
 	// Set the camera's default rotation
 	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
@@ -26,14 +26,19 @@ Camera::Camera()
 	// an origin-relative direction)
 	lookInfo.lookDirNormal = DirectX::XMVector3Normalize(lookAt);
 
+	// Generate + store a point at the centre of the voxel grid
+	float voxGridCentre = (float)GraphicsStuff::VOXEL_GRID_WIDTH / 2.0f;
+	fixedViewPosition = _mm_set_ps(0, voxGridCentre, voxGridCentre, voxGridCentre);
+
 	// Translate the focal position so that it's "in front of" the camera (e.g. visible)
-	lookAt = _mm_add_ps(position, lookAt);
+	lookAt = _mm_add_ps(fixedViewPosition, lookAt);
 
 	// Cache the non-normalized focal position
 	lookInfo.focalPos = lookAt;
 
-	// Create the view matrix with [position], [lookAt], and [localUp]
-	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
+	// Create the view matrix with a vector inside the voxel grid, the generated look
+	// vector, and [localUp]
+	viewMatrix = DirectX::XMMatrixLookAtLH(fixedViewPosition, lookAt, localUp);
 
 	// Create the camera's viewfinder (screen rect)
 	viewfinder = new ScreenRect(AthruRendering::RenderServiceCentre::AccessD3D()->GetDevice());
@@ -173,13 +178,14 @@ void Camera::RefreshViewData()
 	lookInfo.lookDirNormal = DirectX::XMVector3Normalize(lookAt);
 
 	// Translate the focal position so that it's "in front of" the camera (e.g. visible)
-	lookAt = _mm_add_ps(position, lookAt);
+	lookAt = _mm_add_ps(fixedViewPosition, lookAt);
 
 	// Cache the non-normalized focal position
 	lookInfo.focalPos = lookAt;
 
-	// Create the view matrix with [position], [lookAt], and [localUp]
-	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
+	// Create the view matrix from the fixed viewing position + the look-at and
+	// local-up vectors defined above
+	viewMatrix = DirectX::XMMatrixLookAtLH(fixedViewPosition, lookAt, localUp);
 }
 
 DirectX::XMMATRIX Camera::GetViewMatrix()
