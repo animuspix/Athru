@@ -4,7 +4,7 @@
 
 Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 					   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath) :
-					   Shader()
+					   PipelineShader()
 {
 	// Long integer used for storing success/failure for different
 	// DirectX operations
@@ -30,9 +30,9 @@ Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 
 	// Build the object shader files with the given input element
 	// descriptions
-	Shader::BuildShader(device, windowHandle,
-						voxelInputElements, 2,
-						vertexShaderFilePath, pixelShaderFilePath);
+	PipelineShader::BuildShader(device, windowHandle,
+								voxelInputElements, 2,
+								vertexShaderFilePath, pixelShaderFilePath);
 
 	// Setup the matrix buffer description
 	// (the matrix buffer stores the world, view, and projection matrices

@@ -67,7 +67,7 @@ class RenderManager
 		AthruTexture2D brightenMask;
 		AthruTexture2D drugsMask;
 
-		// Shader storage
+		// PipelineShader storage
 		Rasterizer* rasterizer;
 		PostProcessor* postProcessor;
 };

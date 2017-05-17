@@ -16,7 +16,7 @@ RWStructuredBuffer<float> emissTexBuf : register(u3);
 void main( uint3 DTid : SV_DispatchThreadID )
 {
     //colorTexBuf[[iteratorVal]] = float4(1.0f, 1.0f, 1.0f, 1.0f);
-    //normFieldBuf[[adjustedIteratorVal]] = conditionalVec; // Consider setting this once during texture initialisation instead of once-per-frame
+    //normFieldBuf[[adjustedIteratorVal]] = conditionalVec;
     //pbrTexBuf[iteratorVal] = float4(1.0f, 1.0f);
     //emissTexBuf[[iteratorVal]] = float4(1.0f);
 }

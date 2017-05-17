@@ -1,9 +1,9 @@
 #pragma once
 
-#include "Shader.h"
+#include "PipelineShader.h"
 #include "AthruTexture2D.h"
 
-class PostProcessor : public Shader
+class PostProcessor : public PipelineShader
 {
 	public:
 		PostProcessor(ID3D11Device* device, HWND windowHandle,

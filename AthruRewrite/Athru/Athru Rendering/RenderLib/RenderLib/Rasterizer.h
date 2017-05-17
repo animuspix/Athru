@@ -1,10 +1,10 @@
 #pragma once
 
-#include "Shader.h"
+#include "PipelineShader.h"
 #include "AthruGlobals.h"
 #include "RenderManager.h"
 
-class Rasterizer : public Shader
+class Rasterizer : public PipelineShader
 {
 	public:
 		Rasterizer(ID3D11Device* device, HWND windowHandle,

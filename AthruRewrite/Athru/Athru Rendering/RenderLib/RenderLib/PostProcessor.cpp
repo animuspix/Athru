@@ -5,7 +5,7 @@
 PostProcessor::PostProcessor(ID3D11Device* device, HWND windowHandle,
 						     LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath,
 							 ID3D11ShaderResourceView* postProcessShaderResource) :
-						     Shader()
+						     PipelineShader()
 {
 	// Long integer used for storing success/failure for different
 	// DirectX operations
@@ -31,7 +31,7 @@ PostProcessor::PostProcessor(ID3D11Device* device, HWND windowHandle,
 
 	// Build the object shader files with the given input element
 	// descriptions
-	Shader::BuildShader(device, windowHandle,
+	PipelineShader::BuildShader(device, windowHandle,
 						postInputElements, 2,
 						vertexShaderFilePath, pixelShaderFilePath);
 
