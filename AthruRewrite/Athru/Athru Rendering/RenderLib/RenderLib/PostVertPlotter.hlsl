@@ -2,7 +2,7 @@
 struct PostVertex
 {
     float4 pos : POSITION0;
-    float4 texCoord : TEXCOORD0;
+    float2 texCoord : TEXCOORD0;
 };
 
 struct Pixel

@@ -11,6 +11,9 @@ class ScreenRect : public Mesh
 		ScreenRect(ID3D11Device* d3dDevice);
 		~ScreenRect();
 
+		// Pass [this] onto the GPU for rendering
+		void PassToGPU(ID3D11DeviceContext* context);
+
 		// Retrieve the render-target-view associated with [this]
 		ID3D11RenderTargetView* GetRenderTarget();
 

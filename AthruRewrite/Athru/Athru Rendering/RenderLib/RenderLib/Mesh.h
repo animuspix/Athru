@@ -8,8 +8,7 @@ class Mesh
 	public:
 		Mesh();
 		~Mesh();
-		void PassToGPU(ID3D11DeviceContext* deviceContext);
-
+		
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void* operator new[](size_t size);

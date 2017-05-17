@@ -17,11 +17,11 @@ class HiLevelServiceCentre
 
 		static void StartUp()
 		{
-			// Attempt to create and register utility services
-			// (memory, logging, input, the application)
-			// Assume 4GB memory usage for now; update with better
-			// values when possible
-			eightByteUnsigned STARTING_HEAP = UINT_MAX;
+			// Allocation assumes Athru will use ten uncompressed RGBA
+			// scene textures at most, then adds another 255 megabytes 
+			// beyond that to make sure no overruns occur during 
+			// runtime
+			const eightByteUnsigned STARTING_HEAP = (GraphicsStuff::VOXEL_GRID_VOLUME * 40) + 255000000;
 			AthruUtilities::UtilityServiceCentre::Init(STARTING_HEAP);
 
 			// Attemp to create and register rendering services

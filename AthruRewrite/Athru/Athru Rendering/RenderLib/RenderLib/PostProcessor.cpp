@@ -5,13 +5,37 @@
 PostProcessor::PostProcessor(ID3D11Device* device, HWND windowHandle,
 						     LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath,
 							 ID3D11ShaderResourceView* postProcessShaderResource) :
-						     Shader(device, windowHandle, vertexShaderFilePath, pixelShaderFilePath)
+						     Shader()
 {
 	// Long integer used for storing success/failure for different
 	// DirectX operations
 	HRESULT result;
 
-	// Store the given shader-friendly post-processing input data
+	// Describe post-processing input elements
+	D3D11_INPUT_ELEMENT_DESC postInputElements[2];
+	postInputElements[0].SemanticName = "POSITION";
+	postInputElements[0].SemanticIndex = 0;
+	postInputElements[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	postInputElements[0].InputSlot = 0;
+	postInputElements[0].AlignedByteOffset = 0;
+	postInputElements[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	postInputElements[0].InstanceDataStepRate = 0;
+
+	postInputElements[1].SemanticName = "TEXCOORD";
+	postInputElements[1].SemanticIndex = 0;
+	postInputElements[1].Format = DXGI_FORMAT_R32G32_FLOAT;
+	postInputElements[1].InputSlot = 0;
+	postInputElements[1].AlignedByteOffset = D3D11_APPEND_ALIGNED_ELEMENT;
+	postInputElements[1].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	postInputElements[1].InstanceDataStepRate = 0;
+
+	// Build the object shader files with the given input element
+	// descriptions
+	Shader::BuildShader(device, windowHandle,
+						postInputElements, 2,
+						vertexShaderFilePath, pixelShaderFilePath);
+
+	// Store the given shader-friendly post-processing input texture
 	postProcessInputResource = postProcessShaderResource;
 
 	// Setup the texture sampler state description
@@ -75,7 +99,6 @@ void PostProcessor::RenderShader(ID3D11DeviceContext* deviceContext)
 }
 
 void PostProcessor::Render(ID3D11DeviceContext* deviceContext,
-						   DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
 						   bool useBlur, bool useDrugs, bool brightenScene)
 {
 	// Initialise the pixel shader's texture input with the given texture

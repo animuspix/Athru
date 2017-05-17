@@ -1,5 +1,5 @@
 #include <assert.h>
-#include "stdafx.h"
+#include "WICTextureLoader\WICTextureLoader.h"
 #include "UtilityServiceCentre.h"
 #include "TextureManager.h"
 
@@ -84,7 +84,10 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 	{
 		// If the current texture is an effect mask, adjust the texture format
 		// to match
-		screenTextureDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		if ((AVAILABLE_DISPLAY_TEXTURES)i != AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE)
+		{
+			screenTextureDesc.Format = DXGI_FORMAT_R32_FLOAT;
+		}
 
 		// Build texture
 		result = d3dDevice->CreateTexture2D(&screenTextureDesc, nullptr, &(availableInternalTextures2D[i].raw));

@@ -1,13 +1,13 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 15
-VisualStudioVersion = 15.0.26403.7
+VisualStudioVersion = 15.0.26430.6
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Athru", "Athru\Athru.vcxproj", "{06A3622C-76E0-4918-A7C1-FC27020EEE52}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderLib", "Athru Rendering\RenderLib\RenderLib\RenderLib.vcxproj", "{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}"
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UtilityLib", "Athru Utility\UtilityLib\UtilityLib\UtilityLib.vcxproj", "{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UtilityLib", "Athru Utilities\UtilityLib\UtilityLib\UtilityLib.vcxproj", "{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -5,8 +5,8 @@
 
 Direct3D::Direct3D(HWND hwnd)
 {
-	// Long integer used to store success/failure for different DirectX operations
-	eightByteUnsigned result;
+	// Value used to store success/failure for different DirectX operations
+	fourByteUnsigned result;
 
 	// Struct containing a description of the swap chain
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;

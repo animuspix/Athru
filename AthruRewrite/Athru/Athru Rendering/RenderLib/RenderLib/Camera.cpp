@@ -53,7 +53,7 @@ void Camera::Update()
 	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
 
 	// Translate the view in-game with WASD
-	float speed = 10;
+	float speed = 500;
 	if (localInput->IsKeyDown(87))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), coreRotationQuaternion));
@@ -85,7 +85,7 @@ void Camera::Update()
 	}
 
 	// Rotate the view with mouse input
-	this->MouseLook(localInput);
+	//this->MouseLook(localInput);
 
 	// Update the view matrix to reflect
 	// the translation + rotation above

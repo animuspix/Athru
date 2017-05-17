@@ -12,7 +12,6 @@ class PostProcessor : public Shader
 		~PostProcessor();
 
 		void Render(ID3D11DeviceContext* deviceContext,
-					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
 					bool useBlur, bool useDrugs, bool brightenScene);
 
 	private:

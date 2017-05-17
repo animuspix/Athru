@@ -7,13 +7,10 @@
 #include <d3dcompiler.h>
 #include <directxmath.h>
 
-#include "Typedefs.h"
-
 class Shader
 {
 	public:
-		Shader(ID3D11Device* device, HWND windowHandle,
-			   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
+		Shader();
 		~Shader();
 
 		// Overload the standard allocation/de-allocation operators
@@ -21,16 +18,12 @@ class Shader
 		void operator delete(void* target);
 
 	protected:
-		struct MatBuffer
-		{
-			DirectX::XMMATRIX world;
-			DirectX::XMMATRIX view;
-			DirectX::XMMATRIX projection;
-		};
+		void BuildShader(ID3D11Device* device, HWND windowHandle,
+						 D3D11_INPUT_ELEMENT_DESC* inputElementInfo, fourByteUnsigned numInputElements,
+						 LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
 
 		ID3D11VertexShader* vertShader;
 		ID3D11PixelShader* pixelShader;
-		ID3D11InputLayout* inputLayout;
-		ID3D11Buffer* matBufferLocal;
+		ID3D11InputLayout* inputLayout;;
 };
 

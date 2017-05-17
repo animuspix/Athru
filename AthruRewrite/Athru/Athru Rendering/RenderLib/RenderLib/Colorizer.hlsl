@@ -1,5 +1,5 @@
 
-// Mark [texIn] as a resource bound to the zeroth texture register ([register(t0)])
+// Mark [sceneTex] as a resource bound to the zeroth texture register ([register(t0)])
 Texture3D sceneTex : register(t0);
 
 // Mark [wrapSampler] as a resource bound to the zeroth sampler register ([register(s0)])
@@ -13,11 +13,7 @@ struct Pixel
 
 float4 main(Pixel pixIn) : SV_TARGET
 {
-    // Sample boxecule color from the scene texture
-    float4 pixOut = sceneTex.Sample(wrapSampler, pixIn.texCoord);
-
-    // Return final color as a (clamped with [saturate]) multiplicative blend
-    // between the raw material color ([pixOut]) and the average light color
-    // ([lightColor])
-    return saturate(pixOut);
+    // Return the color stored in the scene texture for the
+    // current pixel
+    return float4(sin(pixIn.texCoord.x), 1, sin(pixIn.texCoord.z), 1);//sceneTex.Sample(wrapSampler, pixIn.texCoord);
 }

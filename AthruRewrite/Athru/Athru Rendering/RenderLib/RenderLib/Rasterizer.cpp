@@ -1,14 +1,53 @@
 #include "UtilityServiceCentre.h"
-#include "Boxecule.h"
+#include "VoxelGrid.h"
 #include "Rasterizer.h"
 
 Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 					   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath) :
-					   Shader(device, windowHandle, vertexShaderFilePath, pixelShaderFilePath)
+					   Shader()
 {
 	// Long integer used for storing success/failure for different
 	// DirectX operations
 	HRESULT result;
+
+	// Describe object shader input elements
+	D3D11_INPUT_ELEMENT_DESC voxelInputElements[2];
+	voxelInputElements[0].SemanticName = "POSITION";
+	voxelInputElements[0].SemanticIndex = 0;
+	voxelInputElements[0].Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	voxelInputElements[0].InputSlot = 0;
+	voxelInputElements[0].AlignedByteOffset = 0;
+	voxelInputElements[0].InputSlotClass = D3D11_INPUT_PER_VERTEX_DATA;
+	voxelInputElements[0].InstanceDataStepRate = 0;
+
+	voxelInputElements[1].SemanticName = "TEXCOORD";
+	voxelInputElements[1].SemanticIndex = 0;
+	voxelInputElements[1].Format = DXGI_FORMAT_R32G32B32_FLOAT;
+	voxelInputElements[1].InputSlot = 1;
+	voxelInputElements[1].AlignedByteOffset = 0;
+	voxelInputElements[1].InputSlotClass = D3D11_INPUT_PER_INSTANCE_DATA;
+	voxelInputElements[1].InstanceDataStepRate = 1;
+
+	// Build the object shader files with the given input element
+	// descriptions
+	Shader::BuildShader(device, windowHandle,
+						voxelInputElements, 2,
+						vertexShaderFilePath, pixelShaderFilePath);
+
+	// Setup the matrix buffer description
+	// (the matrix buffer stores the world, view, and projection matrices
+	// before the start of each frame so the GPU can avoid creating/destroying
+	// 512-bit slabs of matrix data in every shader call)
+	D3D11_BUFFER_DESC matBufferDesc;
+	matBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
+	matBufferDesc.ByteWidth = sizeof(MatBuffer);
+	matBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	matBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	matBufferDesc.MiscFlags = 0;
+	matBufferDesc.StructureByteStride = 0;
+
+	// Create the matrix buffer
+	result = device->CreateBuffer(&matBufferDesc, NULL, &matBufferLocal);
 
 	// Setup the texture sampler state description
 	// (we're using wrap sampling atm)
@@ -37,10 +76,30 @@ Rasterizer::~Rasterizer()
 	// Release the texture sampler state
 	wrapSamplerState->Release();
 	wrapSamplerState = nullptr;
+
+	// Release the stored world/view/projection
+	// matrices
+	matBufferLocal->Release();
+	matBufferLocal = nullptr;
 }
 
-void Rasterizer::SetShaderParameters(ID3D11DeviceContext* deviceContext,
-									 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
+void Rasterizer::RenderShader(ID3D11DeviceContext* deviceContext)
+{
+	// Set the vertex input layout
+	deviceContext->IASetInputLayout(inputLayout);
+
+	// Ask the GPU to use the the vertex/pixel shaders associated with
+	// [this] for the current render pass
+	deviceContext->VSSetShader(vertShader, NULL, 0);
+	deviceContext->PSSetShader(pixelShader, NULL, 0);
+
+	// Render the voxel grid
+	deviceContext->DrawIndexedInstanced(VOXEL_INDEX_COUNT, (fourByteUnsigned)GraphicsStuff::VOXEL_GRID_VOLUME, 0, 0, 0);
+}
+
+void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
+						DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
+						ID3D11ShaderResourceView* sceneColorTexture)
 {
 	// Long integer used to store success/failure for DirectX operations
 	HRESULT result;
@@ -53,6 +112,7 @@ void Rasterizer::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 	// Expose the local matrix buffer for writing
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	result = deviceContext->Map(matBufferLocal, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	assert(SUCCEEDED(result));
 
 	// Get a pointer to the data in the local matrix buffer
 	MatBuffer* dataPtr;
@@ -70,37 +130,12 @@ void Rasterizer::SetShaderParameters(ID3D11DeviceContext* deviceContext,
 	// vertex shader
 	deviceContext->VSSetConstantBuffers(0, 1, &matBufferLocal);
 
-	// Test whether anything broke :P
-	assert(SUCCEEDED(result));
-}
-
-void Rasterizer::RenderShader(ID3D11DeviceContext* deviceContext)
-{
-	// Set the vertex input layout.
-	deviceContext->IASetInputLayout(inputLayout);
-
-	// Set the vertex/pixel shaders that will be used to render the boxecule
-	deviceContext->VSSetShader(vertShader, NULL, 0);
-	deviceContext->PSSetShader(pixelShader, NULL, 0);
-
-	// Render a boxecule
-	deviceContext->DrawIndexedInstanced(BOXECULE_INDEX_COUNT, (fourByteUnsigned)GraphicsStuff::VOXEL_GRID_VOLUME, 0, 0, 0);
-}
-
-void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
-						DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-						ID3D11ShaderResourceView* sceneColorTexture)
-{
-	// Initialise the vertex shader's cbuffer with the world/view/projection
-	// matrices
-	SetShaderParameters(deviceContext, world, view, projection);
-
-	// Initialise the pixel shader's texture input with the given texture
+	// Pass the scene texture onto the pipeline
 	deviceContext->PSSetShaderResources(0, 1, &sceneColorTexture);
 
-	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
+	// Set the GPU-side texture sampling state
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
-	// Render the newest boxecule on the pipeline with [this]
+	// Render the voxel grid with [this]
 	RenderShader(deviceContext);
 }

@@ -46,21 +46,21 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 
 	// Initialise indices
 	// Each set of three values is one triangle
-	long indices[SCREEN_RECT_INDEX_COUNT] = { 0,
-										     1,
-										     2,
+	fourByteUnsigned indices[SCREEN_RECT_INDEX_COUNT] = { 0,
+										        		  1,
+										        		  2,
 
-										     2,
-										     3,
-										     1 };
+										        		  2,
+										        		  3,
+										        		  1 };
 
 
 	// Set up the description of the static vertex buffer
 	D3D11_BUFFER_DESC vertBufferDesc;
-	vertBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	vertBufferDesc.ByteWidth = sizeof(SceneVertex) * 4;
+	vertBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	vertBufferDesc.ByteWidth = sizeof(PostVertex) * 4;
 	vertBufferDesc.BindFlags = D3D11_BIND_VERTEX_BUFFER;
-	vertBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
+	vertBufferDesc.CPUAccessFlags = 0;
 	vertBufferDesc.MiscFlags = 0;
 	vertBufferDesc.StructureByteStride = 0;
 
@@ -72,11 +72,12 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 
 	// Create the vertex buffer
 	result = d3dDevice->CreateBuffer(&vertBufferDesc, &vertData, &vertBuffer);
+	assert(SUCCEEDED(result));
 
 	// Set up the description of the static index buffer
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	indexBufferDesc.ByteWidth = sizeof(unsigned long) * SCREEN_RECT_INDEX_COUNT;
+	indexBufferDesc.ByteWidth = sizeof(fourByteUnsigned) * SCREEN_RECT_INDEX_COUNT;
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.CPUAccessFlags = 0;
 	indexBufferDesc.MiscFlags = 0;
@@ -90,8 +91,6 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 
 	// Create the index buffer
 	result = d3dDevice->CreateBuffer(&indexBufferDesc, &indexData, &indexBuffer);
-
-	// Check if anything failed during the geometry setup
 	assert(SUCCEEDED(result));
 }
 
@@ -99,6 +98,23 @@ ScreenRect::~ScreenRect()
 {
 	// Release the render target view
 	renderTarget->Release();
+}
+
+void ScreenRect::PassToGPU(ID3D11DeviceContext* context)
+{
+	// Set vertex buffer stride and offset.
+	unsigned int stride = sizeof(PostVertex);
+	unsigned int offset = 0;
+
+	// Set the vertex buffer to active in the input assembler so it can be rendered
+	context->IASetVertexBuffers(0, 1, &vertBuffer, &stride, &offset);
+
+	// Set the index buffer to active in the input assembler so it can be rendered
+	context->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
+
+	// Set the 2D primitive type used to create the Mesh; we're making simple
+	// geometry, so triangular primitives make the most sense
+	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
 }
 
 ID3D11RenderTargetView* ScreenRect::GetRenderTarget()

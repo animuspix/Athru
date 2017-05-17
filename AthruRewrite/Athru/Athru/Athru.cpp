@@ -31,7 +31,7 @@ void GameLoop()
 		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
 
 		// Perform update/draw operations here
-		//athruScene->Update();
+		athruScene->Update();
 		athruRendering->Render(athruScene->GetMainCamera());
 
 		// Record the time at this frame so we can calculate
