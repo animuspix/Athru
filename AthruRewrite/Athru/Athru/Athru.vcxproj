@@ -169,10 +169,12 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Athru.cpp" />
+    <ClCompile Include="Galaxy.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="HiLevelServiceCentre.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Galaxy.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="HiLevelServiceCentre.h" />
   </ItemGroup>
