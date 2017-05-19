@@ -1,0 +1,6 @@
+C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru Utility\TectoBuilder\TectoBuilder\bin\Debug\TectoBuilder.exe.config
+C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru Utility\TectoBuilder\TectoBuilder\bin\Debug\TectoBuilder.exe
+C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru Utility\TectoBuilder\TectoBuilder\bin\Debug\TectoBuilder.pdb
+C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru Utility\TectoBuilder\TectoBuilder\obj\Debug\TectoBuilder.exe
+C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru Utility\TectoBuilder\TectoBuilder\obj\Debug\TectoBuilder.pdb
+C:\Users\s171519\Documents\GitHub\Athru\AthruRewrite\Athru\Athru Utility\TectoBuilder\TectoBuilder\obj\Debug\TectoBuilder.csprojResolveAssemblyReference.cache

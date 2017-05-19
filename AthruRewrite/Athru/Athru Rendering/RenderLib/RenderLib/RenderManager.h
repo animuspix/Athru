@@ -57,6 +57,29 @@
 // Avoid trying to implement the entire system above all at once; try to generate a single system
 // containing a single planet first, then build up from there
 
+// Scene contains the Galaxy + the main camera
+// Galaxy contains an array of Systems
+// Each System contains a (arbitrarily coloured
+// for now) star and three planets
+// Systems are assumed not to orbit the galactic centre
+// Planets are assumed to orbit their central star
+// Systems are associated with vector positions for
+// "easy" (linear) access (should probably focus on
+// improving that in the future)
+// 
+// Per-pixel displacement can be inverted, then interpreted
+// as relative displacement from the planetary surface downward;
+// this negates the issue of deciding what origin to use for
+// depth projection
+// 
+// 
+// - Research areas -
+// Segmented LOD (with ~18 nested cubes going from 1vx/m to 2^18vx/m);
+// realizable with dynamic tesselation and multiple scene textures
+// 
+// Cheap environmental modelling (climate, weather, critter distributions, etc.)
+// Volumetric (texture-based) dynamics (displacement, torque, physics, animation, etc.)
+
 enum AVAILABLE_PLANET_ARCHETYPES
 {
 	ARCHETYPE_0,
@@ -66,6 +89,7 @@ class Direct3D;
 class Camera;
 class Rasterizer;
 class VoxelGrid;
+class PlanetArchetypeZero;
 class PostProcessor;
 class ScreenRect;
 class RenderManager
