@@ -4,29 +4,61 @@
 
 // Scene globals defined here
 
+// Data-blob containing the six float4s needed for
+// each package of voxel normals in [normFieldBuf] (see below)
+struct VoxelNormals
+{
+    float4 left;
+    float4 right;
+    float4 forward;
+    float4 back;
+    float4 down;
+    float4 up;
+};
+
+// Data-blob containing the six floats needed for
+// each package of face emissivity values in [emissTexBuf]
+// (see below)
+struct VoxelFaceEmissivities
+{
+    float left;
+    float right;
+    float forward;
+    float back;
+    float down;
+    float up;
+};
+
 // Scene color texture buffer/access view
 RWStructuredBuffer<float4> colorTexBuf : register(u0);
 
 // Scene normals texture buffer
-StructuredBuffer<float4> normFieldBuf : register(u1);
+StructuredBuffer<VoxelNormals> normFieldBuf : register(t0);
 
 // Scene PBR texture buffer
-StructuredBuffer<float2> pbrTexBuf : register(u2);
+StructuredBuffer<float2> pbrTexBuf : register(t1);
 
 // Scene emissivity texture buffer
-StructuredBuffer<float> emissTexBuf : register(u3);
+StructuredBuffer<VoxelFaceEmissivities> emissTexBuf : register(t2);
 
-// The camera's local view vector
+// Per-dispatch camera/view data needed for PBR-style
+// scene lighting
+cbuffer CameraDataBuffer
+{
+    // The camera's local view vector (normalized)
+    float4 cameraViewVec;
+};
+
 // Not 100% sure we actually need photoreal lighting;
 // very expensive for (potentially) aesthetically
 // awkward results
-StructuredBuffer<float4> cameraViewVec : register(u4);
 
 // Calculate Oren-Nayar PBR diffuse lighting
-float OrenNayar(float pixGrain, float4 pixNorm, float4 surfaceViewVector, float4 surfaceLightVector, float lambert)
+float OrenNayar(float voxGrain, float4 voxNorm,
+                float4 surfaceViewVector, float4 surfaceLightVector, float lambert)
 {
     // Calculate the [A] term for the Oren-Nayar reflectance model
-    float grainSqr = pixGrain * pixGrain;
+    float grainSqr = voxGrain * voxGrain;
     grainSqr = max(grainSqr, 0.001f);
     float orenNayarA = 1.0f - (0.5f * (grainSqr / (grainSqr + 0.57f)));
 
@@ -34,11 +66,11 @@ float OrenNayar(float pixGrain, float4 pixNorm, float4 surfaceViewVector, float4
     float orenNayarB = 0.45 * (grainSqr / (grainSqr + 0.09f));
 
     // Calculate the amount of light backscattered towards the camera
-    float4 cameraBackscatter = normalize(surfaceViewVector - (pixNorm * dot(pixNorm, surfaceViewVector)));
+    float4 cameraBackscatter = normalize(surfaceViewVector - (voxNorm * dot(voxNorm, surfaceViewVector)));
 
     // Calculate the amount of light backscatterered towards the overall light
     // source
-    float4 sourceBackscatter = normalize(surfaceLightVector - (pixNorm * dot(surfaceLightVector, pixNorm)));
+    float4 sourceBackscatter = normalize(surfaceLightVector - (voxNorm * dot(surfaceLightVector, voxNorm)));
 
     // Calculate the amount of light radiated directly from the current pixel
     // after backscattering
@@ -46,7 +78,7 @@ float OrenNayar(float pixGrain, float4 pixNorm, float4 surfaceViewVector, float4
 
     // Cache properties used to calculate the [alpha] and [beta] terms in
     // the Oren-Nayar reflectance model
-    float cameraTheta = acos(dot(pixNorm, surfaceViewVector));
+    float cameraTheta = acos(dot(voxNorm, surfaceViewVector));
     float lightTheta = acos(lambert);
 
     // Calculate the [alpha] term for the Oren-Nayar reflectance model
@@ -61,14 +93,14 @@ float OrenNayar(float pixGrain, float4 pixNorm, float4 surfaceViewVector, float4
 }
 
 // Calculate Cook-Torrance PBR reflectance
-float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
+float CookTorrance(float voxGrain, float voxReflectFactor, float4 voxNorm,
                    float4 surfaceViewVector, float4 surfaceLightVector)
 {
     // Calculate different parts of the beckmann distribution
-    float grainSqr = pixGrain * pixGrain;
+    float grainSqr = voxGrain * voxGrain;
     grainSqr = max(grainSqr, 0.001f);
     float4 halfVec = normalize(surfaceLightVector + surfaceViewVector);
-    float normDotHalf = clamp(dot(pixNorm, halfVec), 0, 1);
+    float normDotHalf = clamp(dot(voxNorm, halfVec), 0, 1);
     float normDotHalfSqr = normDotHalf * normDotHalf;
     float normDotHalfCube = normDotHalfSqr * normDotHalfSqr;
 
@@ -91,9 +123,9 @@ float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
     // explain that here; that said, there's quite a nice summary of the math
     // + physics behind it available over on Wikipedia:
     // https://en.wikipedia.org/wiki/Specular_reflection
-    float normDotView = dot(pixNorm, surfaceViewVector);
-    float approxFresLHS = pixReflectFactor;
-    float approxFresRHS = (1 - pixReflectFactor) * pow(1 - normDotView, 5);
+    float normDotView = dot(voxNorm, surfaceViewVector);
+    float approxFresLHS = voxReflectFactor;
+    float approxFresRHS = (1 - voxReflectFactor) * pow(1 - normDotView, 5);
     float approxFres = approxFresLHS * approxFresRHS;
 
     // Calculate the geometric attenuation factor
@@ -110,9 +142,9 @@ float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
     // http://groups.csail.mit.edu/graphics/classes/6.837/F00/Lecture17/Slide11.html
 
     // Calculate relevant dot-products
-    float halfDotNorm = dot(halfVec, pixNorm);
-    float surfaceViewDotNorm = dot(surfaceViewVector, pixNorm);
-    float surfaceLightDotNorm = dot(surfaceLightVector, pixNorm);
+    float halfDotNorm = dot(halfVec, voxNorm);
+    float surfaceViewDotNorm = dot(surfaceViewVector, voxNorm);
+    float surfaceLightDotNorm = dot(surfaceLightVector, voxNorm);
     float surfaceViewDotHalf = dot(surfaceViewVector, halfVec);
 
     // Calculate approximate values for the two fractions used to define the GAF
@@ -128,62 +160,155 @@ float CookTorrance(float pixGrain, float pixReflectFactor, float4 pixNorm,
     // Aggregate all the relevant values into the actual Cook-Torrance
     // function, then return the result to the calling location :)
     float pi = 3.14159265358979323846f;
-    return (beckmann * approxFres * geoAttenuationFactor) / (pi * surfaceViewDotNorm); //* dot(pixNorm, surfaceLightVector);
+    return (beckmann * approxFres * geoAttenuationFactor) / (pi * surfaceViewDotNorm); //* dot(voxNorm, surfaceLightVector);
 }
 
-// Calculate lighting at the current UVW coordinate
-float4 Lighting()
+void LightingInstance(uint3 dispatchThreadID, uint currTargetVox,
+                      uint sourceProcessing, float lightEmissFace, float4 lightDir,
+                      float2 currTargetVoxPBR, float4 surfaceViewVector )
 {
-    // Extract local face normals from the given vertex normal
-    float4 localXNorm = normalize(mul(float4(pixIn.normal.x, 0, 0, 1), worldMat));
-    float4 localYNorm = normalize(mul(float4(0, pixIn.normal.y, 0, 1), worldMat));
-    float4 localZNorm = normalize(mul(float4(0, 0, pixIn.normal.z, 1), worldMat));
+    // If the current face has non-zero emissivity, process it's effect
+    // on the target voxel
+    float currLightIntensity = lightEmissFace;
+    if (currLightIntensity > 0)
+    {
+        // Take the average lambert of each normal of the current voxel
+        // against the current normal of the given light source
+        float4 currLightDir = lightDir;
+        float lambertA = dot(normFieldBuf[currTargetVox].left, currLightDir);
+        float lambertB = dot(normFieldBuf[currTargetVox].right, currLightDir);
+        float lambertC = dot(normFieldBuf[currTargetVox].forward, currLightDir);
+        float lambertD = dot(normFieldBuf[currTargetVox].back, currLightDir);
+        float lambertE = dot(normFieldBuf[currTargetVox].down, currLightDir);
+        float lambertF = dot(normFieldBuf[currTargetVox].up, currLightDir);
+        float avgLambert = (lambertA + lambertB + lambertC + lambertD + lambertE + lambertF) / 6;
 
-    float lambertX = dot(localXNorm, lightDirection);
-    float lambertY = dot(localYNorm, lightDirection);
-    float lambertZ = dot(localZNorm, lightDirection);
-    float avgLambert = (lambertX + lambertY + lambertZ) / 3;
+        // Calculate pixel exposure with the overall light direction
+        float lambertTerm = saturate(avgLambert);
+        float currPixelExposure = lambertTerm * currLightIntensity;
 
-    // Calculate pixel exposure with the overall light direction
-    float lambertTerm = saturate(avgLambert);
-    float currPixelExposure = lambertTerm * lightIntensity;
+        // Diffuse lighting
 
-    // Diffuse lighting
+        // Cache the result of the Oren-Nayar function in a specific modifier for easy access
+        // when we compute the output lighting equation :)
+        float orenNayarModifier = OrenNayar(currTargetVoxPBR.x, currTargetVoxPBR.y, surfaceViewVector,
+                                            currLightDir, lambertTerm);
 
-    // Cache the result of the Oren-Nayar function in a specific modifier for easy access
-    // when we compute the output lighting equation :)
-    float orenNayarModifier = OrenNayar(pixIn.grain, pixIn.normal, pixIn.surfaceView,
-                                        lightDirection, lambertTerm);
+        // Specular lighting
 
-    // Specular lighting
+        // Cache the result of the Cook-Torrance function in a specific modifier
+        // that we can combine with the Oren-Nayar modifier above to generate
+        // a mixed diffuse/specular PBR value that we can apply to the rawq
+        // pixel exposure calculated earlier
+        float cookTorranceModifier = CookTorrance(currTargetVoxPBR.x, currTargetVoxPBR.y, normFieldBuf[currTargetVox].left, surfaceViewVector,
+                                                  currLightDir);
 
-    // Cache the result of the Cook-Torrance function in a specific modifier
-    // that we can combine with the Oren-Nayar modifier above to generate
-    // a mixed diffuse/specular PBR value that we can apply to the rawq
-    // pixel exposure calculated earlier
-    float cookTorranceModifier = CookTorrance(pixIn.grain, pixIn.reflectFactor, pixIn.normal, pixIn.surfaceView,
-                                              lightDirection);
+        // Combine diffuse/specular lighting
 
-    // Combine diffuse/specular lighting
+        // Sum the Cook-Torrance modifier with the Oren-Nayar modifier, then apply the result
+        // to the exposure for the current pixel
+        currPixelExposure *= (orenNayarModifier + cookTorranceModifier);
 
-    // Sum the Cook-Torrance modifier with the Oren-Nayar modifier, then apply the result
-    // to the exposure for the current pixel
-    currPixelExposure *= (orenNayarModifier + cookTorranceModifier);
+        // Use the generated exposure value to modify the diffuse light color applied to the
+        // current [Pixel]
+        // ...unless the [Pixel] exposure is less than zero; don't do anything in that case,
+        // negative lighting would be weird :P
 
-    // Use the generated exposure value to modify the diffuse light color applied to the
-    // current [Pixel]
-    // ...unless the [Pixel] exposure is less than zero; don't do anything in that case,
-    // negative lighting would be weird :P
+        // Safely apply the generated lighting data to the target voxel
+        if (currPixelExposure > 0.0f)
+        {
+            colorTexBuf[currTargetVox] *= currPixelExposure;
+        }
+    }
+}
 
-    // If the current [Pixel] is facing towards the light source, add the
-    // multiplicative blend of the diffuse color and the exposure level
-    // into the output color; afterward, guarantee that each component of
-    // the result is between [0] and [1] with the [saturate] function
-    return (lightDiffuse * currPixelExposure) * (currPixelExposure > 0.0f);
+// Approximate lighting at the current UVW coordinate
+void Lighting(uint3 dispatchThreadID, uint currTargetVox, uint sourceProcessing)
+{
+    // Cache the target voxel's roughness/reflectance properties
+    float2 currTargetVoxPBR = pbrTexBuf[currTargetVox];
+
+    // Cache the surface-to-view vector for the current target voxel
+    float4 surfaceViewVector = (cameraViewVec - float4(dispatchThreadID, 0));
+
+    // Process lighting separately for each face of the current light source
+
+    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+                     emissTexBuf[sourceProcessing].left, normFieldBuf[sourceProcessing].left,
+                     currTargetVoxPBR, surfaceViewVector);
+
+    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+                     emissTexBuf[sourceProcessing].right, normFieldBuf[sourceProcessing].right,
+                     currTargetVoxPBR, surfaceViewVector);
+
+    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+                     emissTexBuf[sourceProcessing].forward, normFieldBuf[sourceProcessing].forward,
+                     currTargetVoxPBR, surfaceViewVector);
+
+    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+                     emissTexBuf[sourceProcessing].back, normFieldBuf[sourceProcessing].back,
+                     currTargetVoxPBR, surfaceViewVector);
+
+    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+                     emissTexBuf[sourceProcessing].down, normFieldBuf[sourceProcessing].down,
+                     currTargetVoxPBR, surfaceViewVector);
+
+    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+                     emissTexBuf[sourceProcessing].up, normFieldBuf[sourceProcessing].up,
+                     currTargetVoxPBR, surfaceViewVector);
 }
 
 [numthreads(1, 1, 1)]
-void main( uint3 DTid : SV_DispatchThreadID )
+void main( uint3 dispatchThreadID : SV_DispatchThreadID )
 {
-    Lighting();
+    // Cache the current voxel index so we can use it later
+    uint currVox = (dispatchThreadID.x + dispatchThreadID.y + dispatchThreadID.z);
+
+    // Cache the alpha value of the current voxel so we can re-set it later
+    float currVoxAlpha = colorTexBuf[currVox].a;
+
+    // Calculate the lighting emitted onto the current voxel from
+    // each voxel in the surrounding area
+
+    // Calculate influences from above the current voxel
+    uint upperForwardLightSource = dispatchThreadID.x + (dispatchThreadID.y + 1) + dispatchThreadID.z + 1;
+    uint upperLeftForwardLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z + 1;
+    uint upperRightForwardLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z + 1;
+    uint upperLeftLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z + 1;
+    uint upperRightLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z + 1;
+    uint upperBackwardLightSource = dispatchThreadID.x + (dispatchThreadID.y + 1) + dispatchThreadID.z - 1;
+    uint upperLeftBackwardLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z - 1;
+    uint upperRightBackwardLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z - 1;
+
+    Lighting(dispatchThreadID, currVox, upperForwardLightSource);
+    Lighting(dispatchThreadID, currVox, upperLeftForwardLightSource);
+    Lighting(dispatchThreadID, currVox, upperRightForwardLightSource);
+    Lighting(dispatchThreadID, currVox, upperLeftLightSource);
+    Lighting(dispatchThreadID, currVox, upperRightLightSource);
+    Lighting(dispatchThreadID, currVox, upperBackwardLightSource);
+    Lighting(dispatchThreadID, currVox, upperLeftBackwardLightSource);
+    Lighting(dispatchThreadID, currVox, upperRightBackwardLightSource);
+
+    // Calculate influences from below the current voxel
+    uint lowerForwardLightSource = dispatchThreadID.x + (dispatchThreadID.y - 1) + dispatchThreadID.z + 1;
+    uint lowerLeftForwardLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z + 1;
+    uint lowerRightForwardLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z + 1;
+    uint lowerLeftLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z + 1;
+    uint lowerRightLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z + 1;
+    uint lowerBackwardLightSource = dispatchThreadID.x + (dispatchThreadID.y - 1) + dispatchThreadID.z - 1;
+    uint lowerLeftBackwardLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z - 1;
+    uint lowerRightBackwardLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z - 1;
+
+    Lighting(dispatchThreadID, currVox, lowerForwardLightSource);
+    Lighting(dispatchThreadID, currVox, lowerLeftForwardLightSource);
+    Lighting(dispatchThreadID, currVox, lowerRightForwardLightSource);
+    Lighting(dispatchThreadID, currVox, lowerLeftLightSource);
+    Lighting(dispatchThreadID, currVox, lowerRightLightSource);
+    Lighting(dispatchThreadID, currVox, lowerBackwardLightSource);
+    Lighting(dispatchThreadID, currVox, lowerLeftBackwardLightSource);
+    Lighting(dispatchThreadID, currVox, lowerRightBackwardLightSource);
+
+    // The alpha channel might have gotten knocked around somewhere in all those lighting
+    // calculations, so re-set it here
+    colorTexBuf[currVox].a = currVoxAlpha;
 }

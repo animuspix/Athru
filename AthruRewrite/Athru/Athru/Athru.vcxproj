@@ -172,11 +172,13 @@
     <ClCompile Include="Galaxy.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="HiLevelServiceCentre.cpp" />
+    <ClCompile Include="System.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Galaxy.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="HiLevelServiceCentre.h" />
+    <ClInclude Include="System.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

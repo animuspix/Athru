@@ -4,6 +4,7 @@
 Scene::Scene()
 {
 	mainCamera = new Camera();
+	galaxy = new Galaxy(AVAILABLE_GALACTIC_LAYOUTS::SPHERE);
 }
 
 Scene::~Scene()
@@ -20,11 +21,22 @@ Scene::~Scene()
 void Scene::Update()
 {
 	mainCamera->Update();
+	galaxy->Update();
 }
 
 Camera* Scene::GetMainCamera()
 {
 	return mainCamera;
+}
+
+Galaxy* Scene::GetGalaxy()
+{
+	return galaxy;
+}
+
+System& Scene::GetCurrentSystem()
+{
+	return galaxy->GetCurrentSystem(mainCamera->GetTranslation());
 }
 
 // Push constructions for this class through Athru's custom allocator

@@ -24,7 +24,7 @@ Camera::Camera()
 	// Extract the look-direction vector by normalizing the focal position (only doable
 	// because we haven't shifted it in front of the camera yet, so it's still technically
 	// an origin-relative direction)
-	lookInfo.lookDirNormal = DirectX::XMVector3Normalize(lookAt);
+	lookInfo.viewDirNormal = DirectX::XMVector3Normalize(lookAt);
 
 	// Generate + store a point at the centre of the voxel grid
 	float voxGridCentre = (float)GraphicsStuff::VOXEL_GRID_WIDTH / 2.0f;
@@ -175,7 +175,7 @@ void Camera::RefreshViewData()
 	// Extract the look-direction vector by normalizing the focal position (only doable
 	// because we haven't shifted it in front of the camera yet, so it's still technically
 	// an origin-relative direction)
-	lookInfo.lookDirNormal = DirectX::XMVector3Normalize(lookAt);
+	lookInfo.viewDirNormal = DirectX::XMVector3Normalize(lookAt);
 
 	// Translate the focal position so that it's "in front of" the camera (e.g. visible)
 	lookAt = _mm_add_ps(fixedViewPosition, lookAt);

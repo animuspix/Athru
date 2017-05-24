@@ -20,8 +20,8 @@ namespace AthruRendering
 			if (AthruUtilities::UtilityServiceCentre::AccessMemory() == nullptr)
 			{
 				// Allocation assumes Athru will use ten uncompressed RGBA
-				// scene textures at most, then adds another 255 megabytes 
-				// beyond that to make sure no overruns occur during 
+				// scene textures at most, then adds another 255 megabytes
+				// beyond that to make sure no overruns occur during
 				// runtime
 				const eightByteUnsigned STARTING_HEAP = (GraphicsStuff::VOXEL_GRID_VOLUME * 40) + 255000000;
 				AthruUtilities::UtilityServiceCentre::Init(STARTING_HEAP);

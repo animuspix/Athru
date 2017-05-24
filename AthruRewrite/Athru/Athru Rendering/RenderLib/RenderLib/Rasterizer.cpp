@@ -3,7 +3,8 @@
 #include "Rasterizer.h"
 
 Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
-					   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath) :
+					   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath,
+					   ID3D11ShaderResourceView* sceneColorShaderResource) :
 					   PipelineShader()
 {
 	// Long integer used for storing success/failure for different
@@ -48,6 +49,9 @@ Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 
 	// Create the matrix buffer
 	result = device->CreateBuffer(&matBufferDesc, NULL, &matBufferLocal);
+
+	// Store the given reference to the scene color texture
+	sceneColorTexture = sceneColorShaderResource;
 
 	// Setup the texture sampler state description
 	// (we're using wrap sampling atm)
@@ -98,8 +102,7 @@ void Rasterizer::RenderShader(ID3D11DeviceContext* deviceContext)
 }
 
 void Rasterizer::Render(ID3D11DeviceContext* deviceContext,
-						DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-						ID3D11ShaderResourceView* sceneColorTexture)
+						DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
 {
 	// Long integer used to store success/failure for DirectX operations
 	HRESULT result;

@@ -41,9 +41,6 @@ cbuffer PlanetProps
 [numthreads(8, 8, 16)]
 void main( uint3 DTid : SV_DispatchThreadID )
 {
-    // No gravity, so transform the player coordinates to wrap
-    // onto the planet's bounding sphere instead
-
     // Sample terrain parameters for every voxel position rendered
     // into the scene, then modify the given textures as appropriate
 

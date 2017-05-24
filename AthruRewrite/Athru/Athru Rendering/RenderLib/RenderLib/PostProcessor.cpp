@@ -101,31 +101,32 @@ void PostProcessor::RenderShader(ID3D11DeviceContext* deviceContext)
 void PostProcessor::Render(ID3D11DeviceContext* deviceContext,
 						   bool useBlur, bool useDrugs, bool brightenScene)
 {
+	// Long integer used for storing success/failure for different
+	// DirectX operations
+	HRESULT result;
+
 	// Initialise the pixel shader's texture input with the given texture
 	deviceContext->PSSetShaderResources(0, 1, &postProcessInputResource);
 
 	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);
 
-	// Make the light buffer writable by mapping it's data onto a local variable,
-	// then store the success/failure of the operation so it can be validated with
-	// an [assert]
+	// Make the effect-status buffer writable by mapping it's data onto a local variable
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
-	HRESULT result = deviceContext->Map(effectStatusBufferPttr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
+	result = deviceContext->Map(effectStatusBufferPttr, 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	assert(SUCCEEDED(result));
 
 	// Cast the raw data mapped onto [mappedResource] into a pointer formatted
-	// with it's original type (LightBuffer) which can be used to edit the
+	// with it's original type (EffectStatusBuffer) which can be used to edit the
 	// data itself
-	// Very strange bug here, everything besides directional data is discarded
 	EffectStatusBuffer* effectStatusBufferData = (EffectStatusBuffer*)mappedResource.pData;
 
-	// Write directional-light data to the light-buffer via [lightBufferData]
+	// Write effect statuses to the effect-status-buffer via [effectStatusBufferData]
 	effectStatusBufferData->blurActive = DirectX::XMINT4(useBlur, useBlur, useBlur, useBlur);
 	effectStatusBufferData->drugsActive = DirectX::XMINT4(useDrugs, useDrugs, useDrugs, useDrugs);
 	effectStatusBufferData->brightenActive = DirectX::XMINT4(brightenScene, brightenScene, brightenScene, brightenScene);
 
-	// Discard the mapping between the GPU-side [lightBufferPttr] and the CPU-side
+	// Discard the mapping between the GPU-side [effectStatusBufferPttr] and the CPU-side
 	// [mappedResource]
 	deviceContext->Unmap(effectStatusBufferPttr, 0);
 

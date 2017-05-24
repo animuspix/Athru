@@ -99,7 +99,7 @@
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
-      <ObjectFileOutput>%userprofile%/Documents/GitHub/Athru/AthruRewrite/Athru/Athru/%(Filename).cso</ObjectFileOutput>
+      <ObjectFileOutput>$(SolutionDir)Athru\%(Filename).cso</ObjectFileOutput>
     </FxCompile>
     <Lib>
       <OutputFile>$(SolutionDir)Athru Rendering\$(ProjectName)\$(ProjectName)\$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
@@ -140,7 +140,10 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
     <ClInclude Include="ComputeShader.h" />
-    <ClInclude Include="DemoPlanetSampler.h" />
+    <ClInclude Include="PlanetSampler.h" />
+    <ClInclude Include="Heightfield.h" />
+    <ClInclude Include="Planet.h" />
+    <ClInclude Include="SceneIlluminator.h" />
     <ClInclude Include="ScreenRect.h" />
     <ClInclude Include="AthruTexture2D.h" />
     <ClInclude Include="AthruTexture3D.h" />
@@ -156,6 +159,8 @@
     <ClInclude Include="RenderManager.h" />
     <ClInclude Include="RenderServiceCentre.h" />
     <ClInclude Include="PipelineShader.h" />
+    <ClInclude Include="Star.h" />
+    <ClInclude Include="SystemSampler.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="SceneVertex.h" />
@@ -164,7 +169,9 @@
   <ItemGroup>
     <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
     <ClCompile Include="ComputeShader.cpp" />
-    <ClCompile Include="DemoPlanetSampler.cpp" />
+    <ClCompile Include="PlanetSampler.cpp" />
+    <ClCompile Include="Planet.cpp" />
+    <ClCompile Include="SceneIlluminator.cpp" />
     <ClCompile Include="ScreenRect.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Critter.cpp" />
@@ -176,6 +183,8 @@
     <ClCompile Include="RenderManager.cpp" />
     <ClCompile Include="RenderServiceCentre.cpp" />
     <ClCompile Include="PipelineShader.cpp" />
+    <ClCompile Include="Star.cpp" />
+    <ClCompile Include="SystemSampler.cpp" />
     <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="SceneVertex.cpp" />
     <ClCompile Include="VoxelGrid.cpp" />
@@ -184,13 +193,7 @@
     <FxCompile Include="Colorizer.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
-    <FxCompile Include="PostColorizer.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="PostVertPlotter.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
-    </FxCompile>
-    <FxCompile Include="PlanetarySceneBuilder.hlsl">
+    <FxCompile Include="PlanetSampler.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
@@ -199,7 +202,16 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
-    <FxCompile Include="PracticeSceneBuilder.hlsl">
+    <FxCompile Include="PostColorizer.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
+    </FxCompile>
+    <FxCompile Include="PostVertPlotter.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
+    </FxCompile>
+    <FxCompile Include="SceneIlluminator.hlsl">
+      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
+    </FxCompile>
+    <FxCompile Include="SystemSampler.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>

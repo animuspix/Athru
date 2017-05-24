@@ -8,14 +8,14 @@ class Rasterizer : public PipelineShader
 {
 	public:
 		Rasterizer(ID3D11Device* device, HWND windowHandle,
-				   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
+				   LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath,
+				   ID3D11ShaderResourceView* sceneColorShaderResource);
 		~Rasterizer();
 
 		// Pass the world/view/projection matrices + the scene texture onto the pipeline,
 		// then render the voxel grid with [this]
 		void Render(ID3D11DeviceContext* deviceContext,
-					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection,
-					ID3D11ShaderResourceView* sceneColorTexture);
+					DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
 
 	private:
 		struct MatBuffer
@@ -29,6 +29,9 @@ class Rasterizer : public PipelineShader
 		// voxel grid after the public [Render()] function passes it's
 		// input values onto the pipeline
 		void RenderShader(ID3D11DeviceContext* deviceContext);
+
+		// A reference to the scene texture accessed by [this] per-frame
+		ID3D11ShaderResourceView* sceneColorTexture;
 
 		// The texture sampling state used with [this]
 		ID3D11SamplerState* wrapSamplerState;

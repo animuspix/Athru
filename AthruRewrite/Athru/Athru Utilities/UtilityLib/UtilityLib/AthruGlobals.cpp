@@ -5,6 +5,7 @@ const float MathsStuff::PI = 3.14159265359f;
 
 const bool GraphicsStuff::FULL_SCREEN = false;
 const bool GraphicsStuff::VSYNC_ENABLED = true;
+
 const fourByteUnsigned GraphicsStuff::DISPLAY_WIDTH = 1024;
 const fourByteUnsigned GraphicsStuff::DISPLAY_HEIGHT = 768;
 
@@ -19,3 +20,8 @@ const float GraphicsStuff::FRUSTUM_HEIGHT_AT_NEAR = GraphicsStuff::FRUSTUM_WIDTH
 const fourByteUnsigned GraphicsStuff::VOXEL_GRID_WIDTH = 50;
 const fourByteUnsigned GraphicsStuff::VOXEL_GRID_AREA = GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH;
 const eightByteUnsigned GraphicsStuff::VOXEL_GRID_VOLUME = GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH;
+
+const twoByteUnsigned GraphicsStuff::HEIGHTFIELD_WIDTH = 512;
+const fourByteUnsigned GraphicsStuff::HEIGHTFIELD_AREA = GraphicsStuff::HEIGHTFIELD_WIDTH * GraphicsStuff::HEIGHTFIELD_WIDTH;
+
+const float GraphicsStuff::MIN_PLANET_SAMPLING_DIST = 5000;

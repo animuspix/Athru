@@ -5,9 +5,9 @@
 
 struct CameraLookData
 {
-	// Normalized look vector; the /direction/ that the camera's
+	// Normalized look/view vector; the /direction/ that the camera's
 	// currently looking in
-	DirectX::XMVECTOR lookDirNormal;
+	DirectX::XMVECTOR viewDirNormal;
 
 	// Non-normalized focal position; the world-space point at the
 	// center of the camera's FOV at any particular time

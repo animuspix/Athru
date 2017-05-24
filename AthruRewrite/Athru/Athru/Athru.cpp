@@ -30,9 +30,13 @@ void GameLoop()
 		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
 		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
 
-		// Perform update/draw operations here
+		// Update the galaxy
 		athruScene->Update();
-		athruRendering->Render(athruScene->GetMainCamera());
+
+		// Find the area around the player, then render it
+		System currSystem = athruScene->GetCurrentSystem();
+		athruRendering->Render(athruScene->GetMainCamera(), currSystem.FetchPos(),
+							   currSystem.GetPlanets(), currSystem.GetStar());
 
 		// Record the time at this frame so we can calculate
 		// [deltaTime]

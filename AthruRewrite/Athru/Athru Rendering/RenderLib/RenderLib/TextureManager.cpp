@@ -45,22 +45,75 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 	// DirectX operations
 	HRESULT result;
 
+	// Build planetary heightfields
+
 	// DirectXTex texture loading is threaded, so call [CoInitializeEx]
 	// here
 	result = CoInitializeEx(nullptr, NULL);
 	assert(SUCCEEDED(result));
 
-	// Store texture locations
-	textureLocations[(byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::BLANK_WHITE] = L"baseTex.bmp";
+	// Store heightfield locations
+	LPCWSTR planetaryHeightfieldLocations[2 * (byteUnsigned)AVAILABLE_PLANETARY_HEIGHTFIELDS::NULL_TEXTURE];
+	planetaryHeightfieldLocations[(byteUnsigned)AVAILABLE_PLANETARY_HEIGHTFIELDS::ARCHETYPE_ZERO] = L"tectoUpperZero.bmp";
+	planetaryHeightfieldLocations[(byteUnsigned)AVAILABLE_PLANETARY_HEIGHTFIELDS::ARCHETYPE_ZERO + 1] = L"tectoLowerZero.bmp";
 
-	// Build external textures
-	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE; i += 1)
+	// Build compute-friendly heightfield buffer description
+	// Note: All heightfields are expected to be 512 pixels wide, 512 pixels tall,
+	// and saved in the .bmp file format
+	D3D11_BUFFER_DESC heightfieldBufferDesc;
+	heightfieldBufferDesc.ByteWidth = (fourByteUnsigned)((sizeof(float) * 4) * GraphicsStuff::HEIGHTFIELD_AREA);
+	heightfieldBufferDesc.Usage = D3D11_USAGE_DEFAULT;
+	heightfieldBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
+	heightfieldBufferDesc.StructureByteStride = sizeof(float) * 4;
+	heightfieldBufferDesc.CPUAccessFlags = 0;
+	heightfieldBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_PLANETARY_HEIGHTFIELDS::NULL_TEXTURE; i += 1)
 	{
-		result = DirectX::CreateWICTextureFromFile(d3dDevice, textureLocations[i],
-												   (ID3D11Resource**)(&(availableExternalTextures[i].raw)), &(availableExternalTextures[i].asRenderedShaderResource),
-												   MAX_TEXTURE_SIZE_2D);
+		// Import resources for the upper/lower hemispheres of
+		// the current heightfield
 
+		result = DirectX::CreateWICTextureFromFile(d3dDevice, planetaryHeightfieldLocations[i],
+												   (ID3D11Resource**)(&(availablePlanetaryHeightfields[i].upperHemisphere.raw)),
+												   &(availablePlanetaryHeightfields[i].upperHemisphere.asRenderedShaderResource),
+												   MAX_TEXTURE_SIZE_2D);
 		assert(SUCCEEDED(result));
+
+		result = DirectX::CreateWICTextureFromFile(d3dDevice, planetaryHeightfieldLocations[i],
+												   (ID3D11Resource**)(&(availablePlanetaryHeightfields[i].lowerHemisphere.raw)),
+												   &(availablePlanetaryHeightfields[i].lowerHemisphere.asRenderedShaderResource),
+												   MAX_TEXTURE_SIZE_2D);
+		assert(SUCCEEDED(result));
+
+		// Build compute-friendly buffers with the raw texture data
+		// generated above
+
+		D3D11_SUBRESOURCE_DATA textureData;
+		textureData.pSysMem = &(availableInternalTextures3D[i].raw);
+		textureData.SysMemPitch = (fourByteUnsigned)GraphicsStuff::HEIGHTFIELD_WIDTH;
+		textureData.SysMemSlicePitch = (fourByteUnsigned)GraphicsStuff::HEIGHTFIELD_AREA;
+
+		result = d3dDevice->CreateBuffer(&heightfieldBufferDesc, &textureData, &(availablePlanetaryHeightfields[i].upperHemisphere.asStructuredBuffer));
+		assert(SUCCEEDED(result));
+
+		result = d3dDevice->CreateBuffer(&heightfieldBufferDesc, &textureData, &(availablePlanetaryHeightfields[i].lowerHemisphere.asStructuredBuffer));
+		assert(SUCCEEDED(result));
+
+		// Extract compute-friendly resource views from the buffers generated
+		// above
+
+		result = d3dDevice->CreateShaderResourceView(availablePlanetaryHeightfields[i].upperHemisphere.raw, nullptr,
+													 &(availablePlanetaryHeightfields[i].upperHemisphere.asComputeShaderResource));
+		assert(SUCCEEDED(result));
+
+		result = d3dDevice->CreateShaderResourceView(availablePlanetaryHeightfields[i].lowerHemisphere.raw, nullptr,
+													 &(availablePlanetaryHeightfields[i].lowerHemisphere.asComputeShaderResource));
+		assert(SUCCEEDED(result));
+
+		// Heightfields are strictly read-only, so avoid giving them a write-allowed resource view
+		availablePlanetaryHeightfields[i].lowerHemisphere.asWritableComputeShaderResource = nullptr;
+		availablePlanetaryHeightfields[i].upperHemisphere.asWritableComputeShaderResource = nullptr;
+
 		i += 1;
 	}
 
@@ -96,6 +149,11 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 		// Extract a shader-friendly resource view from the generated texture
 		result = d3dDevice->CreateShaderResourceView(availableInternalTextures2D[i].raw, nullptr, &(availableInternalTextures2D[i].asRenderedShaderResource));
 		assert(SUCCEEDED(result));
+
+		// Post-processing effects will never be compute-shaded, so just set compute-shading properties to [nullptr]
+		availableInternalTextures2D[i].asStructuredBuffer = nullptr;
+		availableInternalTextures2D[i].asComputeShaderResource = nullptr;
+		availableInternalTextures2D[i].asWritableComputeShaderResource = nullptr;
 	}
 
 	// Build scene textures
@@ -134,6 +192,19 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 			sceneTextureDesc.Format = DXGI_FORMAT_R32G32_FLOAT;
 		}
 
+		// Set the width/height/depth of the current texture
+		sceneTextureDesc.Width = GraphicsStuff::VOXEL_GRID_WIDTH;
+		sceneTextureDesc.Height = GraphicsStuff::VOXEL_GRID_WIDTH;
+		sceneTextureDesc.Depth = GraphicsStuff::VOXEL_GRID_WIDTH;
+		if ((AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_NORMAL_TEXTURE ||
+			(AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_EMISSIVITY_TEXTURE)
+		{
+			// Assume one normal per face + per-face emissivity
+			sceneTextureDesc.Width = GraphicsStuff::VOXEL_GRID_WIDTH * 6;
+			sceneTextureDesc.Height = GraphicsStuff::VOXEL_GRID_WIDTH * 6;
+			sceneTextureDesc.Depth = GraphicsStuff::VOXEL_GRID_WIDTH * 6;
+		}
+
 		// Build texture
 		result = d3dDevice->CreateTexture3D(&sceneTextureDesc, nullptr, &(availableInternalTextures3D[i].raw));
 		assert(SUCCEEDED(result));
@@ -142,7 +213,7 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 		result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].raw, nullptr, &(availableInternalTextures3D[i].asRenderedShaderResource));
 		assert(SUCCEEDED(result));
 
-		// Build compute-friendly color buffer description
+		// Build compute-friendly texture buffer description
 		D3D11_BUFFER_DESC sceneBufferDesc;
 		sceneBufferDesc.ByteWidth = (fourByteUnsigned)((sizeof(float) * elementsPerChannel) * GraphicsStuff::VOXEL_GRID_VOLUME);
 		sceneBufferDesc.Usage = D3D11_USAGE_DEFAULT;
@@ -150,6 +221,14 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 		sceneBufferDesc.StructureByteStride = sizeof(float) * elementsPerChannel;
 		sceneBufferDesc.CPUAccessFlags = 0;
 		sceneBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+
+		if ((AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_NORMAL_TEXTURE ||
+			(AVAILABLE_VOLUME_TEXTURES)i == AVAILABLE_VOLUME_TEXTURES::SCENE_EMISSIVITY_TEXTURE)
+		{
+			// Assume one normal per face + per-face emissivity
+			sceneBufferDesc.ByteWidth = (fourByteUnsigned)((sizeof(float) * elementsPerChannel) * GraphicsStuff::VOXEL_GRID_VOLUME * 6);
+			sceneBufferDesc.StructureByteStride = sizeof(float) * elementsPerChannel * 6;
+		}
 
 		// Build a compute-friendly buffer with the raw texture data
 		D3D11_SUBRESOURCE_DATA textureData;
@@ -160,20 +239,21 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 		assert(SUCCEEDED(result));
 
 		// Extract a compute-friendly resource view from the generated buffer
-		result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].raw, nullptr, &(availableInternalTextures3D[i].asComputeShaderResource));
+		result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].asStructuredBuffer, nullptr, &(availableInternalTextures3D[i].asComputeShaderResource));
+		assert(SUCCEEDED(result));
+
+		// Extract a writable compute-friendly shader resource view from the generated buffer
+		// Unordered-access views can't be created for 3D texture resources, so
+		result = d3dDevice->CreateUnorderedAccessView(availableInternalTextures3D[i].asStructuredBuffer, nullptr, &(availableInternalTextures3D[i].asWritableComputeShaderResource));
 		assert(SUCCEEDED(result));
 	}
 }
 
 TextureManager::~TextureManager()
 {
-	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_EXTERNAL_TEXTURES::NULL_TEXTURE; i += 1)
+	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_PLANETARY_HEIGHTFIELDS::NULL_TEXTURE; i += 1)
 	{
-		availableExternalTextures[i].raw->Release();
-		availableExternalTextures[i].raw = nullptr;
-
-		availableExternalTextures[i].asRenderedShaderResource->Release();
-		availableExternalTextures[i].asRenderedShaderResource = nullptr;
+		availablePlanetaryHeightfields[i].ReleaseTextures();
 		i += 1;
 	}
 
@@ -185,13 +265,14 @@ TextureManager::~TextureManager()
 		availableInternalTextures2D[i].asRenderedShaderResource->Release();
 		availableInternalTextures2D[i].asRenderedShaderResource = nullptr;
 
+		// Structured buffers/compute-shader resources are kept at [nullptr]
+		// for display textures, so no reason to release them here
+
 		i += 1;
 	}
 
 	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_VOLUME_TEXTURES::NULL_TEXTURE; i += 1)
 	{
-		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(i, Logger::DESTINATIONS::LOG_FILE);
-
 		availableInternalTextures3D[i].raw->Release();
 		availableInternalTextures3D[i].raw = nullptr;
 
@@ -208,9 +289,9 @@ TextureManager::~TextureManager()
 	}
 }
 
-AthruTexture2D& TextureManager::GetExternalTexture2D(AVAILABLE_EXTERNAL_TEXTURES textureID)
+Heightfield& TextureManager::GetPlanetaryHeightfield(AVAILABLE_PLANETARY_HEIGHTFIELDS textureSetID)
 {
-	return availableExternalTextures[(byteUnsigned)textureID];
+	return availablePlanetaryHeightfields[(byteUnsigned)textureSetID];
 }
 
 AthruTexture2D& TextureManager::GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES textureID)

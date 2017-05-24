@@ -22,7 +22,13 @@ struct AthruTexture3D
 
 	// A compute-friendly resource view, accessed when
 	// the texture associated with [this] is being used
-	// as input to a compute-shaded pre-processing
+	// as read-only input to a compute-shaded pre-processing
 	// function
 	ID3D11ShaderResourceView* asComputeShaderResource;
+
+	// A compute-friendly resource view, accessed when
+	// the texture associated with [this] is being used
+	// as read/write input to a compute-shaded pre-processing
+	// function
+	ID3D11UnorderedAccessView* asWritableComputeShaderResource;
 };

@@ -15,5 +15,5 @@ float4 main(Pixel pixIn) : SV_TARGET
 {
     // Return the color stored in the scene texture for the
     // current pixel
-    return float4(sin(pixIn.texCoord.x), 1, sin(pixIn.texCoord.z), 1);//sceneTex.Sample(wrapSampler, pixIn.texCoord);
+    return sceneTex.Sample(wrapSampler, pixIn.texCoord);
 }

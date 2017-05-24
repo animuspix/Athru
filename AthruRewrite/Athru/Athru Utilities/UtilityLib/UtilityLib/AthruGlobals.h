@@ -49,6 +49,17 @@ namespace MathsStuff
 		return sqrt(sqrX + sqrY + sqrZ);
 	}
 
+	// Convert a given XMVECTOR (SSE) to an XMFLOAT4 (an array
+	// of scalars) and return the result
+	// Same note as above, only exists because I haven't
+	// changed over to an all-SSE system yet :P
+	inline DirectX::XMFLOAT4 sseToScalarVector(DirectX::XMVECTOR sseVector)
+	{
+		DirectX::XMFLOAT4 scalarVec;
+		DirectX::XMStoreFloat4(&scalarVec, sseVector);
+		return scalarVec;
+	}
+
 	// "Squash" _m128 values into a single scalar through shuffles and SSE additions
 	static float sseSquash(__m128 sseVector)
 	{
@@ -86,4 +97,11 @@ namespace GraphicsStuff
 	extern const fourByteUnsigned VOXEL_GRID_WIDTH;
 	extern const fourByteUnsigned VOXEL_GRID_AREA;
 	extern const eightByteUnsigned VOXEL_GRID_VOLUME;
+
+	// Planetary heightfield properties
+	extern const twoByteUnsigned HEIGHTFIELD_WIDTH;
+	extern const fourByteUnsigned HEIGHTFIELD_AREA;
+
+	// System rendering constants
+	extern const float MIN_PLANET_SAMPLING_DIST;
 }
