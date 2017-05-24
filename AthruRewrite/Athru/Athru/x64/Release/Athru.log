@@ -1,42 +1,11 @@
-﻿  compilation object save succeeded; see C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Colorizer.cso
-  compilation object save succeeded; see C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\VertPlotter.cso
-  WICTextureLoader.cpp
-  Athru.cpp
-  Application.cpp
-  AthruGlobals.cpp
-  Bloom.cpp
-  Camera.cpp
-  Chunk.cpp
-  Critter.cpp
-  DepthOfField.cpp
-  DirectionalLight.cpp
-  Planet.cpp
-  PointLight.cpp
-  Rasterizer.cpp
-  RenderManager.cpp
-  SceneManager.cpp
-  Shader.cpp
-  ConsolePrinter.cpp
-  Direct3D.cpp
-  Graphics.cpp
-  Input.cpp
+﻿  Athru.cpp
+c:\users\pefer\documents\github\athru\athrurewrite\athru\athru\Scene.h(3): fatal error C1083: Cannot open include file: 'Camera.h': No such file or directory
+  Galaxy.cpp
+Galaxy.cpp(1): fatal error C1083: Cannot open include file: 'UtilityServiceCentre.h': No such file or directory
+  Scene.cpp
+Scene.cpp(1): fatal error C1083: Cannot open include file: 'UtilityServiceCentre.h': No such file or directory
+  HiLevelServiceCentre.cpp
+c:\users\pefer\documents\github\athru\athrurewrite\athru\athru\Scene.h(3): fatal error C1083: Cannot open include file: 'Camera.h': No such file or directory
+  System.cpp
+System.cpp(1): fatal error C1083: Cannot open include file: 'UtilityServiceCentre.h': No such file or directory
   Running Code Analysis for C/C++...
-  Compiling...
-  Logger.cpp
-  Material.cpp
-  Sound.cpp
-  SpotLight.cpp
-  StackAllocator.cpp
-  ServiceCentre.cpp
-  Boxecule.cpp
-  StarSystem.cpp
-  SubChunk.cpp
-  TexturedRasterizer.cpp
-  TextureManager.cpp
-  Vertex.cpp
-  Running Code Analysis for C/C++...
-  Generating code
-  All 552 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
-  Finished generating code
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.exe
-  Athru.vcxproj -> C:\Users\pefer\Documents\GitHub\Athru\AthruRewrite\Athru\x64\Release\Athru.pdb (Full PDB)

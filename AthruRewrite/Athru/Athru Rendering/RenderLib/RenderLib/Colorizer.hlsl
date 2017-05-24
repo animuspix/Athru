@@ -13,7 +13,19 @@ struct Pixel
 
 float4 main(Pixel pixIn) : SV_TARGET
 {
-    // Return the color stored in the scene texture for the
-    // current pixel
-    return sceneTex.Sample(wrapSampler, pixIn.texCoord);
+    // If the current pixel is fully transparent, discard it; otherwise,
+    // [return] it as input to the current render target
+    float4 currPix = sceneTex.Sample(wrapSampler, pixIn.texCoord);
+    if (currPix.a == 0)
+    {
+        discard;
+    }
+
+    //else if (currPix.a < 1)
+    //{
+    //  // DIY alpha blending here... (inbuilt blending creates artifacts during
+    //  // post-processing)
+    //}
+
+    return currPix;
 }

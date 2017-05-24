@@ -58,7 +58,7 @@ void Camera::Update()
 	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
 
 	// Translate the view in-game with WASD
-	float speed = 500;
+	float speed = 5000;
 	if (localInput->IsKeyDown(87))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), coreRotationQuaternion));
@@ -179,6 +179,7 @@ void Camera::RefreshViewData()
 
 	// Translate the focal position so that it's "in front of" the camera (e.g. visible)
 	lookAt = _mm_add_ps(fixedViewPosition, lookAt);
+	//lookAt = _mm_add_ps(position, lookAt);
 
 	// Cache the non-normalized focal position
 	lookInfo.focalPos = lookAt;
@@ -186,6 +187,7 @@ void Camera::RefreshViewData()
 	// Create the view matrix from the fixed viewing position + the look-at and
 	// local-up vectors defined above
 	viewMatrix = DirectX::XMMatrixLookAtLH(fixedViewPosition, lookAt, localUp);
+	//viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 }
 
 DirectX::XMMATRIX Camera::GetViewMatrix()

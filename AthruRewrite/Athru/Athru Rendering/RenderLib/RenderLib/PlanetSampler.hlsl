@@ -41,7 +41,7 @@ StructuredBuffer<float4> lowerTectoTexBuf : register(t1);
 // Scene globals defined here
 
 // Scene color texture buffer/access view
-RWStructuredBuffer<float4> colorTexBuf : register(u0);
+RWTexture3D<float4> colorTexBuf : register(u0);
 
 // Scene normals texture buffer
 RWStructuredBuffer<VoxelNormals> normFieldBuf : register(u1);
@@ -62,14 +62,13 @@ cbuffer PlanetBuffer
 };
 
 [numthreads(1, 1, 1)]
-void main( uint3 dispatchThreadID : SV_DispatchThreadID )
+void main(uint3 dispatchThreadID : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
     // Calculate voxel color
 
     // Assign the planet's average color to the scene color texture
     // by default
-    int currVox = dispatchThreadID.x + dispatchThreadID.y + dispatchThreadID.z;
-    colorTexBuf[currVox] = planetAvgColor;
+    colorTexBuf[dispatchThreadID] = planetAvgColor;
 
     // Extract the elevation of the current planar area from either heightfield
 
@@ -98,7 +97,7 @@ void main( uint3 dispatchThreadID : SV_DispatchThreadID )
     // it transparent
     if ((float)dispatchThreadID.z > localElev)
     {
-        colorTexBuf[currVox] = float4(0.0f, 0.0f, 0.0f, 0.0f);
+        colorTexBuf[dispatchThreadID] = float4(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
     // Calculate lighting properties (voxel normals + PBR)
@@ -137,26 +136,25 @@ void main( uint3 dispatchThreadID : SV_DispatchThreadID )
                                      sin(quarterCircleRads),       0,     cos(quarterCircleRads),      0,
                                      0,                            0,                               0, 1);
 
-
     // Calculate normals for the current voxel
-    normFieldBuf[currVox].left = normalize(mul(currVoxSurfacePos, leftRotation));
-    normFieldBuf[currVox].right = normalize(mul(currVoxSurfacePos, rightRotation));
-    normFieldBuf[currVox].forward = normalize(mul(currVoxSurfacePos, forwardRotation));
-    normFieldBuf[currVox].back = normalize(mul(currVoxSurfacePos, backwardRotation));
-    normFieldBuf[currVox].down = normalize(currVoxSurfacePos * -1);
-    normFieldBuf[currVox].up = normalize(currVoxSurfacePos);
+    normFieldBuf[groupIndex].left = normalize(mul(currVoxSurfacePos, leftRotation));
+    normFieldBuf[groupIndex].right = normalize(mul(currVoxSurfacePos, rightRotation));
+    normFieldBuf[groupIndex].forward = normalize(mul(currVoxSurfacePos, forwardRotation));
+    normFieldBuf[groupIndex].back = normalize(mul(currVoxSurfacePos, backwardRotation));
+    normFieldBuf[groupIndex].down = normalize(currVoxSurfacePos * -1);
+    normFieldBuf[groupIndex].up = normalize(currVoxSurfacePos);
 
     // Assign placeholder PBR values (no mineral backend atm, so no real way
     // of generating anything more realistic)
     float roughness = 0.5f;
     float reflectance = 0.5f;
-    pbrTexBuf[currVox] = float2(roughness, reflectance);
+    pbrTexBuf[groupIndex] = float2(roughness, reflectance);
 
     // Calculate initial emissivity values
-    emissTexBuf[currVox].left = dot(normFieldBuf[currVox].left, starPos);
-    emissTexBuf[currVox].right = dot(normFieldBuf[currVox].right, starPos);
-    emissTexBuf[currVox].forward = dot(normFieldBuf[currVox].forward, starPos);
-    emissTexBuf[currVox].back = dot(normFieldBuf[currVox].back, starPos);
-    emissTexBuf[currVox].down = dot(normFieldBuf[currVox].down, starPos);
-    emissTexBuf[currVox].up = dot(normFieldBuf[currVox].up, starPos);
+    emissTexBuf[groupIndex].left = dot(normFieldBuf[groupIndex].left, starPos);
+    emissTexBuf[groupIndex].right = dot(normFieldBuf[groupIndex].right, starPos);
+    emissTexBuf[groupIndex].forward = dot(normFieldBuf[groupIndex].forward, starPos);
+    emissTexBuf[groupIndex].back = dot(normFieldBuf[groupIndex].back, starPos);
+    emissTexBuf[groupIndex].down = dot(normFieldBuf[groupIndex].down, starPos);
+    emissTexBuf[groupIndex].up = dot(normFieldBuf[groupIndex].up, starPos);
 }

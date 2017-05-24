@@ -134,13 +134,13 @@ VoxelGrid::VoxelGrid(ID3D11Device* device)
 			for (eightByteUnsigned k = 0; k < GraphicsStuff::VOXEL_GRID_WIDTH; k += 1)
 			{
 				// Generate u by compressing i into the interval 0...1
-				u = (float)i / (GraphicsStuff::VOXEL_GRID_WIDTH - 1);
+				u = (float)i / (GraphicsStuff::VOXEL_GRID_WIDTH);
 
 				// Generate v by compressing j into the interval 0...1
-				v = (float)j / (GraphicsStuff::VOXEL_GRID_WIDTH - 1);
+				v = (float)j / (GraphicsStuff::VOXEL_GRID_WIDTH);
 
 				// Generate w by compressing k into the interval 0...1
-				w = (float)k / (GraphicsStuff::VOXEL_GRID_WIDTH - 1);
+				w = (float)k / (GraphicsStuff::VOXEL_GRID_WIDTH);
 
 				// Use the linear index to construct the relevant instance
 				// with the coordinates generated above

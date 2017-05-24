@@ -11,7 +11,7 @@ System::System()
 	// planets are made of water :P
 
 	// Create local planets
-	float radiusZero = 50000.0f;
+	float radiusZero = 50.0f;
 	float radiusZeroCube = radiusZero * radiusZero * 50000.0f;
 	float fourThirds = 4.0f / 3.0f;
 	float massZero = fourThirds * (MathsStuff::PI * radiusZeroCube);
@@ -22,7 +22,7 @@ System::System()
 							DirectX::XMFLOAT3(0, 0, 0),
 						    archetypeWeights);
 
-	float radiusOne = 100000;
+	float radiusOne = 100;
 	float radiusOneCube = radiusOne * radiusOne * radiusOne;
 	float massOne = fourThirds * (MathsStuff::PI * radiusOneCube);
 	float orbitalOffsetOne = orbitalOffsetZero + radiusOne * 1.5f;
@@ -31,7 +31,7 @@ System::System()
 							DirectX::XMFLOAT3(0, 0, 0),
 						    archetypeWeights);
 
-	float radiusTwo = 120000;
+	float radiusTwo = 120;
 	float radiusTwoCube = radiusTwo * radiusTwo * radiusTwo;
 	float massTwo = fourThirds * (MathsStuff::PI * radiusTwoCube);
 	float orbitalOffsetTwo = orbitalOffsetOne + radiusTwo * 1.5f;

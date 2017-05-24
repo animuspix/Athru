@@ -30,7 +30,7 @@ struct VoxelFaceEmissivities
 };
 
 // Scene color texture buffer/access view
-RWStructuredBuffer<float4> colorTexBuf : register(u0);
+RWTexture3D<float4> colorTexBuf : register(u0);
 
 // Scene normals texture buffer
 StructuredBuffer<VoxelNormals> normFieldBuf : register(t0);
@@ -163,7 +163,7 @@ float CookTorrance(float voxGrain, float voxReflectFactor, float4 voxNorm,
     return (beckmann * approxFres * geoAttenuationFactor) / (pi * surfaceViewDotNorm); //* dot(voxNorm, surfaceLightVector);
 }
 
-void LightingInstance(uint3 dispatchThreadID, uint currTargetVox,
+void LightingInstance(uint3 dispatchThreadID, uint groupIndex,
                       uint sourceProcessing, float lightEmissFace, float4 lightDir,
                       float2 currTargetVoxPBR, float4 surfaceViewVector )
 {
@@ -175,12 +175,12 @@ void LightingInstance(uint3 dispatchThreadID, uint currTargetVox,
         // Take the average lambert of each normal of the current voxel
         // against the current normal of the given light source
         float4 currLightDir = lightDir;
-        float lambertA = dot(normFieldBuf[currTargetVox].left, currLightDir);
-        float lambertB = dot(normFieldBuf[currTargetVox].right, currLightDir);
-        float lambertC = dot(normFieldBuf[currTargetVox].forward, currLightDir);
-        float lambertD = dot(normFieldBuf[currTargetVox].back, currLightDir);
-        float lambertE = dot(normFieldBuf[currTargetVox].down, currLightDir);
-        float lambertF = dot(normFieldBuf[currTargetVox].up, currLightDir);
+        float lambertA = dot(normFieldBuf[groupIndex].left, currLightDir);
+        float lambertB = dot(normFieldBuf[groupIndex].right, currLightDir);
+        float lambertC = dot(normFieldBuf[groupIndex].forward, currLightDir);
+        float lambertD = dot(normFieldBuf[groupIndex].back, currLightDir);
+        float lambertE = dot(normFieldBuf[groupIndex].down, currLightDir);
+        float lambertF = dot(normFieldBuf[groupIndex].up, currLightDir);
         float avgLambert = (lambertA + lambertB + lambertC + lambertD + lambertE + lambertF) / 6;
 
         // Calculate pixel exposure with the overall light direction
@@ -200,7 +200,7 @@ void LightingInstance(uint3 dispatchThreadID, uint currTargetVox,
         // that we can combine with the Oren-Nayar modifier above to generate
         // a mixed diffuse/specular PBR value that we can apply to the rawq
         // pixel exposure calculated earlier
-        float cookTorranceModifier = CookTorrance(currTargetVoxPBR.x, currTargetVoxPBR.y, normFieldBuf[currTargetVox].left, surfaceViewVector,
+        float cookTorranceModifier = CookTorrance(currTargetVoxPBR.x, currTargetVoxPBR.y, normFieldBuf[groupIndex].left, surfaceViewVector,
                                                   currLightDir);
 
         // Combine diffuse/specular lighting
@@ -217,55 +217,52 @@ void LightingInstance(uint3 dispatchThreadID, uint currTargetVox,
         // Safely apply the generated lighting data to the target voxel
         if (currPixelExposure > 0.0f)
         {
-            colorTexBuf[currTargetVox] *= currPixelExposure;
+            //colorTexBuf[dispatchThreadID].r *= currPixelExposure;
         }
     }
 }
 
 // Approximate lighting at the current UVW coordinate
-void Lighting(uint3 dispatchThreadID, uint currTargetVox, uint sourceProcessing)
+void Lighting(uint3 dispatchThreadID, uint groupIndex, uint sourceProcessing)
 {
     // Cache the target voxel's roughness/reflectance properties
-    float2 currTargetVoxPBR = pbrTexBuf[currTargetVox];
+    float2 currTargetVoxPBR = pbrTexBuf[groupIndex];
 
     // Cache the surface-to-view vector for the current target voxel
     float4 surfaceViewVector = (cameraViewVec - float4(dispatchThreadID, 0));
 
     // Process lighting separately for each face of the current light source
 
-    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+    LightingInstance(dispatchThreadID, groupIndex, sourceProcessing,
                      emissTexBuf[sourceProcessing].left, normFieldBuf[sourceProcessing].left,
                      currTargetVoxPBR, surfaceViewVector);
 
-    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+    LightingInstance(dispatchThreadID, groupIndex, sourceProcessing,
                      emissTexBuf[sourceProcessing].right, normFieldBuf[sourceProcessing].right,
                      currTargetVoxPBR, surfaceViewVector);
 
-    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+    LightingInstance(dispatchThreadID, groupIndex, sourceProcessing,
                      emissTexBuf[sourceProcessing].forward, normFieldBuf[sourceProcessing].forward,
                      currTargetVoxPBR, surfaceViewVector);
 
-    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+    LightingInstance(dispatchThreadID, groupIndex, sourceProcessing,
                      emissTexBuf[sourceProcessing].back, normFieldBuf[sourceProcessing].back,
                      currTargetVoxPBR, surfaceViewVector);
 
-    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+    LightingInstance(dispatchThreadID, groupIndex, sourceProcessing,
                      emissTexBuf[sourceProcessing].down, normFieldBuf[sourceProcessing].down,
                      currTargetVoxPBR, surfaceViewVector);
 
-    LightingInstance(dispatchThreadID, currTargetVox, sourceProcessing,
+    LightingInstance(dispatchThreadID, groupIndex, sourceProcessing,
                      emissTexBuf[sourceProcessing].up, normFieldBuf[sourceProcessing].up,
                      currTargetVoxPBR, surfaceViewVector);
 }
 
 [numthreads(1, 1, 1)]
-void main( uint3 dispatchThreadID : SV_DispatchThreadID )
+void main(uint3 dispatchThreadID : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
-    // Cache the current voxel index so we can use it later
-    uint currVox = (dispatchThreadID.x + dispatchThreadID.y + dispatchThreadID.z);
-
     // Cache the alpha value of the current voxel so we can re-set it later
-    float currVoxAlpha = colorTexBuf[currVox].a;
+    //float groupIndexAlpha = colorTexBuf[dispatchThreadID].a;
 
     // Calculate the lighting emitted onto the current voxel from
     // each voxel in the surrounding area
@@ -280,14 +277,14 @@ void main( uint3 dispatchThreadID : SV_DispatchThreadID )
     uint upperLeftBackwardLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z - 1;
     uint upperRightBackwardLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y + 1) + dispatchThreadID.z - 1;
 
-    Lighting(dispatchThreadID, currVox, upperForwardLightSource);
-    Lighting(dispatchThreadID, currVox, upperLeftForwardLightSource);
-    Lighting(dispatchThreadID, currVox, upperRightForwardLightSource);
-    Lighting(dispatchThreadID, currVox, upperLeftLightSource);
-    Lighting(dispatchThreadID, currVox, upperRightLightSource);
-    Lighting(dispatchThreadID, currVox, upperBackwardLightSource);
-    Lighting(dispatchThreadID, currVox, upperLeftBackwardLightSource);
-    Lighting(dispatchThreadID, currVox, upperRightBackwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperForwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperLeftForwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperRightForwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperLeftLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperRightLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperBackwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperLeftBackwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, upperRightBackwardLightSource);
 
     // Calculate influences from below the current voxel
     uint lowerForwardLightSource = dispatchThreadID.x + (dispatchThreadID.y - 1) + dispatchThreadID.z + 1;
@@ -299,16 +296,16 @@ void main( uint3 dispatchThreadID : SV_DispatchThreadID )
     uint lowerLeftBackwardLightSource = (dispatchThreadID.x - 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z - 1;
     uint lowerRightBackwardLightSource = (dispatchThreadID.x + 1) + (dispatchThreadID.y - 1) + dispatchThreadID.z - 1;
 
-    Lighting(dispatchThreadID, currVox, lowerForwardLightSource);
-    Lighting(dispatchThreadID, currVox, lowerLeftForwardLightSource);
-    Lighting(dispatchThreadID, currVox, lowerRightForwardLightSource);
-    Lighting(dispatchThreadID, currVox, lowerLeftLightSource);
-    Lighting(dispatchThreadID, currVox, lowerRightLightSource);
-    Lighting(dispatchThreadID, currVox, lowerBackwardLightSource);
-    Lighting(dispatchThreadID, currVox, lowerLeftBackwardLightSource);
-    Lighting(dispatchThreadID, currVox, lowerRightBackwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerForwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerLeftForwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerRightForwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerLeftLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerRightLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerBackwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerLeftBackwardLightSource);
+    Lighting(dispatchThreadID, groupIndex, lowerRightBackwardLightSource);
 
     // The alpha channel might have gotten knocked around somewhere in all those lighting
     // calculations, so re-set it here
-    colorTexBuf[currVox].a = currVoxAlpha;
+    //colorTexBuf[dispatchThreadID].a = groupIndexAlpha;
 }

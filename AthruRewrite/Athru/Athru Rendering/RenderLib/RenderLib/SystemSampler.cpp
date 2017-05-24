@@ -86,6 +86,7 @@ void SystemSampler::Dispatch(ID3D11DeviceContext* context,
 	// Fixing the camera position means treating it like the system origin,
 	// so all the positions below are slightly adjusted to match the new
 	// coordinate system before they enter the shader
+	systemBufferData->cameraPos = MathsStuff::sseToScalarVector(cameraPosition);
 	systemBufferData->starPos = ClipToViewableSpace(_mm_sub_ps(starPosition, cameraPosition));
 	systemBufferData->starColor = localStarColor;
 	systemBufferData->planetAPos = ClipToViewableSpace(_mm_sub_ps(planetAPosition, cameraPosition));

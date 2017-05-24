@@ -102,11 +102,11 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 		// Extract compute-friendly resource views from the buffers generated
 		// above
 
-		result = d3dDevice->CreateShaderResourceView(availablePlanetaryHeightfields[i].upperHemisphere.raw, nullptr,
+		result = d3dDevice->CreateShaderResourceView(availablePlanetaryHeightfields[i].upperHemisphere.asStructuredBuffer, nullptr,
 													 &(availablePlanetaryHeightfields[i].upperHemisphere.asComputeShaderResource));
 		assert(SUCCEEDED(result));
 
-		result = d3dDevice->CreateShaderResourceView(availablePlanetaryHeightfields[i].lowerHemisphere.raw, nullptr,
+		result = d3dDevice->CreateShaderResourceView(availablePlanetaryHeightfields[i].lowerHemisphere.asStructuredBuffer, nullptr,
 													 &(availablePlanetaryHeightfields[i].lowerHemisphere.asComputeShaderResource));
 		assert(SUCCEEDED(result));
 
@@ -171,7 +171,7 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 	sceneTextureDesc.MipLevels = 1;
 	sceneTextureDesc.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
 	sceneTextureDesc.Usage = D3D11_USAGE_DEFAULT;
-	sceneTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+	sceneTextureDesc.BindFlags = D3D11_BIND_SHADER_RESOURCE | D3D11_BIND_UNORDERED_ACCESS;
 	sceneTextureDesc.CPUAccessFlags = 0;
 	sceneTextureDesc.MiscFlags = 0;
 
@@ -238,14 +238,27 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 		result = d3dDevice->CreateBuffer(&sceneBufferDesc, &textureData, &(availableInternalTextures3D[i].asStructuredBuffer));
 		assert(SUCCEEDED(result));
 
-		// Extract a compute-friendly resource view from the generated buffer
-		result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].asStructuredBuffer, nullptr, &(availableInternalTextures3D[i].asComputeShaderResource));
-		assert(SUCCEEDED(result));
+		if ((AVAILABLE_VOLUME_TEXTURES)i != AVAILABLE_VOLUME_TEXTURES::SCENE_COLOR_TEXTURE)
+		{
+			// Extract a compute-friendly resource view from the generated buffer
+			result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].asStructuredBuffer, nullptr, &(availableInternalTextures3D[i].asComputeShaderResource));
+			assert(SUCCEEDED(result));
 
-		// Extract a writable compute-friendly shader resource view from the generated buffer
-		// Unordered-access views can't be created for 3D texture resources, so
-		result = d3dDevice->CreateUnorderedAccessView(availableInternalTextures3D[i].asStructuredBuffer, nullptr, &(availableInternalTextures3D[i].asWritableComputeShaderResource));
-		assert(SUCCEEDED(result));
+			// Extract a writable compute-friendly shader resource view from the generated buffer
+			result = d3dDevice->CreateUnorderedAccessView(availableInternalTextures3D[i].asStructuredBuffer, nullptr, &(availableInternalTextures3D[i].asWritableComputeShaderResource));
+			assert(SUCCEEDED(result));
+		}
+
+		else
+		{
+			// Extract a compute-friendly resource view from the generated buffer
+			result = d3dDevice->CreateShaderResourceView(availableInternalTextures3D[i].raw, nullptr, &(availableInternalTextures3D[i].asComputeShaderResource));
+			assert(SUCCEEDED(result));
+
+			// Extract a writable compute-friendly shader resource view from the generated buffer
+			result = d3dDevice->CreateUnorderedAccessView(availableInternalTextures3D[i].raw, nullptr, &(availableInternalTextures3D[i].asWritableComputeShaderResource));
+			assert(SUCCEEDED(result));
+		}
 	}
 }
 

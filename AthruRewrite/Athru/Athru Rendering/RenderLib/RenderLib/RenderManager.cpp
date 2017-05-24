@@ -201,7 +201,7 @@ void RenderManager::PreProcess(DirectX::XMVECTOR cameraPos, DirectX::XMVECTOR sy
 
 	// Use the known PBR/Emissivity data to calculate approximate global illumination for
 	// the scene
-	sceneIlluminator->Dispatch(d3dContext, cameraViewVector);
+	//sceneIlluminator->Dispatch(d3dContext, cameraViewVector);
 }
 
 void RenderManager::RenderScene(DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)

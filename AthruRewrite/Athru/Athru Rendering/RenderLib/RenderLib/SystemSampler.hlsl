@@ -31,7 +31,7 @@ struct VoxelFaceEmissivities
 };
 
 // Scene color texture buffer/access view
-RWStructuredBuffer<float4> colorTexBuf : register(u0);
+RWTexture3D<float4> colorTexBuf : register(u0);
 
 // Scene normals texture buffer
 RWStructuredBuffer<VoxelNormals> normFieldBuf : register(u1);
@@ -69,12 +69,9 @@ bool CompareFloat4s(float4 first, float4 second)
 }
 
 [numthreads(1, 1, 1)]
-void main(uint3 dispatchThreadID : SV_DispatchThreadID)
+void main(uint3 dispatchThreadID : SV_DispatchThreadID, uint groupIndex : SV_GroupIndex)
 {
     // Calculate voxel color
-
-    // Cache the linear index of the current voxel
-    int currVoxIndex = dispatchThreadID.x + dispatchThreadID.y + dispatchThreadID.z;
 
     // Cache the position of the current voxel
     float4 currVoxPos = float4(dispatchThreadID.x, dispatchThreadID.y, dispatchThreadID.z, 0);
@@ -84,23 +81,28 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
     // otherwise, make it transparent
     if (CompareFloat4s(currVoxPos, planetAPos))
     {
-        colorTexBuf[currVoxIndex] = planetAColor;
+        colorTexBuf[dispatchThreadID] = planetAColor;
     }
     else if (CompareFloat4s(currVoxPos, planetBPos))
     {
-        colorTexBuf[currVoxIndex] = planetBColor;
+        colorTexBuf[dispatchThreadID] = planetBColor;
     }
     else if (CompareFloat4s(currVoxPos, planetCPos))
     {
-        colorTexBuf[currVoxIndex] = planetCColor;
+        colorTexBuf[dispatchThreadID] = planetCColor;
     }
     else if (CompareFloat4s(currVoxPos, starPos))
     {
-        colorTexBuf[currVoxIndex] = starColor;
+        colorTexBuf[dispatchThreadID] = starColor;
     }
     else
     {
-        colorTexBuf[currVoxIndex] = float4(0, 0, 0, 0);
+        colorTexBuf[dispatchThreadID] = float4(0, 0, 0, 0); //sin(dispatchThreadID.z));
+    }
+
+    if (dispatchThreadID.y > 24)
+    {
+        //colorTexBuf[dispatchThreadID] = float4(0, 0, 0, 0);
     }
 
     // Calculate lighting properties (voxel normals + PBR)
@@ -142,24 +144,24 @@ void main(uint3 dispatchThreadID : SV_DispatchThreadID)
 
     // Calculate normals for the current voxel
     float4 upVec = float4(0, 0, 1, 0);
-    normFieldBuf[currVoxIndex].left = normalize(mul(upVec, leftRotation));
-    normFieldBuf[currVoxIndex].right = normalize(mul(upVec, rightRotation));
-    normFieldBuf[currVoxIndex].forward = normalize(mul(upVec, forwardRotation));
-    normFieldBuf[currVoxIndex].back = normalize(mul(upVec, backwardRotation));
-    normFieldBuf[currVoxIndex].down = normalize(upVec * -1);
-    normFieldBuf[currVoxIndex].up = normalize(upVec);
+    normFieldBuf[groupIndex].left = normalize(mul(upVec, leftRotation));
+    normFieldBuf[groupIndex].right = normalize(mul(upVec, rightRotation));
+    normFieldBuf[groupIndex].forward = normalize(mul(upVec, forwardRotation));
+    normFieldBuf[groupIndex].back = normalize(mul(upVec, backwardRotation));
+    normFieldBuf[groupIndex].down = normalize(upVec * -1);
+    normFieldBuf[groupIndex].up = normalize(upVec);
 
     // Assign placeholder PBR values (no mineral backend atm, so no real way
     // of generating anything more realistic)
     float roughness = 0.5f;
     float reflectance = 0.5f;
-    pbrTexBuf[currVoxIndex] = float2(roughness, reflectance);
+    pbrTexBuf[groupIndex] = float2(roughness, reflectance);
 
     // Calculate initial emissivity values
-    emissTexBuf[currVoxIndex].left = dot(normFieldBuf[currVoxIndex].left, starPos);
-    emissTexBuf[currVoxIndex].right = dot(normFieldBuf[currVoxIndex].right, starPos);
-    emissTexBuf[currVoxIndex].forward = dot(normFieldBuf[currVoxIndex].forward, starPos);
-    emissTexBuf[currVoxIndex].back = dot(normFieldBuf[currVoxIndex].back, starPos);
-    emissTexBuf[currVoxIndex].down = dot(normFieldBuf[currVoxIndex].down, starPos);
-    emissTexBuf[currVoxIndex].up = dot(normFieldBuf[currVoxIndex].up, starPos);
+    emissTexBuf[groupIndex].left = dot(normFieldBuf[groupIndex].left, starPos);
+    emissTexBuf[groupIndex].right = dot(normFieldBuf[groupIndex].right, starPos);
+    emissTexBuf[groupIndex].forward = dot(normFieldBuf[groupIndex].forward, starPos);
+    emissTexBuf[groupIndex].back = dot(normFieldBuf[groupIndex].back, starPos);
+    emissTexBuf[groupIndex].down = dot(normFieldBuf[groupIndex].down, starPos);
+    emissTexBuf[groupIndex].up = dot(normFieldBuf[groupIndex].up, starPos);
 }

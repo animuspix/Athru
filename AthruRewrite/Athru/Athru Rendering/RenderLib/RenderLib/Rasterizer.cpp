@@ -56,7 +56,7 @@ Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 	// Setup the texture sampler state description
 	// (we're using wrap sampling atm)
 	D3D11_SAMPLER_DESC samplerDesc;
-	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_LINEAR;
+	samplerDesc.Filter = D3D11_FILTER_MIN_MAG_MIP_POINT;
 	samplerDesc.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.AddressV = D3D11_TEXTURE_ADDRESS_WRAP;
 	samplerDesc.AddressW = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -67,7 +67,7 @@ Rasterizer::Rasterizer(ID3D11Device* device, HWND windowHandle,
 	samplerDesc.BorderColor[1] = 0;
 	samplerDesc.BorderColor[2] = 0;
 	samplerDesc.BorderColor[3] = 0;
-	samplerDesc.MinLOD = 0;
+	samplerDesc.MinLOD = D3D11_FLOAT32_MAX;
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 	// Create the texture sampler state
