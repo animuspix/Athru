@@ -7,7 +7,7 @@ void GameLoop()
 	Input* athruInput = AthruUtilities::UtilityServiceCentre::AccessInput();
 
 	// Cache a local reference to the render-manager
-	RenderManager* athruRendering = AthruRendering::RenderServiceCentre::AccessRenderManager();
+	RenderManager* athruRendering = AthruGPU::GPUServiceCentre::AccessRenderManager();
 
 	// Cache a local reference to the high-level scene representation
 	Scene* athruScene = HiLevelServiceCentre::AccessScene();
@@ -35,8 +35,7 @@ void GameLoop()
 
 		// Find the area around the player, then render it
 		System currSystem = athruScene->GetCurrentSystem();
-		athruRendering->Render(athruScene->GetMainCamera(), currSystem.FetchPos(),
-							   currSystem.GetPlanets(), currSystem.GetStar());
+		athruRendering->Render(athruScene->GetMainCamera());
 
 		// Record the time at this frame so we can calculate
 		// [deltaTime]

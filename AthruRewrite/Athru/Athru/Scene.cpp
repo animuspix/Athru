@@ -39,6 +39,11 @@ System& Scene::GetCurrentSystem()
 	return galaxy->GetCurrentSystem(mainCamera->GetTranslation());
 }
 
+GPUScene& Scene::FetchGPUMessenger()
+{
+	return gpuSceneMessenger;
+}
+
 // Push constructions for this class through Athru's custom allocator
 void* Scene::operator new(size_t size)
 {

@@ -36,25 +36,13 @@
     <ClInclude Include="Mesh.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="NormalBuilder.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PlanarUnwrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PostProcessor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Rasterizer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TextureManager.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="RenderServiceCentre.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.h">
@@ -72,9 +60,6 @@
     <ClInclude Include="ScreenRect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="VoxelGrid.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="PipelineShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -87,16 +72,19 @@
     <ClInclude Include="Star.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PlanetSampler.h">
+    <ClInclude Include="GPUServiceCentre.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Heightfield.h">
+    <ClInclude Include="RayMarcher.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SystemSampler.h">
+    <ClInclude Include="RenderManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SceneIlluminator.h">
+    <ClInclude Include="SceneFigure.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GPUScene.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -116,16 +104,7 @@
     <ClCompile Include="PostProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Rasterizer.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TextureManager.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="RenderServiceCentre.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
@@ -134,13 +113,7 @@
     <ClCompile Include="PostVertex.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SceneVertex.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="ScreenRect.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="VoxelGrid.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="PipelineShader.cpp">
@@ -155,23 +128,28 @@
     <ClCompile Include="Star.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PlanetSampler.cpp">
+    <ClCompile Include="..\..\..\..\..\..\Curve-Sketch\Curve Sketch\Curve Sketch Rendering\CurveSketchLib\CurveSketchLib\GPUServiceCentre.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SystemSampler.cpp">
+    <ClCompile Include="RayMarcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SceneIlluminator.cpp">
+    <ClCompile Include="RenderManager.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GPUServiceCentre.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="SceneFigure.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GPUScene.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Colorizer.hlsl" />
     <FxCompile Include="PostColorizer.hlsl" />
     <FxCompile Include="PostVertPlotter.hlsl" />
-    <FxCompile Include="VertPlotter.hlsl" />
-    <FxCompile Include="SceneIlluminator.hlsl" />
-    <FxCompile Include="PlanetSampler.hlsl" />
-    <FxCompile Include="SystemSampler.hlsl" />
+    <FxCompile Include="SceneVis.hlsl" />
   </ItemGroup>
 </Project>

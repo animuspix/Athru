@@ -16,11 +16,9 @@ System::System()
 	float fourThirds = 4.0f / 3.0f;
 	float massZero = fourThirds * (MathsStuff::PI * radiusZeroCube);
 	float orbitalOffsetZero = radiusZero * 1.5f;
-	float archetypeWeights[(byteUnsigned)AVAILABLE_PLANET_ARCHETYPES::NULL_ARCHETYPE] = { 1.0f };
 	planets[0] = new Planet(massZero, radiusZero,
 							DirectX::XMFLOAT4(1, 1, 1, 1), _mm_set_ps(0, 0, radiusZero * 1.5f, radiusZero * 1.5f),
-							DirectX::XMFLOAT3(0, 0, 0),
-						    archetypeWeights);
+							DirectX::XMFLOAT3(0, 0, 0));
 
 	float radiusOne = 100;
 	float radiusOneCube = radiusOne * radiusOne * radiusOne;
@@ -28,8 +26,7 @@ System::System()
 	float orbitalOffsetOne = orbitalOffsetZero + radiusOne * 1.5f;
 	planets[1] = new Planet(massOne, radiusOne,
 							DirectX::XMFLOAT4(1, 0.5f, 1, 1), _mm_set_ps(0, 0, orbitalOffsetOne, orbitalOffsetOne),
-							DirectX::XMFLOAT3(0, 0, 0),
-						    archetypeWeights);
+							DirectX::XMFLOAT3(0, 0, 0));
 
 	float radiusTwo = 120;
 	float radiusTwoCube = radiusTwo * radiusTwo * radiusTwo;
@@ -37,8 +34,7 @@ System::System()
 	float orbitalOffsetTwo = orbitalOffsetOne + radiusTwo * 1.5f;
 	planets[2] = new Planet(massOne, radiusOne,
 							DirectX::XMFLOAT4(1, 1, 0.5f, 1), _mm_set_ps(0, 0, orbitalOffsetTwo, orbitalOffsetTwo),
-							DirectX::XMFLOAT3(0, 0, 0),
-						    archetypeWeights);
+							DirectX::XMFLOAT3(0, 0, 0));
 
 	// Create local star
 	// Some sort of procedural star generator would probably be nice here;

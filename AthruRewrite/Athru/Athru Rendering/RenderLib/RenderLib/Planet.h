@@ -15,8 +15,7 @@ class Planet
 {
 	public:
 		Planet(float givenMass, float givenRadius, DirectX::XMFLOAT4 givenAvgColor,
-			   DirectX::XMVECTOR offsetFromStar, DirectX::XMFLOAT3 rotation,
-			   float givenArchetypeWeights[(byteUnsigned)AVAILABLE_PLANET_ARCHETYPES::NULL_ARCHETYPE]);
+			   DirectX::XMVECTOR offsetFromStar, DirectX::XMFLOAT3 rotation);
 		~Planet();
 
 		// Retrieve the amount of matter associated
@@ -41,10 +40,6 @@ class Planet
 		// defined by [rotateBy]
 		void Rotate(DirectX::XMFLOAT3 rotateBy);
 
-		// Retrieve an array describing the influence of each
-		// planetary archetype on [this]
-		float* GetArchetypeWeights();
-
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
@@ -56,5 +51,8 @@ class Planet
 		DirectX::XMVECTOR stellarOffset;
 		DirectX::XMVECTOR quaternionRotation;
 		DirectX::XMFLOAT3 eulerRotation;
-		float archetypeWeights[(byteUnsigned)AVAILABLE_PLANET_ARCHETYPES::NULL_ARCHETYPE];
+		
+		// Quaternionic Julia constant here...
+		// All planetary figures are represented with power-3 Julia
+		// sets abstracted from the Mandelbulb
 };

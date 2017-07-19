@@ -91,16 +91,10 @@ namespace GraphicsStuff
 	extern const float FRUSTUM_HEIGHT_AT_NEAR;
 	extern const float VERT_FIELD_OF_VIEW_RADS;
 	extern const float HORI_FIELD_OF_VIEW_RADS;
+	extern constexpr fourByteUnsigned SCREEN_RECT_INDEX_COUNT = 6;
+}
 
-	// Voxel grid properties
-	extern const fourByteUnsigned VOXEL_GRID_WIDTH;
-	extern const fourByteUnsigned VOXEL_GRID_AREA;
-	extern const eightByteUnsigned VOXEL_GRID_VOLUME;
-
-	// Planetary heightfield properties
-	extern const twoByteUnsigned HEIGHTFIELD_WIDTH;
-	extern const fourByteUnsigned HEIGHTFIELD_AREA;
-
-	// System rendering constants
-	extern const float MIN_PLANET_SAMPLING_DIST;
+namespace SceneStuff
+{
+	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = 5;
 }

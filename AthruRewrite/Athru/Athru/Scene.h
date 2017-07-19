@@ -1,5 +1,6 @@
 #pragma once
 
+#include "GPUScene.h"
 #include "Camera.h"
 #include "Galaxy.h"
 
@@ -22,11 +23,16 @@ class Scene
 		// position
 		System& GetCurrentSystem();
 
+		// Retrieve a reference to the Scene/GPU and GPU/Scene messenger
+		// class
+		GPUScene& FetchGPUMessenger();
+
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
+		GPUScene gpuSceneMessenger;
 		Galaxy* galaxy;
 		Camera* mainCamera;
 };

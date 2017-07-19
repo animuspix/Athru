@@ -6,12 +6,12 @@ class Star
 {
 	public:
 		Star() {}
-		Star(float givenMass, DirectX::XMFLOAT4 givenColor);
+		Star(float givenRadius, DirectX::XMFLOAT4 givenColor);
 		~Star();
 
 		// Retrieve the amount of matter associated
 		// with [this]
-		float GetMass();
+		float GetRadius();
 
 		// Retrieve the color associated with [this]
 		DirectX::XMFLOAT4 GetColor();
@@ -21,7 +21,7 @@ class Star
 		void operator delete(void* target);
 
 	private:
-		float mass;
+		float radius;
 		DirectX::XMFLOAT4 color;
 };
 

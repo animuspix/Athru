@@ -1,5 +1,5 @@
 #include "UtilityServiceCentre.h"
-#include "RenderServiceCentre.h"
+#include "GPUServiceCentre.h"
 #include "PostVertex.h"
 #include "ScreenRect.h"
 
@@ -9,7 +9,7 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 	HRESULT result;
 
 	// Create a render-target-view from the screen texture
-	d3dDevice->CreateRenderTargetView(AthruRendering::RenderServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).raw, nullptr, &renderTarget);
+	d3dDevice->CreateRenderTargetView(AthruGPU::GPUServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).raw, nullptr, &renderTarget);
 
 	// Cache the color associated with [this]
 	DirectX::XMFLOAT4 vertColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);

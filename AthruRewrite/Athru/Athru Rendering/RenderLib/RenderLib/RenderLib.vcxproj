@@ -140,10 +140,12 @@
   <ItemGroup>
     <ClInclude Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
     <ClInclude Include="ComputeShader.h" />
-    <ClInclude Include="PlanetSampler.h" />
-    <ClInclude Include="Heightfield.h" />
+    <ClInclude Include="GPUServiceCentre.h" />
     <ClInclude Include="Planet.h" />
-    <ClInclude Include="SceneIlluminator.h" />
+    <ClInclude Include="RayMarcher.h" />
+    <ClInclude Include="RenderManager.h" />
+    <ClInclude Include="GPUScene.h" />
+    <ClInclude Include="SceneFigure.h" />
     <ClInclude Include="ScreenRect.h" />
     <ClInclude Include="AthruTexture2D.h" />
     <ClInclude Include="AthruTexture3D.h" />
@@ -151,27 +153,25 @@
     <ClInclude Include="Critter.h" />
     <ClInclude Include="Direct3D.h" />
     <ClInclude Include="Mesh.h" />
-    <ClInclude Include="NormalBuilder.h" />
     <ClInclude Include="PlanarUnwrapper.h" />
     <ClInclude Include="PostProcessor.h" />
     <ClInclude Include="PostVertex.h" />
-    <ClInclude Include="Rasterizer.h" />
-    <ClInclude Include="RenderManager.h" />
-    <ClInclude Include="RenderServiceCentre.h" />
     <ClInclude Include="PipelineShader.h" />
     <ClInclude Include="Star.h" />
-    <ClInclude Include="SystemSampler.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="SceneVertex.h" />
-    <ClInclude Include="VoxelGrid.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\..\..\..\..\Curve-Sketch\Curve Sketch\Curve Sketch Rendering\CurveSketchLib\CurveSketchLib\GPUServiceCentre.cpp" />
     <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
     <ClCompile Include="ComputeShader.cpp" />
-    <ClCompile Include="PlanetSampler.cpp" />
+    <ClCompile Include="GPUServiceCentre.cpp" />
     <ClCompile Include="Planet.cpp" />
-    <ClCompile Include="SceneIlluminator.cpp" />
+    <ClCompile Include="RayMarcher.cpp" />
+    <ClCompile Include="RenderManager.cpp" />
+    <ClCompile Include="GPUScene.cpp" />
+    <ClCompile Include="SceneFigure.cpp" />
     <ClCompile Include="ScreenRect.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Critter.cpp" />
@@ -179,49 +179,19 @@
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PostProcessor.cpp" />
     <ClCompile Include="PostVertex.cpp" />
-    <ClCompile Include="Rasterizer.cpp" />
-    <ClCompile Include="RenderManager.cpp" />
-    <ClCompile Include="RenderServiceCentre.cpp" />
     <ClCompile Include="PipelineShader.cpp" />
     <ClCompile Include="Star.cpp" />
-    <ClCompile Include="SystemSampler.cpp" />
     <ClCompile Include="TextureManager.cpp" />
-    <ClCompile Include="SceneVertex.cpp" />
-    <ClCompile Include="VoxelGrid.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="Colorizer.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="PlanetSampler.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
-    </FxCompile>
     <FxCompile Include="PostColorizer.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
     </FxCompile>
     <FxCompile Include="PostVertPlotter.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
-    <FxCompile Include="SceneIlluminator.hlsl">
+    <FxCompile Include="SceneVis.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-    </FxCompile>
-    <FxCompile Include="SystemSampler.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
-    </FxCompile>
-    <FxCompile Include="VertPlotter.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
     </FxCompile>
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

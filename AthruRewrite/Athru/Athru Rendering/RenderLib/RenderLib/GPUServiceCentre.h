@@ -3,33 +3,29 @@
 #include "Direct3D.h"
 #include "TextureManager.h"
 #include "RenderManager.h"
-#include "NormalBuilder.h"
 #include "PlanarUnwrapper.h"
 #include "UtilityServiceCentre.h"
 
-namespace AthruRendering
+namespace AthruGPU
 {
-	class RenderServiceCentre
+	class GPUServiceCentre
 	{
 	public:
-		RenderServiceCentre() = delete;
-		~RenderServiceCentre() = delete;
+		GPUServiceCentre() = delete;
+		~GPUServiceCentre() = delete;
 
 		static void Init()
 		{
 			if (AthruUtilities::UtilityServiceCentre::AccessMemory() == nullptr)
 			{
-				// Allocation assumes Athru will use ten uncompressed RGBA
-				// scene textures at most, then adds another 255 megabytes
-				// beyond that to make sure no overruns occur during
-				// runtime
-				const eightByteUnsigned STARTING_HEAP = (GraphicsStuff::VOXEL_GRID_VOLUME * 40) + 255000000;
+				// Allocation assumes Athru will use 255 megabytes at most
+				const eightByteUnsigned STARTING_HEAP = 255000000;
 				AthruUtilities::UtilityServiceCentre::Init(STARTING_HEAP);
 			}
 
 			d3DPttr = DEBUG_NEW Direct3D(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND());
 			textureManagerPttr = new TextureManager(d3DPttr->GetDevice());
-			renderManagerPttr = new RenderManager(textureManagerPttr->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).asRenderedShaderResource);
+			renderManagerPttr = new RenderManager(textureManagerPttr->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).asReadOnlyShaderResource);
 		}
 
 		static void DeInit()
@@ -42,6 +38,11 @@ namespace AthruRendering
 
 			delete d3DPttr;
 			d3DPttr = nullptr;
+
+			AthruUtilities::UtilityServiceCentre::DeInitApp();
+			AthruUtilities::UtilityServiceCentre::DeInitInput();
+			AthruUtilities::UtilityServiceCentre::DeInitLogger();
+			AthruUtilities::UtilityServiceCentre::DeInitMemory();
 		}
 
 		static Direct3D* AccessD3D()
@@ -60,9 +61,14 @@ namespace AthruRendering
 		}
 
 	private:
+		// General GPU interfacing
 		static Direct3D* d3DPttr;
+
+		// 2D and 3D texture management
 		static TextureManager* textureManagerPttr;
+
+		// Visibility/lighting calculations, also
+		// post-production and presentation
 		static RenderManager* renderManagerPttr;
 	};
 }
-

@@ -84,9 +84,29 @@ LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM me
 		case WM_MOUSEMOVE:
 		{
 			// If the mouse has moved, store its coordinates in the input handler
-			float currMouseX = (float)GET_X_LPARAM(messageParamA);
-			float currMouseY = (float)GET_Y_LPARAM(messageParamB);
-			localInput->CacheMousePos(currMouseX, currMouseY);
+			POINT mousePoint;
+			GetCursorPos(&mousePoint);
+			ScreenToClient(windowHandle, &mousePoint);
+			localInput->CacheMousePos((float)mousePoint.x,
+									  (float)mousePoint.y);
+		}
+
+		// Check if the left-mouse-button has been pressed
+		case WM_LBUTTONDOWN:
+		{
+			// If the left-mouse-button has been pressed, cache that state-change
+			// within the input object so that it's visible to the rest of the
+			// program
+			localInput->LeftMouseDown();
+		}
+
+		// Check if the left-mouse-button has been released
+		case WM_LBUTTONUP:
+		{
+			// If the left-mouse-button has been released, cache that state-change
+			// within the input object so that it's visible to the rest of the
+			// program
+			localInput->LeftMouseUp();
 		}
 
 		// Ignore any messages that haven't already been handled

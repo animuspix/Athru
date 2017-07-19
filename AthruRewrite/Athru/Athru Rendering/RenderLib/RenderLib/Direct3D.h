@@ -2,7 +2,7 @@
 
 #pragma comment(lib, "dxgi.lib")
 #pragma comment(lib, "d3d11.lib")
-#pragma comment(lib, "D3DCompiler.lib")
+#pragma comment(lib, "d3dcompiler.lib")
 
 #include <dxgi.h>
 #include <dxgi1_2.h>
@@ -17,10 +17,7 @@ class Direct3D
 		~Direct3D();
 
 		// Begin a draw session (flush the render texture and clear the depth buffer)
-		void BeginScene(ID3D11RenderTargetView* renderTarget);
-
-		// Begin post processing (flush the default render target and clear the depth buffer)
-		void BeginPost();
+		void BeginScene();
 
 		// End a draw session (publish to the screen and close the draw buffer)
 		void EndScene();

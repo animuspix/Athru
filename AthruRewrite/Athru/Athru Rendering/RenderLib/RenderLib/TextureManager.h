@@ -2,18 +2,11 @@
 
 #include "Typedefs.h"
 #include "d3d11.h"
-#include "Heightfield.h"
 #include "AthruTexture2D.h"
 #include "AthruTexture3D.h"
 
 #define MAX_TEXTURE_SIZE_2D (4096 * 4096)
 #define MAX_TEXTURE_SIZE_3D (2048 * 2048 * 2048)
-
-enum class AVAILABLE_PLANETARY_HEIGHTFIELDS
-{
-	ARCHETYPE_ZERO,
-	NULL_TEXTURE
-};
 
 enum class AVAILABLE_DISPLAY_TEXTURES
 {
@@ -39,7 +32,6 @@ class TextureManager
 		TextureManager(ID3D11Device* d3dDevice);
 		~TextureManager();
 
-		Heightfield& GetPlanetaryHeightfield(AVAILABLE_PLANETARY_HEIGHTFIELDS textureSetID);
 		AthruTexture2D& GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES textureID);
 		AthruTexture3D& GetVolumeTexture(AVAILABLE_VOLUME_TEXTURES textureID);
 
@@ -48,9 +40,6 @@ class TextureManager
 		void operator delete(void* target);
 
 	private:
-		// Array of available planetary archetype heightfields (loaded from file)
-		Heightfield availablePlanetaryHeightfields[(byteUnsigned)AVAILABLE_PLANETARY_HEIGHTFIELDS::NULL_TEXTURE];
-
 		// Array of available internal (procedurally generated) two-dimensional textures
 		// (UI sprites, the screen texture, etc)
 		AthruTexture2D availableInternalTextures2D[(byteUnsigned)AVAILABLE_DISPLAY_TEXTURES::NULL_TEXTURE];

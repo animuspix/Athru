@@ -288,22 +288,7 @@ Direct3D::~Direct3D()
 	device = nullptr;
 }
 
-void Direct3D::BeginScene(ID3D11RenderTargetView* renderTargetTexture)
-{
-	// Pass the given render target onto the GPU
-	deviceContext->OMSetRenderTargets(1, &renderTargetTexture, depthStencilView);
-
-	// The color to display before anything is drawn to the scene
-	float color[4] = { 0.0f, 0.6f, 0.6f, 1.0f };
-
-	// Clear the back buffer and flush the view with [color]
-	deviceContext->ClearRenderTargetView(renderTargetTexture, color);
-
-	// Clear the depth buffer
-	deviceContext->ClearDepthStencilView(depthStencilView, D3D11_CLEAR_DEPTH, 1.0f, 0);
-}
-
-void Direct3D::BeginPost()
+void Direct3D::BeginScene()
 {
 	// Pass the default render target back onto the GPU
 	deviceContext->OMSetRenderTargets(1, &defaultRenderTarget, depthStencilView);

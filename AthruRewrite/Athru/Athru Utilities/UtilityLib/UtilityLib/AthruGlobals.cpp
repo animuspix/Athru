@@ -16,12 +16,3 @@ const float GraphicsStuff::VERT_FIELD_OF_VIEW_RADS = (MathsStuff::PI / 2);
 const float GraphicsStuff::HORI_FIELD_OF_VIEW_RADS = 2 * atan(tan(GraphicsStuff::VERT_FIELD_OF_VIEW_RADS / 2) * GraphicsStuff::DISPLAY_ASPECT_RATIO);
 const float GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR = ((2 * GraphicsStuff::SCREEN_NEAR) * tan(GraphicsStuff::VERT_FIELD_OF_VIEW_RADS * 0.5f));
 const float GraphicsStuff::FRUSTUM_HEIGHT_AT_NEAR = GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR / GraphicsStuff::DISPLAY_ASPECT_RATIO;
-
-const fourByteUnsigned GraphicsStuff::VOXEL_GRID_WIDTH = 50;
-const fourByteUnsigned GraphicsStuff::VOXEL_GRID_AREA = GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH;
-const eightByteUnsigned GraphicsStuff::VOXEL_GRID_VOLUME = GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH * GraphicsStuff::VOXEL_GRID_WIDTH;
-
-const twoByteUnsigned GraphicsStuff::HEIGHTFIELD_WIDTH = 512;
-const fourByteUnsigned GraphicsStuff::HEIGHTFIELD_AREA = GraphicsStuff::HEIGHTFIELD_WIDTH * GraphicsStuff::HEIGHTFIELD_WIDTH;
-
-const float GraphicsStuff::MIN_PLANET_SAMPLING_DIST = 5000;

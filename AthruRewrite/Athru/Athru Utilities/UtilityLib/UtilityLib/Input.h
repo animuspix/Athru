@@ -10,11 +10,23 @@ class Input
 		Input();
 		~Input();
 
+		// Set/check key states (where "true" represents "down"
+		// and "false" represents "up")
 		void KeyDown(fourByteUnsigned);
 		void KeyUp(fourByteUnsigned);
 		bool IsKeyDown(fourByteUnsigned);
+
+		// Set/check the closing flag (tells the system to end the
+		// game-loop and begin shutting down the application)
 		void SetCloseFlag();
 		bool GetCloseFlag();
+
+		// Set/check the state of the left-mouse-button (where "true"
+		// represents "down" or "pressed" and "false" represents "up"
+		// or "released")
+		void LeftMouseDown();
+		void LeftMouseUp();
+		bool GetLeftMouseDown();
 
 		// Cache absolute mouse position within the window
 		void CacheMousePos(float mouseX, float mouseY);
@@ -27,39 +39,9 @@ class Input
 		void operator delete(void* target);
 
 	private:
-		struct MouseData
-		{
-			struct PastMousePosition
-			{
-				PastMousePosition(DirectX::XMFLOAT2 basePos,
-								  byteUnsigned baseAge) :
-								  posRaw(basePos),
-								  posWeighted(basePos),
-								  age(baseAge) {}
-
-				DirectX::XMFLOAT2 posRaw;
-				DirectX::XMFLOAT2 posWeighted;
-				byteUnsigned age;
-			};
-
-			MouseData() : mousePos(DirectX::XMFLOAT2(0, 0)),
-						  pastPositions{ PastMousePosition(mousePos, 0), PastMousePosition(mousePos, 0),
-										 PastMousePosition(mousePos, 0), PastMousePosition(mousePos, 0),
-										 PastMousePosition(mousePos, 0), PastMousePosition(mousePos, 0),
-										 PastMousePosition(mousePos, 0), PastMousePosition(mousePos, 0),
-										 PastMousePosition(mousePos, 0), PastMousePosition(mousePos, 0) },
-						  freshlyStoredPosCount(0),
-						  moveRoughness(0.8f) {}
-
-			DirectX::XMFLOAT2 mousePos;
-			PastMousePosition pastPositions[10];
-			byteUnsigned freshlyStoredPosCount;
-			float moveRoughness;
-		};
-
 		bool keys[256];
 		bool closeFlag;
-		MouseData mouseInfo;
-		DirectX::XMFLOAT2 smoothedMousePos;
+		bool leftMouseDown;
+		DirectX::XMFLOAT2 mousePos;
 };
 

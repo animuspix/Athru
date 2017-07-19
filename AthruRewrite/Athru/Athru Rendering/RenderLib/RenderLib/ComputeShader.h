@@ -15,10 +15,6 @@ class ComputeShader
 		void operator delete(void* target);
 
 	protected:
-		// Helper function, used to convert a given position into a sampleable point within
-		// the voxel grid
-		DirectX::XMFLOAT4 ClipToViewableSpace(DirectX::XMVECTOR ssePosition);
-
 		// The core shader object associated with [this]
 		ID3D11ComputeShader* shader;
 };

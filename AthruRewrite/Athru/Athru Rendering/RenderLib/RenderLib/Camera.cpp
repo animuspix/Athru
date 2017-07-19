@@ -1,13 +1,13 @@
 #include "UtilityServiceCentre.h"
-#include "RenderServiceCentre.h"
+#include "GPUServiceCentre.h"
 #include "Camera.h"
 
 Camera::Camera()
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, 0, 0, 0);
+	position = _mm_set_ps(0, -10, 1, 0);
 
-	// Set the camera's default rotation
+	// Set the camera's default rotationQtn
 	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 	coreRotationEuler = DirectX::XMFLOAT3(0, 0, 0);
 
@@ -26,25 +26,24 @@ Camera::Camera()
 	// an origin-relative direction)
 	lookInfo.viewDirNormal = DirectX::XMVector3Normalize(lookAt);
 
-	// Generate + store a point at the centre of the voxel grid
-	float voxGridCentre = (float)GraphicsStuff::VOXEL_GRID_WIDTH / 2.0f;
-	fixedViewPosition = _mm_set_ps(0, voxGridCentre, voxGridCentre, voxGridCentre);
-
 	// Translate the focal position so that it's "in front of" the camera (e.g. visible)
-	lookAt = _mm_add_ps(fixedViewPosition, lookAt);
+	lookAt = _mm_add_ps(position, lookAt);
 
 	// Cache the non-normalized focal position
 	lookInfo.focalPos = lookAt;
 
 	// Create the view matrix with a vector inside the voxel grid, the generated look
 	// vector, and [localUp]
-	viewMatrix = DirectX::XMMatrixLookAtLH(fixedViewPosition, lookAt, localUp);
+	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
 	// Create the camera's viewfinder (screen rect)
-	viewfinder = new ScreenRect(AthruRendering::RenderServiceCentre::AccessD3D()->GetDevice());
+	viewfinder = new ScreenRect(AthruGPU::GPUServiceCentre::AccessD3D()->GetDevice());
 
-	// Initialise the spinSpeed modifier for mouse-look
-	spinSpeed = 1.8f;
+	// Initialise the spin-speed modifier for mouse-look
+	spinSpeed = 0.5f;
+
+	// Initialise the mouse position to the window centre
+	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2, GetSystemMetrics(SM_CYSCREEN) / 2);
 }
 
 Camera::~Camera()
@@ -58,7 +57,7 @@ void Camera::Update()
 	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
 
 	// Translate the view in-game with WASD
-	float speed = 5000;
+	float speed = 500;
 	if (localInput->IsKeyDown(87))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), coreRotationQuaternion));
@@ -90,10 +89,14 @@ void Camera::Update()
 	}
 
 	// Rotate the view with mouse input
-	//this->MouseLook(localInput);
+	// (if enabled)
+	if (mouseLookActive)
+	{
+		this->MouseLook(localInput);
+	}
 
 	// Update the view matrix to reflect
-	// the translation + rotation above
+	// the translation + rotationQtn above
 	this->RefreshViewData();
 }
 
@@ -128,35 +131,24 @@ DirectX::XMFLOAT3 Camera::GetRotationEuler()
 
 void Camera::MouseLook(Input* inputPttr)
 {
+	// Retrieve mouse position from the input processor
 	DirectX::XMFLOAT2 currMousePos = inputPttr->GetMousePos();
-	float mouseDispX = (currMousePos.x - (GraphicsStuff::DISPLAY_WIDTH / 2));
-	float mouseDispY = (currMousePos.y - (GraphicsStuff::DISPLAY_HEIGHT / 2));
 
-	// Calculate magnitude
-	float dispMag = sqrt(mouseDispX * mouseDispX + mouseDispY * mouseDispY);
+	// Calculate displacement from the window centre
+	float mouseDeltaX = (currMousePos.x - (GraphicsStuff::DISPLAY_WIDTH / 2));
+	float mouseDeltaY = (currMousePos.y - (GraphicsStuff::DISPLAY_HEIGHT / 2));
 
-	// Normalize x-displacement (only if [mouseDispX] is nonzero)
-	if (mouseDispX != 0)
-	{
-		mouseDispX /= dispMag;
-	}
+	// Map the changes in mouse position onto changes in camera rotationQtn
+	float xRotationDelta = spinSpeed * mouseDeltaY * TimeStuff::deltaTime();
+	float yRotationDelta = spinSpeed * mouseDeltaX * TimeStuff::deltaTime();
 
-	// Normalize y-displacement (only if [mouseDispY] is nonzero)
-	if (mouseDispY != 0)
-	{
-		mouseDispY /= dispMag;
-	}
+	// Apply the changes in camera rotationQtn to the camera by incrementing the
+	// current X/Y euler angles and passing the results into [SetRotation()]
+	SetRotation(DirectX::XMFLOAT3(coreRotationEuler.x + xRotationDelta,
+		coreRotationEuler.y + yRotationDelta,
+		0));
 
-	// Rotate the camera through mouse XY coordinates
-	float xRotationDisp = spinSpeed * mouseDispY * TimeStuff::deltaTime();
-	float yRotationDisp = spinSpeed * mouseDispX * TimeStuff::deltaTime();
-
-	// We're using an incremental mouse look now, so add the current rotation
-	// into the displacements generated above before setting the new camera angles
-	SetRotation(DirectX::XMFLOAT3(coreRotationEuler.x + xRotationDisp,
-								  coreRotationEuler.y + yRotationDisp,
-								  0));
-
+	// Move the cursor back to the screen centre
 	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2, GetSystemMetrics(SM_CYSCREEN) / 2);
 }
 
@@ -178,16 +170,14 @@ void Camera::RefreshViewData()
 	lookInfo.viewDirNormal = DirectX::XMVector3Normalize(lookAt);
 
 	// Translate the focal position so that it's "in front of" the camera (e.g. visible)
-	lookAt = _mm_add_ps(fixedViewPosition, lookAt);
-	//lookAt = _mm_add_ps(position, lookAt);
+	lookAt = _mm_add_ps(position, lookAt);
 
 	// Cache the non-normalized focal position
 	lookInfo.focalPos = lookAt;
 
-	// Create the view matrix from the fixed viewing position + the look-at and
-	// local-up vectors defined above
-	viewMatrix = DirectX::XMMatrixLookAtLH(fixedViewPosition, lookAt, localUp);
-	//viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
+	// Create the view matrix from the viewing position + the look-at and local-up
+	// vectors defined above
+	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 }
 
 DirectX::XMMATRIX Camera::GetViewMatrix()

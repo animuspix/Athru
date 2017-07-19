@@ -1,17 +1,17 @@
 #include "UtilityServiceCentre.h"
 #include "Star.h"
 
-Star::Star(float givenMass, DirectX::XMFLOAT4 givenColor) :
-		   mass(givenMass),
+Star::Star(float givenRadius, DirectX::XMFLOAT4 givenColor) :
+		   radius(givenRadius),
 		   color{ givenColor.x, givenColor.y, givenColor.z, givenColor.w } {}
 
 Star::~Star()
 {
 }
 
-float Star::GetMass()
+float Star::GetRadius()
 {
-	return mass;
+	return radius;
 }
 
 DirectX::XMFLOAT4 Star::GetColor()
