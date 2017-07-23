@@ -11,7 +11,7 @@
 class Planet : public SceneFigure
 {
 	public:
-		Planet(float givenMass, float givenRadius, DirectX::XMFLOAT4 givenAvgColor,
+		Planet(float givenMass, float givenRadius, DirectX::XMVECTOR givenAvgColor,
 			   DirectX::XMVECTOR offsetFromStar, DirectX::XMFLOAT3 rotation);
 		~Planet();
 

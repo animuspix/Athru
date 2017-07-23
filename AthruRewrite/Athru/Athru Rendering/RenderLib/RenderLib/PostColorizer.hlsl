@@ -49,19 +49,14 @@ float4 Brighten(float4 basePix)
 
 float4 main(Pixel pixIn) : SV_TARGET
 {
-    // Account for the different origins for the window
-    // and UV space by flipping the given UV about the
-    // Y-axis
-    float2 flippedTexCoord = float2(pixIn.texCoord.x, 1 - pixIn.texCoord.y);
-
     // Sample basic color data for the current pixel
-    float4 pixAtCurrUV = texIn.Sample(wrapSampler, flippedTexCoord);
+    float4 pixAtCurrUV = texIn.Sample(wrapSampler, pixIn.texCoord);
 
     // Apply various post-effects
     float4 pixOut = pixAtCurrUV;
     if (blurActive[0])
     {
-        pixOut = Blur(pixAtCurrUV, 10, flippedTexCoord);
+        pixOut = Blur(pixAtCurrUV, 10, pixIn.texCoord);
     }
 
     if (drugsActive[0])

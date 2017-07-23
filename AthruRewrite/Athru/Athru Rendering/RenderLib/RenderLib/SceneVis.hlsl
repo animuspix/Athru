@@ -337,7 +337,7 @@ float3 LightingAtAPoint(float3 samplePoint, float rayEpsilon, float3 sampleRGB,
     // Formula for point light:
     // let invSquare = ((intensity * albedo) / (4 * pi * (distToLight * distToLight)));
     // then light = saturate(sampleRGB * (invSquare * lightRGB * nDotL));
-    outputColor = saturate(sampleRGB * ((albedo / pi) * 10 * lightRGB * nDotL)); //saturate(sampleRGB * (invSquare * lightRGB * nDotL));
+    outputColor = saturate(sampleRGB * (invSquare * lightRGB * nDotL));
 
     // March the current ray back to the light source; if it intersects with any
     // geometry, darken the current color appropriately
@@ -424,7 +424,7 @@ void main(uint3 groupID : SV_GroupID,
         {
             // Assume the ray has passed through the scene without touching anything;
             // write a transparent color to the scene texture before breaking out
-            displayTex[pixID] = float4(sin(groupID.x), tan(groupID.y), 0.0f, 1.0f);
+            displayTex[pixID] = float4(0, 0, 0.0f, 1.0f);
             break;
         }
     }

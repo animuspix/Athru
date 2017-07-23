@@ -294,7 +294,7 @@ void Direct3D::BeginScene()
 	deviceContext->OMSetRenderTargets(1, &defaultRenderTarget, depthStencilView);
 
 	// The color to display before anything is drawn to the scene
-	float color[4] = { 0.6f, 0.0f, 0.6f, 1.0f };
+	float color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
 	// Clear the back buffer and flush the view with [color]
 	deviceContext->ClearRenderTargetView(defaultRenderTarget, color);

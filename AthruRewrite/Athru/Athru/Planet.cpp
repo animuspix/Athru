@@ -1,10 +1,10 @@
 #include "UtilityServiceCentre.h"
 #include "Planet.h"
 
-Planet::Planet(float givenMass, float givenRadius, DirectX::XMFLOAT4 givenAvgColor,
+Planet::Planet(float givenMass, float givenRadius, DirectX::XMVECTOR givenAvgColor,
 			   DirectX::XMVECTOR offsetFromStar, DirectX::XMFLOAT3 rotation) :
 		SceneFigure(_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0), _mm_set_ps(1, 0, 0, 0),
-					_mm_set_ps(1, 0, 0, 0), givenRadius, _mm_set_ps(1, 1, 0, 1), FIG_TYPES::PLANET)
+					_mm_set_ps(1, 0, 0, 0), givenRadius, givenAvgColor, FIG_TYPES::PLANET)
 {}
 
 Planet::~Planet()

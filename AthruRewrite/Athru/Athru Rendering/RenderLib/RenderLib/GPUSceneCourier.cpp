@@ -115,11 +115,11 @@ void GPUSceneCourier::CommitSceneToGPU(SceneFigure* sceneFigures, byteUnsigned f
 	for (fourByteUnsigned i = 0; i < numFigures; i += 1)
 	{
 		// Get a pointer to the data referenced by [mappedResource]
-		SceneFigure::Figure* dataPtr;
-		dataPtr = (SceneFigure::Figure*)mappedResource.pData;
+		SceneFigure::Figure* dataPttr;
+		dataPttr = (SceneFigure::Figure*)mappedResource.pData;
 
 		// Copy in the data for the current figure
-		dataPtr[i] = sceneFigures[i].GetCoreFigure();
+		dataPttr[i] = sceneFigures[i].GetCoreFigure();
 	}
 
 	// Break the write-allowed connection to the GPU-side scene-data-buffer
@@ -150,9 +150,9 @@ void GPUSceneCourier::ApplyChangesFromGPU()
 
 		// Extract the address of the original object associated with the current
 		// figure
-		eightByteUnsigned addressLO = ((eightByteUnsigned)dataPttr[i].origin.x) << 31;
+		eightByteUnsigned addressLO = ((eightByteUnsigned)dataPttr[i].origin.x) << 32;
 		eightByteUnsigned addressHI = ((eightByteUnsigned)dataPttr[i].origin.y);
-		SceneFigure* addressFull = (SceneFigure*)(addressLO & addressHI);
+		SceneFigure* addressFull = (SceneFigure*)(addressLO | addressHI);
 
 		// Copy in the data for the current figure
 		addressFull->SetCoreFigure(dataPttr[i]);
