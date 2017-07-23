@@ -13,7 +13,6 @@ enum class AVAILABLE_DISPLAY_TEXTURES
 	SCREEN_TEXTURE,
 	BLUR_MASK,
 	BRIGHTEN_MASK,
-	DRUGS_MASK,
 	NULL_TEXTURE
 };
 
@@ -33,7 +32,6 @@ class TextureManager
 		~TextureManager();
 
 		AthruTexture2D& GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES textureID);
-		AthruTexture3D& GetVolumeTexture(AVAILABLE_VOLUME_TEXTURES textureID);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);

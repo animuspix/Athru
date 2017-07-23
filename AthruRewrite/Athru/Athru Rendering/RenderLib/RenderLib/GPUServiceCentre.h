@@ -21,6 +21,12 @@ namespace AthruGPU
 				// Allocation assumes Athru will use 255 megabytes at most
 				const eightByteUnsigned STARTING_HEAP = 255000000;
 				AthruUtilities::UtilityServiceCentre::Init(STARTING_HEAP);
+				externalInit = true;
+			}
+
+			else
+			{
+				externalInit = false;
 			}
 
 			d3DPttr = DEBUG_NEW Direct3D(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND());
@@ -39,10 +45,14 @@ namespace AthruGPU
 			delete d3DPttr;
 			d3DPttr = nullptr;
 
-			AthruUtilities::UtilityServiceCentre::DeInitApp();
-			AthruUtilities::UtilityServiceCentre::DeInitInput();
-			AthruUtilities::UtilityServiceCentre::DeInitLogger();
-			AthruUtilities::UtilityServiceCentre::DeInitMemory();
+			if (externalInit)
+			{
+				// Free any un-managed memory allocated to utility services;
+				// also send the references stored for each utility to [nullptr]
+				AthruUtilities::UtilityServiceCentre::DeInitApp();
+				AthruUtilities::UtilityServiceCentre::DeInitInput();
+				AthruUtilities::UtilityServiceCentre::DeInitLogger();
+			}
 		}
 
 		static Direct3D* AccessD3D()
@@ -70,5 +80,13 @@ namespace AthruGPU
 		// Visibility/lighting calculations, also
 		// post-production and presentation
 		static RenderManager* renderManagerPttr;
+
+		// Simple switch describing the application
+		// associated with [this] was initialized
+		// externally (in a separate high-level
+		// service centre) or internally (immediately
+		// before the Direct3D handler + the texture
+		// manager + the render manager were created)
+		static bool externalInit;
 	};
 }

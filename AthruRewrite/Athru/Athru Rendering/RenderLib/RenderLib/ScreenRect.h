@@ -14,15 +14,8 @@ class ScreenRect : public Mesh
 		// Pass [this] onto the GPU for rendering
 		void PassToGPU(ID3D11DeviceContext* context);
 
-		// Retrieve the render-target-view associated with [this]
-		ID3D11RenderTargetView* GetRenderTarget();
-
 	private:
 		// The texture painted onto [this]
 		AthruTexture2D texture;
-
-		// The render-target-view used to dynamically modify
-		// the texture associated with [this]
-		ID3D11RenderTargetView* renderTarget;
 };
 

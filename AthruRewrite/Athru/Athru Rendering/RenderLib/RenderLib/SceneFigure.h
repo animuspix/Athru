@@ -3,17 +3,22 @@
 #include <directxmath.h>
 #include "UtilityServiceCentre.h"
 
-enum class DIST_FUNC_TYPES
+// All planets are julia fractals with different constants
+// blended with a spherical isosurface; all grasses are
+// distorted rays; most plants + all animals are IFS
+// fractals (stars are coloured spheres with a blur attached)
+// Requires a standard notation if we want to keep using a
+// single GPU messenger class
+// Potentially sensible to have an generic figure enum, then
+// a carrier variable holding a ten-item array of coefficients
+// that can simultaneously represent julia constants, grass
+// circumferences + bezier constants, and IFS parameters
+enum class FIG_TYPES
 {
-	SPHERE,
-	CUBE
-};
-
-enum class PHYS_BODY_TYPES
-{
-	RIGID,
-	SOFT,
-	STATIC
+	STAR,
+	PLANET,
+	GRASS,
+	IFS
 };
 
 class SceneFigure
@@ -21,11 +26,8 @@ class SceneFigure
 	public:
 		SceneFigure();
 		SceneFigure(DirectX::XMVECTOR velo, DirectX::XMVECTOR position,
-				    DirectX::XMVECTOR qtnAngularVelo, DirectX::XMFLOAT3 rotation, float scale,
-					DIST_FUNC_TYPES funcType,
-					PHYS_BODY_TYPES physBodyType, float givenRigidity, float givenMass,
-					float givenDensity,
-					DirectX::XMVECTOR surfColor);
+				    DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
+					DirectX::XMVECTOR surfPalette, FIG_TYPES figType);
 		~SceneFigure();
 
 		// GPU-friendly version of [this]; should only be accessed
@@ -35,19 +37,14 @@ class SceneFigure
 			Figure() {}
 			Figure(DirectX::XMVECTOR velo, DirectX::XMVECTOR position,
 				   DirectX::XMVECTOR qtnAngularvelo, DirectX::XMVECTOR qtnRotation, float scale,
-				   fourByteUnsigned funcType, bool staticNess, bool rigidNess,
-				   float givenRigidity, float givenMass, float givenDensity,
-				   DirectX::XMVECTOR surfColor) :
+				   fourByteUnsigned funcType, DirectX::XMVECTOR surfPalette, address originPttr) :
 				   velocity(velo), pos(position),
 				   angularVeloQtn(qtnAngularvelo), rotationQtn(qtnRotation),
-				   scaleFactor{ scale, scale, scale, scale },
+				   scaleFactor{ scale, scale, scale, 1 },
 				   dfType{ funcType, 0, 0, 0 },
-				   isStatic{ staticNess, 0, 0, 0 },
-				   isRigid{ rigidNess, 0, 0, 0 },
-				   rigidity{ givenRigidity, 0, 0, 0 },
-				   mass{ givenMass, 0, 0, 0 },
-				   density{ givenDensity, 0, 0, 0 },
-				   surfRGBA(surfColor) {}
+				   surfRGBA(surfPalette),
+				   origin{ (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0xFFFFFFFF00000000) >> 32),
+						   (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0x00000000FFFFFFFF)), 0, 0 } {}
 
 			// Where this figure is going + how quickly it's going
 			// there
@@ -60,57 +57,47 @@ class SceneFigure
 			// about an implicit angle
 			DirectX::XMVECTOR angularVeloQtn;
 
-			// The quaternion rotationQtn applied to this figure at
+			// The quaternion rotation applied to this figure at
 			// any particular time
 			DirectX::XMVECTOR rotationQtn;
 
 			// Uniform object scale
 			DirectX::XMFLOAT4 scaleFactor;
 
-			// Simple switch for now; consider allowing blends in
-			// future versions
+			// The distance function used to render [this]
 			DirectX::XMUINT4 dfType;
 
-			// Whether this figure is/isn't a static physics object
-			// (static physics objects reflect energy realistically,
-			// but don't experience displacement or deformation
-			// themselvse)
-			DirectX::XMUINT4 isStatic;
+			// Array of coefficients associated with the distance function
+			// used to render [this]
+			//float coeffs[10];
 
-			// Whether this is/isn't a rigid-body physics object
-			// (rigid-bodies absorb and reflect energy without
-			// experiencing deformation; objects that aren't rigid-bodies
-			// are soft-bodies, which experience elastic deformation)
-			// (rigid deformation (i.e. fracture) is too much of an
-			// edge-case to justify implementing it atm)
-			DirectX::XMUINT4 isRigid;
-
-			// Object rigidity (1.0f for rigid-bodies, 0...0.9f for
-			// soft-bodies)
-			DirectX::XMFLOAT4 rigidity;
-
-			// Generic physical properties
-			DirectX::XMFLOAT4 mass;
-			DirectX::XMFLOAT4 density;
-
-			// Assumed average surface color
+			// Fractal palette vector (bitmasked against function
+			// properties to produce procedural colors)
 			DirectX::XMVECTOR surfRGBA;
-		};
 
-		// Set the underlying distance function used to
-		// define the shape of [this]
-		void SetDistFuncType(DIST_FUNC_TYPES funcType);
+			// Key marking which [SceneFigure] is associated with [this]
+			// (needed for tracing GPU-side [Figure]s back to CPU-side [SceneFigure]s
+			// after data is read back from the graphics card)
+			DirectX::XMUINT4 origin;
+		};
 
 		// Retrieve the underlying distance function used
 		// to define the shape of [this]
-		DIST_FUNC_TYPES GetDistFuncType();
+		FIG_TYPES GetDistFuncType();
 
-		// Rotate [this] by the given angles about
-		// x, y, and z
-		void SetRotation(DirectX::XMFLOAT3& pitchYawRoll);
+		// Rotate [this] by the given angle "around" the
+		// given vector
+		void SetRotation(DirectX::XMVECTOR axis,
+						 float angle);
 
-		// Get the euler-angle rotation associated with [this]
-		DirectX::XMFLOAT3 GetEulerRotation();
+		// Get the quaternion rotation associated with [this]
+		// To convert to axis-angle:
+		// - Extract the half-angle by taking the arccos of [w]
+		// - Extract the axis by dividing the vector part by the
+		//   sine of the half-angle (try to avoid division by zero
+		//   here)
+		// - Extract the angle by doubling the half-angle (duh)
+		DirectX::XMVECTOR GetQtnRotation();
 
 		// Get/set the angular velocity of [this]
 		void BoostAngularVelo(DirectX::XMVECTOR angularVeloDelta);
@@ -120,28 +107,9 @@ class SceneFigure
 		void ApplyWork(DirectX::XMVECTOR veloDelta);
 		DirectX::XMVECTOR GetVelo();
 
-		// Get/set the physics behaviour (rigid/soft/static)
-		// associated with [this]
-		void SetBodyType(PHYS_BODY_TYPES bodyType);
-		PHYS_BODY_TYPES GetBodyType();
-
-		// Get/set the rigidity of [this] (1.0f for rigid-bodies and
-		// static-bodies, 0.1...0.9f for soft-bodies)
-		void SetRigidity(float givenRigidity);
-		float GetRigidity();
-
-		// Get a write-allowed reference to the mass of [this]
-		float& FetchMass();
-
-		// Get a write-allowed reference to the density of [this]
-		float& FetchDensity();
-
-		// Get a write-allowed reference to the assumed average surface color of
-		// [this]
-		// Color should be procedurally defined in the future, this is just a
-		// a simplification so I don't have to spend ages finding reasonable
-		// color algorithms :P
-		DirectX::XMVECTOR& FetchSurfColor();
+		// Get a write-allowed reference to the palette bitmask associated
+		// with [this]
+		DirectX::XMVECTOR& FetchSurfPalette();
 
 		// Get a copy of the GPU-friendly [Figure] associated with [this]
 		Figure GetCoreFigure();
@@ -150,11 +118,7 @@ class SceneFigure
 		// externally (i.e. one from the GPU)
 		void SetCoreFigure(Figure& fig);
 
-	private:
-		// The per-axis representation of the rotationQtn associated with
-		// [this]
-		DirectX::XMFLOAT3 eulerRotation;
-
+	protected:
 		// The actual data payload that travels to the GPU each frame
 		Figure coreFigure;
 };

@@ -5,6 +5,7 @@ Scene::Scene()
 {
 	mainCamera = new Camera();
 	galaxy = new Galaxy(AVAILABLE_GALACTIC_LAYOUTS::SPHERE);
+	gpuSceneCourier = new GPUSceneCourier();
 }
 
 Scene::~Scene()
@@ -16,12 +17,30 @@ Scene::~Scene()
 	// Send the reference associated with the
 	// main camera to [nullptr]
 	mainCamera = nullptr;
+
+	// Free any un-managed memory associated
+	// with the GPU messenger object
+	gpuSceneCourier->~GPUSceneCourier();
+
+	// Send the reference associated with the
+	// GPU messenger object to [nullptr]
+	gpuSceneCourier = nullptr;
 }
 
 void Scene::Update()
 {
+	// Update the camera
 	mainCamera->Update();
+
+	// Update the galaxy
 	galaxy->Update();
+
+	// Pass each of the generated figures in the system along
+	// to the GPU for rendering
+	SceneFigure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
+	//currFigures[0] = *(SceneFigure*)(GetCurrentSystem().GetStar());
+	currFigures[0] = *(SceneFigure*)(GetCurrentSystem().GetPlanets()[0]);
+	gpuSceneCourier->CommitSceneToGPU(currFigures, 1);
 }
 
 Camera* Scene::GetMainCamera()
@@ -39,9 +58,9 @@ System& Scene::GetCurrentSystem()
 	return galaxy->GetCurrentSystem(mainCamera->GetTranslation());
 }
 
-GPUScene& Scene::FetchGPUMessenger()
+GPUSceneCourier* Scene::GetGPUCourier()
 {
-	return gpuSceneMessenger;
+	return gpuSceneCourier;
 }
 
 // Push constructions for this class through Athru's custom allocator

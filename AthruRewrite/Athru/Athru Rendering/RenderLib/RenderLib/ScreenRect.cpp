@@ -8,9 +8,6 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 	// Long integer used to represent success/failure for different DirectX operations
 	HRESULT result;
 
-	// Create a render-target-view from the screen texture
-	d3dDevice->CreateRenderTargetView(AthruGPU::GPUServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).raw, nullptr, &renderTarget);
-
 	// Cache the color associated with [this]
 	DirectX::XMFLOAT4 vertColor = DirectX::XMFLOAT4(1.0f, 1.0f, 1.0f, 1.0f);
 
@@ -96,8 +93,6 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 
 ScreenRect::~ScreenRect()
 {
-	// Release the render target view
-	renderTarget->Release();
 }
 
 void ScreenRect::PassToGPU(ID3D11DeviceContext* context)
@@ -115,9 +110,4 @@ void ScreenRect::PassToGPU(ID3D11DeviceContext* context)
 	// Set the 2D primitive type used to create the Mesh; we're making simple
 	// geometry, so triangular primitives make the most sense
 	context->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLESTRIP);
-}
-
-ID3D11RenderTargetView* ScreenRect::GetRenderTarget()
-{
-	return renderTarget;
 }

@@ -80,7 +80,7 @@ void RayMarcher::Dispatch(ID3D11DeviceContext* context,
 	context->CSSetConstantBuffers(0, 1, &shaderInputBuffer);
 
 	// Dispatch the raw shader program associated with [this]
-	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH / 4, GraphicsStuff::DISPLAY_HEIGHT / 4, 1);
+	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT, 1);
 
 	// We've finished ray-marching for this frame, so allow the post-processing
 	// pass to run by detaching the display texture from [this]

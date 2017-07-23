@@ -36,7 +36,7 @@ RenderManager::RenderManager(ID3D11ShaderResourceView* postProcessShaderResource
 	// Construct the shaders used by [this]
 
 	// Construct the raymarching shader + the post-processing shader
-	rayMarcher = new RayMarcher(L"TestScene.cso");
+	rayMarcher = new RayMarcher(L"SceneVis.cso");
 	postProcessor = new PostProcessor(d3dDevice, localWindowHandle, L"PostVertPlotter.cso", L"PostColorizer.cso",
 									  postProcessShaderResource);
 }
@@ -97,7 +97,7 @@ void RenderManager::PostProcess(ScreenRect* screenRect,
 {
 	// Pass the rect onto the GPU, then render it with the post-processing shader
 	screenRect->PassToGPU(d3dContext);
-	postProcessor->Render(d3dContext, true, false, true);
+	postProcessor->Render(d3dContext, false, false, false);
 }
 
 Direct3D* RenderManager::GetD3D()

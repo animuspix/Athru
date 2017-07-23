@@ -169,15 +169,21 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Athru.cpp" />
+    <ClCompile Include="Critter.cpp" />
     <ClCompile Include="Galaxy.cpp" />
+    <ClCompile Include="Planet.cpp" />
     <ClCompile Include="Scene.cpp" />
     <ClCompile Include="HiLevelServiceCentre.cpp" />
+    <ClCompile Include="Star.cpp" />
     <ClCompile Include="System.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Critter.h" />
     <ClInclude Include="Galaxy.h" />
+    <ClInclude Include="Planet.h" />
     <ClInclude Include="Scene.h" />
     <ClInclude Include="HiLevelServiceCentre.h" />
+    <ClInclude Include="Star.h" />
     <ClInclude Include="System.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

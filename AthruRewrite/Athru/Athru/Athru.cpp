@@ -30,12 +30,19 @@ void GameLoop()
 		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
 		AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
 
-		// Update the galaxy
+		// Update the game
 		athruScene->Update();
 
-		// Find the area around the player, then render it
-		System currSystem = athruScene->GetCurrentSystem();
-		athruRendering->Render(athruScene->GetMainCamera());
+		// Render + GPU-process the area around the player
+		GPUSceneCourier* gpuMessenger = athruScene->GetGPUCourier();
+		athruRendering->Render(athruScene->GetMainCamera(),
+							   gpuMessenger->GetGPUReadableSceneView(),
+							   gpuMessenger->GetGPUWritableSceneView(),
+							   gpuMessenger->GetFigureCount());
+
+		// Apply the changes made to each GPU-side figure to the
+		// appropriate CPU-side objects
+		//athruScene->FetchGPUCourier()->ApplyChangesFromGPU();
 
 		// Record the time at this frame so we can calculate
 		// [deltaTime]

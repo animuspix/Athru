@@ -1,10 +1,16 @@
 #pragma once
 
-class Critter
+#include "SceneFigure.h"
+
+class Critter : public SceneFigure
 {
 	public:
 		Critter();
 		~Critter();
+
+		// Overload the standard allocation/de-allocation operators
+		//void* operator new(size_t size);
+		//void operator delete(void* target);
 
 	private:
 		// Critters are defined with IFS fractal systems;

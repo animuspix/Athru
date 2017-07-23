@@ -39,17 +39,17 @@ TextureManager::TextureManager(ID3D11Device* d3dDevice)
 
 TextureManager::~TextureManager()
 {
-	for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_DISPLAY_TEXTURES::NULL_TEXTURE; i += 1)
-	{
-		availableInternalTextures2D[i].raw->Release();
-		availableInternalTextures2D[i].raw = nullptr;
+	//for (byteUnsigned i = 0; i < (byteUnsigned)AVAILABLE_DISPLAY_TEXTURES::NULL_TEXTURE; i += 1)
+	//{
+		availableInternalTextures2D[0].raw->Release();
+		availableInternalTextures2D[0].raw = nullptr;
 
-		availableInternalTextures2D[i].asReadOnlyShaderResource->Release();
-		availableInternalTextures2D[i].asReadOnlyShaderResource = nullptr;
+		availableInternalTextures2D[0].asReadOnlyShaderResource->Release();
+		availableInternalTextures2D[0].asReadOnlyShaderResource = nullptr;
 
-		availableInternalTextures2D[i].asWritableShaderResource->Release();
-		availableInternalTextures2D[i].asWritableShaderResource = nullptr;
-	}
+		availableInternalTextures2D[0].asWritableShaderResource->Release();
+		availableInternalTextures2D[0].asWritableShaderResource = nullptr;
+	//}
 }
 
 AthruTexture2D& TextureManager::GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES textureID)

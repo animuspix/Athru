@@ -141,46 +141,39 @@
     <ClInclude Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.h" />
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="GPUServiceCentre.h" />
-    <ClInclude Include="Planet.h" />
     <ClInclude Include="RayMarcher.h" />
     <ClInclude Include="RenderManager.h" />
-    <ClInclude Include="GPUScene.h" />
+    <ClInclude Include="GPUSceneCourier.h" />
     <ClInclude Include="SceneFigure.h" />
     <ClInclude Include="ScreenRect.h" />
     <ClInclude Include="AthruTexture2D.h" />
     <ClInclude Include="AthruTexture3D.h" />
     <ClInclude Include="Camera.h" />
-    <ClInclude Include="Critter.h" />
     <ClInclude Include="Direct3D.h" />
     <ClInclude Include="Mesh.h" />
     <ClInclude Include="PlanarUnwrapper.h" />
     <ClInclude Include="PostProcessor.h" />
     <ClInclude Include="PostVertex.h" />
     <ClInclude Include="PipelineShader.h" />
-    <ClInclude Include="Star.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="TextureManager.h" />
     <ClInclude Include="SceneVertex.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\..\Curve-Sketch\Curve Sketch\Curve Sketch Rendering\CurveSketchLib\CurveSketchLib\GPUServiceCentre.cpp" />
     <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp" />
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="GPUServiceCentre.cpp" />
-    <ClCompile Include="Planet.cpp" />
     <ClCompile Include="RayMarcher.cpp" />
     <ClCompile Include="RenderManager.cpp" />
-    <ClCompile Include="GPUScene.cpp" />
+    <ClCompile Include="GPUSceneCourier.cpp" />
     <ClCompile Include="SceneFigure.cpp" />
     <ClCompile Include="ScreenRect.cpp" />
     <ClCompile Include="Camera.cpp" />
-    <ClCompile Include="Critter.cpp" />
     <ClCompile Include="Direct3D.cpp" />
     <ClCompile Include="Mesh.cpp" />
     <ClCompile Include="PostProcessor.cpp" />
     <ClCompile Include="PostVertex.cpp" />
     <ClCompile Include="PipelineShader.cpp" />
-    <ClCompile Include="Star.cpp" />
     <ClCompile Include="TextureManager.cpp" />
   </ItemGroup>
   <ItemGroup>

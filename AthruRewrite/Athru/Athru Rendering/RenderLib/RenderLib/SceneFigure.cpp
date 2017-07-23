@@ -2,91 +2,46 @@
 
 SceneFigure::SceneFigure()
 {
-	eulerRotation = DirectX::XMFLOAT3(0, 0, 0);
 	coreFigure = Figure(_mm_set_ps(0, 0, 0, 0), _mm_set_ps(1, 0, 0, 0),
 						_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0), 1.0f,
-						(fourByteUnsigned)DIST_FUNC_TYPES::SPHERE, false,
-						false, 0.8f, 1.0f, 1.0f,
-						_mm_set_ps(1.0f, 1.0f, 1.0f, 1.0f));
+						(fourByteUnsigned)FIG_TYPES::GRASS, _mm_set_ps(1, 1, 1, 1),
+						this);
 }
 
 SceneFigure::SceneFigure(DirectX::XMVECTOR velo, DirectX::XMVECTOR position,
-						 DirectX::XMVECTOR qtnAngularVelo, DirectX::XMFLOAT3 rotation, float scale,
-						 DIST_FUNC_TYPES funcType, PHYS_BODY_TYPES physBodyType,
-						 float givenRigidity, float givenMass, float givenDensity,
-						 DirectX::XMVECTOR surfColor)
+						 DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
+						 DirectX::XMVECTOR surfPalette, FIG_TYPES figType)
 {
-	// Split the given body type into separate static/non-static and rigid-/soft-body
-	// properties
-	// All static elements are assumed to be rigidbodies
-	bool isStatic;
-	bool isRigid;
-
-	if (physBodyType == PHYS_BODY_TYPES::RIGID)
-	{
-		isStatic = false;
-		isRigid = true;
-	}
-
-	else if (physBodyType == PHYS_BODY_TYPES::SOFT)
-	{
-		isStatic = false;
-		isRigid = false;
-	}
-
-	else
-	{
-		isStatic = true;
-		isRigid = true;
-
-		// Static rigid-bodies cannot have velocity in any direction
-		velo = _mm_set_ps(0, 0, 0, 0);
-		qtnAngularVelo = _mm_set_ps(1, 0, 0, 0);
-	}
-
-	// Convert the given rotation into the internal [Figure]'s
-	// quaternion representation; also invert it beforehand since
-	// rotating rays is much easier than rotating abstract
-	// distance functions
-	eulerRotation = rotation;
-	DirectX::XMVECTOR invPitchYawRoll = DirectX::XMQuaternionRotationRollPitchYaw(eulerRotation.x,
-																				  eulerRotation.y,
-																				  eulerRotation.z);
-
-	coreFigure = Figure(velo, position, qtnAngularVelo, DirectX::XMQuaternionInverse(invPitchYawRoll),
-						scale, (fourByteUnsigned)funcType, isStatic, isRigid, givenRigidity,
-						givenMass, givenDensity, surfColor);
+	coreFigure = Figure(velo, position, qtnAngularVelo, DirectX::XMQuaternionInverse(qtnRotation),
+						scale, (fourByteUnsigned)figType, surfPalette,
+						this);
 }
 
 SceneFigure::~SceneFigure()
 {
 }
 
-void SceneFigure::SetDistFuncType(DIST_FUNC_TYPES funcType)
+FIG_TYPES SceneFigure::GetDistFuncType()
 {
-	coreFigure.dfType.x = (fourByteUnsigned)funcType;
+	return (FIG_TYPES)coreFigure.dfType.x;
 }
 
-DIST_FUNC_TYPES SceneFigure::GetDistFuncType()
-{
-	return (DIST_FUNC_TYPES)coreFigure.dfType.x;
-}
-
-void SceneFigure::SetRotation(DirectX::XMFLOAT3& pitchYawRoll)
+void SceneFigure::SetRotation(DirectX::XMVECTOR axis,
+							  float angle)
 {
 	// Convert the given rotation into the internal [Figure]'s
 	// quaternion representation; also invert it beforehand since
 	// rotating rays is much easier than rotating abstract
 	// distance functions
-	DirectX::XMVECTOR invPitchYawRoll = DirectX::XMQuaternionRotationRollPitchYaw(pitchYawRoll.x,
-																				  pitchYawRoll.y,
-																				  pitchYawRoll.z);
-	coreFigure.rotationQtn = DirectX::XMQuaternionInverse(invPitchYawRoll);
+	DirectX::XMVECTOR invAxisAngle = DirectX::XMQuaternionRotationAxis(axis,
+																	   angle);
+
+	coreFigure.rotationQtn = DirectX::XMQuaternionInverse(invAxisAngle);
 }
 
-DirectX::XMFLOAT3 SceneFigure::GetEulerRotation()
+DirectX::XMVECTOR SceneFigure::GetQtnRotation()
 {
-	return eulerRotation;
+	return coreFigure.rotationQtn;
 }
 
 void SceneFigure::BoostAngularVelo(DirectX::XMVECTOR angularVeloDelta)
@@ -101,17 +56,9 @@ DirectX::XMVECTOR SceneFigure::GetAngularVelo()
 
 void SceneFigure::ApplyWork(DirectX::XMVECTOR veloDelta)
 {
-	if (!coreFigure.isStatic.x)
-	{
-		// More work is needed to shift heavier masses; reduce the velocity delta
-		// appropriately
-		veloDelta = _mm_div_ps(veloDelta, _mm_set_ps(coreFigure.mass.x,
-													 coreFigure.mass.x,
-													 coreFigure.mass.x,
-													 coreFigure.mass.x));
-
-		coreFigure.velocity = _mm_add_ps(coreFigure.velocity, veloDelta);
-	}
+	// Modify velocity delta according to mass, density,
+	// etc. here
+	coreFigure.velocity = _mm_add_ps(coreFigure.velocity, veloDelta);
 }
 
 DirectX::XMVECTOR SceneFigure::GetVelo()
@@ -119,99 +66,7 @@ DirectX::XMVECTOR SceneFigure::GetVelo()
 	return coreFigure.velocity;
 }
 
-void SceneFigure::SetBodyType(PHYS_BODY_TYPES bodyType)
-{
-	// Split the given body type into separate static/non-static and rigid-/soft-body
-	// properties
-	if (bodyType == PHYS_BODY_TYPES::RIGID)
-	{
-		coreFigure.isStatic.x = false;
-		coreFigure.isRigid.x = true;
-	}
-
-	else if (bodyType == PHYS_BODY_TYPES::SOFT)
-	{
-		coreFigure.isStatic.x = false;
-		coreFigure.isRigid.x = false;
-	}
-
-	else
-	{
-		coreFigure.isStatic.x = true;
-		coreFigure.isRigid.x = true;
-
-		// Static rigid-bodies cannot have velocity in any direction
-		coreFigure.velocity = _mm_set_ps(0, 0, 0, 0);
-		coreFigure.angularVeloQtn = _mm_set_ps(1, 0, 0, 0);
-	}
-}
-
-PHYS_BODY_TYPES SceneFigure::GetBodyType()
-{
-	if (coreFigure.isRigid.x &&
-		!coreFigure.isStatic.x)
-	{
-		return PHYS_BODY_TYPES::RIGID;
-	}
-
-	else if (!coreFigure.isRigid.x &&
-			 !coreFigure.isStatic.x)
-	{
-		return PHYS_BODY_TYPES::SOFT;
-	}
-
-	if (coreFigure.isStatic.x)
-	{
-		return PHYS_BODY_TYPES::STATIC;
-	}
-
-	// Assume figures that somehow fail all of the
-	// above are rigid-bodies
-	return PHYS_BODY_TYPES::RIGID;
-}
-
-void SceneFigure::SetRigidity(float givenRigidity)
-{
-	// Clamp the given rigidity value to the range 1...0.0f
-	givenRigidity = max(givenRigidity - min((givenRigidity > 1.0f) - 1.0f, 0.0f), 0.0f);
-
-	// Pass the given rigidity value along to the actual
-	// [Figure] that [this] is defined to interface
-	// with
-	coreFigure.rigidity.x = givenRigidity;
-
-	// If the given rigidity is less than one, [this] will behave
-	// like a non-static soft-body
-	if (givenRigidity < 1.0f)
-	{
-		coreFigure.isStatic.x = false;
-		coreFigure.isRigid.x = false;
-	}
-
-	// If the given rigidity is equal to one, [this] will behave like
-	// a rigidbody and may or may not be static
-	else
-	{
-		coreFigure.isRigid.x = true;
-	}
-}
-
-float SceneFigure::GetRigidity()
-{
-	return coreFigure.rigidity.x;
-}
-
-float& SceneFigure::FetchMass()
-{
-	return coreFigure.mass.x;
-}
-
-float& SceneFigure::FetchDensity()
-{
-	return coreFigure.density.x;
-}
-
-DirectX::XMVECTOR& SceneFigure::FetchSurfColor()
+DirectX::XMVECTOR& SceneFigure::FetchSurfPalette()
 {
 	return coreFigure.surfRGBA;
 }
@@ -225,8 +80,4 @@ void SceneFigure::SetCoreFigure(Figure& fig)
 {
 	// Store the given core figure
 	coreFigure = fig;
-
-	// Update the high-level (euler) rotation to
-	// match the quaternion associated with the given
-	// figure
 }

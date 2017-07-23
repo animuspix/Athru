@@ -2,21 +2,12 @@
 #include "Star.h"
 
 Star::Star(float givenRadius, DirectX::XMFLOAT4 givenColor) :
-		   radius(givenRadius),
-		   color{ givenColor.x, givenColor.y, givenColor.z, givenColor.w } {}
+	  SceneFigure(_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 1, 1, 1), _mm_set_ps(1, 0, 0, 0),
+				  _mm_set_ps(1, 0, 0, 0), 1, _mm_set_ps(1, 1, 0, 1), FIG_TYPES::STAR)
+{}
 
 Star::~Star()
 {
-}
-
-float Star::GetRadius()
-{
-	return radius;
-}
-
-DirectX::XMFLOAT4 Star::GetColor()
-{
-	return color;
 }
 
 // Push constructions for this class through Athru's custom allocator

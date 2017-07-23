@@ -1,7 +1,7 @@
 #include "GPUServiceCentre.h"
-#include "GPUScene.h"
+#include "GPUSceneCourier.h"
 
-GPUScene::GPUScene()
+GPUSceneCourier::GPUSceneCourier()
 {
 	// Initialize the figure-count to [0]
 	numFigures = 0;
@@ -81,7 +81,7 @@ GPUScene::GPUScene()
 	assert(SUCCEEDED(result));
 }
 
-GPUScene::~GPUScene()
+GPUSceneCourier::~GPUSceneCourier()
 {
 	figBufferInput->Release();
 	figBufferInput = nullptr;
@@ -99,7 +99,7 @@ GPUScene::~GPUScene()
 	gpuWritableSceneView = nullptr;
 }
 
-void GPUScene::CommitSceneToGPU(SceneFigure* sceneFigures, byteUnsigned figCount)
+void GPUSceneCourier::CommitSceneToGPU(SceneFigure* sceneFigures, byteUnsigned figCount)
 {
 	// Cache the given figure-count so we can access it again when we
 	// broadcast the updated GPU-side data through the rest of the
@@ -126,54 +126,61 @@ void GPUScene::CommitSceneToGPU(SceneFigure* sceneFigures, byteUnsigned figCount
 	context->Unmap(figBufferInput, 0);
 }
 
-SceneFigure* GPUScene::RetrieveChangesFromGPU()
+fourByteUnsigned GPUSceneCourier::GetFigureCount()
+{
+	return numFigures;
+}
+
+void GPUSceneCourier::ApplyChangesFromGPU()
 {
 	// Pass the changes made to the data on the GPU into the intermediate CPU-read-only buffer
 	ID3D11DeviceContext* context = AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext();
 	context->CopyResource(figBufferStaging, figBufferOutput);
 
-	// Read the data pased into the staging buffer back into a CPU-side figure-array
+	// Read the data pased into the staging buffer back into the relevant CPU-side [SceneFigure]s
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	HRESULT result = context->Map(figBufferStaging, 0, D3D11_MAP_READ, 0, &mappedResource);
 	assert(SUCCEEDED(result));
 
-	SceneFigure sceneFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
 	for (byteUnsigned i = 0; i < numFigures; i += 1)
 	{
 		// Get a pointer to the data referenced by [mappedResource]
-		SceneFigure::Figure* dataPtr;
-		dataPtr = (SceneFigure::Figure*)mappedResource.pData;
+		SceneFigure::Figure* dataPttr;
+		dataPttr = (SceneFigure::Figure*)mappedResource.pData;
+
+		// Extract the address of the original object associated with the current
+		// figure
+		eightByteUnsigned addressLO = ((eightByteUnsigned)dataPttr[i].origin.x) << 31;
+		eightByteUnsigned addressHI = ((eightByteUnsigned)dataPttr[i].origin.y);
+		SceneFigure* addressFull = (SceneFigure*)(addressLO & addressHI);
 
 		// Copy in the data for the current figure
-		sceneFigures[i].SetCoreFigure(dataPtr[i]);
+		addressFull->SetCoreFigure(dataPttr[i]);
 	}
 
 	// Break the connection to the GPU-side scene-data-buffer
 	context->Unmap(figBufferStaging, 0);
-
-	// Return the populated array to the calling location
-	return sceneFigures;
 }
 
-ID3D11ShaderResourceView* GPUScene::GetGPUReadableSceneView()
+ID3D11ShaderResourceView* GPUSceneCourier::GetGPUReadableSceneView()
 {
 	return gpuReadableSceneView;
 }
 
-ID3D11UnorderedAccessView* GPUScene::GetGPUWritableSceneView()
+ID3D11UnorderedAccessView* GPUSceneCourier::GetGPUWritableSceneView()
 {
 	return gpuWritableSceneView;
 }
 
 // Push constructions for this class through Athru's custom allocator
-void* GPUScene::operator new(size_t size)
+void* GPUSceneCourier::operator new(size_t size)
 {
 	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<GPUScene>(), false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<GPUSceneCourier>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing
-void GPUScene::operator delete(void* target)
+void GPUSceneCourier::operator delete(void* target)
 {
 	return;
 }

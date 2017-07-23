@@ -27,9 +27,6 @@
     <ClInclude Include="Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Critter.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Direct3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -66,12 +63,6 @@
     <ClInclude Include="ComputeShader.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="Planet.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Star.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GPUServiceCentre.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -84,15 +75,12 @@
     <ClInclude Include="SceneFigure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GPUScene.h">
+    <ClInclude Include="GPUSceneCourier.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Critter.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Direct3D.cpp">
@@ -122,15 +110,6 @@
     <ClCompile Include="ComputeShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Planet.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="Star.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\..\..\..\..\Curve-Sketch\Curve Sketch\Curve Sketch Rendering\CurveSketchLib\CurveSketchLib\GPUServiceCentre.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RayMarcher.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -143,7 +122,7 @@
     <ClCompile Include="SceneFigure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GPUScene.cpp">
+    <ClCompile Include="GPUSceneCourier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

@@ -30,6 +30,15 @@
     <ClCompile Include="System.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Critter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Planet.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="Star.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="HiLevelServiceCentre.h">
@@ -42,6 +51,15 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="System.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Critter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Planet.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Star.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

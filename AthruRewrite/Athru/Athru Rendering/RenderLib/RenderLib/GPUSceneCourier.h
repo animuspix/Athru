@@ -3,20 +3,24 @@
 #include <d3d11.h>
 #include "SceneFigure.h"
 
-class GPUScene
+class GPUSceneCourier
 {
 	public:
-		GPUScene();
-		~GPUScene();
+		GPUSceneCourier();
+		~GPUSceneCourier();
 
 		// Pass the current scene data along to the
 		// GPU-friendly scene-data buffer
 		void CommitSceneToGPU(SceneFigure* sceneFigures, byteUnsigned figCount);
 
-		// Read any changes made to the data while it was
-		// on the GPU to a CPU-side array that can be 
-		// accessed by the rest of the engine
-		SceneFigure* RetrieveChangesFromGPU();
+		// Retrieve the number of figures passed into the GPU input buffer
+		// (i.e. the number expected to be rendered in the next frame)
+		fourByteUnsigned GetFigureCount();
+
+		// Read the changes made to each element while it was
+		// on the GPU back into it's original CPU-side
+		// address
+		void ApplyChangesFromGPU();
 
 		// Retrieve gpu-read-only/gpu-write-only resource views of the
 		// scene-data-buffers associated with [this]

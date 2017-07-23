@@ -37,13 +37,6 @@ static const uint DISPLAY_HEIGHT = 768;
 
 // Struct representing renderable objects passed in from the
 // CPU
-// static/rigid/soft variance is a hack so that I can submit
-// this for an assignment; actual implementation into Athru
-// should assume all objects are soft-bodies and adjust
-// deformation relative to object rigidity
-// Shattering/fracture simulation could be an interesting
-// thing to implement in the future; probably too much of an
-// edge feature to focus on for now though
 struct Figure
 {
     // Where this figure is going + how quickly it's going
@@ -64,34 +57,20 @@ struct Figure
     // Uniform object scale
     float4 scaleFactor;
 
-    // Simple switch for now; consider allowing blends in
-    // future versions
+    // The distance function used to render [this]
     uint4 dfType;
 
-    // Whether this figure is/isn't a static physics object
-    // (static physics objects reflect energy realistically,
-    // but don't experience displacement or deformation
-    // themselvse)
-    uint4 isStatic;
+    // Array of coefficients associated with the distance function
+    // used to render [this]
+    //float coeffs[10];
 
-	// Whether this is/isn't a rigid-body physics object
-	// (rigid-bodies absorb and reflect energy without
-	// experiencing deformation; objects that aren't rigid-bodies
-	// are soft-bodies, which experience elastic deformation)
-	// (rigid deformation (i.e. fracture) is too much of an
-	// edge-case to justify implementing it atm)
-    uint4 isRigid;
-
-    // Object rigidity (1.0f for rigid-bodies, 0...0.9f for
-    // soft-bodies)
-    float4 rigidity;
-
-    // Generic physical properties
-    float4 mass;
-    float4 density;
-
-    // Assumed average surface color
+    // Fractal palette vector (bitmasked against function
+    // properties to produce procedural colors)
     float4 surfRGBA;
+
+    // Key marking the original object associated with [this] on
+    // the CPU
+    uint4 origin;
 };
 
 // A one-dimensional buffer holding the objects to render
@@ -99,7 +78,6 @@ struct Figure
 // the scene distance function
 StructuredBuffer<Figure> figuresReadable : register(t0);
 RWStructuredBuffer<Figure> figuresWritable : register(u1);
-
 // The maximum possible number of discrete figures within the
 // scene
 // Kept as a #define because strange compiler bugs turn up if
@@ -240,7 +218,7 @@ DFData CubeDF(float3 coord,
     DFData dfData;
     dfData.dist = min(max(edgeDistVec.x, max(edgeDistVec.y, edgeDistVec.z)), 0.0f) + length(max(edgeDistVec, float3(0, 0, 0)));
     dfData.rgbaColor = fig.surfRGBA;
-    dfData.id = callIndex + 1;
+    dfData.id = callIndex;
     return dfData;
 }
 
@@ -257,7 +235,7 @@ DFData SphereDF(float3 coord,
     DFData dfData;
     dfData.dist = length(relCoord) - fig.scaleFactor.x;
     dfData.rgbaColor = fig.surfRGBA;
-    dfData.id = callIndex + 1;
+    dfData.id = callIndex;
     return dfData;
 }
 
@@ -266,11 +244,6 @@ DFData SphereDF(float3 coord,
 // scene from the given point
 DFData SceneField(float3 coord)
 {
-    // Number of distance functions; assumes every scene
-    // contains a [Floor] alongside the geometry passed
-    // in from the CPU
-    const uint numDistFuncs = numFigures.x + 1;
-
     // Array serving as a read/write target for the distance
     // functions associated with each object in the scene
     DFData dfArr[MAX_NUM_FIGURES];
@@ -279,7 +252,7 @@ DFData SceneField(float3 coord)
     const uint sphereDFID = 0;
     const uint cubeDFID = 1;
     uint minIndex = 0;
-    for (uint i = 0; i < (numDistFuncs - 1); i += 1)
+    for (uint i = 0; i < numFigures.x; i += 1)
     {
         Figure currFig = figuresReadable[i];
         if (currFig.dfType.x == sphereDFID)
@@ -295,16 +268,6 @@ DFData SceneField(float3 coord)
         {
             minIndex = i;
         }
-    }
-
-    // Assume there's always a static rigidbody floor in the scene
-    dfArr[numDistFuncs - 1] = FloorDF(coord, 0.0f);
-
-    // Check the distance at the known minimum index against
-    // the distance to the floor
-    if (dfArr[numDistFuncs - 1].dist < dfArr[minIndex].dist)
-    {
-        //minIndex = numDistFuncs - 1;
     }
 
     // Return the data associated with the closest function
@@ -403,17 +366,30 @@ float3 LightingAtAPoint(float3 samplePoint, float rayEpsilon, float3 sampleRGB,
     return outputColor * brightness;
 }
 
+void FigUpdates(uint figID)
+{
+    // Copy the figure stored in the read-only input buffer
+    // into a write-allowed temporary variable
+    Figure currFig = figuresReadable[figID];
+
+    // Apply angular velocity to rotation
+    currFig.rotationQtn = normalize(QtnProduct(currFig.angularVeloQtn, currFig.rotationQtn));
+
+    // Apply velocity to position
+    currFig.pos += currFig.velocity;
+
+    // Copy the properties defined for the current figure
+    // across into the write-allowed output buffer
+    figuresWritable[figID] = currFig;
+}
+
 [numthreads(1, 1, 1)]
 void main(uint3 groupID : SV_GroupID,
           uint3 threadID : SV_GroupThreadID)
 {
     // The pixel ID (x/y coordinates) associated with the current
     // thread group
-    uint2 pixID = groupID.xy * 4;
-
-    // The figure ID (x coordinate) associated with the current
-    // thread
-    uint figID = threadID.x;
+    uint2 pixID = groupID.xy;
 
     // A magical error term, used because close rays might intersect
     // each other during shadowing/reflection/refraction or "skip" through
@@ -433,8 +409,7 @@ void main(uint3 groupID : SV_GroupID,
         DFData sceneField = SceneField(eyePos + rayVec);
         if (sceneField.dist < rayEpsilon)
         {
-            // Generate a simple procedural color for the current figure, then
-            // illuminate it with Phong lighting
+            // Use path tracing to illuminate the current figure
             float3 localRGB = LightingAtAPoint(eyePos + rayVec, rayEpsilon,
                                                sceneField.rgbaColor.rgb, 64.0f);
 
@@ -449,8 +424,15 @@ void main(uint3 groupID : SV_GroupID,
         {
             // Assume the ray has passed through the scene without touching anything;
             // write a transparent color to the scene texture before breaking out
-            displayTex[pixID] = float4(0.0f, 0.0f, 0.0f, 0.0f);
+            displayTex[pixID] = float4(sin(groupID.x), tan(groupID.y), 0.0f, 1.0f);
             break;
         }
+    }
+
+    if (groupID.x < numFigures.x &&
+        groupID.y == 0 &&
+        groupID.z == 0)
+    {
+        FigUpdates(groupID.x);
     }
 }

@@ -11,7 +11,7 @@ System::System()
 	// planets are made of water :P
 
 	// Create local planets
-	float radiusZero = 50.0f;
+	float radiusZero = 1.0f;
 	float radiusZeroCube = radiusZero * radiusZero * 50000.0f;
 	float fourThirds = 4.0f / 3.0f;
 	float massZero = fourThirds * (MathsStuff::PI * radiusZeroCube);
@@ -46,6 +46,11 @@ System::System()
 	// Place systems at the world-space origin by default
 	position = _mm_set_ps(1, 0, 0, 0);
 
+	// Apply initial axial spins to each planet in the system
+	float speed = 0.01f;
+	planets[0]->BoostAngularVelo(_mm_set_ps(0.0f, 0.0f, speed * TimeStuff::deltaTime(), 0.0f));
+	planets[1]->BoostAngularVelo(_mm_set_ps(0.0f, 0.0f, speed * TimeStuff::deltaTime(), 0.0f));
+	planets[2]->BoostAngularVelo(_mm_set_ps(0.0f, 0.0f, speed * TimeStuff::deltaTime(), 0.0f));
 }
 
 System::~System()
@@ -53,15 +58,7 @@ System::~System()
 }
 
 void System::Update()
-{
-	// Not really any time to think up a
-	// procedural orbital physics simulator,
-	// so just spin each planet in place instead
-	float speed = 0.01f;
-	planets[0]->Rotate(DirectX::XMFLOAT3(0.0f, 0.0f, speed * TimeStuff::deltaTime()));
-	planets[1]->Rotate(DirectX::XMFLOAT3(0.0f, speed * TimeStuff::deltaTime(), 0.0f));
-	planets[2]->Rotate(DirectX::XMFLOAT3(speed * TimeStuff::deltaTime(), 0.0f, 0.0f));
-}
+{}
 
 DirectX::XMVECTOR& System::FetchPos()
 {
