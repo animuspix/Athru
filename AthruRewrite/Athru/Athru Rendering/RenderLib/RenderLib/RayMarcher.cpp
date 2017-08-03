@@ -26,6 +26,9 @@ RayMarcher::RayMarcher(LPCWSTR shaderFilePath) :
 	ID3D11Device* device = AthruGPU::GPUServiceCentre::AccessD3D()->GetDevice();
 	HRESULT result = device->CreateBuffer(&inputBufferDesc, NULL, &shaderInputBuffer);
 	assert(SUCCEEDED(result));
+
+	// Initialise the progressive-render-pass counter variable
+	progPassCounter = 0;
 }
 
 RayMarcher::~RayMarcher()
@@ -73,14 +76,29 @@ void RayMarcher::Dispatch(ID3D11DeviceContext* context,
 	// Write the given figure-count into the local input buffer
 	dataPtr->numFigures = DirectX::XMUINT4(numFigures, numFigures, numFigures, numFigures);
 
+	// Write the ID of the current progressive-rendering pass into the
+	// local input buffer
+	dataPtr->rendPassID = DirectX::XMUINT4(progPassCounter, progPassCounter, progPassCounter, progPassCounter);
+
 	// Break the write-allowed connection to the shader input buffer
 	context->Unmap(shaderInputBuffer, 0);
 
 	// Pass the data in the local input buffer over to the GPU
 	context->CSSetConstantBuffers(0, 1, &shaderInputBuffer);
 
+	// Re-set the render-pass counter if it travels pass the maximum
+	// number of progressive passes
+	if (progPassCounter > GraphicsStuff::PROG_PASS_COUNT)
+	{
+		progPassCounter = 0;
+	}
+
 	// Dispatch the raw shader program associated with [this]
-	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT, 1);
+	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH, 1, 1);
+
+	// Increment the render-pass counter so that the next frame will render
+	// the pixel row just below the current one
+	progPassCounter += 1;
 
 	// We've finished ray-marching for this frame, so allow the post-processing
 	// pass to run by detaching the display texture from [this]

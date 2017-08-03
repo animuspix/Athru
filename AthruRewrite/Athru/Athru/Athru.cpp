@@ -42,7 +42,7 @@ void GameLoop()
 
 		// Apply the changes made to each GPU-side figure to the
 		// appropriate CPU-side objects
-		gpuMessenger->ApplyChangesFromGPU();
+		//gpuMessenger->ApplyChangesFromGPU();
 
 		// Record the time at this frame so we can calculate
 		// [deltaTime]

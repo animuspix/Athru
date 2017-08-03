@@ -92,6 +92,7 @@ namespace GraphicsStuff
 	extern const float VERT_FIELD_OF_VIEW_RADS;
 	extern const float HORI_FIELD_OF_VIEW_RADS;
 	extern constexpr fourByteUnsigned SCREEN_RECT_INDEX_COUNT = 6;
+	extern const fourByteUnsigned PROG_PASS_COUNT;
 }
 
 namespace SceneStuff

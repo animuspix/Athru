@@ -17,7 +17,7 @@ System::System()
 	float massZero = fourThirds * (MathsStuff::PI * radiusZeroCube);
 	float orbitalOffsetZero = radiusZero * 1.5f;
 	planets[0] = new Planet(massZero, radiusZero,
-							DirectX::XMFLOAT4(1, 1, 1, 1), _mm_set_ps(0, 0, radiusZero * 1.5f, radiusZero * 1.5f),
+							_mm_set_ps(1, 1, 1, 1), _mm_set_ps(0, 0, radiusZero * 1.5f, radiusZero * 1.5f),
 							DirectX::XMFLOAT3(0, 0, 0));
 
 	float radiusOne = 100;
@@ -25,7 +25,7 @@ System::System()
 	float massOne = fourThirds * (MathsStuff::PI * radiusOneCube);
 	float orbitalOffsetOne = orbitalOffsetZero + radiusOne * 1.5f;
 	planets[1] = new Planet(massOne, radiusOne,
-							DirectX::XMFLOAT4(1, 0.5f, 1, 1), _mm_set_ps(0, 0, orbitalOffsetOne, orbitalOffsetOne),
+							_mm_set_ps(1, 0.5f, 1, 1), _mm_set_ps(0, 0, orbitalOffsetOne, orbitalOffsetOne),
 							DirectX::XMFLOAT3(0, 0, 0));
 
 	float radiusTwo = 120;
@@ -33,7 +33,7 @@ System::System()
 	float massTwo = fourThirds * (MathsStuff::PI * radiusTwoCube);
 	float orbitalOffsetTwo = orbitalOffsetOne + radiusTwo * 1.5f;
 	planets[2] = new Planet(massOne, radiusOne,
-							DirectX::XMFLOAT4(1, 1, 0.5f, 1), _mm_set_ps(0, 0, orbitalOffsetTwo, orbitalOffsetTwo),
+							_mm_set_ps(1, 1, 0.5f, 1), _mm_set_ps(0, 0, orbitalOffsetTwo, orbitalOffsetTwo),
 							DirectX::XMFLOAT3(0, 0, 0));
 
 	// Create local star

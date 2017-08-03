@@ -25,6 +25,7 @@ class RayMarcher : public ComputeShader
 			DirectX::XMFLOAT4 deltaTime;
 			DirectX::XMUINT4 currTimeSecs;
 			DirectX::XMUINT4 numFigures;
+			DirectX::XMUINT4 rendPassID;
 		};
 
 		// ...And a reference to the buffer we'll need in order
@@ -35,5 +36,10 @@ class RayMarcher : public ComputeShader
 		// raster target during ray-marching so that we can
 		// easily post-process the results
 		ID3D11UnorderedAccessView* displayTexture;
+
+		// A simple value representing the index of the current
+		// progressive render pass (first pixel row, second pixel
+		// row, etc.)
+		fourByteUnsigned progPassCounter;
 };
 

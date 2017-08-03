@@ -25,6 +25,7 @@ cbuffer InputStuffs
     float4 deltaTime;
     uint4 currTimeSecs;
     uint4 numFigures;
+    uint4 rendPassID;
 };
 
 // A two-dimensional texture representing the display; used
@@ -200,16 +201,15 @@ DFData FloorDF(float3 coord, float planeElev)
 // Core distance function found within:
 // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
 DFData CubeDF(float3 coord,
-              Figure fig,
-              uint callIndex)
+              uint figID)
 {
     // Transformations (except scale) applied here
-    float3 shiftedCoord = coord - fig.pos.xyz;
-    float3 orientedCoord = QtnRotate(shiftedCoord, fig.rotationQtn);
+    float3 shiftedCoord = coord - figuresReadable[figID].pos.xyz;
+    float3 orientedCoord = QtnRotate(shiftedCoord, figuresReadable[figID].rotationQtn);
     float3 freshCoord = orientedCoord;
 
     // Scale applied here
-    float edgeLength = fig.scaleFactor.x;
+    float edgeLength = figuresReadable[figID].scaleFactor.x;
     float3 edgeDistVec = abs(freshCoord) - float3(edgeLength,
                                                   edgeLength,
                                                   edgeLength);
@@ -217,8 +217,8 @@ DFData CubeDF(float3 coord,
     // Function properties generated/extracted and stored here
     DFData dfData;
     dfData.dist = min(max(edgeDistVec.x, max(edgeDistVec.y, edgeDistVec.z)), 0.0f) + length(max(edgeDistVec, float3(0, 0, 0)));
-    dfData.rgbaColor = fig.surfRGBA;
-    dfData.id = callIndex;
+    dfData.rgbaColor = figuresReadable[figID].surfRGBA;
+    dfData.id = figID;
     return dfData;
 }
 
@@ -228,14 +228,13 @@ DFData CubeDF(float3 coord,
 // Core distance function modified from the original found within:
 // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions
 DFData SphereDF(float3 coord,
-                Figure fig,
-                uint callIndex)
+                uint figID)
 {
-    float3 relCoord = coord - fig.pos.xyz; //mul(fig.rotationQtn, float4(coord, 1)).xyz - fig.pos.xyz;
+    float3 relCoord = coord - figuresReadable[figID].pos.xyz; //mul(fig.rotationQtn, float4(coord, 1)).xyz - fig.pos.xyz;
     DFData dfData;
-    dfData.dist = length(relCoord) - fig.scaleFactor.x;
-    dfData.rgbaColor = fig.surfRGBA;
-    dfData.id = callIndex;
+    dfData.dist = length(relCoord) - figuresReadable[figID].scaleFactor.x;
+    dfData.rgbaColor = figuresReadable[figID].surfRGBA;
+    dfData.id = figID;
     return dfData;
 }
 
@@ -254,14 +253,13 @@ DFData SceneField(float3 coord)
     uint minIndex = 0;
     for (uint i = 0; i < numFigures.x; i += 1)
     {
-        Figure currFig = figuresReadable[i];
-        if (currFig.dfType.x == sphereDFID)
+        if (figuresReadable[i].dfType.x == sphereDFID)
         {
-            dfArr[i] = SphereDF(coord, currFig, i);
+            dfArr[i] = SphereDF(coord, i);
         }
-        else if (currFig.dfType.x == cubeDFID)
+        else if (figuresReadable[i].dfType.x == cubeDFID)
         {
-            dfArr[i] = CubeDF(coord, currFig, i);
+            dfArr[i] = CubeDF(coord, i);
         }
 
         if (dfArr[i].dist < dfArr[minIndex].dist)
@@ -390,6 +388,7 @@ void main(uint3 groupID : SV_GroupID,
     // The pixel ID (x/y coordinates) associated with the current
     // thread group
     uint2 pixID = groupID.xy;
+    pixID.y += rendPassID.x;
 
     // A magical error term, used because close rays might intersect
     // each other during shadowing/reflection/refraction or "skip" through
@@ -424,15 +423,15 @@ void main(uint3 groupID : SV_GroupID,
         {
             // Assume the ray has passed through the scene without touching anything;
             // write a transparent color to the scene texture before breaking out
-            displayTex[pixID] = float4(0, 0, 0.0f, 1.0f);
+            displayTex[pixID] = float4(0.0f, 0.0f, 0.0f, 1.0f);
             break;
         }
     }
 
-    if (groupID.x < numFigures.x &&
-        groupID.y == 0 &&
-        groupID.z == 0)
-    {
-        FigUpdates(groupID.x);
-    }
+    //if (groupID.x < numFigures.x &&
+    //    groupID.y == 0 &&
+    //    groupID.z == 0)
+    //{
+    //    FigUpdates(groupID.x);
+    //}
 }
