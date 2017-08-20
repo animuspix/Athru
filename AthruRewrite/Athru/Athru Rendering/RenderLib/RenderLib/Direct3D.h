@@ -8,7 +8,6 @@
 #include <dxgi1_2.h>
 #include <d3dcommon.h>
 #include <d3d11.h>
-#include <directxmath.h>
 
 class Direct3D
 {
@@ -28,13 +27,6 @@ class Direct3D
 
 		// Retrieve a reference to the render viewport used with [this]
 		D3D11_VIEWPORT& GetViewport();
-
-		// Retrieve the perspective/orthographic projection matrices
-		DirectX::XMMATRIX GetPerspProjector();
-		DirectX::XMMATRIX GetOrthoProjector();
-
-		// Retrieve the world matrix
-		DirectX::XMMATRIX GetWorldMatrix();
 
 		// Retrieve a constant reference to information about the video adapter
 		const DXGI_ADAPTER_DESC& GetAdapterInfo();
@@ -59,15 +51,5 @@ class Direct3D
 		ID3D11DepthStencilView* depthStencilView;
 		ID3D11RasterizerState* rasterState;
 		ID3D11Debug* debugDevice;
-
-		// Transformation matrices to convert data to a perspective 2D
-		// projection or orthographic (flat 2D) projection
-		DirectX::XMMATRIX perspProjector;
-		DirectX::XMMATRIX orthoProjector;
-
-		// Matrix representing the basic coordinate system used within
-		// Athru; for more information on coordinate systems, see:
-		// https://en.wikipedia.org/wiki/Coordinate_system
-		DirectX::XMMATRIX worldMatrix;
 };
 

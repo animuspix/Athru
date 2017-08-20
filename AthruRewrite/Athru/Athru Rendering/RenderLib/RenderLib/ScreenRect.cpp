@@ -43,7 +43,7 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 
 	// Initialise indices
 	// Each set of three values is one triangle
-	fourByteUnsigned indices[SCREEN_RECT_INDEX_COUNT] = { 0,
+	fourByteUnsigned indices[GraphicsStuff::SCREEN_RECT_INDEX_COUNT] = { 0,
 										        		  1,
 										        		  2,
 
@@ -74,7 +74,7 @@ ScreenRect::ScreenRect(ID3D11Device* d3dDevice)
 	// Set up the description of the static index buffer
 	D3D11_BUFFER_DESC indexBufferDesc;
 	indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	indexBufferDesc.ByteWidth = sizeof(fourByteUnsigned) * SCREEN_RECT_INDEX_COUNT;
+	indexBufferDesc.ByteWidth = sizeof(fourByteUnsigned) * GraphicsStuff::SCREEN_RECT_INDEX_COUNT;
 	indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	indexBufferDesc.CPUAccessFlags = 0;
 	indexBufferDesc.MiscFlags = 0;

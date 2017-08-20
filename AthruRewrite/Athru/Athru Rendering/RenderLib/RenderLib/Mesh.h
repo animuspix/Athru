@@ -8,7 +8,7 @@ class Mesh
 	public:
 		Mesh();
 		~Mesh();
-		
+
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void* operator new[](size_t size);

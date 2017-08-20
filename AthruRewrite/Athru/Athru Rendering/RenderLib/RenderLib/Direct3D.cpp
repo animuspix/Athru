@@ -92,12 +92,14 @@ Direct3D::Direct3D(HWND hwnd)
 	// Cache the address of the back buffer
 	ID3D11Texture2D* backBufferPtr;
 	result = swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (LPVOID*)&backBufferPtr);
+	assert(SUCCEEDED(result));
 
 	// Create the render target view with the back buffer and verify that it isn't stored
 	// in [nullptr] (the program isn't allowed to de-reference null pointers, so the best
 	// way to stop that from happening is to stamp out )
 	assert(backBufferPtr != nullptr);
 	result = device->CreateRenderTargetView(backBufferPtr, NULL, &defaultRenderTarget);
+	assert(SUCCEEDED(result));
 
 	// No more need for a pointer to the back buffer, so release it
 	backBufferPtr->Release();
@@ -241,15 +243,6 @@ Direct3D::Direct3D(HWND hwnd)
 	// Instantiate the viewport within [viewport]
 	deviceContext->RSSetViewports(1, &viewport);
 
-	// Create the perspective projection matrix
-	perspProjector = DirectX::XMMatrixPerspectiveFovLH(GraphicsStuff::VERT_FIELD_OF_VIEW_RADS, GraphicsStuff::DISPLAY_ASPECT_RATIO, GraphicsStuff::SCREEN_NEAR, GraphicsStuff::SCREEN_FAR);
-
-	// Create world matrix (initialized to the 4D identity matrix)
-	worldMatrix = DirectX::XMMatrixIdentity();
-
-	// Create orthographic projection matrix
-	orthoProjector = DirectX::XMMatrixOrthographicLH(GraphicsStuff::FRUSTUM_WIDTH_AT_NEAR, GraphicsStuff::FRUSTUM_HEIGHT_AT_NEAR, GraphicsStuff::SCREEN_NEAR, GraphicsStuff::SCREEN_FAR);
-
 	// Raise an error if any DirectX components failed to build
 	assert(SUCCEEDED(result));
 }
@@ -279,7 +272,7 @@ Direct3D::~Direct3D()
 	swapChain->Release();
 	swapChain = nullptr;
 
-	debugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+	//debugDevice->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
 
 	debugDevice->Release();
 	debugDevice = nullptr;
@@ -290,9 +283,6 @@ Direct3D::~Direct3D()
 
 void Direct3D::BeginScene()
 {
-	// Pass the default render target back onto the GPU
-	deviceContext->OMSetRenderTargets(1, &defaultRenderTarget, depthStencilView);
-
 	// The color to display before anything is drawn to the scene
 	float color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
 
@@ -332,19 +322,4 @@ D3D11_VIEWPORT& Direct3D::GetViewport()
 const DXGI_ADAPTER_DESC& Direct3D::GetAdapterInfo()
 {
 	return adapterInfo;
-}
-
-DirectX::XMMATRIX Direct3D::GetPerspProjector()
-{
-	return perspProjector;
-}
-
-DirectX::XMMATRIX Direct3D::GetOrthoProjector()
-{
-	return orthoProjector;
-}
-
-DirectX::XMMATRIX Direct3D::GetWorldMatrix()
-{
-	return worldMatrix;
 }

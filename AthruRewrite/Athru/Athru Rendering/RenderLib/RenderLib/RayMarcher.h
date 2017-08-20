@@ -13,7 +13,14 @@ class RayMarcher : public ComputeShader
 					  DirectX::XMMATRIX& viewMatrix,
 					  ID3D11ShaderResourceView* gpuReadableSceneDataView,
 					  ID3D11UnorderedAccessView* gpuWritableSceneDataView,
+					  ID3D11UnorderedAccessView* gpuRandView,
 					  fourByteUnsigned numFigures);
+
+		// Retrieve a reference to the primary trace buffer
+		// (used to store ray-tracing intersections so they
+		// can be shaded appropriately during path tracing/indirect
+		// illumination)
+		ID3D11UnorderedAccessView* GetTraceBuffer();
 
 	private:
 		// Very simple input struct, used to expose delta-time and
@@ -36,6 +43,16 @@ class RayMarcher : public ComputeShader
 		// raster target during ray-marching so that we can
 		// easily post-process the results
 		ID3D11UnorderedAccessView* displayTexture;
+
+		// A local reference to the primary trace buffer, used to
+		// record ray intersections in each frame so that the
+		// associated points can be indirectly illuminated by the
+		// path tracer
+		ID3D11Buffer* traceBuffer;
+
+		// A shader-friendly view of the trace buffer declared
+		// above
+		ID3D11UnorderedAccessView* traceBufferView;
 
 		// A simple value representing the index of the current
 		// progressive render pass (first pixel row, second pixel

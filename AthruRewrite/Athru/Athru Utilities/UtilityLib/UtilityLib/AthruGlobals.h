@@ -93,9 +93,15 @@ namespace GraphicsStuff
 	extern const float HORI_FIELD_OF_VIEW_RADS;
 	extern constexpr fourByteUnsigned SCREEN_RECT_INDEX_COUNT = 6;
 	extern const fourByteUnsigned PROG_PASS_COUNT;
+	extern const fourByteUnsigned MAX_TRACE_COUNT;
 }
 
 namespace SceneStuff
 {
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = 5;
+}
+
+namespace GPGPUStuff
+{
+	extern constexpr fourByteUnsigned RAND_STATE_COUNT = 16777216;
 }

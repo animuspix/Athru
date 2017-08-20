@@ -5,7 +5,7 @@
 Camera::Camera()
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, -10, 1, 0);
+	position = _mm_set_ps(0, -10.0f, 2.175f, 0);
 
 	// Set the camera's default rotationQtn
 	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);

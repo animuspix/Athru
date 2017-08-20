@@ -9,7 +9,9 @@
 class Direct3D;
 class Camera;
 class RayMarcher;
+class PathTracer;
 class PostProcessor;
+class ScreenPainter;
 class ScreenRect;
 class RenderManager
 {
@@ -36,16 +38,21 @@ class RenderManager
 
 	private:
 		// Helper function, used to pre-fill the scene texture with ray-marched
-		// color information
+		// and post-processed color information
 		void RenderScene(Camera* mainCamera,
 						 ID3D11ShaderResourceView* gpuReadableSceneDataView,
 						 ID3D11UnorderedAccessView* gpuWritableSceneDataView,
 						 fourByteUnsigned numSceneFigures);
 
-		// Helper function, used to perform post-processing and
-		// draw the result to the screen
-		void PostProcess(ScreenRect* screenRect,
-						 DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection);
+		// Helper function, used to present the scene texture to the user by
+		// projecting it onto a full-screen rectangle and using the graphics
+		// pipeline to rasterize the result
+		// This is mostly a hack implemented because I'm not sure how to
+		// make the swap chain available to a compute shader without
+		// triggering any errors in the Direct3D debug device; presentation
+		// will be moved into the post-processing compute shader as soon as
+		// I know a simple + error-free way to do that
+		void Display(ScreenRect* screenRect);
 
 		// Reference to the Direct3D handler class
 		Direct3D* d3D;
@@ -53,9 +60,15 @@ class RenderManager
 		// Reference to the Direct3D device context
 		ID3D11DeviceContext* d3dContext;
 
-		// Reference to the scene raymarching/physics processing shader
+		// Reference to the scene raymarching shader
 		RayMarcher* rayMarcher;
+
+		// Reference to the scene path-tracing (global illumination) shader
+		PathTracer* pathTracer;
 
 		// Reference to the post-processing shader
 		PostProcessor* postProcessor;
+
+		// Reference to the presentation shader
+		ScreenPainter* screenPainter;
 };

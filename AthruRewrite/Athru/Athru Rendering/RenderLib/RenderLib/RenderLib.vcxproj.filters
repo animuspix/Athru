@@ -36,9 +36,6 @@
     <ClInclude Include="PlanarUnwrapper.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="PostProcessor.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="TextureManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -78,6 +75,21 @@
     <ClInclude Include="GPUSceneCourier.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GPURand.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PathTracer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TracePoint.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ScreenPainter.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PostProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -89,17 +101,11 @@
     <ClCompile Include="Mesh.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PostProcessor.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="TextureManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
       <Filter>Third Party</Filter>
-    </ClCompile>
-    <ClCompile Include="PostVertex.cpp">
-      <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ScreenRect.cpp">
       <Filter>Source Files</Filter>
@@ -125,10 +131,31 @@
     <ClCompile Include="GPUSceneCourier.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="GPURand.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PathTracer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScreenVertex.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ScreenPainter.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="PostProcessor.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="PostColorizer.hlsl" />
-    <FxCompile Include="PostVertPlotter.hlsl" />
     <FxCompile Include="SceneVis.hlsl" />
+    <FxCompile Include="PathTracer.hlsl" />
+    <FxCompile Include="PostProcessor.hlsl" />
+    <FxCompile Include="PresentationColors.hlsl" />
+    <FxCompile Include="PresentationVerts.hlsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shared3D.hlsli" />
+    <None Include="SharedLighting.hlsli" />
   </ItemGroup>
 </Project>

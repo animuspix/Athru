@@ -1,5 +1,5 @@
 
-struct PostVertex
+struct ScreenVertex
 {
     float4 pos : POSITION0;
     float2 texCoord : TEXCOORD0;
@@ -11,7 +11,7 @@ struct Pixel
     float2 texCoord : TEXCOORD0;
 };
 
-Pixel main(PostVertex vertIn)
+Pixel main(ScreenVertex vertIn)
 {
 	// Create a returnable [Pixel]
     Pixel pixOut;

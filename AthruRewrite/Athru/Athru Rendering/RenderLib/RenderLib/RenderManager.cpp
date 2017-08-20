@@ -7,13 +7,20 @@
 // The Direct3D handler class
 #include "Direct3D.h"
 
-// Pipeline shaders
-#include "PostProcessor.h"
+// The presentation shader
+#include "ScreenPainter.h"
 
-// The scene texture shader
+// The scene ray-marcher
 #include "RayMarcher.h"
 
-// Generic objects relevant to [this]
+// The scene path tracer
+// (needed for global illumination)
+#include "PathTracer.h"
+
+// The post-processing shader
+#include "PostProcessor.h"
+
+// The scene camera
 #include "Camera.h"
 
 // The header containing declarations used by [this]
@@ -35,10 +42,12 @@ RenderManager::RenderManager(ID3D11ShaderResourceView* postProcessShaderResource
 
 	// Construct the shaders used by [this]
 
-	// Construct the raymarching shader + the post-processing shader
+	// Construct the raymarching shader, the path tracer, and the image presentation shader
 	rayMarcher = new RayMarcher(L"SceneVis.cso");
-	postProcessor = new PostProcessor(d3dDevice, localWindowHandle, L"PostVertPlotter.cso", L"PostColorizer.cso",
-									  postProcessShaderResource);
+	pathTracer = new PathTracer(L"PathTracer.cso");
+	postProcessor = new PostProcessor(L"PostProcessor.cso");
+	screenPainter = new ScreenPainter(d3dDevice, localWindowHandle,
+									  L"PresentationVerts.cso", L"PresentationColors.cso");
 }
 
 RenderManager::~RenderManager()
@@ -48,8 +57,8 @@ RenderManager::~RenderManager()
 	rayMarcher = nullptr;
 
 	// Delete heap-allocated data within the post-processing shader
-	postProcessor->~PostProcessor();
-	postProcessor = nullptr;
+	screenPainter->~ScreenPainter();
+	screenPainter = nullptr;
 }
 
 void RenderManager::Render(Camera* mainCamera,
@@ -71,7 +80,7 @@ void RenderManager::Render(Camera* mainCamera,
 					  numSceneFigures);
 
 	// Post-process
-	this->PostProcess(viewFinderPttr, d3D->GetWorldMatrix(), mainCamera->GetViewMatrix(), d3D->GetPerspProjector());
+	this->Display(viewFinderPttr);
 
 	// Present the post-processed scene to the display
 	d3D->EndScene();
@@ -83,21 +92,39 @@ void RenderManager::RenderScene(Camera* mainCamera,
 								fourByteUnsigned numSceneFigures)
 {
 	// Pre-fill the scene texture with the forms defined in the given
-	// distance functions
+	// distance functions; also perform post-processing on pixels shaded
+	// in the previous render pass (if any)
+	// Also pass in a shader-friendly view of the GPU RNG state buffer so we
+	// can use the Xorshift random number generator as a noise source for colors/textures,
+	// planetary/asteroid terrain, etc.
+	ID3D11UnorderedAccessView* gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
 	rayMarcher->Dispatch(d3dContext,
 						 mainCamera->GetTranslation(),
 						 mainCamera->GetViewMatrix(),
 						 gpuReadableSceneDataView,
 						 gpuWritableSceneDataView,
+						 gpuRandView,
 						 numSceneFigures);
+
+	// Apply global illumination to the pixels illuminated during primary
+	// ray-marching
+	// All the values we're going to need to access were passed to the
+	// GPU when we dispatched the ray-marcher, so no need to send
+	// anything along this time
+	pathTracer->Dispatch(d3dContext);
+
+	// Apply post-processing to the render pass evaluated during the current
+	// frame
+	// As above, all the values needed for post-processing were already loaded
+	// during ray-marching
+	postProcessor->Dispatch(d3dContext);
 }
 
-void RenderManager::PostProcess(ScreenRect* screenRect,
-								DirectX::XMMATRIX world, DirectX::XMMATRIX view, DirectX::XMMATRIX projection)
+void RenderManager::Display(ScreenRect* screenRect)
 {
 	// Pass the rect onto the GPU, then render it with the post-processing shader
 	screenRect->PassToGPU(d3dContext);
-	postProcessor->Render(d3dContext, false, false, false);
+	screenPainter->Render(d3dContext);
 }
 
 Direct3D* RenderManager::GetD3D()

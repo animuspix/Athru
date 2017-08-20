@@ -3,10 +3,11 @@
 #include <d3d11.h>
 #include "ComputeShader.h"
 
-class PostProcessor : public ComputeShader
+class PathTracer : public ComputeShader
 {
 	public:
-		PostProcessor(LPCWSTR shaderFilePath);
-		~PostProcessor();
+		PathTracer(LPCWSTR shaderFilePath);
+		~PathTracer();
 		void Dispatch(ID3D11DeviceContext* context);
 };
+
