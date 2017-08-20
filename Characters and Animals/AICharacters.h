@@ -1,3 +1,0 @@
-#pragma once
-
-// Declare AICharacter class here...
