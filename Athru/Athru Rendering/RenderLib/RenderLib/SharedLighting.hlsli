@@ -23,7 +23,7 @@ RWStructuredBuffer<TracePoint> traceables : register(u3);
 
 // How many samples to take for each traceable point during
 // global illumination
-#define GI_SAMPLE_COUNT 1
+#define GI_SAMPLE_COUNT 64
 
 // The width and height of the display texture defined above
 #define DISPLAY_WIDTH 1024
@@ -106,5 +106,6 @@ float3 PerPointDirectIllum(float3 samplePoint, float3 baseRGB,
     // then light = saturate(sampleRGB * (invSquare * lightRGB * nDotL));
 
     // Direct illumination calculated here
+    //return saturate(baseRGB * ((albedo / pi) * 2000 * lightRGB * nDotL));
     return saturate(baseRGB * (invSquare * lightRGB * nDotL));
 }

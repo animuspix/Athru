@@ -37,7 +37,8 @@ void main(uint3 groupID : SV_GroupID,
     // Apply indirect illumination
     if (traceable.isValid.x)
     {
-        postColor = saturate(traceable.rgbaSrc * (traceable.rgbaGI / GI_SAMPLE_COUNT));
+		postColor = saturate(traceable.rgbaSrc * (traceable.rgbaGI / GI_SAMPLE_COUNT));
+		postColor.a = 1.0f;
     }
 
     // Apply FXAA (unimplemented atm)

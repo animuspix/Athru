@@ -56,7 +56,15 @@ RenderManager::~RenderManager()
 	rayMarcher->~RayMarcher();
 	rayMarcher = nullptr;
 
+	// Delete heap-allocated data within the path tracer
+	pathTracer->~PathTracer();
+	pathTracer = nullptr;
+
 	// Delete heap-allocated data within the post-processing shader
+	postProcessor->~PostProcessor();
+	postProcessor = nullptr;
+
+	// Delete heap-allocated data within the presentation shader
 	screenPainter->~ScreenPainter();
 	screenPainter = nullptr;
 }

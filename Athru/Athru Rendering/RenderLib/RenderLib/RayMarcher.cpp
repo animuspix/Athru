@@ -155,6 +155,10 @@ void RayMarcher::Dispatch(ID3D11DeviceContext* context,
 	// Pass the data in the local input buffer over to the GPU
 	context->CSSetConstantBuffers(0, 1, &shaderInputBuffer);
 
+	// Increment the render-pass counter so that the next frame will render
+	// the pixel row just below the current one
+	progPassCounter += 1;
+
 	// Re-set the render-pass counter if it travels pass the maximum
 	// number of progressive passes
 	if (progPassCounter > GraphicsStuff::PROG_PASS_COUNT)
@@ -164,10 +168,6 @@ void RayMarcher::Dispatch(ID3D11DeviceContext* context,
 
 	// Dispatch the raw shader program associated with [this]
 	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH, 1, 1);
-
-	// Increment the render-pass counter so that the next frame will render
-	// the pixel row just below the current one
-	progPassCounter += 1;
 }
 
 ID3D11UnorderedAccessView* RayMarcher::GetTraceBuffer()

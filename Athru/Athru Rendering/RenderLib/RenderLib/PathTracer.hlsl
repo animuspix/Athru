@@ -2,7 +2,7 @@
 #include "SharedLighting.hlsli"
 
 // The maximum number of steps to ray-march during path-tracing
-#define MAX_PATH_MARCHER_STEPS 10
+#define MAX_PATH_MARCHER_STEPS 255
 
 // A read-only view of a copy of the display texture (read-only views support
 // multi-dimensional reads, read/write views do not)
@@ -53,7 +53,7 @@ void main(uint3 groupID : SV_GroupID,
     uint3 diffColorInt = (uint)(figuresReadable[currFig].surfRGBA.rgb * 255.0f);
     float3 rayDir = normalize(float3(uint3(rand1D(threadID + (linearGroupID * 64)),
                                            rand1D(threadID + (linearGroupID * 64)),
-                                           rand1D(threadID + (linearGroupID * 64))) ^ diffColorInt));
+                                           rand1D(threadID + (linearGroupID * 64)))));// ^ diffColorInt));
 
     // Try to guarantee that [rayDir] is never below the figure surface
     // (since surfaces won't be receiving radiation contributions from
@@ -81,20 +81,22 @@ void main(uint3 groupID : SV_GroupID,
         {
             // Accumulate the traced color into the overall color for the
             // current path
-            traceables[currTraceNdx].rgbaGI += float4(PerPointDirectIllum(pathVec, pathData.rgbaColor.rgb,
+			traceables[currTraceNdx].rgbaGI += float4(PerPointDirectIllum(pathVec, pathData.rgbaColor.rgb,
                                                                           GetNormal(pathVec)), 1.0f);
+
             return;
         }
-
+		
         currRayDist += pathData.dist;
 
         if (currRayDist > (maxPathDist - rayEpsilon))
         {
-            // No occluders or light sources encountered, so assume that the current
-            // ray has no effect on the output color for the current trace point
-            traceables[currTraceNdx].rgbaGI = float4(1.0f, 0.0f, 0.0f, 1.0f); //saturate(traceables[currTraceNdx].rgbaGI +
-                                              //         (1.0f.xxxx / 256.0f));
-            return;
+            break;
         }
     }
+
+	// No occluders or light sources encountered, so assume that the current
+    // ray has no effect on the output color for the current trace point
+    traceables[currTraceNdx].rgbaGI += saturate(traceables[currTraceNdx].rgbaGI +
+                                                (1.0f.xxxx / 256.0f));
 }
