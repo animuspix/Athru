@@ -4,10 +4,6 @@
 // The maximum number of steps to ray-march during path-tracing
 #define MAX_PATH_MARCHER_STEPS 255
 
-// A read-only view of a copy of the display texture (read-only views support
-// multi-dimensional reads, read/write views do not)
-Texture2D<float4> displayTexReadOnly : register(t1);
-
 [numthreads(4, 4, 4)]
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
@@ -81,12 +77,12 @@ void main(uint3 groupID : SV_GroupID,
         {
             // Accumulate the traced color into the overall color for the
             // current path
-			traceables[currTraceNdx].rgbaGI += float4(PerPointDirectIllum(pathVec, pathData.rgbaColor.rgb,
-                                                                          GetNormal(pathVec)), 1.0f);
+            traceables[currTraceNdx].rgbaGI += float4(1.0f, 0.0f, 0.0f, 1.0f); //float4(PerPointDirectIllum(pathVec, pathData.rgbaColor.rgb,
+                                               //                           GetNormal(pathVec)), 1.0f);
 
             return;
         }
-		
+
         currRayDist += pathData.dist;
 
         if (currRayDist > (maxPathDist - rayEpsilon))
@@ -97,6 +93,5 @@ void main(uint3 groupID : SV_GroupID,
 
 	// No occluders or light sources encountered, so assume that the current
     // ray has no effect on the output color for the current trace point
-    traceables[currTraceNdx].rgbaGI += saturate(traceables[currTraceNdx].rgbaGI +
-                                                (1.0f.xxxx / 256.0f));
+    traceables[currTraceNdx].rgbaGI += float4(1.0f, 0.0f.xx, 1.0f); //(1.0f.xxxx / 256.0f);
 }

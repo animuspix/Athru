@@ -1,6 +1,31 @@
 
 #include "SharedLighting.hlsli"
 
+float3 HDR(TracePoint trace)
+{
+
+}
+
+float3 FXAA(TracePoint trace)
+{
+
+}
+
+float3 BoxBlur(TracePoint trace)
+{
+
+}
+
+float3 Brighten(float3 traceColor, float intensity)
+{
+    return traceColor * intensity;
+}
+
+float3 LogDistort(float3 traceColor)
+{
+    return log10(traceColor) * 10;
+}
+
 [numthreads(4, 4, 4)]
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
@@ -37,14 +62,21 @@ void main(uint3 groupID : SV_GroupID,
     // Apply indirect illumination
     if (traceable.isValid.x)
     {
-		postColor = saturate(traceable.rgbaSrc * (traceable.rgbaGI / GI_SAMPLE_COUNT));
+        postColor = traceable.rgbaGI; //saturate(traceable.rgbaSrc * (traceable.rgbaGI / GI_SAMPLE_COUNT));
 		postColor.a = 1.0f;
+
+        if (postColor.r > 10.0f)
+        {
+            postColor.rgb = float3(0.0f, postColor.r, 0.0f);
+        }
     }
 
+    // Convert color to normalized HDR (unimplemented atm)
     // Apply FXAA (unimplemented atm)
     // Apply box-blur (optional)
     // Apply brightening (optional)
     // Apply logarithmic distortion (optional)
+    postColor.rgb = LogDistort(postColor.rgb);
 
     displayTex[postPixID] = postColor;
 }
