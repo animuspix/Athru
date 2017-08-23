@@ -39,9 +39,6 @@
     <ClInclude Include="TextureManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.h">
-      <Filter>Third Party</Filter>
-    </ClInclude>
     <ClInclude Include="AthruTexture3D.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -104,9 +101,6 @@
     <ClCompile Include="TextureManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\..\Third Party\DirectXTex\WICTextureLoader\WICTextureLoader.cpp">
-      <Filter>Third Party</Filter>
-    </ClCompile>
     <ClCompile Include="ScreenRect.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -157,5 +151,6 @@
   <ItemGroup>
     <None Include="Shared3D.hlsli" />
     <None Include="SharedLighting.hlsli" />
+    <None Include="SharedGI.hlsli" />
   </ItemGroup>
 </Project>
