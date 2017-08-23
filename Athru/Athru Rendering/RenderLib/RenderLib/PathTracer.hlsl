@@ -1,5 +1,6 @@
 
 #include "SharedLighting.hlsli"
+#include "SharedGI.hlsli"
 
 // The maximum number of steps to ray-march during path-tracing
 #define MAX_PATH_MARCHER_STEPS 255
@@ -22,11 +23,17 @@ void main(uint3 groupID : SV_GroupID,
     // appropriate trace index for each thread
     uint currTraceNdx = linearGroupID % (64 * DISPLAY_WIDTH);
 
+    // Cache the index of the current GI contribution within the GI
+    // calculation buffer over here
+    uint currGISampleNdx = (currTraceNdx * GI_SAMPLES_PER_RAY) +
+                         (threadID + ((linearGroupID / (64 * DISPLAY_WIDTH))) * 64);
+
     // Not all potential trace points are valid, so test the
     // point selected by the current thread and break out
     // immediately if appropriate
     if (!(traceables[currTraceNdx].isValid.x))
     {
+        giCalcBufWritable[currGISampleNdx] = float4(0.0f, 0.0f.xx, 1.0f); //(1.0f.xxxx / 256.0f);
         return;
     }
 
@@ -67,31 +74,31 @@ void main(uint3 groupID : SV_GroupID,
 
     // March down the path taken by the ray associated with the
     // current thread
-    float maxPathDist = 10.0f;
-    float currRayDist = rayEpsilon * 10.0f;
-    for (int j = 0; j < MAX_PATH_MARCHER_STEPS; j += 1)
-    {
-        float3 pathVec = baseCoord + (rayDir * currRayDist);
-        DFData pathData = SceneField(pathVec);
-        if (pathData.dist < rayEpsilon)
-        {
-            // Accumulate the traced color into the overall color for the
-            // current path
-            traceables[currTraceNdx].rgbaGI += float4(1.0f, 0.0f, 0.0f, 1.0f); //float4(PerPointDirectIllum(pathVec, pathData.rgbaColor.rgb,
-                                               //                           GetNormal(pathVec)), 1.0f);
-
-            return;
-        }
-
-        currRayDist += pathData.dist;
-
-        if (currRayDist > (maxPathDist - rayEpsilon))
-        {
-            break;
-        }
-    }
+    //float maxPathDist = 10.0f;
+    //float currRayDist = rayEpsilon * 10.0f;
+    //for (int j = 0; j < MAX_PATH_MARCHER_STEPS; j += 1)
+    //{
+    //    float3 pathVec = baseCoord + (rayDir * currRayDist);
+    //    DFData pathData = SceneField(pathVec);
+    //    if (pathData.dist < rayEpsilon)
+    //    {
+    //        // Accumulate the traced color into the overall color for the
+    //        // current path
+    //        traceables[currTraceNdx].rgbaGI += float4(1.0f, 0.0f, 0.0f, 1.0f); //float4(PerPointDirectIllum(pathVec, pathData.rgbaColor.rgb,
+    //                                           //                           GetNormal(pathVec)), 1.0f);
+    //
+    //        return;
+    //    }
+    //
+    //    currRayDist += pathData.dist;
+    //
+    //    if (currRayDist > (maxPathDist - rayEpsilon))
+    //    {
+    //        break;
+    //    }
+    //}
 
 	// No occluders or light sources encountered, so assume that the current
     // ray has no effect on the output color for the current trace point
-    traceables[currTraceNdx].rgbaGI += float4(1.0f, 0.0f.xx, 1.0f); //(1.0f.xxxx / 256.0f);
+    giCalcBufWritable[currGISampleNdx] = float4(1.0f, 0.0f.xx, 1.0f); //(1.0f.xxxx / 256.0f);
 }

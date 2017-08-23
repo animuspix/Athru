@@ -8,5 +8,6 @@ class PostProcessor : public ComputeShader
 	public:
 		PostProcessor(LPCWSTR shaderFilePath);
 		~PostProcessor();
-		void Dispatch(ID3D11DeviceContext* context);
+		void Dispatch(ID3D11DeviceContext* context,
+					  ID3D11ShaderResourceView* giCalcBufferReadable);
 };

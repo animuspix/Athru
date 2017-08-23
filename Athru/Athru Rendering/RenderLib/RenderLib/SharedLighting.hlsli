@@ -5,6 +5,10 @@
 // as the rasterization target during ray-marching
 RWTexture2D<float4> displayTex : register(u2);
 
+// The width and height of the display texture defined above
+#define DISPLAY_WIDTH 1024
+#define DISPLAY_HEIGHT 768
+
 // A struct containing points to be path-traced + indices into the corresponding
 // pixels in the display texture
 struct TracePoint
@@ -13,21 +17,10 @@ struct TracePoint
     float4 rgbaSrc;
     uint4 figID;
     uint4 isValid;
-    float4 rgbaGI;
 };
 
-// A structured buffer containing the traceable points above +
-// allowing each thread group to perform path tracing for one
-// particular on-screen pixel
+// A structured buffer containing the traceable points above
 RWStructuredBuffer<TracePoint> traceables : register(u3);
-
-// How many samples to take for each traceable point during
-// global illumination
-#define GI_SAMPLE_COUNT 64
-
-// The width and height of the display texture defined above
-#define DISPLAY_WIDTH 1024
-#define DISPLAY_HEIGHT 768
 
 // Scene distance field here
 // Returns the distance to the nearest surface in the

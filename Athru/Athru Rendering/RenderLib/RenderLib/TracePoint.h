@@ -8,5 +8,4 @@ struct TracePoint
 	DirectX::XMVECTOR rgbaSrc;
 	DirectX::XMUINT4 figID;
 	DirectX::XMUINT4 isValid;
-	DirectX::XMVECTOR rgbaGI;
 };

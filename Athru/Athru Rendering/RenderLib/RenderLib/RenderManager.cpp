@@ -125,7 +125,7 @@ void RenderManager::RenderScene(Camera* mainCamera,
 	// frame
 	// As above, all the values needed for post-processing were already loaded
 	// during ray-marching
-	postProcessor->Dispatch(d3dContext);
+	postProcessor->Dispatch(d3dContext, pathTracer->GetGICalcBufferReadable());
 }
 
 void RenderManager::Display(ScreenRect* screenRect)

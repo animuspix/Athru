@@ -145,7 +145,7 @@ DFData CubeDF(float3 coord,
 {
     // Transformations (except scale) applied here
     float3 shiftedCoord = coord - figuresReadable[figID].pos.xyz;
-	float3 orientedCoord = QtnRotate(shiftedCoord, /*figuresReadable[figID].rotationQtn);*/float4(float3(0, 1, 0) * sin(coord.y / 2), cos(coord.y / 2)));
+	float3 orientedCoord = QtnRotate(shiftedCoord, /*figuresReadable[figID].rotationQtn);*/float4(float3(0, 1, 0) * sin(sin(shiftedCoord.y) / 2), cos(sin(shiftedCoord.y) / 2)));
     float3 freshCoord = orientedCoord;
 
     // Scale applied here

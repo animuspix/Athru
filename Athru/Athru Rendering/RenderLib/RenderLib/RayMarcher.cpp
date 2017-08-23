@@ -51,7 +51,6 @@ RayMarcher::RayMarcher(LPCWSTR shaderFilePath) :
 		traceables[i].rgbaSrc = _mm_set_ps(1.0f, 0, 0, 0);
 		traceables[i].figID = DirectX::XMUINT4(0, 0, 0, 0);
 		traceables[i].isValid = DirectX::XMUINT4(0, 0, 0, 0);
-		traceables[i].rgbaGI = _mm_set_ps(1.0f, 0, 0, 0);
 	}
 
 	D3D11_SUBRESOURCE_DATA traceBufInit;
@@ -61,7 +60,7 @@ RayMarcher::RayMarcher(LPCWSTR shaderFilePath) :
 
 	// Instantiate the primary trace buffer from the description
 	// we made above
-	result = device->CreateBuffer(&traceBufferDesc, NULL, &traceBuffer);
+	result = device->CreateBuffer(&traceBufferDesc, &traceBufInit, &traceBuffer);
 	assert(SUCCEEDED(result));
 
 	// No more need for the CPU-side trace-point array, so delete

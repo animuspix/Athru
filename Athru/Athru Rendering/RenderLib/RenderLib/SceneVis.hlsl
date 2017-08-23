@@ -75,7 +75,6 @@ void main(uint3 groupID : SV_GroupID,
             tracePt.rgbaSrc = traceRGBA;
             tracePt.figID = sceneField.id.xxxx;
             tracePt.isValid = 0x1.xxxx;
-            tracePt.rgbaGI = float4(0.0f.rrr, 1.0f);
             traceables[(pixID.x * 64) + threadID] = tracePt;
             break;
         }
@@ -94,7 +93,6 @@ void main(uint3 groupID : SV_GroupID,
             tracePt.rgbaSrc = backRGBA;
             tracePt.figID = 0x0.xxxx;
             tracePt.isValid = 0x0.xxxx;
-            tracePt.rgbaGI = float4(0.0f.rrr, 1.0f);
             traceables[(pixID.x * 64) + threadID] = tracePt;
             break;
         }
