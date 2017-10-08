@@ -60,31 +60,28 @@
     <ClInclude Include="GPUServiceCentre.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="RayMarcher.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="RenderManager.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SceneFigure.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GPUSceneCourier.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GPURand.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PathTracer.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="TracePoint.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="ScreenPainter.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PostProcessor.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PathTracer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="TracePix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GPUMessenger.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -110,9 +107,6 @@
     <ClCompile Include="ComputeShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="RayMarcher.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="RenderManager.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -122,13 +116,7 @@
     <ClCompile Include="SceneFigure.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GPUSceneCourier.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GPURand.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PathTracer.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="ScreenVertex.cpp">
@@ -140,17 +128,21 @@
     <ClCompile Include="PostProcessor.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="PathTracer.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GPUMessenger.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="SceneVis.hlsl" />
-    <FxCompile Include="PathTracer.hlsl" />
     <FxCompile Include="PostProcessor.hlsl" />
     <FxCompile Include="PresentationColors.hlsl" />
     <FxCompile Include="PresentationVerts.hlsl" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="Shared3D.hlsli" />
-    <None Include="SharedLighting.hlsli" />
-    <None Include="SharedGI.hlsli" />
+    <None Include="Lighting.hlsli" />
+    <None Include="Core3D.hlsli" />
   </ItemGroup>
 </Project>

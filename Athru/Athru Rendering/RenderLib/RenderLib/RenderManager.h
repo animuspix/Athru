@@ -8,15 +8,15 @@
 
 class Direct3D;
 class Camera;
-class RayMarcher;
 class PathTracer;
+class SceneFigure;
 class PostProcessor;
 class ScreenPainter;
 class ScreenRect;
 class RenderManager
 {
 	public:
-		RenderManager(ID3D11ShaderResourceView* postProcessShaderResource);
+		RenderManager();
 		~RenderManager();
 
 		// Pre-fill the scene texture data with the forms represented by the
@@ -25,9 +25,7 @@ class RenderManager
 		// No CPU-side distance functions for now; keep the process super-super simple
 		// by doing as much of the work on the GPU as possible
 		void Render(Camera* mainCamera,
-					ID3D11ShaderResourceView* gpuReadableSceneDataView,
-					ID3D11UnorderedAccessView* gpuWritableSceneDataView,
-					fourByteUnsigned numSceneFigures);
+					SceneFigure* localSceneFigures);
 
 		// Retrieve a reference to the Direct3D handler class associated with [this]
 		Direct3D* GetD3D();
@@ -39,10 +37,7 @@ class RenderManager
 	private:
 		// Helper function, used to pre-fill the scene texture with ray-marched
 		// and post-processed color information
-		void RenderScene(Camera* mainCamera,
-						 ID3D11ShaderResourceView* gpuReadableSceneDataView,
-						 ID3D11UnorderedAccessView* gpuWritableSceneDataView,
-						 fourByteUnsigned numSceneFigures);
+		void RenderScene(Camera* mainCamera);
 
 		// Helper function, used to present the scene texture to the user by
 		// projecting it onto a full-screen rectangle and using the graphics
@@ -60,10 +55,7 @@ class RenderManager
 		// Reference to the Direct3D device context
 		ID3D11DeviceContext* d3dContext;
 
-		// Reference to the scene raymarching shader
-		RayMarcher* rayMarcher;
-
-		// Reference to the scene path-tracing (global illumination) shader
+		// Reference to the scene path-tracing shader
 		PathTracer* pathTracer;
 
 		// Reference to the post-processing shader

@@ -3,7 +3,7 @@
 
 Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 {
-	systems = new System[SYSTEM_COUNT];
+	systems = new System[SceneStuff::SYSTEM_COUNT];
 
 	// Super, super unfinished; consider editing towards more
 	// realistic stellar distributions in the future
@@ -12,7 +12,7 @@ Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 	// at random distances from the origin
 	if (galacticLayout == AVAILABLE_GALACTIC_LAYOUTS::SPHERE)
 	{
-		for (fourByteUnsigned i = 0; i < SYSTEM_COUNT; i += 1)
+		for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 		{
 			systems[i].FetchPos() = _mm_set_ps((float)rand(), (float)rand(), (float)rand(), 1.0f);
 		}
@@ -26,7 +26,7 @@ Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 		// Unit circle-involute (not /really/ a spiral, but close enough
 		// for now): x = t * sin(t) + cos(t), y = sin(t) - cos(t)
 
-		for (fourByteUnsigned i = 0; i < SYSTEM_COUNT; i += 1)
+		for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 		{
 			systems[i].FetchPos() = _mm_set_ps(1.0f, (float)rand(), (float)(sin(i) - cos(i)), (float)((i * sin(i)) + cos(i)));
 		}
@@ -40,7 +40,7 @@ Galaxy::~Galaxy()
 
 void Galaxy::Update()
 {
-	for (fourByteUnsigned i = 0; i < SYSTEM_COUNT; i += 1)
+	for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 	{
 		systems[i].Update();
 	}
@@ -50,7 +50,7 @@ System& Galaxy::GetCurrentSystem(DirectX::XMVECTOR& cameraPos)
 {
 	fourByteUnsigned systemIndex = 0;
 	float lastDistToSystemCentre = FLT_MAX;
-	for (fourByteUnsigned i = 0; i < SYSTEM_COUNT; i += 1)
+	for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 	{
 		DirectX::XMVECTOR cameraToSystemDiff = _mm_sub_ps(systems[systemIndex].FetchPos(), cameraPos);
 		float distToSystemCentre = _mm_cvtss_f32(DirectX::XMVector3Length(cameraToSystemDiff));

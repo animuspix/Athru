@@ -1,11 +1,11 @@
 #include "UtilityServiceCentre.h"
+#include "GPUServiceCentre.h"
 #include "Scene.h"
 
 Scene::Scene()
 {
 	mainCamera = new Camera();
 	galaxy = new Galaxy(AVAILABLE_GALACTIC_LAYOUTS::SPHERE);
-	gpuSceneCourier = new GPUSceneCourier();
 }
 
 Scene::~Scene()
@@ -17,14 +17,6 @@ Scene::~Scene()
 	// Send the reference associated with the
 	// main camera to [nullptr]
 	mainCamera = nullptr;
-
-	// Free any un-managed memory associated
-	// with the GPU messenger object
-	gpuSceneCourier->~GPUSceneCourier();
-
-	// Send the reference associated with the
-	// GPU messenger object to [nullptr]
-	gpuSceneCourier = nullptr;
 }
 
 void Scene::Update()
@@ -32,15 +24,23 @@ void Scene::Update()
 	// Update the camera
 	mainCamera->Update();
 
-	// Update the galaxy
-	galaxy->Update();
+	// Process gameplay entities here...
+}
 
-	// Pass each of the generated figures in the system along
-	// to the GPU for rendering
-	SceneFigure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
-	//currFigures[0] = *(SceneFigure*)(GetCurrentSystem().GetStar());
+SceneFigure* Scene::CollectLocalFigures()
+{
+	// No real need to have this loop here, replace it with deeper logic when
+	// possible
+	SceneFigure currFigures[SceneStuff::MAX_NUM_RENDERED_FIGURES];
+	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_RENDERED_FIGURES; i += 1)
+	{
+		currFigures[i] = SceneFigure();
+	}
+
+	// Pass the player's local environment into an array of
+	// generic [SceneFigure]s
 	currFigures[0] = *(SceneFigure*)(GetCurrentSystem().GetPlanets()[0]);
-	gpuSceneCourier->CommitSceneToGPU(currFigures, 1);
+	return currFigures;
 }
 
 Camera* Scene::GetMainCamera()
@@ -56,11 +56,6 @@ Galaxy* Scene::GetGalaxy()
 System& Scene::GetCurrentSystem()
 {
 	return galaxy->GetCurrentSystem(mainCamera->GetTranslation());
-}
-
-GPUSceneCourier* Scene::GetGPUCourier()
-{
-	return gpuSceneCourier;
 }
 
 // Push constructions for this class through Athru's custom allocator

@@ -10,11 +10,7 @@
 // The presentation shader
 #include "ScreenPainter.h"
 
-// The scene ray-marcher
-#include "RayMarcher.h"
-
-// The scene path tracer
-// (needed for global illumination)
+// The scene path-tracer
 #include "PathTracer.h"
 
 // The post-processing shader
@@ -23,10 +19,13 @@
 // The scene camera
 #include "Camera.h"
 
+// CPU-side figure property declarations + methods
+#include "SceneFigure.h"
+
 // The header containing declarations used by [this]
 #include "RenderManager.h"
 
-RenderManager::RenderManager(ID3D11ShaderResourceView* postProcessShaderResource)
+RenderManager::RenderManager()
 {
 	// Cache a class-scope reference to the Direct3D handler class
 	d3D = AthruGPU::GPUServiceCentre::AccessD3D();
@@ -42,21 +41,27 @@ RenderManager::RenderManager(ID3D11ShaderResourceView* postProcessShaderResource
 
 	// Construct the shaders used by [this]
 
-	// Construct the raymarching shader, the path tracer, and the image presentation shader
-	rayMarcher = new RayMarcher(L"SceneVis.cso");
-	pathTracer = new PathTracer(L"PathTracer.cso");
+	// Construct the path tracer and the image presentation shader
+	pathTracer = new PathTracer(L"SceneVis.cso");
 	postProcessor = new PostProcessor(L"PostProcessor.cso");
 	screenPainter = new ScreenPainter(d3dDevice, localWindowHandle,
 									  L"PresentationVerts.cso", L"PresentationColors.cso");
+
+	// Pass useful buffers, textures, etc. onto the GPU
+	ID3D11UnorderedAccessView* displayTexture = AthruGPU::GPUServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).asWritableShaderResource;
+	ID3D11UnorderedAccessView* gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
+	ID3D11ShaderResourceView* gpuReadableSceneDataView = AthruGPU::GPUServiceCentre::AccessGPUMessenger()->GetGPUReadableSceneView();
+	ID3D11UnorderedAccessView* gpuWritableSceneDataView = AthruGPU::GPUServiceCentre::AccessGPUMessenger()->GetGPUWritableSceneView();
+
+	d3dContext->CSSetShaderResources(0, 1, &gpuReadableSceneDataView);
+	d3dContext->CSSetUnorderedAccessViews(0, 1, &gpuWritableSceneDataView, 0);
+	d3dContext->CSSetUnorderedAccessViews(1, 1, &gpuRandView, 0);
+	d3dContext->CSSetUnorderedAccessViews(2, 1, &displayTexture, 0);
 }
 
 RenderManager::~RenderManager()
 {
-	// Delete heap-allocated data within the ray-marching shader
-	rayMarcher->~RayMarcher();
-	rayMarcher = nullptr;
-
-	// Delete heap-allocated data within the path tracer
+	// Delete heap-allocated data within the path-tracer
 	pathTracer->~PathTracer();
 	pathTracer = nullptr;
 
@@ -70,10 +75,12 @@ RenderManager::~RenderManager()
 }
 
 void RenderManager::Render(Camera* mainCamera,
-						   ID3D11ShaderResourceView* gpuReadableSceneDataView,
-						   ID3D11UnorderedAccessView* gpuWritableSceneDataView,
-						   fourByteUnsigned numSceneFigures)
+						   SceneFigure* localSceneFigures)
 {
+	// Pass CPU figures to the GPU for rendering
+	// Much better ways to do this, fix when possible
+	AthruGPU::GPUServiceCentre::AccessGPUMessenger()->FrameStartSync();
+
 	// Cache a local reference to the camera's viewfinder
 	// (screen rect)
 	ScreenRect* viewFinderPttr = mainCamera->GetViewFinder();
@@ -82,44 +89,32 @@ void RenderManager::Render(Camera* mainCamera,
 	d3D->BeginScene();
 
 	// Render scene to the screen texture
-	this->RenderScene(mainCamera,
-					  gpuReadableSceneDataView,
-					  gpuWritableSceneDataView,
-					  numSceneFigures);
+	this->RenderScene(mainCamera);
 
-	// Post-process
+	// Paint the rendered image onto a
+	// rectangle and draw the result to the
+	// screen
 	this->Display(viewFinderPttr);
 
 	// Present the post-processed scene to the display
 	d3D->EndScene();
+
+	// No separate GPU update yet, so do that here for now
+	// Commented out because no actual updates are happening atm, and
+	// syncing the ([null], because no updates) GPU data with the CPU
+	// will wipe the figures :P
+	//AthruGPU::GPUServiceCentre::AccessGPUMessenger()->FrameEndSync();
 }
 
-void RenderManager::RenderScene(Camera* mainCamera,
-								ID3D11ShaderResourceView* gpuReadableSceneDataView,
-								ID3D11UnorderedAccessView* gpuWritableSceneDataView,
-								fourByteUnsigned numSceneFigures)
+void RenderManager::RenderScene(Camera* mainCamera)
 {
-	// Pre-fill the scene texture with the forms defined in the given
-	// distance functions; also perform post-processing on pixels shaded
-	// in the previous render pass (if any)
+	// Path-trace the scene
 	// Also pass in a shader-friendly view of the GPU RNG state buffer so we
 	// can use the Xorshift random number generator as a noise source for colors/textures,
 	// planetary/asteroid terrain, etc.
-	ID3D11UnorderedAccessView* gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
-	rayMarcher->Dispatch(d3dContext,
+	pathTracer->Dispatch(d3dContext,
 						 mainCamera->GetTranslation(),
-						 mainCamera->GetViewMatrix(),
-						 gpuReadableSceneDataView,
-						 gpuWritableSceneDataView,
-						 gpuRandView,
-						 numSceneFigures);
-
-	// Apply global illumination to the pixels illuminated during primary
-	// ray-marching
-	// All the values we're going to need to access were passed to the
-	// GPU when we dispatched the ray-marcher, so no need to send
-	// anything along this time
-	pathTracer->Dispatch(d3dContext);
+						 mainCamera->GetViewMatrix());
 
 	// Apply post-processing to the render pass evaluated during the current
 	// frame

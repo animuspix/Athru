@@ -3,8 +3,6 @@
 #include <directxmath.h>
 #include "System.h"
 
-#define SYSTEM_COUNT 1
-
 enum class AVAILABLE_GALACTIC_LAYOUTS
 {
 	SPHERE,

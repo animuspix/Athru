@@ -2,9 +2,14 @@
 #include "SharedLighting.hlsli"
 #include "SharedGI.hlsli"
 
-float3 HDR(TracePoint trace)
+float3 HDR(float3 traceColor, float exposure)
 {
+    // Apply exposure
+    traceColor *= exposure;
 
+    // Apply Hejl & Burgess-Dawson HDR
+    float3 hdr = max(0.0f.xxx, traceColor - 0.004f.xxx);
+    return (hdr * (6.2f.xxx * hdr + 0.5f.xxx)) / (hdr * (6.2f.xxx * hdr + 1.7f.xxx) + 0.06f.xxx);
 }
 
 float3 FXAA(TracePoint trace)
@@ -46,30 +51,21 @@ void main(uint3 groupID : SV_GroupID,
         pixID.y = (DISPLAY_HEIGHT - threadID);
     }
 
-    // Cache references to the trace point associated with the current
-    // pixel + its source color (surface color before indirect
-    // illumination)
-    TracePoint traceable = traceables[((pixID.x * 64) + threadID)];
-    float4 postColor = traceable.rgbaSrc;
-
-    // Apply indirect illumination
-    if (traceable.isValid.x)
+    // Calculate pixel color
+    float4 postColor = 0.0f.xxxx;
+    for (uint i = 0; i < GI_SAMPLES_PER_RAY; i += 1)
     {
-        float offsetScale = 0.0f;
-        float4 giSum = float4(0.0f, 0.0f, 0.0f, 0.0f);
-        for (uint i = 0; i < GI_SAMPLES_PER_RAY; i += 1)
-        {
-            giSum += giCalcBufReadable[(((pixID.x * 64) + threadID) * GI_SAMPLES_PER_RAY) + i];
-        }
-
-        postColor = saturate(traceable.rgbaSrc * (giSum / GI_SAMPLES_PER_RAY));
-		postColor.a = 1.0f;
+        postColor += giCalcBufReadable[(((pixID.x * 64) + threadID) * GI_SAMPLES_PER_RAY) + i] / GI_SAMPLES_PER_RAY;
     }
+	postColor.a = 1.0f;
 
-    // Convert color to normalized HDR (unimplemented atm)
+    // Convert color to normalized HDR
+    postColor.rgb = HDR(postColor.rgb, 1.0f);
+
     // Apply FXAA (unimplemented atm)
     // Apply box-blur (optional)
     // Apply brightening (optional)
 
-    displayTex[pixID] = postColor;
+    // Store the transformed color
+    displayTex[pixID] = saturate(postColor);
 }

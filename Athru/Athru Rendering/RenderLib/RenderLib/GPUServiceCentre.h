@@ -31,10 +31,13 @@ namespace AthruGPU
 				internalInit = false;
 			}
 
-			// Initialise the Direct3D handler class, the texture manager, and the rendering manager
+			// Initialise the Direct3D handler class, the GPU messenger, the texture manager,
+			// and the rendering manager
 			d3DPttr = DEBUG_NEW Direct3D(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND());
+			gpuMessengerPttr = new GPUMessenger();
 			textureManagerPttr = new TextureManager(d3DPttr->GetDevice());
-			renderManagerPttr = new RenderManager(textureManagerPttr->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).asReadOnlyShaderResource);
+			renderManagerPttr = new RenderManager(gpuMessengerPttr->GetGPUReadableSceneView(),
+												  gpuMessengerPttr->GetGPUWritableSceneView());
 
 			// Initialise the GPU-side random number generator
 			gpuRand = new GPURand(d3DPttr->GetDevice());
@@ -57,6 +60,10 @@ namespace AthruGPU
 			gpuRand->gpuRandStateView = nullptr;
 			gpuRand = nullptr;
 
+			// Clean-up data associated with the GPU messenger
+			gpuMessengerPttr->~GPUMessenger();
+			gpuMessengerPttr = nullptr;
+
 			// Clean-up the Direct3D handler class
 			delete d3DPttr;
 			d3DPttr = nullptr;
@@ -74,6 +81,11 @@ namespace AthruGPU
 		static Direct3D* AccessD3D()
 		{
 			return d3DPttr;
+		}
+
+		static GPUMessenger* AccessGPUMessenger()
+		{
+			return gpuMessengerPttr;
 		}
 
 		static TextureManager* AccessTextureManager()
@@ -94,6 +106,10 @@ namespace AthruGPU
 	private:
 		// General GPU interfacing
 		static Direct3D* d3DPttr;
+
+		// GPU figure sync, maintains equivalence between
+		// CPU and GPU figure data
+		static GPUMessenger* gpuMessengerPttr;
 
 		// 2D and 3D texture management
 		static TextureManager* textureManagerPttr;

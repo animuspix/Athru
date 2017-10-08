@@ -21,16 +21,17 @@
 // ray-marcher
 #define MAX_VIS_MARCHER_STEPS 255
 
-#include "SharedLighting.hlsli"
+#include "Lighting.hlsli"
 
-// Utility function designed to match rays emitted by the camera
-// to the shape of the view frustum (stolen from the shader written
-// by the tute author as a code guide)
-float3 RayDir(float fovRads, float2 viewSizes, uint2 pixID)
+// Generate a random ray direction
+// on a unit hemisphere open towards
+// the screen (no point in generating
+// rays pointing directly away from the
+// scene itself)
+float3 RayDir(uint threadID)
 {
-    float2 xy = pixID - (viewSizes / 2.0);
-    float z = viewSizes.y / tan(fovRads / 2.0);
-    return normalize(float3(xy, z));
+    return normalize(float3(rand1D(threadID), rand1D(threadID),
+                            max(rand1D(threadID), 0.0f)));
 }
 
 [numthreads(4, 4, 4)]
@@ -39,8 +40,8 @@ void main(uint3 groupID : SV_GroupID,
 {
     // The pixel ID (x/y coordinates) associated with the current
     // thread
-    uint2 pixID = groupID.xy;
-    pixID.y = (rendPassID.x * 64) + threadID;
+    uint2 pixID = uint2(groupID.x,
+                        (rendPassID.x * 64) + threadID);
 
     // Return without performing ray-marching if the pixel ID of
     // the current thread sits outside the screen texture
@@ -49,51 +50,58 @@ void main(uint3 groupID : SV_GroupID,
         return;
     }
 
+    // The sampling index associated with the current thread
+    // Used to roughly integrate the rendering equation with
+    // the Monte Carlo method (basically generating an
+    // approximation of the energy at a point by counting lots
+    // and lots of areas within the relevant domain (the screen
+    // for primary rays, a surface for secondary/tertiary rays))
+    // 3D linearization function: Linearize XY space to create a
+    // a 2D space ([XY], Z), then linearize that using the standard
+    // 2D linear map (x + (y * W))
+    // Can be defined as a recursive linear map with the 3D form
+    // (x + y * W) + z * (W * H)
+    // X: pixel channels
+    // Y: pixel rows
+    // Z: pixel samples
+    uint rayNdx = (groupID.x + (pixID.y * DISPLAY_WIDTH)) + (groupID.y * (DISPLAY_WIDTH * 64));
+
     float maxRayDist = 64.0f;
     float currRayDist = 0.0f;
 
     float3 eyePos = cameraPos.xyz;
-    float3 rayDir = RayDir(3.14f / 2.0f, float2(DISPLAY_WIDTH, DISPLAY_HEIGHT), pixID);
+    float3 rayDir = RayDir(threadID);
     for (uint i = 0; i < MAX_VIS_MARCHER_STEPS; i += 1)
     {
         float3 rayVec = mul(float4(currRayDist * rayDir, 1), viewMat).xyz;
-        DFData sceneField = SceneField(eyePos + rayVec);
-        if (sceneField.dist < rayEpsilon)
+        float2 sceneField = SceneField(eyePos + rayVec);
+        if (sceneField.x < EPSILON)
         {
             // Apply direct illumination to the current figure
-            float3 localRGB = PerPointDirectIllum(eyePos + rayVec,
-                                                  sceneField.rgbaColor.rgb, GetNormal(eyePos + rayVec));
+            // Would invoke color function here...
+            float3 illumRGB = PerPointDirectIllum(eyePos + rayVec,
+                                                  1.0f.xxx, GetNormal(eyePos + rayVec));
 
-            // Write the illuminated color to the display texture
-            float4 traceRGBA = float4(localRGB, sceneField.rgbaColor.a);
-            displayTex[pixID] = traceRGBA;
-
-            // Pass the illuminated point into the trace buffer so that we can access it
-            // during path tracing
-            TracePoint tracePt;
-            tracePt.coord = float4(eyePos + rayVec, 0);
-            tracePt.rgbaSrc = traceRGBA;
-            tracePt.figID = sceneField.id.xxxx;
-            tracePt.isValid = 0x1.xxxx;
-            traceables[(pixID.x * 64) + threadID] = tracePt;
+            // Write the illuminated color to the parallel GI buffer
+            TracePix trace;
+            trace.pixCoord = pixID;
+            trace.pixRGBA = float4(illumRGB, 1.0f);
+            giCalcBufWritable[rayNdx] = trace;
             break;
         }
 
-        currRayDist += sceneField.dist;
+        currRayDist += sceneField.x;
 
-        if (currRayDist > (maxRayDist - rayEpsilon))
+        if (currRayDist > (maxRayDist - EPSILON))
         {
             // Assume the ray has passed through the scene without touching anything;
-            // write a neutral color to the scene texture before recording an
-            // invalid trace-point and breaking out
-            float4 backRGBA = float4(0.0f.rrr, 1.0f);
-            displayTex[pixID] = backRGBA;
-            TracePoint tracePt;
-            tracePt.coord = float4(eyePos + rayVec, 0);
-            tracePt.rgbaSrc = backRGBA;
-            tracePt.figID = 0x0.xxxx;
-            tracePt.isValid = 0x0.xxxx;
-            traceables[(pixID.x * 64) + threadID] = tracePt;
+            // attempt to estimate an appropriate color before breaking out
+            // Replace current assignment with a planetary/atmospheric color function
+            // when possible
+            TracePix trace;
+            trace.pixCoord = pixID;
+            trace.pixRGBA = 1.0f.xxxx;
+            giCalcBufWritable[rayNdx] = trace;
             break;
         }
     }

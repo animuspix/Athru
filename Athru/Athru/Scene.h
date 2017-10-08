@@ -1,6 +1,5 @@
 #pragma once
 
-#include "GPUSceneCourier.h"
 #include "Camera.h"
 #include "Galaxy.h"
 
@@ -10,6 +9,7 @@ class Scene
 		Scene();
 		~Scene();
 		void Update();
+		SceneFigure* CollectLocalFigures();
 
 		// Retrieve a reference to the
 		// main camera associated with [this]
@@ -23,16 +23,11 @@ class Scene
 		// position
 		System& GetCurrentSystem();
 
-		// Retrieve a reference to the Scene/GPU and GPU/Scene messenger
-		// class
-		GPUSceneCourier* GetGPUCourier();
-
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
-		GPUSceneCourier* gpuSceneCourier;
 		Galaxy* galaxy;
 		Camera* mainCamera;
 };

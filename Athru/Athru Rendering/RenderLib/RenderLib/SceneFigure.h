@@ -3,22 +3,12 @@
 #include <directxmath.h>
 #include "UtilityServiceCentre.h"
 
-// All planets are julia fractals with different constants
-// blended with a spherical isosurface; all grasses are
-// distorted rays; most plants + all animals are IFS
-// fractals (stars are coloured spheres with a blur attached)
-// Requires a standard notation if we want to keep using a
-// single GPU messenger class
-// Potentially sensible to have an generic figure enum, then
-// a carrier variable holding a ten-item array of coefficients
-// that can simultaneously represent julia constants, grass
-// circumferences + bezier constants, and IFS parameters
 enum class FIG_TYPES
 {
 	STAR,
 	PLANET,
-	GRASS,
-	IFS
+	PLANT,
+	CRITTER
 };
 
 class SceneFigure
@@ -26,8 +16,9 @@ class SceneFigure
 	public:
 		SceneFigure();
 		SceneFigure(DirectX::XMVECTOR velo, DirectX::XMVECTOR position,
-				    DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
-					DirectX::XMVECTOR surfPalette, FIG_TYPES figType);
+					DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
+					fourByteUnsigned figType, DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs,
+					fourByteUnsigned isNonNull);
 		~SceneFigure();
 
 		// GPU-friendly version of [this]; should only be accessed
@@ -36,26 +27,31 @@ class SceneFigure
 		{
 			Figure() {}
 			Figure(DirectX::XMVECTOR velo, DirectX::XMVECTOR position,
-				   DirectX::XMVECTOR qtnAngularvelo, DirectX::XMVECTOR qtnRotation, float scale,
-				   fourByteUnsigned funcType, DirectX::XMVECTOR surfPalette, address originPttr) :
-				   velocity(velo), pos(position),
-				   angularVeloQtn(qtnAngularvelo), rotationQtn(qtnRotation),
+				   DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
+				   fourByteUnsigned funcType, DirectX::XMVECTOR* distParams, DirectX::XMVECTOR* rgbaParams,
+				   fourByteUnsigned isNonNull, address originPttr) :
+				   //velocity(velo), pos(position),
+				   //angularVeloQtn(qtnAngularVelo), rotationQtn(qtnRotation),
 				   scaleFactor{ scale, scale, scale, 1 },
 				   dfType{ funcType, 0, 0, 0 },
-				   surfRGBA(surfPalette),
+				   distCoeffs{ distParams[0], distParams[1], distParams[2], distParams[3], distParams[4],
+							   distParams[5], distParams[6], distParams[7], distParams[8], distParams[9] },
+				   rgbaCoeffs{ rgbaParams[0], rgbaParams[1], rgbaParams[2], rgbaParams[3], rgbaParams[4],
+							   rgbaParams[5], rgbaParams[6], rgbaParams[7], rgbaParams[8], rgbaParams[9] },
+				   nonNull{	isNonNull, 0, 0, 0 },
 				   origin{ (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0xFFFFFFFF00000000) >> 32),
 						   (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0x00000000FFFFFFFF)), 0, 0 } {}
 
 			// Where this figure is going + how quickly it's going
 			// there
-			DirectX::XMVECTOR velocity;
+			//DirectX::XMVECTOR velocity;
 
 			// The location of this figure at any particular time
 			DirectX::XMVECTOR pos;
 
 			// How this figure is spinning, defined as radians/second
 			// about an implicit angle
-			DirectX::XMVECTOR angularVeloQtn;
+			//DirectX::XMVECTOR angularVeloQtn;
 
 			// The quaternion rotation applied to this figure at
 			// any particular time
@@ -67,13 +63,14 @@ class SceneFigure
 			// The distance function used to render [this]
 			DirectX::XMUINT4 dfType;
 
-			// Array of coefficients associated with the distance function
-			// used to render [this]
-			//float coeffs[10];
+			// Coefficients of the distance function used to render [this]
+			DirectX::XMVECTOR distCoeffs[10];
 
-			// Fractal palette vector (bitmasked against function
-			// properties to produce procedural colors)
-			DirectX::XMVECTOR surfRGBA;
+			// Coefficients of the color function used to tint [this]
+			DirectX::XMVECTOR rgbaCoeffs[10];
+
+			// Whether or not [this] has been fully defined on the GPU
+			DirectX::XMUINT4 nonNull;
 
 			// Key marking which [SceneFigure] is associated with [this]
 			// (needed for tracing GPU-side [Figure]s back to CPU-side [SceneFigure]s
@@ -100,16 +97,16 @@ class SceneFigure
 		DirectX::XMVECTOR GetQtnRotation();
 
 		// Get/set the angular velocity of [this]
-		void BoostAngularVelo(DirectX::XMVECTOR angularVeloDelta);
-		DirectX::XMVECTOR GetAngularVelo();
+		//void BoostAngularVelo(DirectX::XMVECTOR angularVeloDelta);
+		//DirectX::XMVECTOR GetAngularVelo();
+		//
+		//// Get/Set the velocity of [this]
+		//void ApplyWork(DirectX::XMVECTOR veloDelta);
+		//DirectX::XMVECTOR GetVelo();
 
-		// Get/Set the velocity of [this]
-		void ApplyWork(DirectX::XMVECTOR veloDelta);
-		DirectX::XMVECTOR GetVelo();
-
-		// Get a write-allowed reference to the palette bitmask associated
+		// Get the coefficients of the color function associated
 		// with [this]
-		DirectX::XMVECTOR& FetchSurfPalette();
+		DirectX::XMVECTOR* GetRGBACoeffs();
 
 		// Get a copy of the GPU-friendly [Figure] associated with [this]
 		Figure GetCoreFigure();

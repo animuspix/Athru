@@ -33,16 +33,11 @@ void GameLoop()
 		// Update the game
 		athruScene->Update();
 
-		// Render + GPU-process the area around the player
-		GPUSceneCourier* gpuMessenger = athruScene->GetGPUCourier();
-		athruRendering->Render(athruScene->GetMainCamera(),
-							   gpuMessenger->GetGPUReadableSceneView(),
-							   gpuMessenger->GetGPUWritableSceneView(),
-							   gpuMessenger->GetFigureCount());
+		// GPU updates/processing here...
 
-		// Apply the changes made to each GPU-side figure to the
-		// appropriate CPU-side objects
-		//gpuMessenger->ApplyChangesFromGPU();
+		// Render the area around the player
+		athruRendering->Render(athruScene->GetMainCamera(),
+							   athruScene->CollectLocalFigures());
 
 		// Record the time at this frame so we can calculate
 		// [deltaTime]
