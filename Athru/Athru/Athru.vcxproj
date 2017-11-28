@@ -110,7 +110,7 @@
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>$(SolutionDir)Athru Rendering\RenderLib\RenderLib;$(SolutionDir)Athru Utilities\UtilityLib\UtilityLib;$(SolutionDir)ThirdParty\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Athru Rendering\GPULib\GPULib;$(SolutionDir)Athru Utilities\UtilityLib\UtilityLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <EnablePREfast>true</EnablePREfast>
     </ClCompile>
     <Link>

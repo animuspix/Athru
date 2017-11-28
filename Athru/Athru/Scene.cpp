@@ -24,15 +24,15 @@ void Scene::Update()
 	// Update the camera
 	mainCamera->Update();
 
-	// Process gameplay entities here...
+	// Non-GPU updates here (networking, player stats, UI stuffs, etc.)
 }
 
 SceneFigure* Scene::CollectLocalFigures()
 {
 	// No real need to have this loop here, replace it with deeper logic when
 	// possible
-	SceneFigure currFigures[SceneStuff::MAX_NUM_RENDERED_FIGURES];
-	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_RENDERED_FIGURES; i += 1)
+	SceneFigure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
+	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_FIGURES; i += 1)
 	{
 		currFigures[i] = SceneFigure();
 	}

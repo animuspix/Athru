@@ -9,7 +9,7 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Athru", "Athru\Athru.vcxpro
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8} = {EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "RenderLib", "Athru Rendering\RenderLib\RenderLib\RenderLib.vcxproj", "{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}"
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GPULib", "Athru Rendering\GPULib\GPULib\GPULib.vcxproj", "{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}"
 	ProjectSection(ProjectDependencies) = postProject
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8} = {EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}
 	EndProjectSection
