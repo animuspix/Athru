@@ -1,1 +1,10 @@
-﻿  UtilityLib.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\Athru Utilities\UtilityLib\UtilityLib\x64\Debug\UtilityLib.lib
+﻿  UtilityServiceCentre.cpp
+  StackAllocator.cpp
+  Logger.cpp
+  Input.cpp
+  AthruGlobals.cpp
+  Generating Code...
+  Compiling...
+  Application.cpp
+  Generating Code...
+  UtilityLib.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\Athru Utilities\UtilityLib\UtilityLib\x64\Debug\UtilityLib.lib

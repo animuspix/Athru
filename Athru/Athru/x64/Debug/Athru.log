@@ -1,45 +1,16 @@
-﻿  System.cpp
-  Star.cpp
-  HiLevelServiceCentre.cpp
+﻿  Star.cpp
+c:\users\paul\documents\github\athru\athru\athru\star.cpp(7): error C2661: 'SceneFigure::SceneFigure': no overloaded function takes 7 arguments
   Scene.cpp
   Planet.cpp
+c:\users\paul\documents\github\athru\athru\athru\planet.cpp(9): error C2661: 'SceneFigure::SceneFigure': no overloaded function takes 7 arguments
   Galaxy.cpp
-  Critter.cpp
   Athru.cpp
   Compiling...
   Generating Code...
-  Starting pass 2
-       System.obj
-       Star.obj
-       HiLevelServiceCentre.obj
-       Scene.obj
-       Planet.obj
-       Galaxy.obj
-       Critter.obj
-       Athru.obj
-       RenderLib.lib(ComputeShader.obj)
-       RenderLib.lib(GPURand.obj)
-       RenderLib.lib(GPUServiceCentre.obj)
-       RenderLib.lib(PathTracer.obj)
-       RenderLib.lib(PostProcessor.obj)
-       RenderLib.lib(RayMarcher.obj)
-       RenderLib.lib(RenderManager.obj)
-       RenderLib.lib(GPUSceneCourier.obj)
-       RenderLib.lib(SceneFigure.obj)
-       RenderLib.lib(ScreenRect.obj)
-       RenderLib.lib(Camera.obj)
-       RenderLib.lib(Direct3D.obj)
-       RenderLib.lib(Mesh.obj)
-       RenderLib.lib(ScreenPainter.obj)
-       RenderLib.lib(PipelineShader.obj)
-       RenderLib.lib(TextureManager.obj)
-       UtilityLib.lib(Application.obj)
-       UtilityLib.lib(AthruGlobals.obj)
-       UtilityLib.lib(Input.obj)
-       UtilityLib.lib(Logger.obj)
-       UtilityLib.lib(StackAllocator.obj)
-       UtilityLib.lib(UtilityServiceCentre.obj)
-       MSVCRTD.lib(loadcfg.obj)
-  Finished pass 2
-  Athru.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\x64\Debug\Athru.exe
-  Athru.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\x64\Debug\Athru.pdb (Partial PDB)
+  Compiling...
+  System.cpp
+c:\users\paul\documents\github\athru\athru\athru\system.cpp : fatal error C1073: Internal error involving incremental compilation(compiler file 'f:\dd\vctools\compiler\cxxfe\sl\p1\c\main.c', line 945)
+  HiLevelServiceCentre.cpp
+  Critter.cpp
+  Compiling...
+  Generating Code...

@@ -28,7 +28,14 @@ class Scene
 		void operator delete(void* target);
 
 	private:
+		// Reference to the galaxy containing the game
 		Galaxy* galaxy;
+
+		// Reference to the player camera
 		Camera* mainCamera;
+
+		// Transfer array used to move data out of the "scene" and into the GPU for
+		// highly-parallel updates/rendering
+		SceneFigure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
 };
 

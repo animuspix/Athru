@@ -1,0 +1,22 @@
+﻿  UpdateShader.cpp
+  TextureManager.cpp
+  ScreenVertex.cpp
+  ScreenRect.cpp
+  ScreenPainter.cpp
+  SceneFigure.cpp
+  RenderManager.cpp
+  PostProcessor.cpp
+  PipelineShader.cpp
+  PathTracer.cpp
+  Mesh.cpp
+  GPUUpdateManager.cpp
+  GPUServiceCentre.cpp
+  GPURand.cpp
+  GPUMessenger.cpp
+  Direct3D.cpp
+  Camera.cpp
+  Generating Code...
+  Compiling...
+  ComputeShader.cpp
+  Generating Code...
+  GPULib.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\Athru Rendering\GPULib\GPULib\x64\Debug\GPULib.lib

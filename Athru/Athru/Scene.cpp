@@ -29,9 +29,6 @@ void Scene::Update()
 
 SceneFigure* Scene::CollectLocalFigures()
 {
-	// Define a temporary scene
-	SceneFigure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
-
 	// Pass the player's local environment into an array of
 	// generic [SceneFigure]s
 	System currSys = GetCurrentSystem();

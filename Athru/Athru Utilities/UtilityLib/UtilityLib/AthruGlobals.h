@@ -101,8 +101,21 @@ namespace GraphicsStuff
 
 namespace SceneStuff
 {
+	extern constexpr fourByteUnsigned SYSTEM_COUNT = 1;
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = 10;
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_ORGANISMS = 8;
+}
+
+namespace PlantStuff
+{
+	extern const fourByteUnsigned MAX_PLANT_AGE;
+	extern const float MAX_PLANT_SIZE;
+	extern const float MAX_TROPISM;
+	extern const fourByteUnsigned MAX_BRANCH_COUNT_AT_FORK;
+}
+
+namespace CritterStuff
+{
 }
 
 namespace GPGPUStuff
