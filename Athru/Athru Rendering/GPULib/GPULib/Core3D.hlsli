@@ -350,20 +350,3 @@ float3 GetNormal(float3 samplePoint)
                             normYA - normYB,
                             normZA - normZB));
 }
-
-void FigUpdates(uint figID)
-{
-    // Copy the figure stored in the read-only input buffer
-    // into a write-allowed temporary variable
-    Figure currFig = figuresReadable[figID];
-
-    // Apply angular velocity to rotation
-    //currFig.rotationQtn = normalize(QtnProduct(currFig.angularVeloQtn, currFig.rotationQtn));
-
-    // Apply velocity to position
-    //currFig.pos += currFig.velocity;
-
-    // Copy the properties defined for the current figure
-    // across into the write-allowed output buffer
-    figuresWritable[figID] = currFig;
-}

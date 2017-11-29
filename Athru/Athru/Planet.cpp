@@ -11,7 +11,17 @@ Planet::Planet(float givenMass, float givenRadius, DirectX::XMVECTOR givenAvgCol
 	plants = new SceneFigure[SceneStuff::MAX_NUM_SCENE_ORGANISMS];
 	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_ORGANISMS; i += 1)
 	{
-		plants[i] = SceneFigure();
+		DirectX::XMVECTOR distCoeffs[10];
+		DirectX::XMVECTOR rgbaCoeffs[10];
+		plants[i] = SceneFigure(_mm_set_ps(1, 0, 0, 0), 
+								_mm_set_ps(0, givenRadius, givenRadius, givenRadius), // Assume planets are spherical for now...
+								_mm_set_ps(1, 0, 0, 0),
+								_mm_set_ps(1, 0, 0, 0),
+								1.0,
+								FIG_TYPES::CRITTER,
+								distCoeffs,
+								rgbaCoeffs,
+								1);
 	}
 
 	// Initialise critters
