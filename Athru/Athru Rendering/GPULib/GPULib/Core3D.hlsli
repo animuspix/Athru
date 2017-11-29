@@ -22,8 +22,9 @@ cbuffer InputStuffs
 // Enum flags for different sorts of distance
 // function
 #define DF_TYPE_PLANET 0
-#define DF_TYPE_PLANT 1
-#define DF_TYPE_CRITTER 2
+#define DF_TYPE_STAR 1
+#define DF_TYPE_PLANT 2
+#define DF_TYPE_CRITTER 3
 
 // Struct representing basic data associated with
 // Athru figures
@@ -64,15 +65,6 @@ RWStructuredBuffer<Figure> figuresWritable : register(u0);
 // The maximum possible number of discrete figures within the
 // scene
 #define MAX_NUM_FIGURES 11
-
-// Struct containing per-point data for any given distance
-// function
-struct DFData
-{
-    float dist;
-    float4 rgbaColor;
-    uint id;
-};
 
 // A simple read/write allowed unstructed buffer designed
 // for use with the 32-bit Xorshift random number generator
@@ -148,25 +140,20 @@ float rand1D(uint seed)
 // (with the given width, height, and depth) from the given point
 // Core distance function found within:
 // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
-DFData CubeDF(float3 coord,
-              uint figID)
+float CubeDF(float3 coord,
+              Figure fig)
 {
     // Transformations (except scale) applied here
-    float3 shiftedCoord = coord - figuresReadable[figID].pos.xyz;
+    float3 shiftedCoord = coord - fig.pos.xyz;
 	float3 orientedCoord = QtnRotate(shiftedCoord, /*figuresReadable[figID].rotationQtn);*/float4(float3(0, 1, 0) * sin(shiftedCoord.y / 2), cos(shiftedCoord.x)));
     float3 freshCoord = orientedCoord;
 
     // Scale applied here
-    float edgeLength = figuresReadable[figID].scaleFactor.x;
+    float edgeLength = fig.scaleFactor.x;
     float3 edgeDistVec = abs(freshCoord) - edgeLength.xxx;
 
     // Function properties generated/extracted and stored here
-    DFData dfData;
-    dfData.dist = min(max(edgeDistVec.x, max(edgeDistVec.y, edgeDistVec.z)), 0.0f) + length(max(edgeDistVec, float3(0, 0, 0)));
-    dfData.rgbaColor = 1.0f.xxxx; //figuresReadable[figID].surfRGBA;
-    //dfData.rgbaColor.rgb = 1.0f.xxx; //float3(sinh(abs(freshCoord.y + freshCoord.x)), cosh(freshCoord.z), 1.0f) * (freshCoord.y + 1.0f);
-    dfData.id = figID;
-    return dfData;
+    return min(max(edgeDistVec.x, max(edgeDistVec.y, edgeDistVec.z)), 0.0f) + length(max(edgeDistVec, float3(0, 0, 0)));
 }
 
 // Sphere DF here
@@ -174,36 +161,32 @@ DFData CubeDF(float3 coord,
 // (with the given radius) from the given point
 // Core distance function modified from the original found within:
 // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions
-DFData SphereDF(float3 coord,
-                uint figID)
+float SphereDF(float3 coord,
+                Figure fig)
 {
-    float3 relCoord = coord - figuresReadable[figID].pos.xyz; //mul(fig.rotationQtn, float4(coord, 1)).xyz - fig.pos.xyz;
-    DFData dfData;
-    dfData.dist = length(relCoord) - figuresReadable[figID].scaleFactor.x;
-    dfData.rgbaColor = 1.0f.xxxx; //figuresReadable[figID].surfRGBA;
-    dfData.id = figID;
-    return dfData;
+    float3 relCoord = coord - fig.pos.xyz; //mul(fig.rotationQtn, float4(coord, 1)).xyz - fig.pos.xyz;
+    return length(relCoord) - fig.scaleFactor.x;
 }
 
 // Return distance to the given planet
 float PlanetDF(float3 coord,
                Figure planet)
 {
-    return SphereDF(coord, 0).dist;
+    return SphereDF(coord, planet);
 }
 
 // Return distance to the given plant
 float PlantDF(float3 coord,
               Figure plant)
 {
-    return CubeDF(coord, 0).dist;
+    return CubeDF(coord, plant);
 }
 
 // Return distance to the given critter
 float CritterDF(float3 coord,
                 Figure critter)
 {
-    return CubeDF(coord, 0).dist;
+    return CubeDF(coord, critter);
 }
 
 // Return distance to an arbitrary figure
@@ -215,17 +198,22 @@ float FigDF(float3 coord,
         return OMEGA;
     }
 
-    if (fig.dfType == DF_TYPE_PLANET)
+    if (fig.dfType.x == DF_TYPE_PLANET)
     {
         return PlanetDF(coord,
                         fig);
     }
-    else if (fig.dfType == DF_TYPE_PLANT)
+	else if (fig.dfType.x == DF_TYPE_STAR)
+	{
+		return SphereDF(coord,
+						fig);
+	}
+    else if (fig.dfType.x == DF_TYPE_PLANT)
     {
         return PlantDF(coord,
                        fig);
     }
-    else if (fig.dfType == DF_TYPE_CRITTER)
+    else
     {
         return CritterDF(coord,
                          fig);
@@ -236,7 +224,7 @@ float FigDF(float3 coord,
 // (relates to field shape and surface angle)
 // Gradient scale is stored in the w component
 float4 grad(float3 samplePoint,
-            Figure fig)
+			Figure fig)
 {
     float gradXA = FigDF(float3(samplePoint.x + EPSILON, samplePoint.y, samplePoint.z), fig).x;
     float gradXB = FigDF(float3(samplePoint.x - EPSILON, samplePoint.y, samplePoint.z), fig).x;

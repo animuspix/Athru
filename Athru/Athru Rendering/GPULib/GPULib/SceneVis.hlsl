@@ -84,7 +84,7 @@ void main(uint3 groupID : SV_GroupID,
 
             // Write the illuminated color to the parallel GI buffer
             TracePix trace;
-            trace.pixCoord = pixID;
+            trace.pixCoord = float4(pixID, 0.0f.xx);
             trace.pixRGBA = float4(illumRGB, 1.0f);
             giCalcBufWritable[rayNdx] = trace;
             break;
@@ -99,7 +99,7 @@ void main(uint3 groupID : SV_GroupID,
             // Replace current assignment with a planetary/atmospheric color function
             // when possible
             TracePix trace;
-            trace.pixCoord = pixID;
+            trace.pixCoord = float4(pixID, 0.0f.xx);
             trace.pixRGBA = 1.0f.xxxx;
             giCalcBufWritable[rayNdx] = trace;
             break;

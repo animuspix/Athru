@@ -4,10 +4,6 @@
 #include "Typedefs.h"
 #include "SceneFigure.h"
 
-// Mineral-based planet colors are probably best, but minerals definitions are a whole
-// separate area that I haven't really thought about yet; just use single colors per-planet
-// for now
-
 class Planet : public SceneFigure
 {
 	public:
@@ -15,7 +11,17 @@ class Planet : public SceneFigure
 			   DirectX::XMVECTOR offsetFromStar, DirectX::XMFLOAT3 rotation);
 		~Planet();
 
+		// Retrieve a write-allowed reference to the specified critter
+		SceneFigure& FetchCritter(fourByteUnsigned ndx);
+
+		// Retrieve a write-allowed reference to the specified vegetation
+		SceneFigure& FetchPlant(fourByteUnsigned ndx);
+
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
+
+	private:
+		SceneFigure* critters;
+		SceneFigure* plants;
 };

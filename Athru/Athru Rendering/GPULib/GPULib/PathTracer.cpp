@@ -41,8 +41,7 @@ PathTracer::PathTracer(LPCWSTR shaderFilePath) :
 
 	// Instantiate the primary GI calculation buffer from the description
 	// we made above
-	ID3D11Device* device = AthruGPU::GPUServiceCentre::AccessD3D()->GetDevice();
-	HRESULT result = device->CreateBuffer(&giCalcBufferDesc, NULL, &giCalcBuffer);
+	result = device->CreateBuffer(&giCalcBufferDesc, NULL, &giCalcBuffer);
 	assert(SUCCEEDED(result));
 
 	// Describe the the shader-friendly write-only resource view we'll use to

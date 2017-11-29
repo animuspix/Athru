@@ -102,6 +102,7 @@ namespace GraphicsStuff
 namespace SceneStuff
 {
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = 10;
+	extern constexpr fourByteUnsigned MAX_NUM_SCENE_ORGANISMS = 8;
 }
 
 namespace GPGPUStuff

@@ -29,17 +29,23 @@ void Scene::Update()
 
 SceneFigure* Scene::CollectLocalFigures()
 {
-	// No real need to have this loop here, replace it with deeper logic when
-	// possible
+	// Define a temporary scene
 	SceneFigure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
-	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_FIGURES; i += 1)
-	{
-		currFigures[i] = SceneFigure();
-	}
 
 	// Pass the player's local environment into an array of
 	// generic [SceneFigure]s
-	currFigures[0] = *(SceneFigure*)(GetCurrentSystem().GetPlanets()[0]);
+	System currSys = GetCurrentSystem();
+	Planet* currPlanet = currSys.GetPlanets()[0];
+	currFigures[0] = *(SceneFigure*)(currSys.GetStar());
+	currFigures[1] = *(SceneFigure*)(currPlanet);
+	currFigures[2] = currPlanet->FetchCritter(0);
+	currFigures[3] = currPlanet->FetchCritter(1);
+	currFigures[4] = currPlanet->FetchCritter(2);
+	currFigures[5] = currPlanet->FetchCritter(3);
+	currFigures[6] = currPlanet->FetchPlant(0);
+	currFigures[7] = currPlanet->FetchPlant(1);
+	currFigures[8] = currPlanet->FetchPlant(2);
+	currFigures[9] = currPlanet->FetchPlant(3);
 	return currFigures;
 }
 

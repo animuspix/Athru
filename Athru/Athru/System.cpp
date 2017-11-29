@@ -45,12 +45,6 @@ System::System()
 
 	// Place systems at the world-space origin by default
 	position = _mm_set_ps(1, 0, 0, 0);
-
-	// Apply initial axial spins to each planet in the system
-	float speed = 0.01f;
-	planets[0]->BoostAngularVelo(_mm_set_ps(0.0f, 0.0f, speed * TimeStuff::deltaTime(), 0.0f));
-	planets[1]->BoostAngularVelo(_mm_set_ps(0.0f, 0.0f, speed * TimeStuff::deltaTime(), 0.0f));
-	planets[2]->BoostAngularVelo(_mm_set_ps(0.0f, 0.0f, speed * TimeStuff::deltaTime(), 0.0f));
 }
 
 System::~System()

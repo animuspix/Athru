@@ -1,6 +1,7 @@
 
-#include "SharedLighting.hlsli"
-#include "SharedGI.hlsli"
+//#include "SharedLighting.hlsli"
+//#include "SharedGI.hlsli"
+#include "Lighting.hlsli"
 
 float3 HDR(float3 traceColor, float exposure)
 {
@@ -12,12 +13,12 @@ float3 HDR(float3 traceColor, float exposure)
     return (hdr * (6.2f.xxx * hdr + 0.5f.xxx)) / (hdr * (6.2f.xxx * hdr + 1.7f.xxx) + 0.06f.xxx);
 }
 
-float3 FXAA(TracePoint trace)
+float3 FXAA(TracePix trace)
 {
 
 }
 
-float3 BoxBlur(TracePoint trace)
+float3 BoxBlur(TracePix trace)
 {
 
 }
@@ -55,7 +56,7 @@ void main(uint3 groupID : SV_GroupID,
     float4 postColor = 0.0f.xxxx;
     for (uint i = 0; i < GI_SAMPLES_PER_RAY; i += 1)
     {
-        postColor += giCalcBufReadable[(((pixID.x * 64) + threadID) * GI_SAMPLES_PER_RAY) + i] / GI_SAMPLES_PER_RAY;
+        postColor += giCalcBufReadable[(((pixID.x * 64) + threadID) * GI_SAMPLES_PER_RAY) + i].pixRGBA / GI_SAMPLES_PER_RAY;
     }
 	postColor.a = 1.0f;
 

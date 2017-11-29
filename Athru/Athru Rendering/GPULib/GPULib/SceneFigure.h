@@ -5,8 +5,8 @@
 
 enum class FIG_TYPES
 {
-	STAR,
 	PLANET,
+	STAR,
 	PLANT,
 	CRITTER
 };
