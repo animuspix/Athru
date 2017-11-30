@@ -112,6 +112,7 @@ namespace PlantStuff
 	extern const float MAX_PLANT_SIZE;
 	extern const float MAX_TROPISM;
 	extern const fourByteUnsigned MAX_BRANCH_COUNT_AT_FORK;
+	extern const fourByteUnsigned MAX_LEAF_LOBE_COUNT;
 }
 
 namespace CritterStuff

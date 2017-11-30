@@ -23,14 +23,14 @@ Planet::Planet(float givenMass, float givenRadius, DirectX::XMVECTOR givenAvgCol
 		// (Golden-ratio orbits or even spacings), pre-branch trunk height, and
 		// tree age (used to calculate branch counts + tree size)
 		distCoeffs[0] = _mm_set_ps(float(rand() % PlantStuff::MAX_PLANT_AGE),
-								   float(1.0 / (rand() % 100)),
+								   float(1.0 / ((rand() % 100) + 1)),
 								   float(rand() % 2),
 								   float(rand() % 2));
 
 		// Second vector defines plant branch envelope (embedded in two 3D angles),
 		// maximum proportional branch length, and branch count/fork
 		distCoeffs[1] = _mm_set_ps(PlantStuff::MAX_BRANCH_COUNT_AT_FORK / (rand() % PlantStuff::MAX_BRANCH_COUNT_AT_FORK),
-								   1.0f / (rand() % 4),
+								   1.0f / ((rand() % 4) + 1),
 								   360.0f / float(rand()),
 								   360.0f / float(rand()));
 
@@ -38,18 +38,50 @@ Planet::Planet(float givenMass, float givenRadius, DirectX::XMVECTOR givenAvgCol
 		// log-normal distribution), maximum possible size, tropic frequency (embedded in a multiplier over an ordinary sin wave),
 		// and plant type (woody/vascular)
 		distCoeffs[2] = _mm_set_ps(1.0f / (rand() % 4),
+								   max(PlantStuff::MAX_PLANT_SIZE / ((rand() % 10) + 1), 1.0f),
+								   PlantStuff::MAX_TROPISM / ((rand() % 96) + 1),
+								   rand() % 2);
+
+		// Fourth vector defines stem/branch rigidity (relevant to vascular plants, treated as 1.0 for woody plants),
+		// whether or not the current plant is branch-bearing (relevant to vascular plants, all trees are assumed to carry branches),
+		// whether this is a single-leaf or multi-leaf plant, and leaf lobe counts
+		distCoeffs[3] = _mm_set_ps(1.0f / ((rand() % 10) + 1),
+								   rand() % 2,
+								   rand() % 2,
+								   rand() % PlantStuff::MAX_LEAF_LOBE_COUNT);
+
+		// Fifth-through-seventh vectors define venation properties
+		// Vein growth is assumed to be reticulate in all cases (venation is ignored for grass stems)
+		distCoeffs[4] = _mm_set_ps(1.0f / (rand() % 4),
 								   max(PlantStuff::MAX_PLANT_SIZE / (rand() % 10), 1.0f),
 								   PlantStuff::MAX_TROPISM / (rand() % 96),
 								   rand() % 2);
 
-		// Fourth vector defines stem/branch rigidity/planarity (relevant to vascular plants, treated as 1.0 and 0 for woody plants),
-		// whether or not the current plant is branch-bearing (relevant to vascular plants, all trees are assumed to carry branches),
-		// baseline leaves-per-branch/stem (relevant to vascular plants, all trees have one leaf/branch)
-		//distCoeffs[3]
+		distCoeffs[5] = _mm_set_ps(1.0f / (rand() % 4),
+								   max(PlantStuff::MAX_PLANT_SIZE / (rand() % 10), 1.0f),
+								   PlantStuff::MAX_TROPISM / (rand() % 96),
+								   rand() % 2);
 
-		// Fifth-through-seventh vectors define leaf lobe counts + venation properties (research needed here) (skippable for now)
+		distCoeffs[6] = _mm_set_ps(1.0f / (rand() % 4),
+								   max(PlantStuff::MAX_PLANT_SIZE / (rand() % 10), 1.0f),
+								   PlantStuff::MAX_TROPISM / (rand() % 96),
+								   rand() % 2);
 
 		// Eighth-through-tenth vectors define textural properties (esp. bark diffusion) (research needed here) (skippable for now)
+		distCoeffs[7] = _mm_set_ps(1.0f / (rand() % 4),
+								   max(PlantStuff::MAX_PLANT_SIZE / (rand() % 10), 1.0f),
+								   PlantStuff::MAX_TROPISM / (rand() % 96),
+								   rand() % 2);
+
+		distCoeffs[8] = _mm_set_ps(1.0f / (rand() % 4),
+								   max(PlantStuff::MAX_PLANT_SIZE / (rand() % 10), 1.0f),
+								   PlantStuff::MAX_TROPISM / (rand() % 96),
+								   rand() % 2);
+
+		distCoeffs[9] = _mm_set_ps(1.0f / (rand() % 4),
+								   max(PlantStuff::MAX_PLANT_SIZE / (rand() % 10), 1.0f),
+								   PlantStuff::MAX_TROPISM / (rand() % 96),
+								   rand() % 2);
 
 		// Core research areas:
 		// - Fast venation
