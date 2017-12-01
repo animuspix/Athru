@@ -13,7 +13,7 @@ void GameLoop()
 	RenderManager* athruRendering = AthruGPU::GPUServiceCentre::AccessRenderManager();
 
 	// Cache a local reference to the GPU update manager
-	GPUUpdateManager* athruGPUUpdates = AthruGPU::GPUServiceCentre::AccessGPUUpdateManager();
+	//GPUUpdateManager* athruGPUUpdates = AthruGPU::GPUServiceCentre::AccessGPUUpdateManager();
 
 	// Cache a local reference to the high-level scene representation
 	Scene* athruScene = HiLevelServiceCentre::AccessScene();
@@ -47,7 +47,7 @@ void GameLoop()
 		// - Physics processing (with fluid packets, rays, densely-sampled signal processing, etc.)
 		// - Planet-scale predator-prey relationships between plant/critter and critter/critter species
 		// - Structural critter simulation (cell diffusion and organisation)
-		athruGPUUpdates->Update();
+		//athruGPUUpdates->Update();
 
 		// Render the area around the player
 		athruRendering->Render(athruScene->GetMainCamera());

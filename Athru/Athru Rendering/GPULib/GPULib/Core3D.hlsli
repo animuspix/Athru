@@ -168,6 +168,19 @@ float SphereDF(float3 coord,
     return length(relCoord) - fig.scaleFactor.x;
 }
 
+// Cylinder DF here
+// Returns the distance to the surface of the cylinder
+// (with the given height/radius) from the given point
+// Core distance function modified from the original found within:
+// http://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+float CylinderDF(float3 coord,
+                 float2 sizes,
+                 Figure fig)
+{
+    float2 sideDist = abs(float2(length(coord.xy), coord.z)) - sizes;
+    return min(max(sideDist.x, sideDist.y), 0.0) + length(max(sideDist, 0.0));
+}
+
 // Return distance to the given planet
 float PlanetDF(float3 coord,
                Figure planet)
@@ -179,7 +192,20 @@ float PlanetDF(float3 coord,
 float PlantDF(float3 coord,
               Figure plant)
 {
-    return CubeDF(coord, plant);
+    // Render plants as simple cylinders for now
+    // Attempt bump displacement from bark properties
+    coord = coord - plant.pos.xyz;
+    float2 bumpACrv = plant.distCoeffs[6].xy;
+    float bumpA = max(sin(coord.x * bumpACrv.x) * bumpACrv.y, plant.distCoeffs[6].w) * plant.distCoeffs[6].z;
+
+    float2 bumpBCrv = plant.distCoeffs[7].xy;
+    float bumpB = max(sin(coord.x * bumpACrv.x) * bumpACrv.y, plant.distCoeffs[7].w) * plant.distCoeffs[7].z;
+
+    float2 bumpCCrv = plant.distCoeffs[8].xy;
+    float bumpC = max(sin(coord.x * bumpCCrv.x) * bumpCCrv.y, plant.distCoeffs[8].w) * plant.distCoeffs[8].z;
+
+    float bump = bumpA + bumpB + bumpC;
+    return CylinderDF(coord, float2(plant.scaleFactor.x, plant.scaleFactor.x / 2.0f), plant) + bump;
 }
 
 // Return distance to the given critter

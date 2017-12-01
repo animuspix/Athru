@@ -10,11 +10,12 @@ Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 
 	// If the chosen galactic layout is spherical, place stars
 	// at random distances from the origin
+	fourByteUnsigned tempThresh = 200;
 	if (galacticLayout == AVAILABLE_GALACTIC_LAYOUTS::SPHERE)
 	{
 		for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 		{
-			systems[i].FetchPos() = _mm_set_ps((float)rand(), (float)rand(), (float)rand(), 1.0f);
+			systems[i].FetchPos() = _mm_set_ps((float)(rand() % tempThresh), (float)(rand() % tempThresh), (float)(rand() % tempThresh), 1.0f);
 		}
 	}
 

@@ -56,7 +56,7 @@ namespace AthruGPU
 			renderManagerPttr = nullptr;
 
 			// Clean-up the GPU update manager
-			gpuUpdateManagerPttr->~GPUUpdateManager();
+			//gpuUpdateManagerPttr->~GPUUpdateManager();
 			gpuUpdateManagerPttr = nullptr;
 
 			// Clean-up data associated with the GPU-side random
@@ -147,4 +147,4 @@ namespace AthruGPU
 		// improved GPU random number generation
 		static GPURand* gpuRand;
 	};
-}
+};

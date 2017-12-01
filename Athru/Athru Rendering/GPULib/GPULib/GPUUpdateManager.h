@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Direct3D.h"
-#include "UpdateShader.h"
+#include <d3d11.h>
 
+class UpdateShader;
 class GPUUpdateManager
 {
 	public:

@@ -7,7 +7,8 @@ class Star : public SceneFigure
 {
 	public:
 		Star() {}
-		Star(float givenRadius, DirectX::XMFLOAT4 givenColor);
+		Star(float givenRadius,
+			 DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs);
 		~Star();
 
 		// Overload the standard allocation/de-allocation operators

@@ -21,8 +21,8 @@ const fourByteUnsigned GraphicsStuff::MAX_TRACE_COUNT = (GraphicsStuff::DISPLAY_
 const fourByteUnsigned GraphicsStuff::GI_SAMPLES_PER_RAY = 256;
 const fourByteUnsigned GraphicsStuff::GI_SAMPLE_TOTAL = GraphicsStuff::MAX_TRACE_COUNT * GraphicsStuff::GI_SAMPLES_PER_RAY;
 
-extern const fourByteUnsigned MAX_PLANT_AGE = 200;
-extern const float MAX_PLANT_SIZE = 25.0f;
-extern const float MAX_TROPISM = 0.4f;
-extern const fourByteUnsigned MAX_BRANCH_COUNT_AT_FORK = 10;
-extern const fourByteUnsigned MAX_LEAF_LOBE_COUNT = 10;
+extern const fourByteUnsigned PlantStuff::MAX_PLANT_AGE = 200;
+extern const float PlantStuff::MAX_PLANT_SIZE = 25.0f;
+extern const float PlantStuff::MAX_TROPISM = 0.4f;
+extern const fourByteUnsigned PlantStuff::MAX_BRANCH_COUNT_AT_FORK = 10;
+extern const fourByteUnsigned PlantStuff::MAX_LEAF_LOBE_COUNT = 4;

@@ -117,7 +117,7 @@
       <SubSystem>Windows</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
       <ShowProgress>LinkVerbose</ShowProgress>
-      <AdditionalDependencies>$(SolutionDir)Athru Rendering\RenderLib\RenderLib\$(Platform)\$(Configuration)\RenderLib.lib;$(SolutionDir)Athru Utilities\UtilityLib\UtilityLib\$(Platform)\$(Configuration)\UtilityLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(SolutionDir)Athru Rendering\GPULib\GPULib\$(Platform)\$(Configuration)\GPULib.lib;$(SolutionDir)Athru Utilities\UtilityLib\UtilityLib\$(Platform)\$(Configuration)\UtilityLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>

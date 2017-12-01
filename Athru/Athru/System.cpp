@@ -10,6 +10,20 @@ System::System()
 	// No mineral/chemistry library, so just assume
 	// planets are made of water :P
 
+	// Temp distance coefficients + color properties
+	DirectX::XMVECTOR distCoeffs[10] = { _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
+
+	DirectX::XMVECTOR planetRGBACoeffs[10] = { _mm_set_ps(0.234f, 0.507f, 0.734f, 1.0f), // Surface color
+											   _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), // Diffuse/specular weighting (x, y)
+											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
+
 	// Create local planets
 	float radiusZero = 1.0f;
 	float radiusZeroCube = radiusZero * radiusZero * 50000.0f;
@@ -17,31 +31,37 @@ System::System()
 	float massZero = fourThirds * (MathsStuff::PI * radiusZeroCube);
 	float orbitalOffsetZero = radiusZero * 1.5f;
 	planets[0] = new Planet(massZero, radiusZero,
-							_mm_set_ps(1, 1, 1, 1), _mm_set_ps(0, 0, radiusZero * 1.5f, radiusZero * 1.5f),
-							DirectX::XMFLOAT3(0, 0, 0));
+							_mm_set_ps(0, 0, radiusZero * 1.5f, radiusZero * 1.5f),
+							_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), distCoeffs, planetRGBACoeffs);
 
 	float radiusOne = 100;
 	float radiusOneCube = radiusOne * radiusOne * radiusOne;
 	float massOne = fourThirds * (MathsStuff::PI * radiusOneCube);
 	float orbitalOffsetOne = orbitalOffsetZero + radiusOne * 1.5f;
 	planets[1] = new Planet(massOne, radiusOne,
-							_mm_set_ps(1, 0.5f, 1, 1), _mm_set_ps(0, 0, orbitalOffsetOne, orbitalOffsetOne),
-							DirectX::XMFLOAT3(0, 0, 0));
+							_mm_set_ps(0, 0, orbitalOffsetOne, orbitalOffsetOne),
+							_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), distCoeffs, planetRGBACoeffs);
 
 	float radiusTwo = 120;
 	float radiusTwoCube = radiusTwo * radiusTwo * radiusTwo;
 	float massTwo = fourThirds * (MathsStuff::PI * radiusTwoCube);
 	float orbitalOffsetTwo = orbitalOffsetOne + radiusTwo * 1.5f;
 	planets[2] = new Planet(massOne, radiusOne,
-							_mm_set_ps(1, 1, 0.5f, 1), _mm_set_ps(0, 0, orbitalOffsetTwo, orbitalOffsetTwo),
-							DirectX::XMFLOAT3(0, 0, 0));
+							_mm_set_ps(0, 0, orbitalOffsetTwo, orbitalOffsetTwo),
+							_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), distCoeffs, planetRGBACoeffs);
 
 	// Create local star
 	// Some sort of procedural star generator would probably be nice here;
 	// it'd be easier to expose to a galaxy/system editor and could produce
 	// much more interesting results than a fixed star size with random
 	// color components
-	star = new Star(2000000.0f, DirectX::XMFLOAT4(1.0f / (rand() % 255), 1.0f / (rand() % 255), 1.0f / (rand() % 255), 1));
+	DirectX::XMVECTOR starRGBACoeffs[10] = { _mm_set_ps(1.0f / (rand() % 255), 1.0f / (rand() % 255), 1.0f / (rand() % 255), 1.0f), // Surface color
+											 _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), // Diffuse/specular weighting (x, y)
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
+	star = new Star(2000000.0f, distCoeffs, starRGBACoeffs);
 
 	// Place systems at the world-space origin by default
 	position = _mm_set_ps(1, 0, 0, 0);

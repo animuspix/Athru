@@ -1,9 +1,10 @@
 #include "UtilityServiceCentre.h"
 #include "Star.h"
 
-Star::Star(float givenRadius, DirectX::XMFLOAT4 givenColor) :
+Star::Star(float givenRadius,
+		   DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs) :
 	  SceneFigure(_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 1, 1, 1), _mm_set_ps(1, 0, 0, 0),
-				  _mm_set_ps(1, 0, 0, 0), 1, _mm_set_ps(1, 1, 0, 1), FIG_TYPES::STAR)
+				  _mm_set_ps(1, 0, 0, 0), 1, (fourByteUnsigned)FIG_TYPES::STAR, distCoeffs, rgbaCoeffs, 1)
 {}
 
 Star::~Star()
