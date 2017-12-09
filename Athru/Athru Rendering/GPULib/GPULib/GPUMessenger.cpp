@@ -116,6 +116,9 @@ void GPUMessenger::FrameStartSync(SceneFigure* sceneFigures)
 
 	// Break the write-allowed connection to the GPU-side scene-data-buffer
 	context->Unmap(figBufferInput, 0);
+
+	// Pass the figure-input-buffer onto the GPU
+	context->CSSetShaderResources(0, 1, &gpuReadableSceneView);
 }
 
 void GPUMessenger::FrameEndSync()

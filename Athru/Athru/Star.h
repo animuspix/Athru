@@ -8,6 +8,7 @@ class Star : public SceneFigure
 	public:
 		Star() {}
 		Star(float givenRadius,
+			 DirectX::XMVECTOR position,
 			 DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs);
 		~Star();
 

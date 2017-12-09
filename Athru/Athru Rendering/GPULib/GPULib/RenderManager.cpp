@@ -46,17 +46,6 @@ RenderManager::RenderManager()
 	postProcessor = new PostProcessor(L"PostProcessor.cso");
 	screenPainter = new ScreenPainter(d3dDevice, localWindowHandle,
 									  L"PresentationVerts.cso", L"PresentationColors.cso");
-
-	// Pass useful buffers, textures, etc. onto the GPU
-	ID3D11UnorderedAccessView* displayTexture = AthruGPU::GPUServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).asWritableShaderResource;
-	ID3D11UnorderedAccessView* gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
-	ID3D11ShaderResourceView* gpuReadableSceneDataView = AthruGPU::GPUServiceCentre::AccessGPUMessenger()->GetGPUReadableSceneView();
-	ID3D11UnorderedAccessView* gpuWritableSceneDataView = AthruGPU::GPUServiceCentre::AccessGPUMessenger()->GetGPUWritableSceneView();
-
-	d3dContext->CSSetShaderResources(0, 1, &gpuReadableSceneDataView);
-	d3dContext->CSSetUnorderedAccessViews(0, 1, &gpuWritableSceneDataView, 0);
-	d3dContext->CSSetUnorderedAccessViews(1, 1, &gpuRandView, 0);
-	d3dContext->CSSetUnorderedAccessViews(2, 1, &displayTexture, 0);
 }
 
 RenderManager::~RenderManager()
@@ -98,18 +87,14 @@ void RenderManager::Render(Camera* mainCamera)
 void RenderManager::RenderScene(Camera* mainCamera)
 {
 	// Path-trace the scene
-	// Also pass in a shader-friendly view of the GPU RNG state buffer so we
-	// can use the Xorshift random number generator as a noise source for colors/textures,
-	// planetary/asteroid terrain, etc.
 	pathTracer->Dispatch(d3dContext,
 						 mainCamera->GetTranslation(),
 						 mainCamera->GetViewMatrix());
 
 	// Apply post-processing to the render pass evaluated during the current
 	// frame
-	// As above, all the values needed for post-processing were already loaded
-	// during ray-marching
-	postProcessor->Dispatch(d3dContext, pathTracer->GetGICalcBufferReadable());
+	postProcessor->Dispatch(d3dContext,
+							pathTracer->GetGICalcBufferReadable());
 }
 
 void RenderManager::Display(ScreenRect* screenRect)

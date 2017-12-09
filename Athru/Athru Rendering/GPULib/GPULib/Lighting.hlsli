@@ -39,19 +39,98 @@ StructuredBuffer<TracePix> giCalcBufReadable : register(t1);
 // The total number of primary samples processed in each frame
 #define GI_SAMPLE_TOTAL ((DISPLAY_WIDTH * 64) * GI_SAMPLES_PER_RAY)
 
+// The number of bounces to calculate per-ray
+#define MAX_BOUNCES 4
+
+// A struct that encapsulates surface material properties into
+// a single six-float object
+struct FigMat
+{
+    // x is diffuse weighting, y is specular weighting,
+    // z is refractive index (ignored for now)
+    float3 refl;
+
+    // Baseline material color
+    float3 rgb;
+};
+
+FigMat FigMaterial(float3 coord,
+                   uint figID)
+{
+    FigMat mat;
+    mat.refl = float3(1.0f, 0.0f, 0.0f);
+    mat.rgb = float3(1.0f, 1.0f, 1.0f);
+    Figure currFig = figuresReadable[figID];
+    if (currFig.dfType.x == DF_TYPE_PLANET)
+    {
+        // Quick/dirty pseudo-procedural material
+        // Should replace with a proper physically-driven alternative
+        // when possible
+        mat.refl = float3(currFig.rgbaCoeffs[0].x,
+                          currFig.rgbaCoeffs[0].y,
+                          currFig.rgbaCoeffs[0].z);
+
+        // Should replace with a physically-driven color function
+        // when possible
+        mat.rgb = float3(currFig.rgbaCoeffs[1].x,
+                         currFig.rgbaCoeffs[1].y,
+                         currFig.rgbaCoeffs[1].z);
+        return mat;
+    }
+    else if (currFig.dfType.x == DF_TYPE_STAR)
+    {
+        mat.refl = float3(1.0f, 0.0f, 0.0f);
+        mat.rgb = float3(currFig.rgbaCoeffs[0].x,
+                         currFig.rgbaCoeffs[0].y,
+                         currFig.rgbaCoeffs[0].z);
+        return mat;
+    }
+    else
+    {
+        return mat;
+    }
+}
+
+// Reflectance function for diffuse surfaces
+// Invented by fizzer (http://www.amietia.com/lambertnotangent.html)
+// and shared by iq (https://www.shadertoy.com/view/MsdGzl)
+float3 DiffuseBRDF(uint rayID,
+                   float3 norm)
+{
+    // Cosine distribution function (diffuse BRDF) invented by fizzer:
+    // http://www.amietia.com/lambertnotangent.html
+    // and shared by iq:
+    // https://www.shadertoy.com/view/MsdGzl
+    float a = 6.2831853 * (1.0f / rand1D(rayID));
+    float u = 2.0 * (1.0f / rand1D(rayID) * 0.25) - 1.0;
+    return normalize(norm + float3(sqrt(1.0 - u * u) * float2(cos(a), sin(a)), u));
+}
+
+// Reflectance function for specular surfaces
+float3 SpecBRDF(float3 coord,
+                float3 norm)
+{
+    return reflect(coord, norm);
+}
+
+// Reflectance function for refractive surfaces
+float3 RefracBRDF()
+{
+    // Does nothing, need more research for refractive/dispersive math
+}
+
 float3 PerPointDirectIllum(float3 samplePoint, float3 baseRGB,
                            float3 localNorm)
 {
     // Initialise lighting properties
     float3 lightPos = float3(0.0f, 5.0f, -5.0f);
-    float3 reflectVec = (lightPos - samplePoint);
+    float3 lightVec = (lightPos - samplePoint);
 
     // We know the point illuminated by the current ray is lit, so light it
-    float pi = 3.14159;
-    float nDotL = dot(localNorm, normalize(reflectVec));
-    float distToLight = length(reflectVec);
+    float nDotL = dot(localNorm, normalize(lightVec));
+    float distToLight = FigDF(samplePoint, figuresReadable[0]);
     float albedo = 0.18f;
-    float3 invSquare = ((2000 * albedo) / (4 * pi * (distToLight * distToLight)));
+    float3 invSquare = ((2000 * albedo) / (4 * PI * (distToLight * distToLight)));
     float3 lightRGB = float3(1.0f, 1.0f, 1.0f);
 
     // Formula for directional light:

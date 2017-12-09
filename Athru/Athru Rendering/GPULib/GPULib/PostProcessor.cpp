@@ -23,8 +23,13 @@ void PostProcessor::Dispatch(ID3D11DeviceContext* context,
 	context->CSSetUnorderedAccessViews(4, 1, &nullUAV, 0);
 	context->CSSetShaderResources(1, 1, &giCalcBufferReadable);
 
-	// We're only post-processing the most recent render pass, so deploy the
-	// same number of dispatch groups as in the primary ray-marcher
+	// This render-stage publishes to the screen, so we need to pass the
+	// display texture along to the GPU
+	ID3D11UnorderedAccessView* displayTexture = AthruGPU::GPUServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE).asWritableShaderResource;
+	context->CSSetUnorderedAccessViews(2, 1, &displayTexture, 0);
+
+	// We're only post-processing the most recent render pass, so deploy just
+	// enought dispatch groups to fill one progressive slice of the display
 	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH, 1, 1);
 
 	// We're going to need to access the writable GI calculation buffer view in the next frame,

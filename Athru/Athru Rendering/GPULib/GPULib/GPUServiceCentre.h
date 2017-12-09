@@ -34,15 +34,15 @@ namespace AthruGPU
 			}
 
 			// Initialise the Direct3D handler class, the GPU messenger, the texture manager,
-			// the rendering manager, and the GPU update manager
+			// and the GPU-side random number generator
 			d3DPttr = DEBUG_NEW Direct3D(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND());
 			gpuMessengerPttr = new GPUMessenger();
 			textureManagerPttr = new TextureManager(d3DPttr->GetDevice());
+			gpuRand = new GPURand(d3DPttr->GetDevice());
+
+			// Initialise the rendering manager + the GPU update manager
 			renderManagerPttr = new RenderManager();
 			gpuUpdateManagerPttr = new GPUUpdateManager();
-
-			// Initialise the GPU-side random number generator
-			gpuRand = new GPURand(d3DPttr->GetDevice());
 		}
 
 		static void DeInit()

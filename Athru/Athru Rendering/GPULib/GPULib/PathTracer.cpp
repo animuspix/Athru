@@ -33,11 +33,11 @@ PathTracer::PathTracer(LPCWSTR shaderFilePath) :
 	// during post-processing
 	D3D11_BUFFER_DESC giCalcBufferDesc;
 	giCalcBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	giCalcBufferDesc.ByteWidth = sizeof(float[4]) * GraphicsStuff::GI_SAMPLE_TOTAL;
+	giCalcBufferDesc.ByteWidth = sizeof(TracePix) * GraphicsStuff::GI_SAMPLE_TOTAL;
 	giCalcBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
 	giCalcBufferDesc.CPUAccessFlags = 0;
-	giCalcBufferDesc.MiscFlags = 0;
-	giCalcBufferDesc.StructureByteStride = 0;
+	giCalcBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+	giCalcBufferDesc.StructureByteStride = sizeof(TracePix);
 
 	// Instantiate the primary GI calculation buffer from the description
 	// we made above
@@ -53,7 +53,7 @@ PathTracer::PathTracer(LPCWSTR shaderFilePath) :
 	giCalcBufferViewADescA.NumElements = GraphicsStuff::GI_SAMPLE_TOTAL;
 
 	D3D11_UNORDERED_ACCESS_VIEW_DESC giCalcBufferViewADescB;
-	giCalcBufferViewADescB.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	giCalcBufferViewADescB.Format = DXGI_FORMAT_UNKNOWN;
 	giCalcBufferViewADescB.Buffer = giCalcBufferViewADescA;
 	giCalcBufferViewADescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 
@@ -70,7 +70,7 @@ PathTracer::PathTracer(LPCWSTR shaderFilePath) :
 	giCalcBufferViewBDescA.NumElements = GraphicsStuff::GI_SAMPLE_TOTAL;
 
 	D3D11_SHADER_RESOURCE_VIEW_DESC giCalcBufferViewBDescB;
-	giCalcBufferViewBDescB.Format = DXGI_FORMAT_R32G32B32A32_FLOAT;
+	giCalcBufferViewBDescB.Format = DXGI_FORMAT_UNKNOWN;
 	giCalcBufferViewBDescB.Buffer = giCalcBufferViewBDescA;
 	giCalcBufferViewBDescB.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
 
@@ -106,7 +106,12 @@ void PathTracer::Dispatch(ID3D11DeviceContext* context,
 	// so no need to set them again over here
 	context->CSSetShader(shader, 0, 0);
 
-	// Starting path tracing means passing a write-allowed view of our GI calculation buffer
+	// Path-tracing needs random ray directions, so pass a write-allowed view of our shader-friendly
+	// random-number buffer onto the GPU over here
+	ID3D11UnorderedAccessView* gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
+	context->CSSetUnorderedAccessViews(1, 1, &gpuRandView, 0);
+
+	// Starting path-tracing means passing a write-allowed view of our GI calculation buffer
 	// onto the GPU, so do that here
 	context->CSSetUnorderedAccessViews(4, 1, &giCalcBufferViewWritable, 0);
 
@@ -145,7 +150,7 @@ void PathTracer::Dispatch(ID3D11DeviceContext* context,
 	context->CSSetConstantBuffers(0, 1, &shaderInputBuffer);
 
 	// Increment the render-pass counter so that the next frame will render
-	// the pixel row just below the current one
+	// the pixel row just above the current one
 	progPassCounter += 1;
 
 	// Re-set the render-pass counter if it travels pass the maximum

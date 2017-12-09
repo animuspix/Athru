@@ -33,7 +33,7 @@ class System
 
 	private:
 		Star* star;
-		Planet* planets[3];
+		Planet* planets[SceneStuff::MAX_NUM_SCENE_FIGURES - 1];
 		DirectX::XMVECTOR position;
 };
 

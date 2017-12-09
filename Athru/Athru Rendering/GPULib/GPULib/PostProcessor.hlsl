@@ -54,9 +54,10 @@ void main(uint3 groupID : SV_GroupID,
 
     // Calculate pixel color
     float4 postColor = 0.0f.xxxx;
+    int linearPixID = pixID.x + (threadID * DISPLAY_WIDTH);
     for (uint i = 0; i < GI_SAMPLES_PER_RAY; i += 1)
     {
-        postColor += giCalcBufReadable[(((pixID.x * 64) + threadID) * GI_SAMPLES_PER_RAY) + i].pixRGBA / GI_SAMPLES_PER_RAY;
+        postColor += giCalcBufReadable[(linearPixID * GI_SAMPLES_PER_RAY) + i].pixRGBA / GI_SAMPLES_PER_RAY;
     }
 	postColor.a = 1.0f;
 

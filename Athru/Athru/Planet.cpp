@@ -2,11 +2,11 @@
 #include "Critter.h"
 #include "Planet.h"
 
-Planet::Planet(float givenMass, float givenRadius,
-			   DirectX::XMVECTOR offsetFromStar, DirectX::XMVECTOR qtnRotation,
+Planet::Planet(float givenScale,
+			   DirectX::XMVECTOR position, DirectX::XMVECTOR qtnRotation,
 			   DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs) :
-		SceneFigure(_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0), _mm_set_ps(1, 0, 0, 0),
-					_mm_set_ps(1, 0, 0, 0), givenRadius, (fourByteUnsigned)FIG_TYPES::PLANET,
+		SceneFigure(_mm_set_ps(0, 0, 0, 0), position, _mm_set_ps(1, 0, 0, 0),
+					_mm_set_ps(1, 0, 0, 0), givenScale, (fourByteUnsigned)FIG_TYPES::PLANET,
 					distCoeffs, rgbaCoeffs,
 					1)
 {
@@ -24,32 +24,32 @@ Planet::Planet(float givenMass, float givenRadius,
 		// (Golden-ratio orbits or even spacings), pre-branch trunk height, and
 		// tree age (used to calculate branch counts + tree size)
 		plantDistCoeffs[0] = _mm_set_ps((float)(rand() % PlantStuff::MAX_PLANT_AGE),
-								   (float)(1.0 / ((rand() % 100) + 1)),
-								   (float)(rand() % 2),
-								   (float)(rand() % 2));
+										(float)(1.0 / ((rand() % 100) + 1)),
+										(float)(rand() % 2),
+										(float)(rand() % 2));
 
 		// Second vector defines plant branch envelope (embedded in two 3D angles),
 		// maximum proportional branch length, and branch count/fork
-		plantDistCoeffs[1] = _mm_set_ps((float)(PlantStuff::MAX_BRANCH_COUNT_AT_FORK / (rand() % PlantStuff::MAX_BRANCH_COUNT_AT_FORK)),
-								   1.0f / ((rand() % 4) + 1),
-								   360.0f / (float)(rand()),
-								   360.0f / (float)(rand()));
+		plantDistCoeffs[1] = _mm_set_ps((float)(PlantStuff::MAX_BRANCH_COUNT_AT_FORK / ((rand() % PlantStuff::MAX_BRANCH_COUNT_AT_FORK) + 1)),
+										1.0f / ((rand() % 4) + 1),
+										360.0f / (float)(rand()),
+										360.0f / (float)(rand()));
 
 		// Third vector defines growth properties (forking rate, change in branch length) (embedded in the sigma coefficient of a
 		// log-normal distribution), maximum possible size, tropic frequency (embedded in a multiplier over an ordinary sin wave),
 		// and plant type (woody/vascular)
 		plantDistCoeffs[2] = _mm_set_ps(1.0f / (rand() % 4),
-								   max(PlantStuff::MAX_PLANT_SIZE / ((rand() % 10) + 1), 1.0f),
-								   PlantStuff::MAX_TROPISM / ((rand() % 96) + 1),
-								   (float)(rand() % 2));
+										max(PlantStuff::MAX_PLANT_SIZE / ((rand() % 10) + 1), 1.0f),
+										PlantStuff::MAX_TROPISM / ((rand() % 96) + 1),
+										(float)(rand() % 2));
 
 		// Fourth vector defines stem/branch rigidity (relevant to vascular plants, treated as 1.0 for woody plants),
 		// whether or not the current plant is branch-bearing (relevant to vascular plants, all trees are assumed to carry branches),
 		// whether this is a single-leaf or multi-leaf plant, and leaf lobe counts
 		plantDistCoeffs[3] = _mm_set_ps(1.0f / ((rand() % 10) + 1),
-								   (float)(rand() % 2),
-								   (float)(rand() % 2),
-								   (float)(rand() % PlantStuff::MAX_LEAF_LOBE_COUNT));
+										(float)(rand() % 2),
+										(float)(rand() % 2),
+										(float)(rand() % PlantStuff::MAX_LEAF_LOBE_COUNT));
 
 		// Fifth vector defines leaf vein colour
 		// Hardcoded soft blue veins for now (might introduce extra variation in future)
@@ -58,10 +58,10 @@ Planet::Planet(float givenMass, float givenRadius,
 
 		// Sixth vector defines lobe shape (via cubic bezier offsets in x and y) and roughness (via frequency/amplitude
 		// values components of a saw wave)
-		plantDistCoeffs[5] = _mm_set_ps(1.0f / (rand() % 10),
-								   1.0f / (rand() % 10),
-								   1.0f / (rand() % 10),
-								   1.0f / (rand() % 10));
+		plantDistCoeffs[5] = _mm_set_ps(1.0f / ((rand() % 10) + 1),
+									    1.0f / ((rand() % 10) + 1),
+									    1.0f / ((rand() % 10) + 1),
+									    1.0f / ((rand() % 10) + 1));
 
 		// Seventh-through-ninth vectors define textural properties (esp. bark diffusion) (research needed here) (skippable for now)
 		// Bark SHOULD be organised through a cylindrical diffusion equation...
@@ -72,19 +72,19 @@ Planet::Planet(float givenMass, float givenRadius,
 		// Fourth values give cutoff height (for rounder/flatter sheets of bark)
 		// Sines are projected parallel to the edges of each cylindrical branch/stem/trunk
 		plantDistCoeffs[6] = _mm_set_ps(4.0f,
-								   0.1f,
-								   0.75f,
-								   0.075f);
+										0.1f,
+										0.75f,
+										0.075f);
 
 		plantDistCoeffs[7] = _mm_set_ps(8.0f,
-								   0.05f,
-								   0.125f,
-								   0.025f);
+										0.05f,
+										0.125f,
+										0.025f);
 
 		plantDistCoeffs[8] = _mm_set_ps(2.0f,
-								   0.05f,
-								   0.125f,
-								   0.05f);
+										0.05f,
+										0.125f,
+										0.05f);
 
 		// Core research areas:
 		// - Fast venation
@@ -133,7 +133,7 @@ Planet::Planet(float givenMass, float givenRadius,
 		// Remaining vectors will be PDE constants (more research needed)
 
 		plants[i] = SceneFigure(_mm_set_ps(1, 0, 0, 0),
-								_mm_set_ps(givenRadius, givenRadius, givenRadius, givenRadius), // Assume planets are spherical for now...
+								_mm_set_ps(givenScale, givenScale, givenScale, givenScale),
 								_mm_set_ps(1, 0, 0, 0),
 								_mm_set_ps(1, 0, 0, 0),
 								1.0,
@@ -149,13 +149,33 @@ Planet::Planet(float givenMass, float givenRadius,
 	critters = new SceneFigure[SceneStuff::MAX_NUM_SCENE_ORGANISMS];
 	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_ORGANISMS; i += 1)
 	{
-		critters[i] = SceneFigure();
+		// Should edit this to carry cellular propagation modifiers in future...
+		DirectX::XMVECTOR critterDistCoeffs[10] = { _mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0) };
+
+		// Should edit this to carry PDE constants in future...
+		DirectX::XMVECTOR critterRGBACoeffs[10] = { _mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
+													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0) };
+
+		critters[i] = SceneFigure(_mm_set_ps(1, 0, 0, 0),
+								  _mm_set_ps(givenScale, givenScale, givenScale, givenScale),
+								  _mm_set_ps(1, 0, 0, 0),
+								  _mm_set_ps(1, 0, 0, 0),
+								  1.0,
+								  (fourByteUnsigned)FIG_TYPES::CRITTER,
+								  critterDistCoeffs,
+								  critterRGBACoeffs,
+								  1);
 	}
 }
 
-Planet::~Planet()
-{
-}
+Planet::~Planet() {}
 
 SceneFigure& Planet::FetchCritter(fourByteUnsigned ndx)
 {

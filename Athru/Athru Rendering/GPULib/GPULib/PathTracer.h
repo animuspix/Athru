@@ -25,7 +25,6 @@ class PathTracer : public ComputeShader
 			DirectX::XMMATRIX viewMat;
 			DirectX::XMFLOAT4 deltaTime;
 			DirectX::XMUINT4 currTimeSecs;
-			DirectX::XMUINT4 numFigures;
 			DirectX::XMUINT4 rendPassID;
 		};
 

@@ -7,48 +7,12 @@
 
 System::System()
 {
-	// No mineral/chemistry library, so just assume
-	// planets are made of water :P
-
-	// Temp distance coefficients + color properties
-	DirectX::XMVECTOR distCoeffs[10] = { _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-										 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
-
-	DirectX::XMVECTOR planetRGBACoeffs[10] = { _mm_set_ps(0.234f, 0.507f, 0.734f, 1.0f), // Surface color
-											   _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), // Diffuse/specular weighting (x, y)
-											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-											   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
-
-	// Create local planets
-	float radiusZero = 1.0f;
-	float radiusZeroCube = radiusZero * radiusZero * 50000.0f;
-	float fourThirds = 4.0f / 3.0f;
-	float massZero = fourThirds * (MathsStuff::PI * radiusZeroCube);
-	float orbitalOffsetZero = radiusZero * 1.5f;
-	planets[0] = new Planet(massZero, radiusZero,
-							_mm_set_ps(0, 0, radiusZero * 1.5f, radiusZero * 1.5f),
-							_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), distCoeffs, planetRGBACoeffs);
-
-	float radiusOne = 100;
-	float radiusOneCube = radiusOne * radiusOne * radiusOne;
-	float massOne = fourThirds * (MathsStuff::PI * radiusOneCube);
-	float orbitalOffsetOne = orbitalOffsetZero + radiusOne * 1.5f;
-	planets[1] = new Planet(massOne, radiusOne,
-							_mm_set_ps(0, 0, orbitalOffsetOne, orbitalOffsetOne),
-							_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), distCoeffs, planetRGBACoeffs);
-
-	float radiusTwo = 120;
-	float radiusTwoCube = radiusTwo * radiusTwo * radiusTwo;
-	float massTwo = fourThirds * (MathsStuff::PI * radiusTwoCube);
-	float orbitalOffsetTwo = orbitalOffsetOne + radiusTwo * 1.5f;
-	planets[2] = new Planet(massOne, radiusOne,
-							_mm_set_ps(0, 0, orbitalOffsetTwo, orbitalOffsetTwo),
-							_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f), distCoeffs, planetRGBACoeffs);
+	// Temp distance coefficients (star)
+	DirectX::XMVECTOR starDistCoeffs[10] = { _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
 
 	// Create local star
 	// Some sort of procedural star generator would probably be nice here;
@@ -61,7 +25,47 @@ System::System()
 											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
 											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
 											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
-	star = new Star(2000000.0f, distCoeffs, starRGBACoeffs);
+
+	DirectX::XMVECTOR starPos = _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f);
+	float starRadius = 400.0f;
+	star = new Star(starRadius,
+					starPos,
+					starDistCoeffs,
+					starRGBACoeffs);
+
+	// Create local planets
+	for (int i = 0; i < (SceneStuff::MAX_NUM_SCENE_FIGURES - 1); i += 1)
+	{
+		// Temp distance coefficients (planets) + color properties
+		// Most interesting Julias seem to have negative [xyz] parameters, so stick to those here
+		float jParam = -0.5f + (((float)(rand() % 2) - 2.0f) / 10.0f); // Single parameter to keep shapes as clean and smooth as possible
+		DirectX::XMVECTOR planetDistCoeffs[10] = { _mm_set_ps(jParam, jParam, jParam, 0.0f), // First vector contains parameters (xyz) + w-slice (w) for the relevant quaternionic Julia fractal
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
+
+		DirectX::XMVECTOR planetRGBACoeffs[10] = { _mm_set_ps(0.8f, 0.1f, 0.1f, 0.0f), // Diffuse/specular/reflective weighting (x, y),
+												   _mm_set_ps(0.234f * ((float)(rand() % 4) + 1.0f),
+															  0.507f * ((float)(rand() % 2) + 1.0f),
+															  0.734f / ((float)(rand() % 10) + 1.0f), 1.0f), // Surface color; should probably be procedural in future tests
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+												   _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f), _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
+
+		float radius = 100.0f;//(float)((rand() % 100) + 50); // Should introduce more accurate variance here
+		float offset = 1.5f;
+		planets[i] = new Planet(radius,
+								_mm_add_ps(_mm_set_ps(0,
+													  /*(radius * offset) + starRadius*/0, // Z-offsets are good, but hard to view with 0.1FPS performance :P
+													  0,
+													  (starRadius * float(i + 2))),
+													  starPos),
+								_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f),
+								planetDistCoeffs, planetRGBACoeffs);
+	}
 
 	// Place systems at the world-space origin by default
 	position = _mm_set_ps(1, 0, 0, 0);

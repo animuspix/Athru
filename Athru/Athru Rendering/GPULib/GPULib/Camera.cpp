@@ -5,9 +5,12 @@
 Camera::Camera()
 {
 	// Set the camera's default position
-	position = _mm_set_ps(0, -10.0f, 2.175f, 0);
+	// Default position should be towards the outer middle of the
+	// first star system
+	position = _mm_set_ps(0.0f, -4000.0f, 0.0f, 2000.0f);
+	//position = _mm_set_ps(0.0f, -265.0f, 0.0f, 1550.0f);
 
-	// Set the camera's default rotationQtn
+	// Set the camera's default rotation
 	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
 	coreRotationEuler = DirectX::XMFLOAT3(0, 0, 0);
 

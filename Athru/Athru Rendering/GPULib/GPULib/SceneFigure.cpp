@@ -93,3 +93,28 @@ void SceneFigure::SetCoreFigure(Figure& fig)
 	// Store the given core figure
 	coreFigure = fig;
 }
+
+// Push constructions for this class through Athru's custom allocator
+void* SceneFigure::operator new(size_t size)
+{
+	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<SceneFigure>(), false);
+}
+
+void* SceneFigure::operator new[](size_t size)
+{
+	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<SceneFigure>(), false);
+}
+
+// We aren't expecting to use [delete], so overload it to do nothing;
+void SceneFigure::operator delete(void* target)
+{
+	return;
+}
+
+// We aren't expecting to use [delete[]], so overload it to do nothing;
+void SceneFigure::operator delete[](void* target)
+{
+	return;
+}

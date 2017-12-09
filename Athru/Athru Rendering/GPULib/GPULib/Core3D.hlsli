@@ -9,15 +9,21 @@ cbuffer InputStuffs
     uint4 rendPassID;
 };
 
-// A very small number; can be used to mitigate floating-point error
-// (check size relative to the number instead of trying for zero-equality)
-// and for fake infinitesimals during calculus (no love for n/inf in the
-// floating-point standard v_v)
-#define EPSILON 0.00001f
+// Very small numbers; can be used to check for ray-marcher convergence
+// (since rays never really touch SDF surfaces) and for approximating
+// surface gradient (since SDF gradient can be defined in terms of change
+// in the field over an infinitesimal area)
+#define MARCHER_EPSILON_MAX 0.1f
+#define MARCHER_EPSILON_MIN 0.00001f
+#define CALC_EPSILON 0.00001f
 
-// Opposite of epsilon, a very large number used to remove surfaces from
+// Opposite of CALC_EPSILON, a very large number used to remove surfaces from
 // [min] unions
-#define OMEGA (1.0F / EPSILON);
+#define OMEGA (1.0f / CALC_EPSILON);
+
+// An approximation of pi; stored as a number rather than an inline
+// function to avoid repeated divisions and/or trig operations
+#define PI 3.14159265359f
 
 // Enum flags for different sorts of distance
 // function
@@ -64,7 +70,7 @@ RWStructuredBuffer<Figure> figuresWritable : register(u0);
 
 // The maximum possible number of discrete figures within the
 // scene
-#define MAX_NUM_FIGURES 11
+#define MAX_NUM_FIGURES 10
 
 // A simple read/write allowed unstructed buffer designed
 // for use with the 32-bit Xorshift random number generator
@@ -79,13 +85,13 @@ RWBuffer<uint> randBuf : register(u1);
 // while preserving the axis of rotation
 float4 QtnRotationalScale(float scaleBy, float4 qtn)
 {
-    // Epsilon is a very small number used to avert
+    // CALC_EPSILON is a very small number used to avert
     // divisions by zero without seriously affecting
     // numerical accuracy
 
     float halfAngleRads = acos(qtn.w);
     float epsilon = 0.0000001f;
-    float halfAngleSine = sin(halfAngleRads + epsilon);
+    float halfAngleSine = sin(halfAngleRads + CALC_EPSILON);
     float3 vec = float3(qtn.x / halfAngleSine,
                         qtn.y / halfAngleSine,
                         qtn.z / halfAngleSine);
@@ -101,6 +107,7 @@ float4 QtnInverse(float4 qtn)
 }
 
 // Compute the product of two quaternions
+// Assumes unit quaternion (rotation only)
 float4 QtnProduct(float4 qtnA, float4 qtnB)
 {
     float3 vecA = qtnA.w * qtnB.xyz;
@@ -162,9 +169,9 @@ float CubeDF(float3 coord,
 // Core distance function modified from the original found within:
 // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions
 float SphereDF(float3 coord,
-                Figure fig)
+               Figure fig)
 {
-    float3 relCoord = coord - fig.pos.xyz; //mul(fig.rotationQtn, float4(coord, 1)).xyz - fig.pos.xyz;
+    float3 relCoord = coord - fig.pos.xyz;
     return length(relCoord) - fig.scaleFactor.x;
 }
 
@@ -177,15 +184,55 @@ float CylinderDF(float3 coord,
                  float2 sizes,
                  Figure fig)
 {
-    float2 sideDist = abs(float2(length(coord.xy), coord.z)) - sizes;
+    float2 sideDist = abs(float2(length(coord.xz), coord.y)) - sizes;
     return min(max(sideDist.x, sideDist.y), 0.0) + length(max(sideDist, 0.0));
 }
+
+#include "Fractals.hlsli"
 
 // Return distance to the given planet
 float PlanetDF(float3 coord,
                Figure planet)
 {
-    return SphereDF(coord, planet);
+    // Avoid iterating outside the domain of the planet by checking incoming
+    // rays against a bounding sphere
+    float sphDist = SphereDF(coord, planet);
+    if (sphDist < (planet.scaleFactor.x * 0.5f)) // Padding distance because quaternionic Julias are closer to ellipsoids than spheres
+    {
+        // Translate rays to match the figure origin
+        coord -= planet.pos.xyz;
+
+        // Orient rays to match the figure rotation
+        coord = QtnRotate(coord, planet.rotationQtn);
+
+        // Not really reasonable to "scale" a fractal distance estimator, so transform the
+        // incoming coordinate instead (solution courtesy of Jamie Wong's page here:
+        // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/)
+        coord /= planet.scaleFactor.x;
+
+        // Iterate the Julia distance estimator for the given number of iterations
+        JuliaProps julia = Julia(planet.distCoeffs[0],
+                                 coord,
+                                 ITERATIONS_JULIA);
+
+        // Catch the iterated length of the initial sample
+        // point + the iterated length of the Julia
+        // derivative [dz]
+        float r = length(julia.z);
+        float dr = length(julia.dz);
+
+        // Return the approximate distance to the Julia fractal's surface
+        // Ray scaling causes a proportional amount of error buildup in the
+        // distance field, so we reverse (multiply rather than divide, with the
+        // same actual value) our scaling after evaluating the distance
+        // estimator; this ensures that initial distances will be scaled (since
+        // we applied the division /before/ sampling the field)
+        return (0.5 * log(r) * r / dr) * planet.scaleFactor.x;
+    }
+    else
+    {
+        return sphDist;
+    }
 }
 
 // Return distance to the given plant
@@ -219,10 +266,10 @@ float CritterDF(float3 coord,
 float FigDF(float3 coord,
             Figure fig)
 {
-    if (!fig.nonNull.x)
-    {
-        return OMEGA;
-    }
+    //if (!fig.nonNull.x)
+    //{
+    //    return OMEGA;
+	//}
 
     if (fig.dfType.x == DF_TYPE_PLANET)
     {
@@ -252,14 +299,14 @@ float FigDF(float3 coord,
 float4 grad(float3 samplePoint,
 			Figure fig)
 {
-    float gradXA = FigDF(float3(samplePoint.x + EPSILON, samplePoint.y, samplePoint.z), fig).x;
-    float gradXB = FigDF(float3(samplePoint.x - EPSILON, samplePoint.y, samplePoint.z), fig).x;
+    float gradXA = FigDF(float3(samplePoint.x + CALC_EPSILON, samplePoint.y, samplePoint.z), fig).x;
+    float gradXB = FigDF(float3(samplePoint.x - CALC_EPSILON, samplePoint.y, samplePoint.z), fig).x;
 
-    float gradYA = FigDF(float3(samplePoint.x, samplePoint.y + EPSILON, samplePoint.z), fig).x;
-    float gradYB = FigDF(float3(samplePoint.x, samplePoint.y - EPSILON, samplePoint.z), fig).x;
+    float gradYA = FigDF(float3(samplePoint.x, samplePoint.y + CALC_EPSILON, samplePoint.z), fig).x;
+    float gradYB = FigDF(float3(samplePoint.x, samplePoint.y - CALC_EPSILON, samplePoint.z), fig).x;
 
-    float gradZA = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z + EPSILON), fig).x;
-    float gradZB = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z - EPSILON), fig).x;
+    float gradZA = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z + CALC_EPSILON), fig).x;
+    float gradZB = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z - CALC_EPSILON), fig).x;
 
     float3 gradVec = float3(gradXA - gradXB,
                             gradYA - gradYB,
@@ -275,18 +322,18 @@ float4 grad(float3 samplePoint,
 float3 lap(float3 samplePoint,
            Figure fig)
 {
-    float gradXA = FigDF(float3(samplePoint.x + EPSILON, samplePoint.y, samplePoint.z), fig).x;
-    float gradXB = FigDF(float3(samplePoint.x - EPSILON, samplePoint.y, samplePoint.z), fig).x;
+    float gradXA = FigDF(float3(samplePoint.x + CALC_EPSILON, samplePoint.y, samplePoint.z), fig).x;
+    float gradXB = FigDF(float3(samplePoint.x - CALC_EPSILON, samplePoint.y, samplePoint.z), fig).x;
 
-    float gradYA = FigDF(float3(samplePoint.x, samplePoint.y + EPSILON, samplePoint.z), fig).x;
-    float gradYB = FigDF(float3(samplePoint.x, samplePoint.y - EPSILON, samplePoint.z), fig).x;
+    float gradYA = FigDF(float3(samplePoint.x, samplePoint.y + CALC_EPSILON, samplePoint.z), fig).x;
+    float gradYB = FigDF(float3(samplePoint.x, samplePoint.y - CALC_EPSILON, samplePoint.z), fig).x;
 
-    float gradZA = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z + EPSILON), fig).x;
-    float gradZB = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z - EPSILON), fig).x;
+    float gradZA = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z + CALC_EPSILON), fig).x;
+    float gradZB = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z - CALC_EPSILON), fig).x;
 
     // May require a constant scaling factor, check with Adam
     return 0.25f / (((gradXA + gradXB + gradYA + gradYB + gradZA + gradZB) - 6.0f * FigDF(samplePoint,
-                                                                                          fig)) * EPSILON);
+                                                                                          fig)) * CALC_EPSILON);
 }
 
 // Heterogeneity-preserving [min] function
@@ -298,30 +345,22 @@ float2 trackedMin(float x, float y,
     return float2(min(x, y), ids[x > y]);
 }
 
-// Weigh a given distance by the parallelism of it's
-// gradient to the angle of the given vector
-float vecDist(float3 vec,
-              Figure fig)
-{
-    float3 normVec = normalize(vec);
-    return FigDF(vec, fig) * (1.0f - dot(normVec, grad(vec, fig).xyz));
-}
-
 // Scene distance field here
 // Returns the distance to the nearest surface in the
 // scene from the given point
 float2 SceneField(float3 coord)
 {
+    //return FigDF(coord, figuresReadable[1]);
     // Fold field distances into a single returnable value
 
     // Define a super-union of just under a quarter of the figures
     // in the scene
-    float2 set0 = trackedMin(vecDist(coord, figuresReadable[0]),
-                             vecDist(coord, figuresReadable[1]),
+    float2 set0 = trackedMin(FigDF(coord, figuresReadable[0]),
+                             FigDF(coord, figuresReadable[1]),
                              uint2(0, 1));
 
-    float2 set1 = trackedMin(vecDist(coord, figuresReadable[2]),
-                             vecDist(coord, figuresReadable[3]),
+    float2 set1 = trackedMin(FigDF(coord, figuresReadable[2]),
+                             FigDF(coord, figuresReadable[3]),
                              uint2(2, 3));
 
     float2 set0u1 = trackedMin(set0.x, set1.x,
@@ -329,12 +368,12 @@ float2 SceneField(float3 coord)
 
     // Define a super-union having another quarter of the figures
     // in the scene
-    float2 set2 = trackedMin(vecDist(coord, figuresReadable[4]),
-                             vecDist(coord, figuresReadable[5]),
+    float2 set2 = trackedMin(FigDF(coord, figuresReadable[4]),
+                             FigDF(coord, figuresReadable[5]),
                              uint2(4, 5));
 
-    float2 set3 = trackedMin(vecDist(coord, figuresReadable[6]),
-                             vecDist(coord, figuresReadable[7]),
+    float2 set3 = trackedMin(FigDF(coord, figuresReadable[6]),
+                             FigDF(coord, figuresReadable[7]),
                              uint2(6, 7));
 
     float2 set2u3 = trackedMin(set2.x, set3.x,
@@ -346,31 +385,27 @@ float2 SceneField(float3 coord)
 
     // Define an ultra-union of the hyper-union defined above +
     // two more figures
-    float2 set4 = trackedMin(vecDist(coord, figuresReadable[8]),
-                             vecDist(coord, figuresReadable[9]),
+    float2 set4 = trackedMin(FigDF(coord, figuresReadable[8]),
+                             FigDF(coord, figuresReadable[9]),
                              uint2(8, 9));
 
-    float2 closeSet = trackedMin(majoritySet.x, set4.x,
-                                 uint2(majoritySet.y, set4.y));
-
     // Return a complete union carrying every figure in the scene
-    return trackedMin(closeSet.x,
-                      FigDF(coord, figuresReadable[10]),
-                      uint2(closeSet.y, 10));
+    return trackedMin(majoritySet.x, set4.x,
+                      uint2(majoritySet.y, set4.y));
 }
 
 // Extract the normal to a given point from the local scene
 // gradient
 float3 GetNormal(float3 samplePoint)
 {
-    float normXA = SceneField(float3(samplePoint.x + EPSILON, samplePoint.y, samplePoint.z)).x;
-    float normXB = SceneField(float3(samplePoint.x - EPSILON, samplePoint.y, samplePoint.z)).x;
+    float normXA = SceneField(float3(samplePoint.x + CALC_EPSILON, samplePoint.y, samplePoint.z)).x;
+    float normXB = SceneField(float3(samplePoint.x - CALC_EPSILON, samplePoint.y, samplePoint.z)).x;
 
-    float normYA = SceneField(float3(samplePoint.x, samplePoint.y + EPSILON, samplePoint.z)).x;
-    float normYB = SceneField(float3(samplePoint.x, samplePoint.y - EPSILON, samplePoint.z)).x;
+    float normYA = SceneField(float3(samplePoint.x, samplePoint.y + CALC_EPSILON, samplePoint.z)).x;
+    float normYB = SceneField(float3(samplePoint.x, samplePoint.y - CALC_EPSILON, samplePoint.z)).x;
 
-    float normZA = SceneField(float3(samplePoint.x, samplePoint.y, samplePoint.z + EPSILON)).x;
-    float normZB = SceneField(float3(samplePoint.x, samplePoint.y, samplePoint.z - EPSILON)).x;
+    float normZA = SceneField(float3(samplePoint.x, samplePoint.y, samplePoint.z + CALC_EPSILON)).x;
+    float normZB = SceneField(float3(samplePoint.x, samplePoint.y, samplePoint.z - CALC_EPSILON)).x;
 
     return normalize(float3(normXA - normXB,
                             normYA - normYB,

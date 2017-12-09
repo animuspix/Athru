@@ -12,6 +12,10 @@ class GPUUpdateManager
 		// Perform GPU-side updates
 		void Update();
 
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void operator delete(void* target);
+
 	private:
 		ID3D11DeviceContext* d3dContext;
 		UpdateShader* physics;

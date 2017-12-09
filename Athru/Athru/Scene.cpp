@@ -32,17 +32,29 @@ SceneFigure* Scene::CollectLocalFigures()
 	// Pass the player's local environment into an array of
 	// generic [SceneFigure]s
 	System currSys = GetCurrentSystem();
-	Planet* currPlanet = currSys.GetPlanets()[0];
-	currFigures[0] = *(SceneFigure*)(currSys.GetStar());
-	currFigures[1] = *(SceneFigure*)(currPlanet);
-	currFigures[2] = currPlanet->FetchCritter(0);
-	currFigures[3] = currPlanet->FetchCritter(1);
-	currFigures[4] = currPlanet->FetchCritter(2);
-	currFigures[5] = currPlanet->FetchCritter(3);
-	currFigures[6] = currPlanet->FetchPlant(0);
-	currFigures[7] = currPlanet->FetchPlant(1);
-	currFigures[8] = currPlanet->FetchPlant(2);
-	currFigures[9] = currPlanet->FetchPlant(3);
+	//Planet* currPlanet = currSys.GetPlanets()[0];
+	//currFigures[0] = *(SceneFigure*)(currSys.GetStar());
+	//currFigures[1] = *(SceneFigure*)(currPlanet);
+	//currFigures[2] = currPlanet->FetchCritter(0);
+	//currFigures[3] = currPlanet->FetchCritter(1);
+	//currFigures[4] = currPlanet->FetchCritter(2);
+	//currFigures[5] = currPlanet->FetchCritter(3);
+	//currFigures[6] = currPlanet->FetchPlant(0);
+	//currFigures[7] = currPlanet->FetchPlant(1);
+	//currFigures[8] = currPlanet->FetchPlant(2);
+	//currFigures[9] = currPlanet->FetchPlant(3);
+	Star* star = currSys.GetStar();
+	Planet** planets = currSys.GetPlanets();
+	currFigures[0] = *(SceneFigure*)(star);
+	currFigures[1] = *(SceneFigure*)(planets[0]);
+	currFigures[2] = *(SceneFigure*)(planets[1]);
+	currFigures[3] = *(SceneFigure*)(planets[2]);
+	currFigures[4] = *(SceneFigure*)(planets[3]);
+	currFigures[5] = *(SceneFigure*)(planets[4]);
+	currFigures[6] = *(SceneFigure*)(planets[5]);
+	currFigures[7] = *(SceneFigure*)(planets[6]);
+	currFigures[8] = *(SceneFigure*)(planets[7]);
+	currFigures[9] = *(SceneFigure*)(planets[8]);
 	return currFigures;
 }
 

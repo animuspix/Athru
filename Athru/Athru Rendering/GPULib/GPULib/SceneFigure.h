@@ -30,8 +30,8 @@ class SceneFigure
 				   DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
 				   fourByteUnsigned funcType, DirectX::XMVECTOR* distParams, DirectX::XMVECTOR* rgbaParams,
 				   fourByteUnsigned isNonNull, address originPttr) :
-				   //velocity(velo), pos(position),
-				   //angularVeloQtn(qtnAngularVelo), rotationQtn(qtnRotation),
+				   pos(position),
+				   rotationQtn(qtnRotation),
 				   scaleFactor{ scale, scale, scale, 1 },
 				   dfType{ funcType, 0, 0, 0 },
 				   distCoeffs{ distParams[0], distParams[1], distParams[2], distParams[3], distParams[4],
@@ -42,16 +42,8 @@ class SceneFigure
 				   origin{ (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0xFFFFFFFF00000000) >> 32),
 						   (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0x00000000FFFFFFFF)), 0, 0 } {}
 
-			// Where this figure is going + how quickly it's going
-			// there
-			//DirectX::XMVECTOR velocity;
-
 			// The location of this figure at any particular time
 			DirectX::XMVECTOR pos;
-
-			// How this figure is spinning, defined as radians/second
-			// about an implicit angle
-			//DirectX::XMVECTOR angularVeloQtn;
 
 			// The quaternion rotation applied to this figure at
 			// any particular time
@@ -96,14 +88,6 @@ class SceneFigure
 		// - Extract the angle by doubling the half-angle (duh)
 		DirectX::XMVECTOR GetQtnRotation();
 
-		// Get/set the angular velocity of [this]
-		//void BoostAngularVelo(DirectX::XMVECTOR angularVeloDelta);
-		//DirectX::XMVECTOR GetAngularVelo();
-		//
-		//// Get/Set the velocity of [this]
-		//void ApplyWork(DirectX::XMVECTOR veloDelta);
-		//DirectX::XMVECTOR GetVelo();
-
 		// Get the coefficients of the color function associated
 		// with [this]
 		DirectX::XMVECTOR* GetRGBACoeffs();
@@ -114,6 +98,12 @@ class SceneFigure
 		// Replace the [Figure] associated with [this] with one provided
 		// externally (i.e. one from the GPU)
 		void SetCoreFigure(Figure& fig);
+
+		// Overload the standard allocation/de-allocation operators
+		void* operator new(size_t size);
+		void* operator new[](size_t size);
+		void operator delete(void* target);
+		void operator delete[](void* target);
 
 	protected:
 		// The actual data payload that travels to the GPU each frame

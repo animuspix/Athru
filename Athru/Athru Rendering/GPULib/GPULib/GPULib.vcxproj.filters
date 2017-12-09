@@ -156,5 +156,6 @@
   <ItemGroup>
     <None Include="Lighting.hlsli" />
     <None Include="Core3D.hlsli" />
+    <None Include="Fractals.hlsli" />
   </ItemGroup>
 </Project>
