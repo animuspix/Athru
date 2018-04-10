@@ -11,9 +11,5 @@ class ScreenRect : public Mesh
 
 		// Pass [this] onto the GPU for rendering
 		void PassToGPU(ID3D11DeviceContext* context);
-
-	private:
-		// The texture painted onto [this]
-		AthruTexture2D texture;
 };
 

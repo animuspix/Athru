@@ -7,8 +7,9 @@ Camera::Camera()
 	// Set the camera's default position
 	// Default position should be towards the outer middle of the
 	// first star system
-	position = _mm_set_ps(0.0f, -4000.0f, 0.0f, 2000.0f);
-	//position = _mm_set_ps(0.0f, -265.0f, 0.0f, 1550.0f);
+	//position = _mm_set_ps(0.0f, -4000.0f, 0.0f, 2000.0f);
+	//position = _mm_set_ps(0.0f, -400.0f, 0.0f, 2000.0f);
+	position = _mm_set_ps(0.0f, -700.0f, 0.0f, 600.0f);
 
 	// Set the camera's default rotation
 	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(0, 0, 0);
@@ -46,7 +47,8 @@ Camera::Camera()
 	spinSpeed = 0.5f;
 
 	// Initialise the mouse position to the window centre
-	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2, GetSystemMetrics(SM_CYSCREEN) / 2);
+	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2,
+				 GetSystemMetrics(SM_CYSCREEN) / 2);
 }
 
 Camera::~Camera()
@@ -119,7 +121,9 @@ void Camera::SetRotation(DirectX::XMFLOAT3 eulerAngles)
 {
 	// Rotate the software camera
 	coreRotationEuler = eulerAngles;
-	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(coreRotationEuler.x, coreRotationEuler.y, coreRotationEuler.z);
+	coreRotationQuaternion = DirectX::XMQuaternionRotationRollPitchYaw(coreRotationEuler.x,
+																	   coreRotationEuler.y,
+																	   coreRotationEuler.z);
 }
 
 DirectX::XMVECTOR Camera::GetRotationQuaternion()
@@ -148,11 +152,12 @@ void Camera::MouseLook(Input* inputPttr)
 	// Apply the changes in camera rotationQtn to the camera by incrementing the
 	// current X/Y euler angles and passing the results into [SetRotation()]
 	SetRotation(DirectX::XMFLOAT3(coreRotationEuler.x + xRotationDelta,
-		coreRotationEuler.y + yRotationDelta,
-		0));
+								  coreRotationEuler.y + yRotationDelta,
+								  0));
 
 	// Move the cursor back to the screen centre
-	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2, GetSystemMetrics(SM_CYSCREEN) / 2);
+	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2,
+				 GetSystemMetrics(SM_CYSCREEN) / 2);
 }
 
 void Camera::RefreshViewData()

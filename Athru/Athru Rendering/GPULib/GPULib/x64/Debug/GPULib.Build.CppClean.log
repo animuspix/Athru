@@ -16,11 +16,10 @@ c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\deb
 c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\screenpainter.obj
 c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\screenvertex.obj
 c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\pipelineshader.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\texturemanager.obj
 c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\updateshader.obj
 c:\users\paul\documents\github\athru\athru\athru\presentationcolors.cso
-c:\users\paul\documents\github\athru\athru\athru\postprocessor.cso
 c:\users\paul\documents\github\athru\athru\athru\presentationverts.cso
+c:\users\paul\documents\github\athru\athru\athru\postprocessor.cso
 c:\users\paul\documents\github\athru\athru\athru\scenevis.cso
 c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.lib
 c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\cl.command.1.tlog

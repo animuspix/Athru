@@ -1,7 +1,6 @@
 #pragma once
 
 #include "Direct3D.h"
-#include "TextureManager.h"
 #include "RenderManager.h"
 #include "GPUUpdateManager.h"
 #include "GPUMessenger.h"
@@ -37,7 +36,6 @@ namespace AthruGPU
 			// and the GPU-side random number generator
 			d3DPttr = DEBUG_NEW Direct3D(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND());
 			gpuMessengerPttr = new GPUMessenger();
-			textureManagerPttr = new TextureManager(d3DPttr->GetDevice());
 			gpuRand = new GPURand(d3DPttr->GetDevice());
 
 			// Initialise the rendering manager + the GPU update manager
@@ -47,10 +45,6 @@ namespace AthruGPU
 
 		static void DeInit()
 		{
-			// Clean-up the texture manager
-			textureManagerPttr->~TextureManager();
-			textureManagerPttr = nullptr;
-
 			// Clean-up the rendering manager
 			renderManagerPttr->~RenderManager();
 			renderManagerPttr = nullptr;
@@ -95,11 +89,6 @@ namespace AthruGPU
 			return gpuMessengerPttr;
 		}
 
-		static TextureManager* AccessTextureManager()
-		{
-			return textureManagerPttr;
-		}
-
 		static RenderManager* AccessRenderManager()
 		{
 			return renderManagerPttr;
@@ -122,9 +111,6 @@ namespace AthruGPU
 		// GPU figure sync, maintains equivalence between
 		// CPU and GPU figure data
 		static GPUMessenger* gpuMessengerPttr;
-
-		// 2D and 3D texture management
-		static TextureManager* textureManagerPttr;
 
 		// Visibility/lighting calculations, also
 		// post-production and presentation

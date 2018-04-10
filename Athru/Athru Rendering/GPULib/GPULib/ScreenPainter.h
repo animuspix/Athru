@@ -10,7 +10,8 @@ class ScreenPainter : public PipelineShader
 					  LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
 		~ScreenPainter();
 
-		void Render(ID3D11DeviceContext* deviceContext);
+		void Render(ID3D11DeviceContext* deviceContext,
+					ID3D11ShaderResourceView* displayTexReadable);
 
 	private:
 		// Rendering helper function, used to actually render out the

@@ -93,6 +93,7 @@
       <PreprocessorDefinitions>_DEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
       <AdditionalIncludeDirectories>$(SolutionDir)Athru Utilities\UtilityLib\UtilityLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -100,6 +101,7 @@
     <FxCompile>
       <ShaderModel>5.0</ShaderModel>
       <ObjectFileOutput>$(SolutionDir)Athru\%(Filename).cso</ObjectFileOutput>
+      <DisableOptimizations>false</DisableOptimizations>
     </FxCompile>
     <Lib>
       <OutputFile>$(SolutionDir)Athru Rendering\$(ProjectName)\$(ProjectName)\$(Platform)\$(Configuration)\$(TargetName)$(TargetExt)</OutputFile>
@@ -130,6 +132,7 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_LIB;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
+      <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
       <SubSystem>Windows</SubSystem>
@@ -145,14 +148,13 @@
     <ClInclude Include="GPURand.h" />
     <ClInclude Include="GPUServiceCentre.h" />
     <ClInclude Include="GPUUpdateManager.h" />
-    <ClInclude Include="PostProcessor.h" />
+    <ClInclude Include="PixHistory.h" />
     <ClInclude Include="PathTracer.h" />
     <ClInclude Include="RenderManager.h" />
     <ClInclude Include="GPUMessenger.h" />
     <ClInclude Include="SceneFigure.h" />
     <ClInclude Include="ScreenRect.h" />
     <ClInclude Include="AthruTexture2D.h" />
-    <ClInclude Include="AthruTexture3D.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Direct3D.h" />
     <ClInclude Include="Mesh.h" />
@@ -161,9 +163,7 @@
     <ClInclude Include="PostVertex.h" />
     <ClInclude Include="PipelineShader.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="TextureManager.h" />
     <ClInclude Include="SceneVertex.h" />
-    <ClInclude Include="TracePix.h" />
     <ClInclude Include="UpdateShader.h" />
   </ItemGroup>
   <ItemGroup>
@@ -171,7 +171,6 @@
     <ClCompile Include="GPURand.cpp" />
     <ClCompile Include="GPUServiceCentre.cpp" />
     <ClCompile Include="GPUUpdateManager.cpp" />
-    <ClCompile Include="PostProcessor.cpp" />
     <ClCompile Include="PathTracer.cpp" />
     <ClCompile Include="RenderManager.cpp" />
     <ClCompile Include="GPUMessenger.cpp" />
@@ -183,22 +182,11 @@
     <ClCompile Include="ScreenPainter.cpp" />
     <ClCompile Include="ScreenVertex.cpp" />
     <ClCompile Include="PipelineShader.cpp" />
-    <ClCompile Include="TextureManager.cpp" />
     <ClCompile Include="UpdateShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="PresentationColors.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Pixel</ShaderType>
-    </FxCompile>
-    <FxCompile Include="PostProcessor.hlsl">
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">5.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">4.0</ShaderModel>
-      <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
-      <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">4.0</ShaderModel>
     </FxCompile>
     <FxCompile Include="PresentationVerts.hlsl">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Vertex</ShaderType>
@@ -211,6 +199,8 @@
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
+    <None Include="AA.hlsli" />
+    <None Include="RasterCamera.hlsli" />
     <None Include="Core3D.hlsli">
       <FileType>Document</FileType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
@@ -222,6 +212,11 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Release|x64'">5.0</ShaderModel>
     </None>
+    <None Include="LightingUtility.hlsli" />
+    <None Include="Materials.hlsli" />
+    <None Include="PixIDs.hlsli" />
+    <None Include="GenericUtility.hlsli" />
+    <None Include="Tonemapping.hlsli" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

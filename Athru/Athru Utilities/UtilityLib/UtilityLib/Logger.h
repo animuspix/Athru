@@ -1,10 +1,8 @@
 #pragma once
 
-#include <iostream>
 #include <sstream>
 #include <fstream>
 #include "Typedefs.h"
-#include "Dispatcher.h"
 #include "leakChecker.h"
 #include <windows.h>
 
@@ -19,18 +17,17 @@ class Logger
 			// ask SO what the fruit is going on there
 			logFileStreamPttr = DEBUG_NEW std::fstream();
 			logFileStreamPttr->open(logFilePath, std::ios::out);
-			(*logFileStreamPttr) << "Note:" << '\n';
-			(*logFileStreamPttr) << "Unions + structs/classes are too complicated to easily log members," << '\n';
-			(*logFileStreamPttr) << "and it's impossible to easily log the names of enum values without" << '\n';
-			(*logFileStreamPttr) << "lots of boilerplate code. This has resulted in the following:" << '\n' << '\n';;
-			(*logFileStreamPttr) << "- Athru will only ever log the address + type-id of unions and" << '\n';
-			(*logFileStreamPttr) << "  avoid describing their members" << '\n' << '\n';
-			(*logFileStreamPttr) << "- Athru will only ever log the address + type-id of structs/classes" << '\n';
-			(*logFileStreamPttr) << "  and avoid describing their members" << '\n' << '\n';
-			(*logFileStreamPttr) << "- Athru will not attempt to log enums; any enum values that you want" << '\n';
-			(*logFileStreamPttr) << "  to log should be cast into an arithmetic type beforehand, and enum" << '\n';
-			(*logFileStreamPttr) << "  names must be stringified before being passed to the logger" << '\n' << '\n';
-			(*logFileStreamPttr) << "Thank you for reading :)" << '\n' << '\n';
+			*logFileStreamPttr << "Note:" << '\n';
+			*logFileStreamPttr << "Unions + structs/classes are too complicated to easily log members," << '\n';
+			*logFileStreamPttr << "and it's impossible to easily log the names of enum values without" << '\n';
+			*logFileStreamPttr << "lots of boilerplate code. This has resulted in the following:" << '\n' << '\n';;
+			*logFileStreamPttr << "- Athru will only ever log the address + type-id of unions and" << '\n';
+			*logFileStreamPttr << "  avoid describing their members" << '\n' << '\n';
+			*logFileStreamPttr << "- Athru will only ever log the address + type-id of structs/classes" << '\n';
+			*logFileStreamPttr << "  and avoid describing their members" << '\n' << '\n';
+			*logFileStreamPttr << "- Athru will only ever log the address, type-ID, and numeric value of enumerations;" << '\n';
+			*logFileStreamPttr << "  enum names must be stringified before being passed to the logger" << '\n' << '\n';
+			*logFileStreamPttr << "Thank you for reading :)" << '\n' << '\n';
 			logFileStreamPttr->close();
 
 			printStreamPttr = DEBUG_NEW std::ostringstream();
@@ -42,9 +39,8 @@ class Logger
 			*printStreamPttr << "  avoid describing their members" << '\n' << '\n';
 			*printStreamPttr << "- Athru will only ever log the address + type-id of structs/classes" << '\n';
 			*printStreamPttr << "  and avoid describing their members" << '\n' << '\n';
-			*printStreamPttr << "- Athru will not attempt to log enums; any enum values that you want" << '\n';
-			*printStreamPttr << "  to log should be cast into an arithmetic type beforehand, and enum" << '\n';
-			*printStreamPttr << "  names must be stringified before being passed to the logger" << '\n' << '\n';
+			*printStreamPttr << "- Athru will only ever log the address, type-ID, and numeric value of enumerations;" << '\n';
+			*printStreamPttr << "  enum names must be stringified before being passed to the logger" << '\n' << '\n';
 			*printStreamPttr << "Thank you for reading :)" << '\n' << '\n';
 			ConsolePrinter::OutputText(printStreamPttr);
 		}
@@ -65,247 +61,353 @@ class Logger
 			LOG_FILE
 		};
 
+		// Logging for pure types, or decoded references to types (i.e. any case where [dataLogging]
+		// is *not* a pointer to data of type [loggableType])
 		template<typename loggableType> void Log(loggableType dataLogging, DESTINATIONS destination)
 		{
-			Dispatch(std::is_arithmetic<loggableType>{})
-			(
-				[&](auto&& value)
+			// Boilerplate to fend off over-eager MSVC [if constexpr] validations
+			constexpr bool arithData = std::is_arithmetic<loggableType>{};
+			constexpr bool unionData = std::is_union<loggableType>{};
+			constexpr bool classStructData = std::is_class<loggableType>{};
+			constexpr bool funcData = std::is_function<loggableType>{};
+			constexpr bool memFuncPttrData = std::is_member_function_pointer<loggableType>{};
+			constexpr bool enumData = std::is_enum<loggableType>{};
+			constexpr bool isArith =  arithData &&
+									 !unionData &&
+									 !classStructData &&
+									 !funcData &&
+									 !memFuncPttrData &&
+									 !enumData;
+
+			constexpr bool isUnion = !arithData &&
+									  unionData &&
+									 !classStructData &&
+									 !funcData &&
+									 !memFuncPttrData &&
+									 !enumData;
+
+			constexpr bool isClassOrStruct = !arithData &&
+											 !unionData &&
+											  classStructData &&
+											 !funcData &&
+											 !memFuncPttrData &&
+											 !enumData;
+
+			constexpr bool isPttr = !arithData &&
+									!unionData &&
+									!classStructData &&
+									 funcData &&
+									!memFuncPttrData &&
+									!enumData;
+
+			constexpr bool isMemFuncPttr = !arithData &&
+										   !unionData &&
+										   !classStructData &&
+										   !funcData &&
+										    memFuncPttrData &&
+										   !enumData;
+
+			constexpr bool isEnum = !arithData &&
+									!unionData &&
+									!classStructData &&
+									!funcData &&
+									!memFuncPttrData &&
+									 enumData;
+
+			if constexpr(isArith)
+			{
+				if (destination == DESTINATIONS::CONSOLE)
 				{
-					if (destination == DESTINATIONS::CONSOLE)
-					{
-						*printStreamPttr << "logging " << typeid(loggableType).name() << " with value " << dataLogging << '\n';
-					}
-
-					else
-					{
-						logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-						(*logFileStreamPttr) << "logging " << typeid(loggableType).name() << " with value " << dataLogging << '\n';
-						logFileStreamPttr->close();
-					}
-				},
-
-				[&](auto&& value)
-				{
-					Dispatch(std::is_union<loggableType>{})
-					(
-						[&](auto&& value)
-						{
-							if (destination == DESTINATIONS::CONSOLE)
-							{
-								*printStreamPttr << "\nlogging union with type-id " << typeid(loggableType).name() << '\n';
-								*printStreamPttr << "logging union stack-address " << &dataLogging << '\n';
-								*printStreamPttr << "no further details available" << '\n' << '\n';
-							}
-
-							else
-							{
-								logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-								(*logFileStreamPttr) << "logging union with type-id " << typeid(loggableType).name() << '\n';;
-								(*logFileStreamPttr) << "logging union stack-address " << &dataLogging << '\n';
-								(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
-								logFileStreamPttr->close();
-							}
-						},
-
-						[&](auto&& value)
-						{
-							Dispatch(std::is_class<loggableType>{})
-							(
-								[&](auto&& value)
-								{
-									if (destination == DESTINATIONS::CONSOLE)
-									{
-										*printStreamPttr << "\nlogging class with type-id " << typeid(loggableType).name() << '\n';
-										*printStreamPttr << "logging class stack-address " << &dataLogging << '\n';
-										*printStreamPttr << "no further details available" << '\n' << '\n';
-									}
-
-									else
-									{
-										logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-										(*logFileStreamPttr) << "\nlogging class with type-id " << typeid(loggableType).name() << '\n';
-										(*logFileStreamPttr) << "logging class stack-address " << &dataLogging << '\n';
-										(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
-										logFileStreamPttr->close();
-									}
-								},
-
-								[&](auto&& value)
-								{
-									Dispatch(std::is_pointer<loggableType>{})
-									(
-										[&](auto&& value)
-										{
-											if (destination == DESTINATIONS::CONSOLE)
-											{
-												*printStreamPttr << "\nlogging global function with type-id " << typeid(loggableType).name() << '\n';
-												*printStreamPttr << "logging function stack-address " << dataLogging << '\n';
-												*printStreamPttr << "no further details available" << '\n' << '\n';
-											}
-
-											else
-											{
-												logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-												(*logFileStreamPttr) << "\nlogging global function with type-id " << typeid(loggableType).name() << '\n';
-												(*logFileStreamPttr) << "logging function stack-address " << dataLogging << '\n';
-												(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
-												logFileStreamPttr->close();
-											}
-										},
-
-										[&](auto&& value)
-										{
-											Dispatch(std::is_member_function_pointer<loggableType>{})
-											(
-												[&](auto&& value)
-												{
-													if (destination == DESTINATIONS::CONSOLE)
-													{
-														*printStreamPttr << "\nlogging member function with type-id " << typeid(loggableType).name() << '\n';
-														*printStreamPttr << "logging function stack-address " << dataLogging << '\n';
-														*printStreamPttr << "no further details available" << '\n' << '\n';
-													}
-
-													else
-													{
-														logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-														(*logFileStreamPttr) << "\nlogging member function with type-id " << typeid(loggableType).name() << '\n';
-														(*logFileStreamPttr) << "logging function stack-address " << dataLogging << '\n';
-														(*logFileStreamPttr) << "no further details available" << '\n' << '\n';
-														logFileStreamPttr->close();
-													}
-												},
-
-												[&](auto&& value)
-												{
-													if (destination == DESTINATIONS::CONSOLE)
-													{
-														*printStreamPttr << "Sorry! Athru is only able to log objects with arithmetic, union, class, or function type" << '\n';
-													}
-
-													else
-													{
-														logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-														(*logFileStreamPttr) << "Sorry! Athru is only able to log objects with arithmetic, union, class, or function type" << '\n';
-														logFileStreamPttr->close();
-													}
-												}
-											)
-											(dataLogging);
-										}
-									)
-									(dataLogging);
-								}
-							)
-							(dataLogging);
-						}
-					)
-					(dataLogging);
+					*printStreamPttr << "logging " << typeid(loggableType).name() << " with value " << dataLogging << '\n';
 				}
-			)
-			(dataLogging);
+
+				else
+				{
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					*logFileStreamPttr << "logging " << typeid(loggableType).name() << " with value " << dataLogging << '\n';
+					logFileStreamPttr->close();
+				}
+			}
+
+			else if constexpr (isUnion)
+			{
+				if (destination == DESTINATIONS::CONSOLE)
+				{
+					*printStreamPttr << "\nlogging union with type-id " << typeid(loggableType).name() << '\n';
+					*printStreamPttr << "logging union stack-address " << &dataLogging << '\n';
+					*printStreamPttr << "no further details available" << '\n' << '\n';
+				}
+
+				else
+				{
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					*logFileStreamPttr << "logging union with type-id " << typeid(loggableType).name() << '\n';;
+					*logFileStreamPttr << "logging union stack-address " << &dataLogging << '\n';
+					*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					logFileStreamPttr->close();
+				}
+			}
+
+			else if constexpr (isClassOrStruct)
+			{
+				if (destination == DESTINATIONS::CONSOLE)
+				{
+					*printStreamPttr << "\nlogging struct/class with type-id " << typeid(loggableType).name() << '\n';
+					*printStreamPttr << "logging struct/class stack-address " << &dataLogging << '\n';
+					*printStreamPttr << "no further details available" << '\n' << '\n';
+				}
+
+				else
+				{
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					*logFileStreamPttr << "\nlogging struct/class with type-id " << typeid(loggableType).name() << '\n';
+					*logFileStreamPttr << "logging struct/class stack-address " << &dataLogging << '\n';
+					*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					logFileStreamPttr->close();
+				}
+
+			}
+
+			else if constexpr (isPttr)
+			{
+				if (destination == DESTINATIONS::CONSOLE)
+				{
+					*printStreamPttr << "\nlogging global function with type-id " << typeid(loggableType).name() << '\n';
+					*printStreamPttr << "logging function stack-address " << dataLogging << '\n';
+					*printStreamPttr << "no further details available" << '\n' << '\n';
+				}
+
+				else
+				{
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					*logFileStreamPttr << "\nlogging global function with type-id " << typeid(loggableType).name() << '\n';
+					*logFileStreamPttr << "logging function stack-address " << dataLogging << '\n';
+					*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					logFileStreamPttr->close();
+				}
+			}
+
+			else if constexpr (isMemFuncPttr)
+			{
+				if (destination == DESTINATIONS::CONSOLE)
+				{
+					*printStreamPttr << "\nlogging member function with type-id " << typeid(loggableType).name() << '\n';
+					*printStreamPttr << "logging function stack-address " << dataLogging << '\n';
+					*printStreamPttr << "no further details available" << '\n' << '\n';
+				}
+
+				else
+				{
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					*logFileStreamPttr << "\nlogging member function with type-id " << typeid(loggableType).name() << '\n';
+					*logFileStreamPttr << "logging function stack-address " << dataLogging << '\n';
+					*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					logFileStreamPttr->close();
+				}
+			}
+
+			else if constexpr (isEnum)
+			{
+				if (destination == DESTINATIONS::CONSOLE)
+				{
+					*printStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (eightByteUnsigned)dataLogging << '\n';
+					*printStreamPttr << "logging enumeration stack-address " << &dataLogging << '\n';
+					*printStreamPttr << "no further details available" << '\n' << '\n';
+				}
+
+				else
+				{
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					*logFileStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << '\n';
+					*logFileStreamPttr << "logging enumeration stack-address " << &dataLogging << '\n';
+					*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					logFileStreamPttr->close();
+				}
+			}
+
+			else
+			{
+				if (destination == DESTINATIONS::CONSOLE)
+				{
+					*printStreamPttr << "Sorry! Athru is only able to log objects with arithmetic, union, struct/class, function-pointer, or enum type" << '\n';
+				}
+
+				else
+				{
+					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
+					*logFileStreamPttr << "Sorry! Athru is only able to log objects with arithmetic, union, struct/class, function-pointer, or enum type" << '\n';
+					logFileStreamPttr->close();
+				}
+			}
 
 			ConsolePrinter::OutputText(printStreamPttr);
 		}
 
-		// Logging pointers to CMD
+		// Logging for references-to-types (i.e. any case where [dataLogging] *is* a
+		// pointer to data of type [loggableType])
 		template<typename loggableType> void Log(loggableType* dataLogging, DESTINATIONS destination)
 		{
 			if (dataLogging != nullptr)
 			{
-				bool isCString = (typeid(loggableType) == typeid(char)) && std::is_const<loggableType>::value;
-
+				constexpr bool isCString = (std::is_same<loggableType, const char>{});
 				if (destination == DESTINATIONS::CONSOLE)
 				{
-					Dispatch(std::is_arithmetic<loggableType>{})
-					(
-						[&](auto&& value)
+					constexpr bool arithData = std::is_arithmetic<loggableType>{};
+					constexpr bool unionData = std::is_union<loggableType>{};
+					constexpr bool classStructData = std::is_class<loggableType>{};
+					constexpr bool funcData = std::is_function<loggableType>{};
+					constexpr bool memFuncPttrData = std::is_member_function_pointer<loggableType>{};
+					constexpr bool enumData = std::is_enum<loggableType>{};
+					if constexpr (arithData &&
+								  !unionData &&
+								  !classStructData &&
+								  !funcData &&
+								  !memFuncPttrData &&
+								  !enumData)
+					{
+						if (!isCString)
 						{
-							if (!isCString)
-							{
-								*printStreamPttr << "logging " << typeid(loggableType).name() << " at " << &dataLogging << " with value " << *dataLogging << '\n';
-							}
-
-							else
-							{
-								*printStreamPttr << "c-style string at " << &dataLogging << ':' << '\n';
-								*printStreamPttr << dataLogging << '\n';
-							}
-						},
-
-						[&](auto&& value)
-						{
-							*printStreamPttr << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-							*printStreamPttr << "no further details available" << '\n' << '\n';
+							*printStreamPttr << "logging " << typeid(loggableType).name() << " at " << dataLogging << " with value " << *dataLogging << '\n';
 						}
-					)
-					(dataLogging);
+
+						else
+						{
+							*printStreamPttr << "c-style string at " << (void*)dataLogging << ':' << '\n';
+							*printStreamPttr << dataLogging << '\n';
+						}
+					}
+
+					else if constexpr (!arithData &&
+									    unionData ||
+									    classStructData &&
+									   !funcData &&
+									   !memFuncPttrData &&
+									   !enumData)
+					{
+						*printStreamPttr << "\nlogging " << typeid(loggableType).name() << " at " << dataLogging << '\n';
+						*printStreamPttr << "no further details available" << '\n';
+					}
+
+					else if (!arithData &&
+							 !unionData &&
+							 !classStructData &&
+							  funcData &&
+							 !memFuncPttrData &&
+							 !enumData)
+					{
+						*printStreamPttr << "\nlogging global function with type-id " << typeid(loggableType).name() << " at " << dataLogging << '\n';
+						*printStreamPttr << "no further details available" << '\n';
+					}
+
+					else if (arithData &&
+							 !unionData &&
+							 !classStructData &&
+							 !funcData &&
+							  memFuncPttrData &&
+							 !enumData)
+					{
+						*printStreamPttr << "\nlogging member function with type-id " << typeid(loggableType).name() << " at " << dataLogging << '\n';
+						*printStreamPttr << "no further details available" << '\n' << '\n';
+					}
+
+					else if constexpr (!arithData &&
+									   !unionData &&
+									   !classStructData &&
+									   !funcData &&
+									   !memFuncPttrData &&
+									    enumData)
+					{
+						*printStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (eightByteUnsigned)*dataLogging << " at " << dataLogging << '\n';
+						*printStreamPttr << "no further details available" << '\n' << '\n';
+					}
+
+					else
+					{
+						*printStreamPttr << "\nLogging " << typeid(loggableType).name() << " pointer" << " with address " << dataLogging << '\n';
+						*printStreamPttr << "no further details available" << '\n' << '\n';
+					}
 
 					ConsolePrinter::OutputText(printStreamPttr);
 				}
 
 				else
 				{
+					constexpr bool arithData = std::is_arithmetic<loggableType>{};
+					constexpr bool unionData = std::is_union<loggableType>{};
+					constexpr bool classStructData = std::is_class<loggableType>{};
+					constexpr bool funcData = std::is_function<loggableType>{};
+					constexpr bool memFuncPttrData = std::is_member_function_pointer<loggableType>{};
+					constexpr bool enumData = std::is_enum<loggableType>{};
+
 					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-					Dispatch(std::is_arithmetic<loggableType>{})
-					(
-						[&](auto&& value)
+					if constexpr (arithData &&
+								  !unionData &&
+								  !classStructData &&
+								  !funcData &&
+								  !memFuncPttrData &&
+								  !enumData)
+					{
+						if (!isCString)
 						{
-							if (!isCString)
-							{
-								(*logFileStreamPttr) << "logging " << typeid(loggableType).name() << " at " << &dataLogging << " with value " << *dataLogging << '\n';
-							}
-
-							else
-							{
-								(*logFileStreamPttr) << "c-style string at " << &dataLogging << ':' << '\n';
-								(*logFileStreamPttr) << dataLogging << '\n';
-							}
-						},
-
-						[&](auto&& value)
-						{
-							Dispatch(std::is_class<loggableType>{})
-							(
-								[&](auto&& value)
-								{
-									(*logFileStreamPttr) << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-									(*logFileStreamPttr) << "no further details available" << '\n';
-								},
-
-								[&](auto&& value)
-								{
-									Dispatch(std::is_union<loggableType>{})
-									(
-										[&](auto&& value)
-										{
-											(*logFileStreamPttr) << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-											(*logFileStreamPttr) << "no further details available" << '\n';
-										},
-
-										[&](auto&& value)
-										{
-											Dispatch(std::is_enum<loggableType>{})
-											(
-												[&](auto&& value)
-												{
-													(*logFileStreamPttr) << "\nlogging " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-													(*logFileStreamPttr) << "no further details available" << '\n';
-												},
-
-												[&](auto&& value)
-												{
-													(*logFileStreamPttr) << "\nlogging global function with type-id " << typeid(loggableType).name() << " at " << &dataLogging << '\n';
-													(*logFileStreamPttr) << "no further details available" << '\n';
-												}
-											)(dataLogging);
-										}
-									)(dataLogging);
-								}
-							)(dataLogging);
+							*logFileStreamPttr << "logging " << typeid(loggableType).name() << " at " << dataLogging << " with value " << *dataLogging << '\n';
 						}
-					)
-					(dataLogging);
+
+						else
+						{
+							*logFileStreamPttr << "c-style string at " << (void*)dataLogging << ':' << '\n';
+							*logFileStreamPttr << dataLogging << '\n';
+						}
+					}
+
+					else if constexpr (!arithData &&
+									    unionData ||
+									    classStructData &&
+									   !funcData &&
+									   !memFuncPttrData &&
+									   !enumData)
+					{
+						*logFileStreamPttr << "\nlogging " << typeid(loggableType).name() << " at " << dataLogging << '\n';
+						*logFileStreamPttr << "no further details available" << '\n';
+					}
+
+					else if constexpr (!arithData &&
+									   !unionData &&
+									   !classStructData &&
+									    funcData &&
+									   !memFuncPttrData &&
+									   !enumData)
+					{
+						*logFileStreamPttr << "\nlogging global function with type-id " << typeid(loggableType).name() << " at " << dataLogging << '\n';
+						*logFileStreamPttr << "no further details available" << '\n';
+					}
+
+					else if (!arithData &&
+							 !unionData &&
+							 !classStructData &&
+							 !funcData &&
+							  memFuncPttrData &&
+							 !enumData)
+					{
+						*logFileStreamPttr << "\nlogging member function with type-id " << typeid(loggableType).name() << " at " << dataLogging << '\n';
+						*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					}
+
+					else if constexpr (!arithData &&
+									   !unionData &&
+									   !classStructData &&
+									   !funcData &&
+									   !memFuncPttrData &&
+									    enumData)
+					{
+						*logFileStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (eightByteUnsigned)*dataLogging << " at " << dataLogging << '\n';
+						*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					}
+
+					else
+					{
+						*logFileStreamPttr << "\nLogging " << typeid(loggableType).name() << " pointer" << " with address " << dataLogging << '\n';
+						*logFileStreamPttr << "no further details available" << '\n' << '\n';
+					}
 
 					logFileStreamPttr->close();
 				}
@@ -315,31 +417,37 @@ class Logger
 			{
 				if (destination == DESTINATIONS::CONSOLE)
 				{
-					*printStreamPttr << "Unknown data stored at the null address (0x0000000000000000)" << '\n';
+					*printStreamPttr << "Unknown data stored at the null address (0x0000000000000000 in 64-bit, 0x00000000 in 32-bit)" << '\n';
 					ConsolePrinter::OutputText(printStreamPttr);
 				}
 
 				else
 				{
 					logFileStreamPttr->open(logFilePath, std::fstream::out | std::fstream::app);
-					(*logFileStreamPttr) << "Unknown data stored at the null address (0x0000000000000000)" << '\n';
+					*logFileStreamPttr << "Unknown data stored at the null address (0x0000000000000000 in 64-bit, 0x00000000 in 32-bit)" << '\n';
 					logFileStreamPttr->close();
 				}
 			}
 		}
 
-		// Logging non-pointer arrays to CMD
+		// Logging non-pointer arrays
 		template<typename loggableType> void LogArray(loggableType* dataLogging, short arrayLength, DESTINATIONS destination)
 		{
+			std::string msg = std::string("Logging array of type ");
+			msg.append(typeid(loggableType).name());
+			Log(msg.c_str(), destination);
 			for (twoByteUnsigned i = 0; i < arrayLength; i += 1)
 			{
 				Log(dataLogging[i], destination);
 			}
 		}
 
-		// Logging pointer-arrays to CMD
+		// Logging arrays-of-pointers
 		template<typename loggableType> void LogArray(loggableType** dataLogging, short arrayLength, DESTINATIONS destination)
 		{
+			std::string msg = std::string("Logging array of type ");
+			msg.append(typeid(loggableType).name());
+			Log(msg.c_str(), destination);
 			for (twoByteUnsigned i = 0; i < arrayLength; i += 1)
 			{
 				Log(dataLogging[i], destination);

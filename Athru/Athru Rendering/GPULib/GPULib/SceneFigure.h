@@ -5,8 +5,8 @@
 
 enum class FIG_TYPES
 {
-	PLANET,
 	STAR,
+	PLANET,
 	PLANT,
 	CRITTER
 };
@@ -39,8 +39,8 @@ class SceneFigure
 				   rgbaCoeffs{ rgbaParams[0], rgbaParams[1], rgbaParams[2], rgbaParams[3], rgbaParams[4],
 							   rgbaParams[5], rgbaParams[6], rgbaParams[7], rgbaParams[8], rgbaParams[9] },
 				   nonNull{	isNonNull, 0, 0, 0 },
-				   origin{ (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0xFFFFFFFF00000000) >> 32),
-						   (fourByteUnsigned)(((eightByteUnsigned)originPttr & 0x00000000FFFFFFFF)), 0, 0 } {}
+				   origin{ (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrHIMask()) >> MemoryStuff::halfAddrLength()),
+						   (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrLOMask())), 0, 0 } {}
 
 			// The location of this figure at any particular time
 			DirectX::XMVECTOR pos;

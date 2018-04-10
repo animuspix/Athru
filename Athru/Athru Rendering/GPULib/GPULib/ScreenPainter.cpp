@@ -77,12 +77,12 @@ void ScreenPainter::RenderShader(ID3D11DeviceContext* deviceContext)
 	deviceContext->DrawIndexed(GraphicsStuff::SCREEN_RECT_INDEX_COUNT, 0, 0);
 }
 
-void ScreenPainter::Render(ID3D11DeviceContext* deviceContext)
+void ScreenPainter::Render(ID3D11DeviceContext* deviceContext,
+						   ID3D11ShaderResourceView* displayTexReadable)
 {
-	// Pass a view of the display texture into the pixel-shading
-	// registers
-	AthruTexture2D displayTexture = AthruGPU::GPUServiceCentre::AccessTextureManager()->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE);
-	deviceContext->PSSetShaderResources(0, 1, &(displayTexture.asReadOnlyShaderResource));
+	// Pass a view of the display texture into the first pixel-shading
+	// register
+	deviceContext->PSSetShaderResources(0, 1, &(displayTexReadable));
 
 	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
 	deviceContext->PSSetSamplers(0, 1, &wrapSamplerState);

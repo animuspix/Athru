@@ -1,6 +1,6 @@
 #include "UtilityServiceCentre.h"
 #include "GPUServiceCentre.h"
-#include "TracePix.h"
+#include "PixHistory.h"
 #include "PathTracer.h"
 
 PathTracer::PathTracer(LPCWSTR shaderFilePath) :
@@ -8,10 +8,6 @@ PathTracer::PathTracer(LPCWSTR shaderFilePath) :
 									 AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND(),
 									 shaderFilePath)
 {
-	TextureManager* localTextureManagerPttr = AthruGPU::GPUServiceCentre::AccessTextureManager();
-	AthruTexture2D displayTex = localTextureManagerPttr->GetDisplayTexture(AVAILABLE_DISPLAY_TEXTURES::SCREEN_TEXTURE);
-	displayTexture = displayTex.asWritableShaderResource;
-
 	// Describe the shader input buffer we'll be using
 	// for shader i/o operations through [this]
 	D3D11_BUFFER_DESC inputBufferDesc;
@@ -28,59 +24,15 @@ PathTracer::PathTracer(LPCWSTR shaderFilePath) :
 	HRESULT result = device->CreateBuffer(&inputBufferDesc, NULL, &shaderInputBuffer);
 	assert(SUCCEEDED(result));
 
-	// Describe the GI calculation buffer we'll be using
-	// to store primary contributions before averaging them
-	// during post-processing
-	D3D11_BUFFER_DESC giCalcBufferDesc;
-	giCalcBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-	giCalcBufferDesc.ByteWidth = sizeof(TracePix) * GraphicsStuff::GI_SAMPLE_TOTAL;
-	giCalcBufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS | D3D11_BIND_SHADER_RESOURCE;
-	giCalcBufferDesc.CPUAccessFlags = 0;
-	giCalcBufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	giCalcBufferDesc.StructureByteStride = sizeof(TracePix);
-
-	// Instantiate the primary GI calculation buffer from the description
-	// we made above
-	result = device->CreateBuffer(&giCalcBufferDesc, NULL, &giCalcBuffer);
-	assert(SUCCEEDED(result));
-
-	// Describe the the shader-friendly write-only resource view we'll use to
-	// access the primary GI calculation buffer during path tracing
-
-	D3D11_BUFFER_UAV giCalcBufferViewADescA;
-	giCalcBufferViewADescA.FirstElement = 0;
-	giCalcBufferViewADescA.Flags = 0;
-	giCalcBufferViewADescA.NumElements = GraphicsStuff::GI_SAMPLE_TOTAL;
-
-	D3D11_UNORDERED_ACCESS_VIEW_DESC giCalcBufferViewADescB;
-	giCalcBufferViewADescB.Format = DXGI_FORMAT_UNKNOWN;
-	giCalcBufferViewADescB.Buffer = giCalcBufferViewADescA;
-	giCalcBufferViewADescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-
-	// Instantiate the primary GI calculation buffer's shader-friendly write-only view from the
-	// description we made above
-	result = device->CreateUnorderedAccessView(giCalcBuffer, &giCalcBufferViewADescB, &giCalcBufferViewWritable);
-	assert(SUCCEEDED(result));
-
-	// Describe the the shader-friendly read-only resource view we'll use to
-	// access the primary GI calculation buffer during path tracing
-
-	D3D11_BUFFER_SRV giCalcBufferViewBDescA;
-	giCalcBufferViewBDescA.FirstElement = 0;
-	giCalcBufferViewBDescA.NumElements = GraphicsStuff::GI_SAMPLE_TOTAL;
-
-	D3D11_SHADER_RESOURCE_VIEW_DESC giCalcBufferViewBDescB;
-	giCalcBufferViewBDescB.Format = DXGI_FORMAT_UNKNOWN;
-	giCalcBufferViewBDescB.Buffer = giCalcBufferViewBDescA;
-	giCalcBufferViewBDescB.ViewDimension = D3D11_SRV_DIMENSION_BUFFER;
-
-	// Instantiate the primary GI calculation buffer's shader-friendly read-only view from the
-	// description we made above
-	result = device->CreateShaderResourceView(giCalcBuffer, &giCalcBufferViewBDescB, &giCalcBufferViewReadable);
-	assert(SUCCEEDED(result));
-
-	// Initialise the progressive-render-pass counter variable
-	progPassCounter = 0;
+	// Build the buffer we'll be using to store
+	// image samples for temporal
+	// smoothing/anti-aliasing
+	fourByteUnsigned length = GraphicsStuff::DISPLAY_AREA;
+	GPGPUStuff::BuildRWStructBuffer<PixHistory>(device,
+												&aaBuffer,
+												NULL,
+												&aaBufferView,
+												length);
 }
 
 PathTracer::~PathTracer()
@@ -88,19 +40,17 @@ PathTracer::~PathTracer()
 	shaderInputBuffer->Release();
 	shaderInputBuffer = nullptr;
 
-	giCalcBuffer->Release();
-	giCalcBuffer = nullptr;
+	aaBuffer->Release();
+	aaBuffer = nullptr;
 
-	giCalcBufferViewWritable->Release();
-	giCalcBufferViewWritable = nullptr;
-
-	giCalcBufferViewReadable->Release();
-	giCalcBufferViewReadable = nullptr;
+	aaBufferView->Release();
+	aaBuffer = nullptr;
 }
 
 void PathTracer::Dispatch(ID3D11DeviceContext* context,
 						  DirectX::XMVECTOR& cameraPosition,
-						  DirectX::XMMATRIX& viewMatrix)
+						  DirectX::XMMATRIX& viewMatrix,
+						  ID3D11UnorderedAccessView* displayTexWritable)
 {
 	// Most of the shader inputs we expect to use were set during start-up,
 	// so no need to set them again over here
@@ -109,11 +59,16 @@ void PathTracer::Dispatch(ID3D11DeviceContext* context,
 	// Path-tracing needs random ray directions, so pass a write-allowed view of our shader-friendly
 	// random-number buffer onto the GPU over here
 	ID3D11UnorderedAccessView* gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
-	context->CSSetUnorderedAccessViews(1, 1, &gpuRandView, 0);
+	context->CSSetUnorderedAccessViews(2, 1, &gpuRandView, 0);
 
-	// Starting path-tracing means passing a write-allowed view of our GI calculation buffer
-	// onto the GPU, so do that here
-	context->CSSetUnorderedAccessViews(4, 1, &giCalcBufferViewWritable, 0);
+	// This render-stage publishes to the screen, so we need to pass the
+	// display texture along to the GPU
+	context->CSSetUnorderedAccessViews(1, 1, &displayTexWritable, 0);
+
+	// We want to perform stratified anti-aliasing (basically tracing pseudo-random
+	// subpixel rays each frame) and integrate the results over time, so push
+	// the anti-aliasing buffer onto the GPU as well
+	context->CSSetUnorderedAccessViews(3, 1, &aaBufferView, 0);
 
 	// Expose the local input buffer for writing
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
@@ -124,9 +79,11 @@ void PathTracer::Dispatch(ID3D11DeviceContext* context,
 	InputStuffs* dataPtr;
 	dataPtr = (InputStuffs*)mappedResource.pData;
 
-	// Copy in the camera position + view matrix
+	// Copy in the camera position + view matrix (also the inverse view matrix)
 	dataPtr->cameraPos = cameraPosition;
 	dataPtr->viewMat = viewMatrix;
+	dataPtr->iViewMat = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(viewMatrix),
+												 viewMatrix);
 
 	// Copy in the delta-time value at the current frame
 	float t = TimeStuff::deltaTime();
@@ -141,7 +98,29 @@ void PathTracer::Dispatch(ID3D11DeviceContext* context,
 
 	// Write the ID of the current progressive-rendering pass into the
 	// local input buffer
-	dataPtr->rendPassID = DirectX::XMUINT4(progPassCounter, progPassCounter, progPassCounter, progPassCounter);
+	dataPtr->rendPassID = DirectX::XMUINT4(progPassCounters.x, progPassCounters.y, 0, 0);
+
+	// Define the number of 8x8 render-slices in each pass
+	dataPtr->numProgPatches = DirectX::XMUINT4(GraphicsStuff::PROG_PATCHES_PER_FRAME,
+											  0, 0, 0);
+
+	// Define the number of bounces for each primary ray
+	dataPtr->maxNumBounces = DirectX::XMUINT4(GraphicsStuff::MAX_NUM_BOUNCES,
+											  GraphicsStuff::MAX_NUM_BOUNCES,
+											  GraphicsStuff::MAX_NUM_BOUNCES,
+											  GraphicsStuff::MAX_NUM_BOUNCES);
+
+	// Define the number of direct gather-rays (area-light samples) in each bounce
+	dataPtr->numDirGaths = DirectX::XMUINT4(GraphicsStuff::NUM_DIRECT_SAMPLES,
+											GraphicsStuff::NUM_DIRECT_SAMPLES,
+											GraphicsStuff::NUM_DIRECT_SAMPLES,
+											GraphicsStuff::NUM_DIRECT_SAMPLES);
+
+	// Define the number of indirect gather-rays (ambient samples) in each bounce
+	dataPtr->numIndirGaths = DirectX::XMUINT4(GraphicsStuff::NUM_INDIRECT_SAMPLES,
+											  GraphicsStuff::NUM_INDIRECT_SAMPLES,
+											  GraphicsStuff::NUM_INDIRECT_SAMPLES,
+											  GraphicsStuff::NUM_INDIRECT_SAMPLES);
 
 	// Break the write-allowed connection to the shader input buffer
 	context->Unmap(shaderInputBuffer, 0);
@@ -149,22 +128,39 @@ void PathTracer::Dispatch(ID3D11DeviceContext* context,
 	// Pass the data in the local input buffer over to the GPU
 	context->CSSetConstantBuffers(0, 1, &shaderInputBuffer);
 
-	// Increment the render-pass counter so that the next frame will render
-	// the pixel row just above the current one
-	progPassCounter += 1;
+	// Increment the render-pass counter so that each frame will render left-to-right
+	// and bottom-to-top
+	progPassCounters.x = (progPassCounters.x + 1); // Increment [x]
+	progPassCounters.y += (progPassCounters.x == GraphicsStuff::PROG_PASS_COUNT_X); // Only increment [y] if [x] wraps over from the right
 
-	// Re-set the render-pass counter if it travels pass the maximum
-	// number of progressive passes
-	if (progPassCounter > GraphicsStuff::PROG_PASS_COUNT)
+	// Lock the [y] and [x] aspects of the render-pass counter to the intervals [0...MAX_PASSES_Y] and [0...MAX_PASSES_X] respectively
+	progPassCounters.y *= (progPassCounters.y != GraphicsStuff::PROG_PASS_COUNT_Y);
+	progPassCounters.x *= (progPassCounters.x != GraphicsStuff::PROG_PASS_COUNT_X);
+
+	// Dispatch the path tracer
+	double cubeRt = std::cbrt(GraphicsStuff::PROG_PATCHES_PER_FRAME);
+	if (std::floor(cubeRt) == cubeRt)
 	{
-		progPassCounter = 0;
+		// The number of patches-per-frame is perfectly cubic, so we can evenly fill each axis
+		context->Dispatch((fourByteUnsigned)cubeRt,
+						  (fourByteUnsigned)cubeRt,
+						  (fourByteUnsigned)cubeRt);
 	}
 
-	// Dispatch the raw shader program associated with [this]
-	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::GI_SAMPLES_PER_RAY, 1);
-}
+	else
+	{
+		// The number of patches-per-frame has no rational cube root; treat it as a square
+		// instead (patches-per-frame are required to be /at least/ square in order to cleanly
+		// tile the image)
+		double squaRt = std::sqrt(GraphicsStuff::PROG_PATCHES_PER_FRAME);
+		context->Dispatch((fourByteUnsigned)squaRt,
+						  (fourByteUnsigned)squaRt,
+						  1);
+	}
 
-ID3D11ShaderResourceView* PathTracer::GetGICalcBufferReadable()
-{
-	return giCalcBufferViewReadable;
+	// We've finished initial rendering for this frame, so allow the presentation
+	// pass to run by detaching the screen texture's unordered-access-view from the
+	// GPU's compute shader state
+	ID3D11UnorderedAccessView* nullUAV = { NULL };
+	context->CSSetUnorderedAccessViews(1, 1, &nullUAV, 0);
 }

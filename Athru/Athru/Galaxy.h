@@ -16,17 +16,17 @@ class Galaxy
 		Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout);
 		~Galaxy();
 
-		// Update each system within [this]
-		void Update();
+		// Return an array carrying all the star systems in the game
+		System** GetSystems();
 
 		// Find the system closest to the given camera position
-		System& GetCurrentSystem(DirectX::XMVECTOR& cameraPos);
+		System* GetCurrentSystem(DirectX::XMVECTOR& cameraPos);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
-		System* systems;
+		System* systems[SceneStuff::SYSTEM_COUNT];
 };
 

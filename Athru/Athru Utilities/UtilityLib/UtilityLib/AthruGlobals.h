@@ -1,10 +1,9 @@
 #pragma once
 
 #include <chrono>
-#include <type_traits>
-#include <typeinfo>
-#include <directxmath.h>
 #include <math.h>
+#include <assert.h>
+#include <d3d11.h>
 #include "Typedefs.h"
 
 namespace TimeStuff
@@ -22,97 +21,148 @@ namespace TimeStuff
 		return deltaTimeValue.count();
 	}
 
-	inline twoByteUnsigned FPS()
+	inline float FPS()
 	{
-		return (twoByteUnsigned)(1.0f / deltaTime());
+		return std::roundf(1.0f / deltaTime());
 	}
 }
 
 namespace MathsStuff
 {
-	// An approximation of pi; stored as a number rather than an inline
-	// function to avoid repeated divisions and/or trig operations
-	extern const float PI;
+	// An approximation of pi
+	extern constexpr float PI = 3.14159265359f;
+}
 
-	// Calculate XMFLOAT4 magnitudes
-	// Implemented because I assumed float4s could only be
-	// set through XMFLOAT4's, but it seems like I was wrong
-	// about that; I should probably get rid of this and adjust
-	// my process towards a pure-XMVECTOR system for greater
-	// efficiency
-	inline float sisdVectorMagnitude(DirectX::XMFLOAT4 sisdVector)
+namespace MemoryStuff
+{
+	// Type to use for memory-marker indices
+	typedef byteUnsigned MARKER_INDEX_TYPE;
+
+	// Maximum supported number of memory-markers
+	constexpr byteUnsigned MAX_MARKER_COUNT = 120;
+
+	// Small compile-time function returning whether or
+	// not the current target platform is 64-bit
+	constexpr bool platform64()
 	{
-		float sqrX = sisdVector.x * sisdVector.x;
-		float sqrY = sisdVector.y * sisdVector.y;
-		float sqrZ = sisdVector.z * sisdVector.z;
-		return sqrt(sqrX + sqrY + sqrZ);
+		#ifdef _WIN64
+			return true; // The current platform is 64-bit
+		#else
+			return false; // The current platform is 32-bit
+		#endif
 	}
 
-	// Convert a given XMVECTOR (SSE) to an XMFLOAT4 (an array
-	// of scalars) and return the result
-	// Same note as above, only exists because I haven't
-	// changed over to an all-SSE system yet :P
-	inline DirectX::XMFLOAT4 sseToScalarVector(DirectX::XMVECTOR sseVector)
+	// Address length for the current target platform
+	constexpr byteUnsigned addrLength()
 	{
-		DirectX::XMFLOAT4 scalarVec;
-		DirectX::XMStoreFloat4(&scalarVec, sseVector);
-		return scalarVec;
+		byteUnsigned addressLen = 32; // Assume 32-bit by default
+		if constexpr (platform64())
+		{
+			addressLen = 64; // Update for 64-bit builds
+		}
+		return addressLen; // Return the evaluated address size
 	}
 
-	// "Squash" _m128 values into a single scalar through shuffles and SSE additions
-	static float sseSquash(__m128 sseVector)
+	// Half-address length for the current target platform, required
+	// for transforming 64-bit pointers into two-vectors of 32-bit
+	// values (needed if we want to easily map changes applied to
+	// data on the GPU back to [SceneFigure]s in CPU-accessible
+	// memory)
+	constexpr byteUnsigned halfAddrLength()
 	{
-		__m128 sseVectorCopy = sseVector;
+		return addrLength() / 2;
+	}
 
-		__m128 sseXXXXVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(3, 3, 3, 3));
-		__m128 sseYYYYVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(2, 2, 2, 2));
-		__m128 sseZZZZVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(1, 1, 1, 1));
-		__m128 sseWWWWVector = _mm_shuffle_ps(sseVector, sseVectorCopy, _MM_SHUFFLE(0, 0, 0, 0));
+	// Type matching the pointer-length described above; useful
+	// for manipulating pointers as natural numbers (e.g. when
+	// adjusting memory alignment, fitting 64-bit addresses into
+	// 32-bit vectors for transport to the GPU, etc.)
+	// std::conditional takes a boolean value argument and two
+	// type arguments; the [type] member compiles into the first
+	// type argument if the boolean value is [true], and compiles
+	// into the second type argument if the boolean value is
+	// [false]
+	typedef std::conditional<platform64(),
+							 eightByteUnsigned,
+							 fourByteUnsigned>::type addrValType;
 
-		__m128 sseXPlusYVector = _mm_add_ps(sseXXXXVector, sseYYYYVector);
-		__m128 sseXPlusYPlusZVector = _mm_add_ps(sseXPlusYVector, sseZZZZVector);
-		__m128 sseSumVector = _mm_add_ps(sseXPlusYPlusZVector, sseWWWWVector);
+	// Appropriately-sized LO bitmask for the current target
+	// platform
+	// Required for matching appropriate parts of input pointers
+	// to the X and Y axes of storage vectors during CPU->GPU
+	// pointer transformations
+	constexpr addrValType addrLOMask()
+	{
+		addrValType mask = 0x0000FFFF; // Assume 32-bit by default
+		if constexpr (platform64()) // Adjust for 64-bit builds
+		{
+			mask = 0x00000000FFFFFFFF;
+		}
+		return mask; // Return the generated bit-mask
+	}
 
-		return _mm_cvtss_f32(sseSumVector);
+	// Appropriately-sized HI bitmask for the current target
+	// platform
+	// Required for matching appropriate parts of input pointers
+	// to the X and Y axes of storage vectors during CPU->GPU
+	// pointer transformations
+	constexpr addrValType addrHIMask()
+	{
+		addrValType mask = 0xFFFF0000; // Assume 32-bit by default
+		if constexpr (platform64()) // Adjust for 64-bit builds
+		{
+			mask = 0xFFFFFFFF00000000;
+		}
+		return mask; // Return the generated bit-mask
 	}
 }
 
 namespace GraphicsStuff
 {
 	// Display properties
-	extern const bool FULL_SCREEN;
-	extern const bool VSYNC_ENABLED;
-	extern const fourByteUnsigned DISPLAY_WIDTH;
-	extern const fourByteUnsigned DISPLAY_HEIGHT;
-	extern const float DISPLAY_ASPECT_RATIO;
-	extern const float SCREEN_FAR;
-	extern const float SCREEN_NEAR;
+	extern constexpr bool FULL_SCREEN = false;
+	extern constexpr bool VSYNC_ENABLED = false;
+	extern constexpr fourByteUnsigned DISPLAY_WIDTH = 1024;
+	extern constexpr fourByteUnsigned DISPLAY_HEIGHT = 768;
+	extern constexpr fourByteUnsigned DISPLAY_AREA = DISPLAY_WIDTH * DISPLAY_HEIGHT;
+	extern constexpr float DISPLAY_ASPECT_RATIO = (float)GraphicsStuff::DISPLAY_WIDTH /
+												  (float)GraphicsStuff::DISPLAY_HEIGHT;
+	extern constexpr float SCREEN_FAR = 1000.0f;
+	extern constexpr float SCREEN_NEAR = 0.1f;
 	extern const float FRUSTUM_WIDTH_AT_NEAR;
 	extern const float FRUSTUM_HEIGHT_AT_NEAR;
 	extern const float VERT_FIELD_OF_VIEW_RADS;
 	extern const float HORI_FIELD_OF_VIEW_RADS;
+
+	// Rendering information
 	extern constexpr fourByteUnsigned SCREEN_RECT_INDEX_COUNT = 6;
-	extern constexpr fourByteUnsigned PROG_PASS_HEIGHT = 64;
-	extern const fourByteUnsigned PROG_PASS_COUNT;
-	extern const fourByteUnsigned MAX_TRACE_COUNT;
-	extern const fourByteUnsigned GI_SAMPLES_PER_RAY;
-	extern const fourByteUnsigned GI_SAMPLE_TOTAL;
+	extern constexpr fourByteUnsigned PROG_PASS_WIDTH = 8;
+	extern constexpr fourByteUnsigned PROG_PASS_HEIGHT = 8;
+	extern constexpr fourByteUnsigned PROG_PATCHES_PER_FRAME = 16;
+	extern constexpr fourByteUnsigned PROG_PATCHES_WIDTH = 4;
+	extern constexpr fourByteUnsigned PROG_PASS_AREA = PROG_PASS_WIDTH * PROG_PASS_HEIGHT * PROG_PATCHES_PER_FRAME;
+	extern constexpr fourByteUnsigned PROG_PASS_COUNT_X = DISPLAY_WIDTH / (PROG_PASS_WIDTH * PROG_PATCHES_WIDTH);
+	extern constexpr fourByteUnsigned PROG_PASS_COUNT_Y = DISPLAY_HEIGHT / (PROG_PASS_HEIGHT * PROG_PATCHES_WIDTH);
+	extern constexpr fourByteUnsigned MAX_NUM_BOUNCES = 5;
+	extern constexpr fourByteUnsigned NUM_DIRECT_SAMPLES = 8;
+	extern constexpr fourByteUnsigned NUM_INDIRECT_SAMPLES = 1;
+	extern constexpr fourByteUnsigned NUM_AA_SAMPLES = 100;
 }
 
 namespace SceneStuff
 {
-	extern constexpr fourByteUnsigned SYSTEM_COUNT = 1;
+	extern constexpr fourByteUnsigned SYSTEM_COUNT = 100;
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = 10;
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_ORGANISMS = 8;
 }
 
 namespace PlantStuff
 {
-	extern const fourByteUnsigned MAX_PLANT_AGE;
-	extern const float MAX_PLANT_SIZE;
-	extern const float MAX_TROPISM;
-	extern const fourByteUnsigned MAX_BRANCH_COUNT_AT_FORK;
-	extern const fourByteUnsigned MAX_LEAF_LOBE_COUNT;
+	extern constexpr fourByteUnsigned MAX_PLANT_AGE = 200;
+	extern constexpr float MAX_PLANT_SIZE = 25.0f;
+	extern constexpr float MAX_TROPISM = 0.4f;
+	extern constexpr fourByteUnsigned MAX_BRANCH_COUNT_AT_FORK = 10;
+	extern constexpr fourByteUnsigned MAX_LEAF_LOBE_COUNT = 4;
 }
 
 namespace CritterStuff
@@ -121,5 +171,88 @@ namespace CritterStuff
 
 namespace GPGPUStuff
 {
-	extern constexpr fourByteUnsigned RAND_STATE_COUNT = 16777216;
+	extern constexpr fourByteUnsigned NUM_RAND_SEEDS = 88917504;
+
+	// Construct a GPGPU read/write buffer with the given complex
+	// (non-pointer, non-enum, non-array, non-reference) type
+	template<typename BufType>
+	static void BuildRWStructBuffer(ID3D11Device* device,
+									ID3D11Buffer** bufPttr,
+									const D3D11_SUBRESOURCE_DATA* baseDataPttr,
+									ID3D11UnorderedAccessView** rwView,
+									fourByteUnsigned bufLength)
+	{
+		// Describe the buffer we're creating and storing at
+		// [bufPttr]
+		D3D11_BUFFER_DESC bufferDesc;
+		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
+		bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+		bufferDesc.CPUAccessFlags = 0;
+		bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		bufferDesc.StructureByteStride = sizeof(BufType);
+
+		// Construct a buffer at [bufPttr] with the description given above
+		HRESULT result = device->CreateBuffer(&bufferDesc, baseDataPttr, bufPttr);
+		assert(SUCCEEDED(result));
+
+		// Describe the the shader-friendly read/write resource view we'll
+		// use to access the buffer during general-purpose graphics
+		// processing
+		D3D11_BUFFER_UAV viewDescA;
+		viewDescA.FirstElement = 0;
+		viewDescA.Flags = 0;
+		viewDescA.NumElements = bufLength;
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC viewDescB;
+		viewDescB.Format = DXGI_FORMAT_UNKNOWN;
+		viewDescB.Buffer = viewDescA;
+		viewDescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+
+		// Construct a DirectX11 "view" over the data at [bufPttr]
+		result = device->CreateUnorderedAccessView(*bufPttr, &viewDescB, rwView);
+		assert(SUCCEEDED(result));
+	}
+
+	// Construct a GPGPU read-write buffer with the given primitive type
+	template<typename BufType>
+	static void BuildRWBuffer(ID3D11Device* device,
+							  ID3D11Buffer** bufPttr,
+							  const D3D11_SUBRESOURCE_DATA* baseDataPttr,
+							  ID3D11UnorderedAccessView** rwView,
+							  DXGI_FORMAT& viewFormat,
+							  fourByteUnsigned& bufLength)
+	{
+		// Describe the buffer we're creating and storing at
+		// [bufPttr]
+		D3D11_BUFFER_DESC bufferDesc;
+		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
+		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
+		bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
+		bufferDesc.CPUAccessFlags = 0;
+		bufferDesc.MiscFlags = 0;
+		bufferDesc.StructureByteStride = 0;
+
+		// Construct the state buffer using the seeds + description
+		// defined above
+		HRESULT result = device->CreateBuffer(&bufferDesc, baseDataPttr, bufPttr);
+		assert(SUCCEEDED(result));
+
+		// Describe the the shader-friendly read/write resource view we'll
+		// use to access the buffer during general-purpose graphics
+		// processing
+		D3D11_BUFFER_UAV viewDescA;
+		viewDescA.FirstElement = 0;
+		viewDescA.Flags = 0;
+		viewDescA.NumElements = bufLength;
+
+		D3D11_UNORDERED_ACCESS_VIEW_DESC viewDescB;
+		viewDescB.Format = viewFormat;
+		viewDescB.Buffer = viewDescA;
+		viewDescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
+
+		// Construct a DirectX11 "view" over the data at [bufPttr]
+		result = device->CreateUnorderedAccessView(*bufPttr, &viewDescB, rwView);
+		assert(SUCCEEDED(result));
+	}
 }

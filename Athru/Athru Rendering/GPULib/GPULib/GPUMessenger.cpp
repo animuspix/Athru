@@ -131,7 +131,6 @@ void GPUMessenger::FrameEndSync()
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	HRESULT result = context->Map(figBufferStaging, 0, D3D11_MAP_READ, 0, &mappedResource);
 	assert(SUCCEEDED(result));
-
 	for (byteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_FIGURES; i += 1)
 	{
 		// Get a pointer to the data referenced by [mappedResource]
@@ -140,8 +139,8 @@ void GPUMessenger::FrameEndSync()
 
 		// Extract the address of the original object associated with the current
 		// figure
-		eightByteUnsigned addressLO = ((eightByteUnsigned)dataPttr[i].origin.x) << 32;
-		eightByteUnsigned addressHI = ((eightByteUnsigned)dataPttr[i].origin.y);
+		MemoryStuff::addrValType addressLO = ((MemoryStuff::addrValType)dataPttr[i].origin.x) << (MemoryStuff::halfAddrLength());
+		MemoryStuff::addrValType addressHI = ((MemoryStuff::addrValType)dataPttr[i].origin.y);
 		SceneFigure* addressFull = (SceneFigure*)(addressLO | addressHI);
 
 		// Copy in the data for the current figure

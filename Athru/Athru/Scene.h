@@ -19,10 +19,6 @@ class Scene
 		// with [this]
 		Galaxy* GetGalaxy();
 
-		// Retrieve the system closest to the given camera
-		// position
-		System& GetCurrentSystem();
-
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);

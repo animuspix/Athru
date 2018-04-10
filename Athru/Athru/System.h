@@ -6,7 +6,8 @@
 class System
 {
 	public:
-		System();
+		System() {};
+		System(DirectX::XMVECTOR sysPos);
 		~System();
 
 		// Update the orbits of the items associated with [this]
@@ -15,9 +16,8 @@ class System
 		// happen)
 		void Update();
 
-		// Fetch a write-allowed reference to the global
-		// position of [this]
-		DirectX::XMVECTOR& FetchPos();
+		// Retrieve the global position of [this]
+		DirectX::XMVECTOR GetPos();
 
 		// Retrieve a reference to the star associated with [this]
 		Star* GetStar();

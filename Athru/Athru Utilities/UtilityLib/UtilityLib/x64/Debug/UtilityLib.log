@@ -1,8 +1,8 @@
-﻿  UtilityServiceCentre.cpp
-  StackAllocator.cpp
+﻿  Application.cpp
+  Generating Code...
+  Compiling...
+  UtilityServiceCentre.cpp
   Logger.cpp
   Input.cpp
-  AthruGlobals.cpp
-  Application.cpp
   Generating Code...
   UtilityLib.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\Athru Utilities\UtilityLib\UtilityLib\x64\Debug\UtilityLib.lib

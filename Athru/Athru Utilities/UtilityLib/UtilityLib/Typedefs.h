@@ -1,5 +1,7 @@
 #pragma once
 
+#include <stdint.h>
+
 // An eight-bit signed type
 typedef signed char byteSigned;
 
@@ -19,7 +21,7 @@ typedef signed int fourByteSigned;
 typedef unsigned int fourByteUnsigned;
 
 // A sixty-four bit signed type
-typedef long long eightByteSigned;
+typedef signed long long eightByteSigned;
 
 // A sixty-four bit unsigned type
 typedef unsigned long long eightByteUnsigned;

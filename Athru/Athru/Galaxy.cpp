@@ -3,19 +3,20 @@
 
 Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 {
-	systems = new System[SceneStuff::SYSTEM_COUNT];
-
 	// Super, super unfinished; consider editing towards more
 	// realistic stellar distributions in the future
 
 	// If the chosen galactic layout is spherical, place stars
 	// at random distances from the origin
-	fourByteUnsigned tempThresh = 200;
 	if (galacticLayout == AVAILABLE_GALACTIC_LAYOUTS::SPHERE)
 	{
-		for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
+		// Guarantee that at least one system starts from the origin
+		systems[0] = new System(_mm_set_ps(0, 0, 0, 1.0f));
+
+		// Generate remaining systems
+		for (fourByteUnsigned i = 1; i < SceneStuff::SYSTEM_COUNT; i += 1)
 		{
-			systems[i].FetchPos() = _mm_set_ps((float)(rand() % tempThresh), (float)(rand() % tempThresh), (float)(rand() % tempThresh), 1.0f);
+			systems[i] = new System(_mm_set_ps((float)(rand()), (float)(rand()), (float)(rand()), 1.0f));
 		}
 	}
 
@@ -29,7 +30,7 @@ Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 
 		for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 		{
-			systems[i].FetchPos() = _mm_set_ps(1.0f, (float)rand(), (float)(sin(i) - cos(i)), (float)((i * sin(i)) + cos(i)));
+			systems[i] = new System(_mm_set_ps(1.0f, (float)rand(), (float)(sin(i) - cos(i)), (float)((i * sin(i)) + cos(i))));
 		}
 	}
 }
@@ -39,21 +40,18 @@ Galaxy::~Galaxy()
 
 }
 
-void Galaxy::Update()
+System** Galaxy::GetSystems()
 {
-	for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
-	{
-		systems[i].Update();
-	}
+	return systems;
 }
 
-System& Galaxy::GetCurrentSystem(DirectX::XMVECTOR& cameraPos)
+System* Galaxy::GetCurrentSystem(DirectX::XMVECTOR& cameraPos)
 {
 	fourByteUnsigned systemIndex = 0;
 	float lastDistToSystemCentre = FLT_MAX;
 	for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 	{
-		DirectX::XMVECTOR cameraToSystemDiff = _mm_sub_ps(systems[systemIndex].FetchPos(), cameraPos);
+		DirectX::XMVECTOR cameraToSystemDiff = _mm_sub_ps(systems[systemIndex]->GetPos(), cameraPos);
 		float distToSystemCentre = _mm_cvtss_f32(DirectX::XMVector3Length(cameraToSystemDiff));
 		if (distToSystemCentre < lastDistToSystemCentre)
 		{

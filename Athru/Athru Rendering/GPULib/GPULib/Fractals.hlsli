@@ -39,13 +39,23 @@ JuliaProps Julia(float4 juliaCoeffs,
     float4 dz = float4(1.0f, 0.0f, 0.0f, 0.0f);
     float4 c = juliaCoeffs;
 
+    // Dynamically calculated scalar factor for the
+    // Julia derivative [dz]
+    // Distance-dependant variance brings the fractal
+    // rate-of-change (represented by [dz]) closer to
+    // the rate of change in the image signal between
+    // separate rays
+    // [2.0f] is the base case (applies when the camera
+    // is positioned at the fractal's local origin)
+    float dzScalar = 2.0f + length(coord) / 10.0f;
+
     // Iterate the fractal
     int i = 0;
     float sqrBailout = (BAILOUT_JULIA * BAILOUT_JULIA);
     while (i < maxIter &&
            dot(z, z) < sqrBailout)
     {
-        dz = 2.0f * QtnProduct2(z, dz);
+        dz = dzScalar * QtnProduct2(z, dz);
         z = QtnProduct2(z, z) + c;
         i += 1;
     }

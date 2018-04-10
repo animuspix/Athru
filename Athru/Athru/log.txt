@@ -9,9 +9,8 @@ lots of boilerplate code. This has resulted in the following:
 - Athru will only ever log the address + type-id of structs/classes
   and avoid describing their members
 
-- Athru will not attempt to log enums; any enum values that you want
-  to log should be cast into an arithmetic type beforehand, and enum
-  names must be stringified before being passed to the logger
+- Athru will only ever log the address, type-ID, and numeric value of enumerations;
+  enum names must be stringified before being passed to the logger
 
 Thank you for reading :)
 

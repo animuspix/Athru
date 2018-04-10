@@ -24,6 +24,55 @@ void Scene::Update()
 	// Update the camera
 	mainCamera->Update();
 
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging arithmetic types \n",
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log('a',
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log((short)SHRT_MAX,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(INT_MAX,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(LLONG_MAX,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(56.0625f,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(56.0625,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(56.0625l,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(false,
+															  Logger::DESTINATIONS::CONSOLE);
+
+	class testClass { };
+	testClass tstClass;
+	struct testStruct { };
+	testStruct tstStruct;
+	union testUnion { };
+	testUnion tstUnion;
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging structs/classes, unions, and enums\n",
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(tstStruct,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(tstClass,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(tstUnion,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(FIG_TYPES::PLANET,
+															  Logger::DESTINATIONS::CONSOLE);
+
+	fourByteSigned intArr[6] = { 0, 1, -2, 4, -3, 6 };
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging global functions, member functions, and example pointer/array data\n",
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(&Scene::CollectLocalFigures,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(this,
+															  Logger::DESTINATIONS::CONSOLE);
+	AthruUtilities::UtilityServiceCentre::AccessLogger()->LogArray(intArr,
+																   sizeof(intArr) / sizeof(fourByteUnsigned),
+																   Logger::DESTINATIONS::CONSOLE);
+
 	// Non-GPU updates here (networking, player stats, UI stuffs, etc.)
 }
 
@@ -31,20 +80,9 @@ SceneFigure* Scene::CollectLocalFigures()
 {
 	// Pass the player's local environment into an array of
 	// generic [SceneFigure]s
-	System currSys = GetCurrentSystem();
-	//Planet* currPlanet = currSys.GetPlanets()[0];
-	//currFigures[0] = *(SceneFigure*)(currSys.GetStar());
-	//currFigures[1] = *(SceneFigure*)(currPlanet);
-	//currFigures[2] = currPlanet->FetchCritter(0);
-	//currFigures[3] = currPlanet->FetchCritter(1);
-	//currFigures[4] = currPlanet->FetchCritter(2);
-	//currFigures[5] = currPlanet->FetchCritter(3);
-	//currFigures[6] = currPlanet->FetchPlant(0);
-	//currFigures[7] = currPlanet->FetchPlant(1);
-	//currFigures[8] = currPlanet->FetchPlant(2);
-	//currFigures[9] = currPlanet->FetchPlant(3);
-	Star* star = currSys.GetStar();
-	Planet** planets = currSys.GetPlanets();
+	System* currSys = galaxy->GetCurrentSystem(mainCamera->GetTranslation());
+	Star* star = currSys->GetStar();
+	Planet** planets = currSys->GetPlanets();
 	currFigures[0] = *(SceneFigure*)(star);
 	currFigures[1] = *(SceneFigure*)(planets[0]);
 	currFigures[2] = *(SceneFigure*)(planets[1]);
@@ -66,11 +104,6 @@ Camera* Scene::GetMainCamera()
 Galaxy* Scene::GetGalaxy()
 {
 	return galaxy;
-}
-
-System& Scene::GetCurrentSystem()
-{
-	return galaxy->GetCurrentSystem(mainCamera->GetTranslation());
 }
 
 // Push constructions for this class through Athru's custom allocator

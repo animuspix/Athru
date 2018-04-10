@@ -3,10 +3,6 @@
 #include <cstdlib>
 #include "AthruGlobals.h"
 
-#define MAX_MARKER_COUNT 120
-#define MARKER_INDEX_TYPE byteSigned
-#define POINTER_LENGTH eightByteUnsigned
-
 class ServiceCentre;
 
 // Manages the heap with a single-ended stack data structure
@@ -23,19 +19,18 @@ class StackAllocator
 		~StackAllocator();
 
 		// Allocate [bytes] from the available heap memory
-		address AlignedAlloc(eightByteUnsigned bytes, byteUnsigned alignment, bool setMarker);
+		address AlignedAlloc(eightByteUnsigned bytes,
+							 byteUnsigned alignment,
+							 bool setMarker);
 
 		// Allocate a single non-aligned byte from the available heap memory
 		address ByteAlloc(bool setMarker);
 
 		// Clear memory down to a particular address; all pointers
-		// up to and including the given address will be emptied
+		// up to and including the given address should be emptied
 		// for simplicity and to prevent undesirable overwrites
 		// from occurring
-		void DeAlloc(MARKER_INDEX_TYPE markerIndex);
-
-		// Set a clearance marker without allocating additional memory
-		void SetMarker();
+		void DeAlloc(MemoryStuff::MARKER_INDEX_TYPE markerIndex);
 
 		// Retrieve the top-most address from the stack
 		address GetTop();
@@ -47,10 +42,12 @@ class StackAllocator
 		// Variables
 		address stackTop;
 		address stackStart;
-		Marker markers[MAX_MARKER_COUNT];
+		Marker markers[MemoryStuff::MAX_MARKER_COUNT];
 		twoByteUnsigned activeMarkerCount;
+		eightByteUnsigned availMem;
 
 		// Helper functions
 		// Shift pointers to a given alignment
-		address PtrAdjuster(address srcPtr, byteUnsigned alignment);
+		address PtrAdjuster(address srcPtr,
+							byteUnsigned alignment);
 };

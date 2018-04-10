@@ -20,11 +20,8 @@ Pixel main(ScreenVertex vertIn)
     // reason to transform it
     pixOut.pos = vertIn.pos;
 
-    // No need to persist color since we're getting all our
-    // base color information from the screen texture; initialise
-    // that and everything else mostly associated with boxecules
-    // to [0]
-    pixOut.texCoord = float2(vertIn.texCoord.x, vertIn.texCoord.y);
+    // Pass vertex texture coordinates along to the output [Pixel]
+    pixOut.texCoord = vertIn.texCoord;
 
     // Pass the output [Pixel] along to the pixel shader
     return pixOut;
