@@ -24,55 +24,6 @@ void Scene::Update()
 	// Update the camera
 	mainCamera->Update();
 
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging arithmetic types \n",
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log('a',
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log((short)SHRT_MAX,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(INT_MAX,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(LLONG_MAX,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(56.0625f,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(56.0625,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(56.0625l,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(false,
-															  Logger::DESTINATIONS::CONSOLE);
-
-	class testClass { };
-	testClass tstClass;
-	struct testStruct { };
-	testStruct tstStruct;
-	union testUnion { };
-	testUnion tstUnion;
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging structs/classes, unions, and enums\n",
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(tstStruct,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(tstClass,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(tstUnion,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(FIG_TYPES::PLANET,
-															  Logger::DESTINATIONS::CONSOLE);
-
-	fourByteSigned intArr[6] = { 0, 1, -2, 4, -3, 6 };
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging global functions, member functions, and example pointer/array data\n",
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(&Scene::CollectLocalFigures,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(this,
-															  Logger::DESTINATIONS::CONSOLE);
-	AthruUtilities::UtilityServiceCentre::AccessLogger()->LogArray(intArr,
-																   sizeof(intArr) / sizeof(fourByteUnsigned),
-																   Logger::DESTINATIONS::CONSOLE);
-
 	// Non-GPU updates here (networking, player stats, UI stuffs, etc.)
 }
 
