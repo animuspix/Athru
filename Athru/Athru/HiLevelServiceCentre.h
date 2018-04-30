@@ -31,6 +31,11 @@ class HiLevelServiceCentre
 
 		static void ShutDown()
 		{
+			// Free any un-managed memory allocated to higher-level services,
+			// then send the references stored for each service to [nullptr]
+			scenePttr->~Scene();
+			scenePttr = nullptr;
+
 			// Free any un-managed memory allocated to rendering services;
 			// also send the references stored for each rendering service to
 			// [nullptr]
@@ -41,11 +46,6 @@ class HiLevelServiceCentre
 			AthruUtilities::UtilityServiceCentre::DeInitApp();
 			AthruUtilities::UtilityServiceCentre::DeInitInput();
 			AthruUtilities::UtilityServiceCentre::DeInitLogger();
-
-			// Free any un-managed memory allocated to higher-level services,
-			// then send the references stored for each service to [nullptr]
-			scenePttr->~Scene();
-			scenePttr = nullptr;
 
 			// Free memory associated with the [StackAllocator] (all managed memory +
 			// anything required by the [StackAllocator] itself) and send the reference

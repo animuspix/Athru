@@ -1,8 +1,1672 @@
-﻿  Scene.cpp
-  LINK : 0 new modules and 5 (out of 83) modules have changed since prior linking
+﻿  Athru.cpp
+  Critter.cpp
+  Galaxy.cpp
+  HiLevelServiceCentre.cpp
+  Planet.cpp
+  Scene.cpp
+  Star.cpp
+  System.cpp
+  Compiling...
+  Generating Code...
+  LINK : 0 new modules and 27 (out of 79) modules have changed since prior linking
+  LINK : too many modules have changed since prior linking; performing full link
+  
+  Invoking LINK.EXE:
+   /ERRORREPORT:PROMPT @C:\Users\Paul\AppData\Local\Temp\tmp345d21474b784e52a6b30ea7b753e652.rsp
+   /incremental
+   /nologo
+   /fullbuild
+  
+  Starting pass 1
+  Processed /DEFAULTLIB:uuid.lib
+  Processed /DEFAULTLIB:msvcprtd
+  Processed /DEFAULTLIB:dxgi.lib
+  Processed /DEFAULTLIB:d3d11.lib
+  Processed /DEFAULTLIB:d3dcompiler.lib
+  Processed /DEFAULTLIB:MSVCRTD
+  Processed /DEFAULTLIB:OLDNAMES
+  
+  Searching libraries
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Rendering\GPULib\GPULib\x64\Debug\GPULib.lib:
+        Found "public: __cdecl Direct3D::Direct3D(struct HWND__ *)" (??0Direct3D@@QEAA@PEAUHWND__@@@Z)
+          Referenced in Athru.obj
+          Loaded GPULib.lib(Direct3D.obj)
+        Found "public: __cdecl RenderManager::RenderManager(void)" (??0RenderManager@@QEAA@XZ)
+          Referenced in Athru.obj
+          Loaded GPULib.lib(RenderManager.obj)
+        Found "public: __cdecl GPUMessenger::GPUMessenger(void)" (??0GPUMessenger@@QEAA@XZ)
+          Referenced in Athru.obj
+          Loaded GPULib.lib(GPUMessenger.obj)
+        Found "public: static void * __cdecl GPURand::operator new(unsigned __int64)" (??2GPURand@@SAPEAX_K@Z)
+          Referenced in Athru.obj
+          Loaded GPULib.lib(GPURand.obj)
+        Found "private: static class Direct3D * AthruGPU::GPUServiceCentre::d3DPttr" (?d3DPttr@GPUServiceCentre@AthruGPU@@0PEAVDirect3D@@EA)
+          Referenced in Athru.obj
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Loaded GPULib.lib(GPUServiceCentre.obj)
+        Found "public: __cdecl SceneFigure::SceneFigure(void)" (??0SceneFigure@@QEAA@XZ)
+          Referenced in Critter.obj
+          Referenced in Planet.obj
+          Referenced in Scene.obj
+          Loaded GPULib.lib(SceneFigure.obj)
+        Found "public: __cdecl Camera::Camera(void)" (??0Camera@@QEAA@XZ)
+          Referenced in Scene.obj
+          Loaded GPULib.lib(Camera.obj)
+        Found "public: static void * __cdecl PipelineShader::operator new(unsigned __int64)" (??2PipelineShader@@SAPEAX_K@Z)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Loaded GPULib.lib(PipelineShader.obj)
+        Found "public: __cdecl ScreenPainter::ScreenPainter(class Microsoft::WRL::ComPtr<struct ID3D11Device> const &,struct HWND__ *,wchar_t const *,wchar_t const *)" (??0ScreenPainter@@QEAA@AEBV?$ComPtr@UID3D11Device@@@WRL@Microsoft@@PEAUHWND__@@PEB_W2@Z)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Loaded GPULib.lib(ScreenPainter.obj)
+        Found "public: static void * __cdecl ComputeShader::operator new(unsigned __int64)" (??2ComputeShader@@SAPEAX_K@Z)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Loaded GPULib.lib(ComputeShader.obj)
+        Found "public: __cdecl PathTracer::PathTracer(wchar_t const *)" (??0PathTracer@@QEAA@PEB_W@Z)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Loaded GPULib.lib(PathTracer.obj)
+        Found "public: void __cdecl ScreenRect::PassToGPU(class Microsoft::WRL::ComPtr<struct ID3D11DeviceContext> const &)" (?PassToGPU@ScreenRect@@QEAAXAEBV?$ComPtr@UID3D11DeviceContext@@@WRL@Microsoft@@@Z)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Loaded GPULib.lib(ScreenRect.obj)
+        Found "public: static void * __cdecl Mesh::operator new(unsigned __int64)" (??2Mesh@@SAPEAX_K@Z)
+          Referenced in GPULib.lib(Camera.obj)
+          Loaded GPULib.lib(Mesh.obj)
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Utilities\UtilityLib\UtilityLib\x64\Debug\UtilityLib.lib:
+        Found "public: __cdecl StackAllocator::StackAllocator(unsigned __int64 const &)" (??0StackAllocator@@QEAA@AEB_K@Z)
+          Referenced in Athru.obj
+          Loaded UtilityLib.lib(StackAllocator.obj)
+        Found "public: static void * __cdecl Logger::operator new(unsigned __int64)" (??2Logger@@SAPEAX_K@Z)
+          Referenced in Athru.obj
+          Loaded UtilityLib.lib(Logger.obj)
+        Found "public: __cdecl Application::Application(void)" (??0Application@@QEAA@XZ)
+          Referenced in Athru.obj
+          Loaded UtilityLib.lib(Application.obj)
+        Found "public: __cdecl Input::Input(void)" (??0Input@@QEAA@XZ)
+          Referenced in Athru.obj
+          Loaded UtilityLib.lib(Input.obj)
+        Found "class std::chrono::time_point<struct std::chrono::steady_clock,class std::chrono::duration<__int64,struct std::ratio<1,1000000000> > > TimeStuff::timeAtLastFrame" (?timeAtLastFrame@TimeStuff@@3V?$time_point@Usteady_clock@chrono@std@@V?$duration@_JU?$ratio@$00$0DLJKMKAA@@std@@@23@@chrono@std@@A)
+          Referenced in Athru.obj
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Loaded UtilityLib.lib(AthruGlobals.obj)
+        Found "private: static class StackAllocator * AthruUtilities::UtilityServiceCentre::stackAllocatorPttr" (?stackAllocatorPttr@UtilityServiceCentre@AthruUtilities@@0PEAVStackAllocator@@EA)
+          Referenced in UtilityLib.lib(Input.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in GPULib.lib(Mesh.obj)
+          Referenced in UtilityLib.lib(Logger.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in GPULib.lib(GPURand.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in Star.obj
+          Referenced in System.obj
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in Athru.obj
+          Referenced in Galaxy.obj
+          Referenced in Planet.obj
+          Referenced in Scene.obj
+          Loaded UtilityLib.lib(UtilityServiceCentre.obj)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\kernel32.lib:
+        Found __imp_OutputDebugStringA
+          Referenced in Athru.obj
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetModuleHandleW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __IMPORT_DESCRIPTOR_KERNEL32
+          Referenced in kernel32.lib(KERNEL32.dll)
+          Referenced in kernel32.lib(KERNEL32.dll)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __NULL_IMPORT_DESCRIPTOR
+          Referenced in kernel32.lib(KERNEL32.dll)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found KERNEL32_NULL_THUNK_DATA
+          Referenced in kernel32.lib(KERNEL32.dll)
+          Loaded kernel32.lib(KERNEL32.dll)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\user32.lib:
+        Found __imp_EnumDisplaySettingsW
+          Referenced in GPULib.lib(Direct3D.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_GetSystemMetrics
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_SetCursorPos
+          Referenced in GPULib.lib(Camera.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_TranslateMessage
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_DispatchMessageW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_PeekMessageW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_DefWindowProcW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_PostQuitMessage
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_UnregisterClassW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_RegisterClassExW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_CreateWindowExW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_DestroyWindow
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_ShowWindow
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_SetFocus
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_SetForegroundWindow
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_ShowCursor
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_GetCursorPos
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_ScreenToClient
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_LoadCursorW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_LoadIconW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __imp_ChangeDisplaySettingsW
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded user32.lib(USER32.dll)
+        Found __IMPORT_DESCRIPTOR_USER32
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Referenced in user32.lib(USER32.dll)
+          Loaded user32.lib(USER32.dll)
+        Found USER32_NULL_THUNK_DATA
+          Referenced in user32.lib(USER32.dll)
+          Loaded user32.lib(USER32.dll)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\gdi32.lib:
+        Found __imp_GetStockObject
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded gdi32.lib(GDI32.dll)
+        Found __IMPORT_DESCRIPTOR_GDI32
+          Referenced in gdi32.lib(GDI32.dll)
+          Loaded gdi32.lib(GDI32.dll)
+        Found GDI32_NULL_THUNK_DATA
+          Referenced in gdi32.lib(GDI32.dll)
+          Loaded gdi32.lib(GDI32.dll)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\winspool.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\comdlg32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\advapi32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\shell32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\ole32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\oleaut32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\uuid.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbc32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbccp32.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\msvcprtd.lib:
+        Found "__declspec(dllimport) public: __cdecl std::_Lockit::_Lockit(int)" (__imp_??0_Lockit@std@@QEAA@H@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: __cdecl std::_Lockit::~_Lockit(void)" (__imp_??1_Lockit@std@@QEAA@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found _Query_perf_counter
+          Referenced in Athru.obj
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in UtilityLib.lib(AthruGlobals.obj)
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found _Query_perf_frequency
+          Referenced in Athru.obj
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in UtilityLib.lib(AthruGlobals.obj)
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "int __cdecl std::uncaught_exceptions(void)" (?uncaught_exceptions@std@@YAHXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "void __cdecl std::_Debug_message(wchar_t const *,wchar_t const *,unsigned int)" (?_Debug_message@std@@YAXPEB_W0I@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "void __cdecl std::_Xlength_error(char const *)" (?_Xlength_error@std@@YAXPEBD@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "void __cdecl std::_Xout_of_range(char const *)" (?_Xout_of_range@std@@YAXPEBD@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "void __cdecl std::_Facet_Register(class std::_Facet_base *)" (?_Facet_Register@std@@YAXPEAV_Facet_base@1@@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(locale0_implib.obj)
+        Found "__declspec(dllimport) public: __cdecl std::locale::id::operator unsigned __int64(void)" (__imp_??Bid@locale@std@@QEAA_KXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "private: static class std::locale::_Locimp * __cdecl std::locale::_Getgloballocale(void)" (?_Getgloballocale@locale@std@@CAPEAV_Locimp@12@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: bool __cdecl std::codecvt_base::always_noconv(void)const " (__imp_?always_noconv@codecvt_base@std@@QEBA_NXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: int __cdecl std::codecvt<char,char,struct _Mbstatet>::in(struct _Mbstatet &,char const *,char const *,char const * &,char *,char *,char * &)const " (__imp_?in@?$codecvt@DDU_Mbstatet@@@std@@QEBAHAEAU_Mbstatet@@PEBD1AEAPEBDPEAD3AEAPEAD@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: int __cdecl std::codecvt<char,char,struct _Mbstatet>::out(struct _Mbstatet &,char const *,char const *,char const * &,char *,char *,char * &)const " (__imp_?out@?$codecvt@DDU_Mbstatet@@@std@@QEBAHAEAU_Mbstatet@@PEBD1AEAPEBDPEAD3AEAPEAD@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: int __cdecl std::codecvt<char,char,struct _Mbstatet>::unshift(struct _Mbstatet &,char *,char *,char * &)const " (__imp_?unshift@?$codecvt@DDU_Mbstatet@@@std@@QEBAHAEAU_Mbstatet@@PEAD1AEAPEAD@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: static unsigned __int64 __cdecl std::codecvt<char,char,struct _Mbstatet>::_Getcat(class std::locale::facet const * *,class std::locale const *)" (__imp_?_Getcat@?$codecvt@DDU_Mbstatet@@@std@@SA_KPEAPEBVfacet@locale@2@PEBV42@@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: bool __cdecl std::ios_base::good(void)const " (__imp_?good@ios_base@std@@QEBA_NXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: int __cdecl std::ios_base::flags(void)const " (__imp_?flags@ios_base@std@@QEBAHXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: __int64 __cdecl std::ios_base::width(void)const " (__imp_?width@ios_base@std@@QEBA_JXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: __int64 __cdecl std::ios_base::width(__int64)" (__imp_?width@ios_base@std@@QEAA_J_J@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::basic_streambuf<char,struct std::char_traits<char> >(void)" (__imp_??0?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAA@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: virtual __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::~basic_streambuf<char,struct std::char_traits<char> >(void)" (__imp_??1?$basic_streambuf@DU?$char_traits@D@std@@@std@@UEAA@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: class std::locale __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::getloc(void)const " (__imp_?getloc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QEBA?AVlocale@2@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: int __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::sputc(char)" (__imp_?sputc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QEAAHD@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: __int64 __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::sputn(char const *,__int64)" (__imp_?sputn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@QEAA_JPEBD_J@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::eback(void)const " (__imp_?eback@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEBAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::gptr(void)const " (__imp_?gptr@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEBAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::pbase(void)const " (__imp_?pbase@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEBAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::pptr(void)const " (__imp_?pptr@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEBAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::egptr(void)const " (__imp_?egptr@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEBAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::gbump(int)" (__imp_?gbump@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAXH@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::setg(char *,char *,char *)" (__imp_?setg@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAXPEAD00@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::epptr(void)const " (__imp_?epptr@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEBAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::_Gndec(void)" (__imp_?_Gndec@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::_Gninc(void)" (__imp_?_Gninc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::pbump(int)" (__imp_?pbump@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAXH@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::setp(char *,char *)" (__imp_?setp@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAXPEAD0@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::setp(char *,char *,char *)" (__imp_?setp@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAXPEAD00@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: char * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::_Pninc(void)" (__imp_?_Pninc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAPEADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::_Init(void)" (__imp_?_Init@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAXXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::_Init(char * *,char * *,int *,char * *,char * *,int *)" (__imp_?_Init@?$basic_streambuf@DU?$char_traits@D@std@@@std@@IEAAXPEAPEAD0PEAH001@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: virtual __cdecl std::basic_ios<char,struct std::char_traits<char> >::~basic_ios<char,struct std::char_traits<char> >(void)" (__imp_??1?$basic_ios@DU?$char_traits@D@std@@@std@@UEAA@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: void __cdecl std::basic_ios<char,struct std::char_traits<char> >::clear(int,bool)" (__imp_?clear@?$basic_ios@DU?$char_traits@D@std@@@std@@QEAAXH_N@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: void __cdecl std::basic_ios<char,struct std::char_traits<char> >::setstate(int,bool)" (__imp_?setstate@?$basic_ios@DU?$char_traits@D@std@@@std@@QEAAXH_N@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: class std::basic_ostream<char,struct std::char_traits<char> > * __cdecl std::basic_ios<char,struct std::char_traits<char> >::tie(void)const " (__imp_?tie@?$basic_ios@DU?$char_traits@D@std@@@std@@QEBAPEAV?$basic_ostream@DU?$char_traits@D@std@@@2@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: class std::basic_streambuf<char,struct std::char_traits<char> > * __cdecl std::basic_ios<char,struct std::char_traits<char> >::rdbuf(void)const " (__imp_?rdbuf@?$basic_ios@DU?$char_traits@D@std@@@std@@QEBAPEAV?$basic_streambuf@DU?$char_traits@D@std@@@2@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: char __cdecl std::basic_ios<char,struct std::char_traits<char> >::fill(void)const " (__imp_?fill@?$basic_ios@DU?$char_traits@D@std@@@std@@QEBADXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) protected: __cdecl std::basic_ios<char,struct std::char_traits<char> >::basic_ios<char,struct std::char_traits<char> >(void)" (__imp_??0?$basic_ios@DU?$char_traits@D@std@@@std@@IEAA@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: __cdecl std::basic_ostream<char,struct std::char_traits<char> >::basic_ostream<char,struct std::char_traits<char> >(class std::basic_streambuf<char,struct std::char_traits<char> > *,bool)" (__imp_??0?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAA@PEAV?$basic_streambuf@DU?$char_traits@D@std@@@1@_N@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: virtual __cdecl std::basic_ostream<char,struct std::char_traits<char> >::~basic_ostream<char,struct std::char_traits<char> >(void)" (__imp_??1?$basic_ostream@DU?$char_traits@D@std@@@std@@UEAA@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: void __cdecl std::basic_ostream<char,struct std::char_traits<char> >::_Osfx(void)" (__imp_?_Osfx@?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAXXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: class std::basic_ostream<char,struct std::char_traits<char> > & __cdecl std::basic_ostream<char,struct std::char_traits<char> >::flush(void)" (__imp_?flush@?$basic_ostream@DU?$char_traits@D@std@@@std@@QEAAAEAV12@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: __cdecl std::basic_iostream<char,struct std::char_traits<char> >::basic_iostream<char,struct std::char_traits<char> >(class std::basic_streambuf<char,struct std::char_traits<char> > *)" (__imp_??0?$basic_iostream@DU?$char_traits@D@std@@@std@@QEAA@PEAV?$basic_streambuf@DU?$char_traits@D@std@@@1@@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: virtual __cdecl std::basic_iostream<char,struct std::char_traits<char> >::~basic_iostream<char,struct std::char_traits<char> >(void)" (__imp_??1?$basic_iostream@DU?$char_traits@D@std@@@std@@UEAA@XZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "struct _iobuf * __cdecl std::_Fiopen(char const *,int,int)" (?_Fiopen@std@@YAPEAU_iobuf@@PEBDHH@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "public: virtual void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::_Lock(void)" (?_Lock@?$basic_streambuf@DU?$char_traits@D@std@@@std@@UEAAXXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "public: virtual void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::_Unlock(void)" (?_Unlock@?$basic_streambuf@DU?$char_traits@D@std@@@std@@UEAAXXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "protected: virtual void __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::imbue(class std::locale const &)" (?imbue@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAXAEBVlocale@2@@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "protected: virtual class std::basic_streambuf<char,struct std::char_traits<char> > * __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::setbuf(char *,__int64)" (?setbuf@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAPEAV12@PEAD_J@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "protected: virtual __int64 __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::showmanyc(void)" (?showmanyc@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAA_JXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "protected: virtual int __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::sync(void)" (?sync@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAHXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "protected: virtual int __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::uflow(void)" (?uflow@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAAHXZ)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "protected: virtual __int64 __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::xsgetn(char *,__int64)" (?xsgetn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAA_JPEAD_J@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "protected: virtual __int64 __cdecl std::basic_streambuf<char,struct std::char_traits<char> >::xsputn(char const *,__int64)" (?xsputn@?$basic_streambuf@DU?$char_traits@D@std@@@std@@MEAA_JPEBD_J@Z)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) __int64 const std::_BADOFF" (__imp_?_BADOFF@std@@3_JB)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "__declspec(dllimport) public: static class std::locale::id std::codecvt<char,char,struct _Mbstatet>::id" (__imp_?id@?$codecvt@DDU_Mbstatet@@@std@@2V0locale@2@A)
+          Referenced in Athru.obj
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found __IMPORT_DESCRIPTOR_MSVCP140D
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found "void __cdecl std::_Xbad_alloc(void)" (?_Xbad_alloc@std@@YAXXZ)
+          Referenced in msvcprtd.lib(locale0_implib.obj)
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+        Found MSVCP140D_NULL_THUNK_DATA
+          Referenced in msvcprtd.lib(MSVCP140D.dll)
+          Loaded msvcprtd.lib(MSVCP140D.dll)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\dxgi.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3d11.lib:
+        Found D3D11CreateDeviceAndSwapChain
+          Referenced in GPULib.lib(Direct3D.obj)
+          Loaded d3d11.lib(d3d11.dll)
+        Found __IMPORT_DESCRIPTOR_d3d11
+          Referenced in d3d11.lib(d3d11.dll)
+          Loaded d3d11.lib(d3d11.dll)
+        Found d3d11_NULL_THUNK_DATA
+          Referenced in d3d11.lib(d3d11.dll)
+          Loaded d3d11.lib(d3d11.dll)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3dcompiler.lib:
+        Found D3DReadFileToBlob
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Loaded d3dcompiler.lib(D3DCOMPILER_47.dll)
+        Found __IMPORT_DESCRIPTOR_D3DCOMPILER_47
+          Referenced in d3dcompiler.lib(D3DCOMPILER_47.dll)
+          Loaded d3dcompiler.lib(D3DCOMPILER_47.dll)
+        Found D3DCOMPILER_47_NULL_THUNK_DATA
+          Referenced in d3dcompiler.lib(D3DCOMPILER_47.dll)
+          Loaded d3dcompiler.lib(D3DCOMPILER_47.dll)
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\MSVCRTD.lib:
+        Found "void * __cdecl operator new(unsigned __int64)" (??2@YAPEAX_K@Z)
+          Referenced in Athru.obj
+          Loaded MSVCRTD.lib(new_scalar.obj)
+        Found "void __cdecl operator delete(void *,unsigned __int64)" (??3@YAXPEAX_K@Z)
+          Referenced in Athru.obj
+          Loaded MSVCRTD.lib(delete_scalar_size.obj)
+        Found "void * __cdecl operator new[](unsigned __int64)" (??_U@YAPEAX_K@Z)
+          Referenced in Athru.obj
+          Loaded MSVCRTD.lib(new_array.obj)
+        Found "void __cdecl operator delete[](void *)" (??_V@YAXPEAX@Z)
+          Referenced in Athru.obj
+          Loaded MSVCRTD.lib(delete_array.obj)
+        Found "void * __cdecl operator new(unsigned __int64,int,char const *,int)" (??2@YAPEAX_KHPEBDH@Z)
+          Referenced in Athru.obj
+          Loaded MSVCRTD.lib(new_debug.obj)
+        Found "void __cdecl operator delete(void *,int,char const *,int)" (??3@YAXPEAXHPEBDH@Z)
+          Referenced in Athru.obj
+          Loaded MSVCRTD.lib(delete_debug.obj)
+        Found _RTC_CheckStackVars
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in Athru.obj
+          Referenced in Planet.obj
+          Referenced in System.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Loaded MSVCRTD.lib(_stack_.obj)
+        Found _RTC_InitBase
+          Referenced in UtilityLib.lib(Input.obj)
+          Referenced in UtilityLib.lib(AthruGlobals.obj)
+          Referenced in UtilityLib.lib(UtilityServiceCentre.obj)
+          Referenced in GPULib.lib(Mesh.obj)
+          Referenced in UtilityLib.lib(StackAllocator.obj)
+          Referenced in UtilityLib.lib(Logger.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in GPULib.lib(GPUServiceCentre.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in GPULib.lib(Direct3D.obj)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(GPURand.obj)
+          Referenced in Scene.obj
+          Referenced in HiLevelServiceCentre.obj
+          Referenced in Star.obj
+          Referenced in System.obj
+          Referenced in Athru.obj
+          Referenced in Critter.obj
+          Referenced in Galaxy.obj
+          Referenced in Planet.obj
+          Loaded MSVCRTD.lib(_init_.obj)
+        Found __GSHandlerCheck
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in Athru.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Loaded MSVCRTD.lib(_gshandler_.obj)
+        Found __GSHandlerCheck_EH
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in Athru.obj
+          Referenced in Planet.obj
+          Referenced in System.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Loaded MSVCRTD.lib(gshandlereh.obj)
+        Found __chkstk
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in Athru.obj
+          Referenced in Planet.obj
+          Referenced in System.obj
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Loaded MSVCRTD.lib(_chkstk_.obj)
+        Found __security_check_cookie
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in MSVCRTD.lib(_gshandler_.obj)
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in Athru.obj
+          Referenced in Planet.obj
+          Referenced in System.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Loaded MSVCRTD.lib(_amdsecgs_.obj)
+        Found "const type_info::`vftable'" (??_7type_info@@6B@)
+          Referenced in Athru.obj
+          Loaded MSVCRTD.lib(std_type_info_static.obj)
+        Found __security_cookie
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in MSVCRTD.lib(_amdsecgs_.obj)
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in Athru.obj
+          Referenced in Planet.obj
+          Referenced in System.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Loaded MSVCRTD.lib(gs_cookie.obj)
+        Found _fltused
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in UtilityLib.lib(Input.obj)
+          Referenced in UtilityLib.lib(AthruGlobals.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in System.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Referenced in Galaxy.obj
+          Referenced in Planet.obj
+          Referenced in Scene.obj
+          Referenced in Star.obj
+          Loaded MSVCRTD.lib(fltused.obj)
+        Found "void __cdecl `eh vector constructor iterator'(void *,unsigned __int64,unsigned __int64,void (__cdecl*)(void *),void (__cdecl*)(void *))" (??_L@YAXPEAX_K1P6AX0@Z2@Z)
+          Referenced in Planet.obj
+          Referenced in Scene.obj
+          Loaded MSVCRTD.lib(ehvecctr.obj)
+        Found "void __cdecl `eh vector destructor iterator'(void *,unsigned __int64,unsigned __int64,void (__cdecl*)(void *))" (??_M@YAXPEAX_K1P6AX0@Z@Z)
+          Referenced in Planet.obj
+          Referenced in Scene.obj
+          Loaded MSVCRTD.lib(ehvecdtr.obj)
+        Found WinMainCRTStartup
+          Loaded MSVCRTD.lib(exe_winmain.obj)
+        Found atexit
+          Referenced in msvcprtd.lib(locale0_implib.obj)
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(utility.obj)
+        Found _guard_check_icall
+          Referenced in MSVCRTD.lib(utility.obj)
+          Referenced in msvcprtd.lib(locale0_implib.obj)
+          Referenced in MSVCRTD.lib(ehvecctr.obj)
+          Referenced in MSVCRTD.lib(ehvecdtr.obj)
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(checkcfg.obj)
+        Found "void __cdecl __scrt_throw_std_bad_alloc(void)" (?__scrt_throw_std_bad_alloc@@YAXXZ)
+          Referenced in MSVCRTD.lib(new_scalar.obj)
+          Referenced in MSVCRTD.lib(new_debug.obj)
+          Loaded MSVCRTD.lib(throw_bad_alloc.obj)
+        Found "void __cdecl operator delete(void *)" (??3@YAXPEAX@Z)
+          Referenced in MSVCRTD.lib(delete_scalar_size.obj)
+          Referenced in MSVCRTD.lib(delete_array.obj)
+          Loaded MSVCRTD.lib(delete_scalar.obj)
+        Found "void __cdecl _RTC_StackFailure(void *,char const *)" (?_RTC_StackFailure@@YAXPEAXPEBD@Z)
+          Referenced in MSVCRTD.lib(_stack_.obj)
+          Loaded MSVCRTD.lib(_error_.obj)
+        Found _RTC_SetErrorFuncW
+          Referenced in MSVCRTD.lib(_init_.obj)
+          Loaded MSVCRTD.lib(_userapi_.obj)
+        Found __report_gsfailure
+          Referenced in MSVCRTD.lib(_amdsecgs_.obj)
+          Loaded MSVCRTD.lib(gs_report.obj)
+        Found __security_init_cookie
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(gs_support.obj)
+        Found _matherr
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(matherr.obj)
+        Found _get_startup_argv_mode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded MSVCRTD.lib(argv_mode.obj)
+        Found _get_startup_commit_mode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(commit_mode.obj)
+        Found _get_startup_file_mode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(file_mode.obj)
+        Found _get_startup_new_mode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(new_mode.obj)
+        Found _get_startup_thread_locale_mode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(thread_locale.obj)
+        Found "void __cdecl __scrt_initialize_type_info(void)" (?__scrt_initialize_type_info@@YAXXZ)
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(tncleanup.obj)
+        Found _should_initialize_environment
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(env_mode.obj)
+        Found _initialize_invalid_parameter_handler
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(invalid_parameter_handler.obj)
+        Found _initialize_denormal_control
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(denormal_control.obj)
+        Found __scrt_initialize_default_local_stdio_options
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(default_local_stdio_options.obj)
+        Found __scrt_is_user_matherr_present
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(matherr_detection.obj)
+        Found __scrt_get_dyn_tls_init_callback
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(dyn_tls_init.obj)
+        Found __scrt_get_dyn_tls_dtor_callback
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(dyn_tls_dtor.obj)
+        Found __scrt_get_show_window_mode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(utility_desktop.obj)
+        Found _RTC_Initialize
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(_initsect_.obj)
+        Found __xi_a
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded MSVCRTD.lib(initializers.obj)
+  Processed /DEFAULTLIB:kernel32.lib
+   Processed /DISALLOWLIB:msvcrt.lib
+   Processed /DISALLOWLIB:libcmt.lib
+   Processed /DISALLOWLIB:libcmtd.lib
+   Processed /DISALLOWLIB:vcruntime.lib
+  Processed /DEFAULTLIB:vcruntimed.lib
+   Processed /DISALLOWLIB:libvcruntime.lib
+   Processed /DISALLOWLIB:libvcruntimed.lib
+   Processed /DISALLOWLIB:ucrt.lib
+  Processed /DEFAULTLIB:ucrtd.lib
+   Processed /DISALLOWLIB:libucrt.lib
+   Processed /DISALLOWLIB:libucrtd.lib
+        Found __isa_available_init
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded MSVCRTD.lib(_cpu_disp_.obj)
+        Found __scrt_is_ucrt_dll_in_use
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded MSVCRTD.lib(ucrt_detection.obj)
+        Found __guard_check_icall_fptr
+          Referenced in MSVCRTD.lib(checkcfg.obj)
+          Loaded MSVCRTD.lib(guard_support.obj)
+        Found "int __cdecl _RTC_GetSrcLine(unsigned char *,wchar_t *,unsigned long,int *,wchar_t *,unsigned long)" (?_RTC_GetSrcLine@@YAHPEAEPEA_WKPEAH1K@Z)
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Loaded MSVCRTD.lib(_pdblkup_.obj)
+        Found _guard_dispatch_icall_nop
+          Referenced in MSVCRTD.lib(guard_support.obj)
+          Loaded MSVCRTD.lib(_guard_dispatch_.obj)
+        Found __guard_ss_verify_failure_default
+          Referenced in MSVCRTD.lib(guard_support.obj)
+          Loaded MSVCRTD.lib(_rfgfailure_.obj)
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\OLDNAMES.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\vcruntimed.lib:
+        Found memcpy
+          Referenced in Athru.obj
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found memmove
+          Referenced in Athru.obj
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found memset
+          Referenced in Athru.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Referenced in UtilityLib.lib(StackAllocator.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __std_exception_copy
+          Referenced in Athru.obj
+          Referenced in MSVCRTD.lib(throw_bad_alloc.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __std_exception_destroy
+          Referenced in Athru.obj
+          Referenced in MSVCRTD.lib(throw_bad_alloc.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found _CxxThrowException
+          Referenced in Athru.obj
+          Referenced in MSVCRTD.lib(throw_bad_alloc.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __CxxFrameHandler3
+          Referenced in msvcprtd.lib(locale0_implib.obj)
+          Referenced in MSVCRTD.lib(gshandlereh.obj)
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in GPULib.lib(Mesh.obj)
+          Referenced in UtilityLib.lib(Application.obj)
+          Referenced in UtilityLib.lib(AthruGlobals.obj)
+          Referenced in GPULib.lib(PipelineShader.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(Direct3D.obj)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in Athru.obj
+          Referenced in Galaxy.obj
+          Referenced in Planet.obj
+          Referenced in Scene.obj
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __C_specific_handler
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Referenced in MSVCRTD.lib(ehvecctr.obj)
+          Referenced in MSVCRTD.lib(ehvecdtr.obj)
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __std_type_info_destroy_list
+          Referenced in MSVCRTD.lib(tncleanup.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __vcrt_GetModuleFileNameW
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __vcrt_GetModuleHandleW
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __vcrt_LoadLibraryExW
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found __IMPORT_DESCRIPTOR_VCRUNTIME140D
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+        Found VCRUNTIME140D_NULL_THUNK_DATA
+          Referenced in vcruntimed.lib(VCRUNTIME140D.dll)
+          Loaded vcruntimed.lib(VCRUNTIME140D.dll)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\ucrt\x64\ucrtd.lib:
+        Found __imp__invalid_parameter
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__invalid_parameter_noinfo
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__wassert
+          Referenced in GPULib.lib(PathTracer.obj)
+          Referenced in GPULib.lib(ScreenRect.obj)
+          Referenced in UtilityLib.lib(StackAllocator.obj)
+          Referenced in GPULib.lib(SceneFigure.obj)
+          Referenced in GPULib.lib(Camera.obj)
+          Referenced in GPULib.lib(ScreenPainter.obj)
+          Referenced in GPULib.lib(ComputeShader.obj)
+          Referenced in Athru.obj
+          Referenced in GPULib.lib(Direct3D.obj)
+          Referenced in GPULib.lib(RenderManager.obj)
+          Referenced in GPULib.lib(GPUMessenger.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__errno
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_strcpy_s
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found strlen
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__CrtSetDbgFlag
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__CrtDbgReportW
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__get_stream_buffer_pointers
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_fclose
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_fflush
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_fgetc
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_fgetpos
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_fputc
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_fsetpos
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__fseeki64
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_fwrite
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_setvbuf
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_ungetc
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__lock_file
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__unlock_file
+          Referenced in Athru.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_rand
+          Referenced in Galaxy.obj
+          Referenced in Planet.obj
+          Referenced in System.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found cos
+          Referenced in Galaxy.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found sin
+          Referenced in Galaxy.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found fabs
+          Referenced in Planet.obj
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found sqrt
+          Referenced in GPULib.lib(PathTracer.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_cbrt
+          Referenced in GPULib.lib(PathTracer.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_floor
+          Referenced in GPULib.lib(PathTracer.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_free
+          Referenced in UtilityLib.lib(StackAllocator.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_malloc
+          Referenced in UtilityLib.lib(StackAllocator.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_atanf
+          Referenced in UtilityLib.lib(AthruGlobals.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp_tanf
+          Referenced in UtilityLib.lib(AthruGlobals.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__free_dbg
+          Referenced in msvcprtd.lib(locale0_implib.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __imp__malloc_dbg
+          Referenced in msvcprtd.lib(locale0_implib.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _callnewh
+          Referenced in MSVCRTD.lib(new_scalar.obj)
+          Referenced in MSVCRTD.lib(new_debug.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _CrtDbgReport
+          Referenced in MSVCRTD.lib(_init_.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found terminate
+          Referenced in MSVCRTD.lib(ehvecdtr.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _seh_filter_exe
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _set_app_type
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __setusermatherr
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _configure_narrow_argv
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _initialize_narrow_environment
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _get_narrow_winmain_command_line
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _initterm
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _initterm_e
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found exit
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _exit
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _set_fmode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _cexit
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _c_exit
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _register_thread_local_exe_atexit_callback
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _configthreadlocale
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _set_new_mode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __p__commode
+          Referenced in MSVCRTD.lib(exe_winmain.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _seh_filter_dll
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _initialize_onexit_table
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _register_onexit_function
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _execute_onexit_table
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _crt_atexit
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _crt_at_quick_exit
+          Referenced in MSVCRTD.lib(utility.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found strcat_s
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __stdio_common_vsprintf_s
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _wmakepath_s
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found _wsplitpath_s
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found wcscpy_s
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found __IMPORT_DESCRIPTOR_ucrtbased
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Loaded ucrtd.lib(ucrtbased.dll)
+        Found ucrtbased_NULL_THUNK_DATA
+          Referenced in ucrtd.lib(ucrtbased.dll)
+          Loaded ucrtd.lib(ucrtbased.dll)
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Rendering\GPULib\GPULib\x64\Debug\GPULib.lib:
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Utilities\UtilityLib\UtilityLib\x64\Debug\UtilityLib.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\kernel32.lib:
+        Found __imp_IsDebuggerPresent
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_RaiseException
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_MultiByteToWideChar
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_WideCharToMultiByte
+          Referenced in MSVCRTD.lib(_error_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_RtlCaptureContext
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_RtlLookupFunctionEntry
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_RtlVirtualUnwind
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_UnhandledExceptionFilter
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_SetUnhandledExceptionFilter
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetCurrentProcess
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_TerminateProcess
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found IsProcessorFeaturePresent
+          Referenced in MSVCRTD.lib(gs_report.obj)
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_QueryPerformanceCounter
+          Referenced in MSVCRTD.lib(gs_support.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetCurrentProcessId
+          Referenced in MSVCRTD.lib(gs_support.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetCurrentThreadId
+          Referenced in MSVCRTD.lib(gs_support.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetSystemTimeAsFileTime
+          Referenced in MSVCRTD.lib(gs_support.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_InitializeSListHead
+          Referenced in MSVCRTD.lib(tncleanup.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetStartupInfoW
+          Referenced in MSVCRTD.lib(utility_desktop.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetLastError
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_HeapAlloc
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_HeapFree
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetProcessHeap
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_VirtualQuery
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_FreeLibrary
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+        Found __imp_GetProcAddress
+          Referenced in MSVCRTD.lib(_pdblkup_.obj)
+          Loaded kernel32.lib(KERNEL32.dll)
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\user32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\gdi32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\winspool.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\comdlg32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\advapi32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\shell32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\ole32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\oleaut32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\uuid.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbc32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbccp32.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\msvcprtd.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\dxgi.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3d11.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3dcompiler.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\MSVCRTD.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\OLDNAMES.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\vcruntimed.lib:
+  
+  Finished searching libraries
+  
+  Searching libraries
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Rendering\GPULib\GPULib\x64\Debug\GPULib.lib:
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Utilities\UtilityLib\UtilityLib\x64\Debug\UtilityLib.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\kernel32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\user32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\gdi32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\winspool.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\comdlg32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\advapi32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\shell32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\ole32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\oleaut32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\uuid.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbc32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbccp32.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\msvcprtd.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\dxgi.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3d11.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3dcompiler.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\MSVCRTD.lib:
+        Found __scrt_stub_for_acrt_initialize
+          Loaded MSVCRTD.lib(ucrt_stubs.obj)
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\OLDNAMES.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\vcruntimed.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\ucrt\x64\ucrtd.lib:
+  
+  Finished searching libraries
+  
+  Finished pass 1
+  
+  
+  Searching libraries
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Rendering\GPULib\GPULib\x64\Debug\GPULib.lib:
+      Searching C:\Users\Paul\Documents\Github\Athru\Athru\Athru Utilities\UtilityLib\UtilityLib\x64\Debug\UtilityLib.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\kernel32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\user32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\gdi32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\winspool.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\comdlg32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\advapi32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\shell32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\ole32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\oleaut32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\uuid.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbc32.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbccp32.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\msvcprtd.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\dxgi.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3d11.lib:
+      Searching C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\d3dcompiler.lib:
+      Searching C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\MSVCRTD.lib:
+        Found _load_config_used
+          Loaded MSVCRTD.lib(loadcfg.obj)
+  
+  Finished searching libraries
+  
+  Invoking rc.exe:
+   /v
+   /x
+   /fo
+   "C:\Users\Paul\AppData\Local\Temp\lnk{7E5BE81F-23A4-4143-9B89-2447EDA51D7C}.tmp"
+   "C:\Users\Paul\AppData\Local\Temp\lnk{C0D33C55-BC65-476A-9922-0F53B8690A0F}.tmp"
+  Microsoft (R) Windows (R) Resource Compiler Version 10.0.10011.16384
+  
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  
+  Creating C:\Users\Paul\AppData\Local\Temp\lnk{7E5BE81F-23A4-4143-9B89-2447EDA51D7C}.tmp
+  
+  Using codepage 1252 as default
+  
+  C:\Users\Paul\AppData\Local\Temp\lnk{C0D33C55-BC65-476A-9922-0F53B8690A0F}.tmp.
+  Writing 24:1,	lang:0x409,	size 381
+  
+  Invoking cvtres.exe:
+   /machine:amd64
+   /verbose
+   /out:"C:\Users\Paul\AppData\Local\Temp\lnk{5B7FFCE1-45F8-424F-977A-FDEBEC4B411D}.tmp"
+   /readonly
+   "C:\Users\Paul\AppData\Local\Temp\lnk{7E5BE81F-23A4-4143-9B89-2447EDA51D7C}.tmp"
+  Microsoft (R) Windows Resource To Object Converter Version 14.13.26132.0
+  Copyright (C) Microsoft Corporation.  All rights reserved.
+  
+  adding resource. type:MANIFEST, name:1, language:0x0409, flags:0x30, size:381
+  
+  Unused libraries:
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\winspool.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\comdlg32.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\advapi32.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\shell32.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\ole32.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\oleaut32.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\uuid.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbc32.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\odbccp32.lib
+    C:\Program Files (x86)\Windows Kits\10\lib\10.0.16299.0\um\x64\dxgi.lib
+    C:\Program Files (x86)\Microsoft Visual Studio\2017\Community\VC\Tools\MSVC\14.13.26128\lib\x64\OLDNAMES.lib
+  
   Starting pass 2
+       * linker generated manifest res *
+       System.obj
+       Star.obj
+       HiLevelServiceCentre.obj
        Scene.obj
+       Planet.obj
+       Galaxy.obj
+       Critter.obj
+       Athru.obj
+       GPULib.lib(ComputeShader.obj)
+       GPULib.lib(GPURand.obj)
+       GPULib.lib(GPUServiceCentre.obj)
+       GPULib.lib(PathTracer.obj)
+       GPULib.lib(RenderManager.obj)
+       GPULib.lib(GPUMessenger.obj)
+       GPULib.lib(SceneFigure.obj)
+       GPULib.lib(ScreenRect.obj)
+       GPULib.lib(Camera.obj)
+       GPULib.lib(Direct3D.obj)
+       GPULib.lib(Mesh.obj)
+       GPULib.lib(ScreenPainter.obj)
+       GPULib.lib(PipelineShader.obj)
+       UtilityLib.lib(Application.obj)
+       UtilityLib.lib(AthruGlobals.obj)
+       UtilityLib.lib(Input.obj)
+       UtilityLib.lib(Logger.obj)
+       UtilityLib.lib(StackAllocator.obj)
+       UtilityLib.lib(UtilityServiceCentre.obj)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       kernel32.lib(KERNEL32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       user32.lib(USER32.dll)
+       gdi32.lib(GDI32.dll)
+       gdi32.lib(GDI32.dll)
+       gdi32.lib(GDI32.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(MSVCP140D.dll)
+       msvcprtd.lib(locale0_implib.obj)
+       d3d11.lib(d3d11.dll)
+       d3d11.lib(d3d11.dll)
+       d3d11.lib(d3d11.dll)
+       d3dcompiler.lib(D3DCOMPILER_47.dll)
+       d3dcompiler.lib(D3DCOMPILER_47.dll)
+       d3dcompiler.lib(D3DCOMPILER_47.dll)
+       MSVCRTD.lib(_cpu_disp_.obj)
+       MSVCRTD.lib(_error_.obj)
+       MSVCRTD.lib(_init_.obj)
+       MSVCRTD.lib(_initsect_.obj)
+       MSVCRTD.lib(_pdblkup_.obj)
+       MSVCRTD.lib(_stack_.obj)
+       MSVCRTD.lib(_userapi_.obj)
+       MSVCRTD.lib(_amdsecgs_.obj)
+       MSVCRTD.lib(_chkstk_.obj)
+       MSVCRTD.lib(_guard_dispatch_.obj)
+       MSVCRTD.lib(_rfgfailure_.obj)
+       MSVCRTD.lib(_gshandler_.obj)
+       MSVCRTD.lib(gs_cookie.obj)
+       MSVCRTD.lib(gs_report.obj)
+       MSVCRTD.lib(gs_support.obj)
+       MSVCRTD.lib(checkcfg.obj)
+       MSVCRTD.lib(guard_support.obj)
        MSVCRTD.lib(loadcfg.obj)
+       MSVCRTD.lib(dyn_tls_dtor.obj)
+       MSVCRTD.lib(dyn_tls_init.obj)
+       MSVCRTD.lib(matherr_detection.obj)
+       MSVCRTD.lib(ucrt_detection.obj)
+       MSVCRTD.lib(gshandlereh.obj)
+       MSVCRTD.lib(argv_mode.obj)
+       MSVCRTD.lib(commit_mode.obj)
+       MSVCRTD.lib(default_local_stdio_options.obj)
+       MSVCRTD.lib(denormal_control.obj)
+       MSVCRTD.lib(env_mode.obj)
+       MSVCRTD.lib(file_mode.obj)
+       MSVCRTD.lib(fltused.obj)
+       MSVCRTD.lib(invalid_parameter_handler.obj)
+       MSVCRTD.lib(matherr.obj)
+       MSVCRTD.lib(new_mode.obj)
+       MSVCRTD.lib(thread_locale.obj)
+       MSVCRTD.lib(ehvecctr.obj)
+       MSVCRTD.lib(ehvecdtr.obj)
+       MSVCRTD.lib(std_type_info_static.obj)
+       MSVCRTD.lib(tncleanup.obj)
+       MSVCRTD.lib(delete_array.obj)
+       MSVCRTD.lib(delete_debug.obj)
+       MSVCRTD.lib(delete_scalar.obj)
+       MSVCRTD.lib(delete_scalar_size.obj)
+       MSVCRTD.lib(new_array.obj)
+       MSVCRTD.lib(new_debug.obj)
+       MSVCRTD.lib(new_scalar.obj)
+       MSVCRTD.lib(throw_bad_alloc.obj)
+       MSVCRTD.lib(exe_winmain.obj)
+       MSVCRTD.lib(initializers.obj)
+       MSVCRTD.lib(utility.obj)
+       MSVCRTD.lib(ucrt_stubs.obj)
+       MSVCRTD.lib(utility_desktop.obj)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       vcruntimed.lib(VCRUNTIME140D.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
+       ucrtd.lib(ucrtbased.dll)
   Finished pass 2
   Athru.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\x64\Debug\Athru.exe
-c:\users\paul\documents\github\athru\athru\athru\scene.cpp(58): warning C6001: Using uninitialized memory 'tstUnion'.

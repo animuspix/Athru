@@ -120,8 +120,19 @@ address StackAllocator::ByteAlloc(bool setMarker)
 
 void StackAllocator::DeAlloc(MemoryStuff::MARKER_INDEX_TYPE markerIndex)
 {
+	// Check that the de-allocation won't empty the whole stack
 	assert(markers[markerIndex].distanceFromTop > 0);
+
+	// Zero the de-allocated memory
+	memset((byteUnsigned*)stackTop - markers[markerIndex].distanceFromTop, NULL, markers[markerIndex].distanceFromTop);
+
+	// Update the [top] of the memory-stack
 	stackTop = (byteUnsigned*)stackTop - (markers[markerIndex].distanceFromTop);
+
+	// Update available memory
+	availMem += markers[markerIndex].distanceFromTop;
+
+	// Update markers appropriately
 	for (MemoryStuff::MARKER_INDEX_TYPE i = (activeMarkerCount + 1); i > markerIndex; i -= 1)
 	{
 		markers[i - 1].distanceFromTop = 0;

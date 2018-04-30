@@ -9,12 +9,9 @@ Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Athru", "Athru\Athru.vcxpro
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8} = {EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}
 	EndProjectSection
 EndProject
-Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GPULib", "Athru Rendering\GPULib\GPULib\GPULib.vcxproj", "{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}"
-	ProjectSection(ProjectDependencies) = postProject
-		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8} = {EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}
-	EndProjectSection
-EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "UtilityLib", "Athru Utilities\UtilityLib\UtilityLib\UtilityLib.vcxproj", "{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}"
+EndProject
+Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "GPULib", "Athru GPU\GPULib\GPULib\GPULib.vcxproj", "{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -32,14 +29,6 @@ Global
 		{06A3622C-76E0-4918-A7C1-FC27020EEE52}.Release|x64.Build.0 = Release|x64
 		{06A3622C-76E0-4918-A7C1-FC27020EEE52}.Release|x86.ActiveCfg = Release|Win32
 		{06A3622C-76E0-4918-A7C1-FC27020EEE52}.Release|x86.Build.0 = Release|Win32
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x64.ActiveCfg = Debug|x64
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x64.Build.0 = Debug|x64
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x86.ActiveCfg = Debug|Win32
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x86.Build.0 = Debug|Win32
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x64.ActiveCfg = Release|x64
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x64.Build.0 = Release|x64
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x86.ActiveCfg = Release|Win32
-		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x86.Build.0 = Release|Win32
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}.Debug|x64.ActiveCfg = Debug|x64
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}.Debug|x64.Build.0 = Debug|x64
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}.Debug|x86.ActiveCfg = Debug|Win32
@@ -48,8 +37,19 @@ Global
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}.Release|x64.Build.0 = Release|x64
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}.Release|x86.ActiveCfg = Release|Win32
 		{EFFA2EED-91D1-40A5-AB8E-ABA6E87980F8}.Release|x86.Build.0 = Release|Win32
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x64.ActiveCfg = Debug|x64
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x64.Build.0 = Debug|x64
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x86.ActiveCfg = Debug|Win32
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Debug|x86.Build.0 = Debug|Win32
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x64.ActiveCfg = Release|x64
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x64.Build.0 = Release|x64
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x86.ActiveCfg = Release|Win32
+		{1CC7BD96-5F01-47EB-B71C-7EA4DC626126}.Release|x86.Build.0 = Release|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {DFA3D659-756D-46B7-BCA8-45DA7F8A5FB4}
 	EndGlobalSection
 EndGlobal

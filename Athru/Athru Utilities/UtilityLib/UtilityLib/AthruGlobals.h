@@ -4,7 +4,9 @@
 #include <math.h>
 #include <assert.h>
 #include <d3d11.h>
+#include <functional>
 #include "Typedefs.h"
+#include <wrl\client.h>
 
 namespace TimeStuff
 {
@@ -115,6 +117,17 @@ namespace MemoryStuff
 		}
 		return mask; // Return the generated bit-mask
 	}
+
+	// Small global function to allocate an arbitrary-type array
+	// within the memory controlled by StackAllocator(...)
+	template <typename arrayType>
+	static arrayType* ArrayAlloc(eightByteUnsigned length,
+								 bool setMarker)
+	{
+		return (arrayType*)AthruUtilities::UtilityServiceCentre::AccessMemory()->AlignedAlloc(length * sizeof(arrayType),
+																							  std::alignment_of<arrayType>(),
+																							  setMarker);
+	}
 }
 
 namespace GraphicsStuff
@@ -176,10 +189,10 @@ namespace GPGPUStuff
 	// Construct a GPGPU read/write buffer with the given complex
 	// (non-pointer, non-enum, non-array, non-reference) type
 	template<typename BufType>
-	static void BuildRWStructBuffer(ID3D11Device* device,
-									ID3D11Buffer** bufPttr,
+	static void BuildRWStructBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+									Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
 									const D3D11_SUBRESOURCE_DATA* baseDataPttr,
-									ID3D11UnorderedAccessView** rwView,
+									Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& rwView,
 									fourByteUnsigned bufLength)
 	{
 		// Describe the buffer we're creating and storing at
@@ -193,7 +206,9 @@ namespace GPGPUStuff
 		bufferDesc.StructureByteStride = sizeof(BufType);
 
 		// Construct a buffer at [bufPttr] with the description given above
-		HRESULT result = device->CreateBuffer(&bufferDesc, baseDataPttr, bufPttr);
+		HRESULT result = device->CreateBuffer(&bufferDesc,
+											  baseDataPttr,
+											  bufPttr.GetAddressOf());
 		assert(SUCCEEDED(result));
 
 		// Describe the the shader-friendly read/write resource view we'll
@@ -210,16 +225,16 @@ namespace GPGPUStuff
 		viewDescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 
 		// Construct a DirectX11 "view" over the data at [bufPttr]
-		result = device->CreateUnorderedAccessView(*bufPttr, &viewDescB, rwView);
+		result = device->CreateUnorderedAccessView(bufPttr.Get(), &viewDescB, rwView.GetAddressOf());
 		assert(SUCCEEDED(result));
 	}
 
 	// Construct a GPGPU read-write buffer with the given primitive type
 	template<typename BufType>
-	static void BuildRWBuffer(ID3D11Device* device,
-							  ID3D11Buffer** bufPttr,
+	static void BuildRWBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+							  Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
 							  const D3D11_SUBRESOURCE_DATA* baseDataPttr,
-							  ID3D11UnorderedAccessView** rwView,
+							  Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& rwView,
 							  DXGI_FORMAT& viewFormat,
 							  fourByteUnsigned& bufLength)
 	{
@@ -235,7 +250,9 @@ namespace GPGPUStuff
 
 		// Construct the state buffer using the seeds + description
 		// defined above
-		HRESULT result = device->CreateBuffer(&bufferDesc, baseDataPttr, bufPttr);
+		HRESULT result = device->CreateBuffer(&bufferDesc,
+											  baseDataPttr,
+											  bufPttr.GetAddressOf());
 		assert(SUCCEEDED(result));
 
 		// Describe the the shader-friendly read/write resource view we'll
@@ -252,7 +269,7 @@ namespace GPGPUStuff
 		viewDescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
 
 		// Construct a DirectX11 "view" over the data at [bufPttr]
-		result = device->CreateUnorderedAccessView(*bufPttr, &viewDescB, rwView);
+		result = device->CreateUnorderedAccessView(bufPttr.Get(), &viewDescB, rwView.GetAddressOf());
 		assert(SUCCEEDED(result));
 	}
 }
