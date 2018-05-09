@@ -140,21 +140,7 @@ Direct3D::Direct3D(HWND hwnd)
 	assert(SUCCEEDED(result));
 }
 
-Direct3D::~Direct3D()
-{
-	// Nullify most D3D interfaces
-	rasterState = nullptr;
-	defaultRenderTarget = nullptr;
-	deviceContext = nullptr;
-	swapChain = nullptr;
-
-	// Report remaining entities, in detail
-	//debugDevice->ReportLiveDeviceObjects(D3D11_RLDO_SUMMARY);// D3D11_RLDO_DETAIL);
-
-	// Nullify debugger, also device
-	debugDevice = nullptr;
-	device = nullptr;
-}
+Direct3D::~Direct3D() {}
 
 void Direct3D::BeginScene()
 {
@@ -188,11 +174,6 @@ const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& Direct3D::GetDeviceContext()
 {
 	return deviceContext;
 }
-
-//D3D11_VIEWPORT& Direct3D::GetViewport()
-//{
-//	return viewport;
-//}
 
 const DXGI_ADAPTER_DESC& Direct3D::GetAdapterInfo()
 {

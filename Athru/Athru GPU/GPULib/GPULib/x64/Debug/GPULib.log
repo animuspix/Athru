@@ -1,2 +1,5 @@
-﻿  compilation object save succeeded; see C:\Users\Paul\Documents\Github\Athru\Athru\Athru\SceneVis.cso
-  GPULib.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\Athru Rendering\GPULib\GPULib\x64\Debug\GPULib.lib
+﻿  compilation object save succeeded; see C:\Users\Paul\Documents\Github\Athru\Athru\Athru\PathReduce.cso
+FXC : warning X4714: sum of temp registers and indexable temp registers times 128 threads exceeds the recommended total 16384.  Performance may be reduced
+  
+  compilation object save succeeded; see C:\Users\Paul\Documents\Github\Athru\Athru\Athru\SceneVis.cso
+  GPULib.vcxproj -> C:\Users\Paul\Documents\Github\Athru\Athru\Athru GPU\GPULib\GPULib\x64\Debug\GPULib.lib

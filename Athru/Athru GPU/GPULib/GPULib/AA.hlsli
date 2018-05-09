@@ -11,16 +11,14 @@
 
 // Maximum supported number of samples-per-pixel
 // for anti-aliasing
-#define NUM_AA_SAMPLES 100
+#define NUM_AA_SAMPLES 256
 
 // Samples + counter variables for each pixel
 // (needed for temporal smoothing)
 struct PixHistory
 {
-    float4 sampleAccum; // Accumulated samples
-    float4 filtAccum; // Accumulated filter coefficients
-    float3 sampleSet[NUM_AA_SAMPLES]; // Discretized sample-set
-    float filtSet[NUM_AA_SAMPLES]; // Discretized set of filter coefficients
+    float4 currSampleAccum; // Current + incomplete set of [NUM_AA_SAMPLES] samples/filter-coefficients
+    float4 prevSampleAccum; // Accumulated + complete set of [NUM_AA_SAMPLES] samples/filter-coefficients
     uint4 sampleCount; // Cumulative number of samples at the start/end of each frame
     float4 incidentLight; // Incidental samples collected from light paths bouncing off the
                           // scene before reaching the lens; exists because most light
@@ -63,28 +61,43 @@ float3 FrameSmoothing(float3 rgb,
     uint sampleCount = pixHistory.sampleCount.x + 1;
     uint sampleNdx = pixHistory.sampleCount.x % NUM_AA_SAMPLES;
 
-    // Update accumulated filter values
-    float4 currChanFilt = filtCoeff.xxxx;
-    float4 prevChanFilt = pixHistory.filtSet[sampleNdx];
-    float4 accumFilt = (pixHistory.filtAccum - prevChanFilt) + filtCoeff.xxxx;
+    // Update accumulated filter values for the current sample-set
+    // Also filter [rgb] with the given filter-coefficient, then
+    // accumulate it into the current sample-set
+    float4 currAccum = float4(pixHistory.currSampleAccum.rgb + (rgb * filtCoeff),
+                              pixHistory.currSampleAccum.w + filtCoeff);
 
-    // Filter the pixel, update accumulated pixel values
-    float3 currChanSample = rgb * filtCoeff;
-    float3 prevChanSample = pixHistory.sampleSet[sampleNdx];
-    float4 accumRGB = float4((pixHistory.sampleAccum.rgb - prevChanSample) + currChanSample, 1.0f);
+    // Check if the (un-updated) sample-count is exactly modulo-[NUM_AA_SAMPLES] and update
+    // [prevSampleAccum] (+ reset [currSampleAccum]) if appropriate
+    float4 prevAccum = pixHistory.prevSampleAccum;
+    if (sampleCount % NUM_AA_SAMPLES == 0)
+    {
+        currAccum -= pixHistory.currSampleAccum;
+        prevAccum = pixHistory.currSampleAccum;
+    }
+    else if (sampleCount < NUM_AA_SAMPLES)
+    {
+        // Prevent current/previous sample blending until the previous sample is well-defined
+        // (i.e. until at least one full set of [NUM_AA_SAMPLES]-samples have been computed,
+        // elided from [currSampleAccum], and passed into [prevSampleAccum])
+        prevAccum = pixHistory.currSampleAccum;
+    }
+
+    // Interpolate between the most-recent/current sample-sets/filter-coefficients
+    // Only apply interpolation to the displayed color, not the sample actually cached
+    // in [aaBuffer]
+    float4 retRGBW = lerp(prevAccum, currAccum, ((float)sampleCount / NUM_AA_SAMPLES) % 1.0f);
 
     // Pass the updated pixel history back into the AA buffer
     // (also update the pixel's sample-set to include the current sample)
-    aaBuffer[linPixID].sampleAccum = accumRGB;
-    aaBuffer[linPixID].filtAccum = accumFilt;
-    aaBuffer[linPixID].sampleSet[sampleNdx] = currChanSample;
-    aaBuffer[linPixID].filtSet[sampleNdx] = filtCoeff;
+    aaBuffer[linPixID].currSampleAccum = currAccum;
+    aaBuffer[linPixID].prevSampleAccum = prevAccum;
     aaBuffer[linPixID].sampleCount = sampleCount.xxxx;
 
     // Return the updated sample
     // Some filter functions can push average values below zero; counter this clamping out negative channels
     // with [max(...)]
-    return max(accumRGB.rgb / accumFilt.xxx, 0.0f.xxx);
+    return max(retRGBW.rgb / retRGBW.w, 0.0f.xxx);
 }
 
 // Small functions returning the Blackman-Harris filter coefficient

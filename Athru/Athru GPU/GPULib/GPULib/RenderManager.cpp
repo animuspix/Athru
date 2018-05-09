@@ -62,9 +62,14 @@ RenderManager::RenderManager() :
 	HWND localWindowHandle = AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND();
 
 	// Construct the path tracer and the image presentation shader
-	pathTracer = new PathTracer(L"SceneVis.cso");
-	screenPainter = new ScreenPainter(d3dDevice, localWindowHandle,
-									  L"PresentationVerts.cso", L"PresentationColors.cso");
+	pathTracer = new PathTracer(L"SceneVis.cso",
+								L"PathReduce.cso",
+								localWindowHandle,
+								d3dDevice);
+	screenPainter = new ScreenPainter(d3dDevice,
+									  localWindowHandle,
+									  L"PresentationVerts.cso",
+									  L"PresentationColors.cso");
 }
 
 RenderManager::~RenderManager()
@@ -76,41 +81,39 @@ RenderManager::~RenderManager()
 	// Delete heap-allocated data within the presentation shader
 	screenPainter->~ScreenPainter();
 	screenPainter = nullptr;
-
-	// Nullify DirectX data associated with the display texture
-	displayTex.raw = nullptr;
-	displayTex.asReadOnlyShaderResource = nullptr;
-	displayTex.asWritableShaderResource = nullptr;
 }
 
 void RenderManager::Render(Camera* mainCamera)
 {
-	// Cache a local reference to the camera's viewfinder
-	// (screen rect)
-	ScreenRect* viewFinderPttr = mainCamera->GetViewFinder();
-
 	// Prepare DirectX for scene rendering
 	d3D->BeginScene();
 
 	// Render scene to the screen texture
-	this->RenderScene(mainCamera);
+	this->RenderScene(mainCamera->GetTranslation(),
+					  mainCamera->GetViewMatrix());
 
-	// Paint the rendered image onto a
-	// rectangle and draw the result to the
-	// screen
-	this->Display(viewFinderPttr);
+	// Draw the rendered scene to the display
+	this->Display(mainCamera->GetViewFinder());
 
-	// Present the post-processed scene to the display
+	// Present the final image
 	d3D->EndScene();
 }
 
-void RenderManager::RenderScene(Camera* mainCamera)
+void RenderManager::RenderScene(DirectX::XMVECTOR& camPos,
+								DirectX::XMMATRIX& viewMat)
 {
+	// Pre-process the scene to maximize CU occupancy during path-tracing
+	// Mostly do that by filling in trivial areas immediately (pixels that directly intersect the local star,
+	// empty pixels, etc.) and only feeding non-trivial areas to the path-tracer
+	pathTracer->PreProcess(d3dContext,
+						   displayTex.asWritableShaderResource,
+						   camPos,
+						   viewMat);
+
 	// Path-trace + post-process the scene
 	pathTracer->Dispatch(d3dContext,
-						 mainCamera->GetTranslation(),
-						 mainCamera->GetViewMatrix(),
-						 displayTex.asWritableShaderResource);
+						 camPos,
+						 viewMat);
 }
 
 void RenderManager::Display(ScreenRect* screenRect)

@@ -5,10 +5,8 @@
 
 struct PixHistory
 {
-	DirectX::XMVECTOR sampleAccum; // Accumulated samples
-	DirectX::XMVECTOR filtAccum; // Accumulated filter coefficients
-	DirectX::XMFLOAT3 sampleSet[GraphicsStuff::NUM_AA_SAMPLES]; // Discretized sample-set
-	float filtSet[GraphicsStuff::NUM_AA_SAMPLES]; // Discretized set of filter coefficients
+	DirectX::XMVECTOR currSampleAccum; // Current + incomplete set of [NUM_AA_SAMPLES] samples/filter-coefficients
+	DirectX::XMVECTOR prevSampleAccum; // Accumulated + complete set of [NUM_AA_SAMPLES] samples/filter-coefficients
 	DirectX::XMUINT4 sampleCount; // Cumulative number of samples at the start/end of each frame
 	DirectX::XMVECTOR incidentLight; // Incidental samples collected from light paths bouncing
 									 // off the scene before reaching the lens; exists because most

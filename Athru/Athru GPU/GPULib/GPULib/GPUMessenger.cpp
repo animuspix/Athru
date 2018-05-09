@@ -36,35 +36,21 @@ GPUMessenger::GPUMessenger()
 	// to store changes applied to the figure
 	// data while it was on the GPU
 	GPGPUStuff::BuildRWStructBuffer<SceneFigure::Figure>(device,
-														 figBufferOutput,
-														 nullptr,
-														 gpuWritableSceneView,
-														 SceneStuff::MAX_NUM_SCENE_FIGURES);
+													     figBufferOutput,
+													     nullptr,
+													     gpuWritableSceneView,
+														 (D3D11_BUFFER_UAV_FLAG)0,
+													     SceneStuff::MAX_NUM_SCENE_FIGURES);
 
-	// Describe the staging buffer we'll be using
-	// to transfer data from the GPU output
-	// buffer back across to the CPU
-	D3D11_BUFFER_DESC figBufferStagingDesc;
-	figBufferStagingDesc.Usage = D3D11_USAGE_STAGING;
-	figBufferStagingDesc.ByteWidth = sizeof(SceneFigure::Figure) * SceneStuff::MAX_NUM_SCENE_FIGURES;
-	figBufferStagingDesc.BindFlags = 0;
-	figBufferStagingDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-	figBufferStagingDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-	figBufferStagingDesc.StructureByteStride = sizeof(SceneFigure::Figure);
-
-	// Instantiate the staging buffer from the description created above
-	result = device->CreateBuffer(&figBufferStagingDesc, NULL, &figBufferStaging);
-	assert(SUCCEEDED(result));
+	// Describe + build the staging buffer we'll be using
+	// to transfer data from the GPU output buffer back
+	// across to the CPU
+	GPGPUStuff::BuildStagingStructBuffer<SceneFigure::Figure>(device,
+															  figBufferStaging,
+															  SceneStuff::MAX_NUM_SCENE_FIGURES);
 }
 
-GPUMessenger::~GPUMessenger()
-{
-	figBufferInput = nullptr;
-	figBufferOutput = nullptr;
-	figBufferStaging = nullptr;
-	gpuReadableSceneView = nullptr;
-	gpuWritableSceneView = nullptr;
-}
+GPUMessenger::~GPUMessenger() {}
 
 void GPUMessenger::FrameStartSync(SceneFigure* sceneFigures)
 {
@@ -97,24 +83,25 @@ void GPUMessenger::FrameEndSync()
 	const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context = AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext();
 	context->CopyResource(figBufferStaging.Get(), figBufferOutput.Get());
 
-	// Read the data pased into the staging buffer back into the relevant CPU-side [SceneFigure]s
+	// Map the data in the staging buffer back into a local [void*]
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	HRESULT result = context->Map(figBufferStaging.Get(), 0, D3D11_MAP_READ, 0, &mappedResource);
 	assert(SUCCEEDED(result));
+
+	// Access + cast the [void*] reference we cached above
+	SceneFigure::Figure* gpuFigures = (SceneFigure::Figure*)mappedResource.pData;
+
+	// Copy the data for each figure back onto the CPU
 	for (byteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_FIGURES; i += 1)
 	{
-		// Get a pointer to the data referenced by [mappedResource]
-		SceneFigure::Figure* dataPttr;
-		dataPttr = (SceneFigure::Figure*)mappedResource.pData;
-
 		// Extract the address of the original object associated with the current
 		// figure
-		MemoryStuff::addrValType addressLO = ((MemoryStuff::addrValType)dataPttr[i].origin.x) << (MemoryStuff::halfAddrLength());
-		MemoryStuff::addrValType addressHI = ((MemoryStuff::addrValType)dataPttr[i].origin.y);
+		MemoryStuff::addrValType addressLO = ((MemoryStuff::addrValType)gpuFigures[i].origin.x) << (MemoryStuff::halfAddrLength());
+		MemoryStuff::addrValType addressHI = ((MemoryStuff::addrValType)gpuFigures[i].origin.y);
 		SceneFigure* addressFull = (SceneFigure*)(addressLO | addressHI);
 
 		// Copy in the data for the current figure
-		addressFull->SetCoreFigure(dataPttr[i]);
+		addressFull->SetCoreFigure(gpuFigures[i]);
 	}
 
 	// Break the connection to the GPU-side scene-data-buffer
@@ -143,4 +130,3 @@ void GPUMessenger::operator delete(void* target)
 {
 	return;
 }
-

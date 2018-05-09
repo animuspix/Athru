@@ -1,34 +1,35 @@
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.pdb
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.idb
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\computeshader.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpurand.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpuservicecentre.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpuupdatemanager.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\postprocessor.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\pathtracer.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\rendermanager.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpumessenger.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\scenefigure.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\screenrect.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\camera.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\direct3d.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\mesh.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\screenpainter.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\screenvertex.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\pipelineshader.obj
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\updateshader.obj
-c:\users\paul\documents\github\athru\athru\athru\presentationcolors.cso
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.pdb
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.idb
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\screenrect.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\screenpainter.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\rendermanager.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\mesh.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\camera.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\updateshader.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\pathtracer.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpuupdatemanager.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpuservicecentre.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpumessenger.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\direct3d.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\computeshader.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpurand.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\pipelineshader.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\screenvertex.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\scenefigure.obj
 c:\users\paul\documents\github\athru\athru\athru\presentationverts.cso
-c:\users\paul\documents\github\athru\athru\athru\postprocessor.cso
 c:\users\paul\documents\github\athru\athru\athru\scenevis.cso
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.lib
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\cl.command.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\cl.read.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\cl.write.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\fxc.command.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\fxc.read.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\fxc.write.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\gpulib.write.1u.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\lib-link.read.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\lib-link.write.1.tlog
-c:\users\paul\documents\github\athru\athru\athru rendering\gpulib\gpulib\x64\debug\gpulib.tlog\lib.command.1.tlog
+c:\users\paul\documents\github\athru\athru\athru\presentationcolors.cso
+c:\users\paul\documents\github\athru\athru\athru\postprocessor.cso
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.lib
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\postprocessor.obj
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\direct3d.obj.enc
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\cl.command.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\cl.read.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\cl.write.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\fxc.command.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\fxc.read.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\fxc.write.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\gpulib.write.1u.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\lib-link.read.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\lib-link.write.1.tlog
+c:\users\paul\documents\github\athru\athru\athru gpu\gpulib\gpulib\x64\debug\gpulib.tlog\lib.command.1.tlog

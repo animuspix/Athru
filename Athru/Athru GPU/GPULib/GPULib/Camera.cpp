@@ -112,7 +112,7 @@ void Camera::Translate(DirectX::XMVECTOR displacement)
 	position = _mm_add_ps(positionCopy, displacement);
 }
 
-DirectX::XMVECTOR Camera::GetTranslation()
+DirectX::XMVECTOR& Camera::GetTranslation()
 {
 	return position;
 }
@@ -188,7 +188,7 @@ void Camera::RefreshViewData()
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 }
 
-DirectX::XMMATRIX Camera::GetViewMatrix()
+DirectX::XMMATRIX& Camera::GetViewMatrix()
 {
 	return viewMatrix;
 }

@@ -34,10 +34,8 @@ class SceneFigure
 				   rotationQtn(qtnRotation),
 				   scaleFactor{ scale, scale, scale, 1 },
 				   dfType{ funcType, 0, 0, 0 },
-				   distCoeffs{ distParams[0], distParams[1], distParams[2], distParams[3], distParams[4],
-							   distParams[5], distParams[6], distParams[7], distParams[8], distParams[9] },
-				   rgbaCoeffs{ rgbaParams[0], rgbaParams[1], rgbaParams[2], rgbaParams[3], rgbaParams[4],
-							   rgbaParams[5], rgbaParams[6], rgbaParams[7], rgbaParams[8], rgbaParams[9] },
+				   distCoeffs{ distParams[0], distParams[1], distParams[2], distParams[3], distParams[4] },
+				   rgbaCoeffs{ rgbaParams[0], rgbaParams[1], rgbaParams[2], rgbaParams[3], rgbaParams[4] },
 				   nonNull{	isNonNull, 0, 0, 0 },
 				   origin{ (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrHIMask()) >> MemoryStuff::halfAddrLength()),
 						   (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrLOMask())), 0, 0 } {}
@@ -56,10 +54,10 @@ class SceneFigure
 			DirectX::XMUINT4 dfType;
 
 			// Coefficients of the distance function used to render [this]
-			DirectX::XMVECTOR distCoeffs[10];
+			DirectX::XMVECTOR distCoeffs[5];
 
 			// Coefficients of the color function used to tint [this]
-			DirectX::XMVECTOR rgbaCoeffs[10];
+			DirectX::XMVECTOR rgbaCoeffs[5];
 
 			// Whether or not [this] has been fully defined on the GPU
 			DirectX::XMUINT4 nonNull;

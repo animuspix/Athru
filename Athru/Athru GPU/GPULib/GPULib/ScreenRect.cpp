@@ -44,12 +44,12 @@ ScreenRect::ScreenRect(const Microsoft::WRL::ComPtr<ID3D11Device>& d3dDevice)
 	// Initialise indices
 	// Each set of three values is one triangle
 	fourByteUnsigned indices[GraphicsStuff::SCREEN_RECT_INDEX_COUNT] = { 0,
-										        		  1,
-										        		  2,
+										        						 1,
+										        						 2,
 
-										        		  2,
-										        		  3,
-										        		  1 };
+										        						 2,
+										        						 3,
+										        						 1 };
 
 
 	// Set up the description of the static vertex buffer

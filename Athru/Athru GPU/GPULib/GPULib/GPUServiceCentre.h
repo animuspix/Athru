@@ -53,11 +53,10 @@ namespace AthruGPU
 			//gpuUpdateManagerPttr->~GPUUpdateManager();
 			//gpuUpdateManagerPttr = nullptr;
 
-			// Nullify data associated with the GPU-side random
-			// number generator
+			// Clean-up data associated with the GPU
+			// random-number generator
 			gpuRand->gpuRandState = nullptr;
 			gpuRand->gpuRandStateView = nullptr;
-			gpuRand = nullptr;
 
 			// Clean-up data associated with the GPU messenger
 			gpuMessengerPttr->~GPUMessenger();

@@ -185,6 +185,10 @@ float3 DiffuseBRDF(FigMat mat,
     return lambert * orenNayar;
 }
 
+// Specular PDF/Dir/BRDF here (...will use microfacets for this)
+// Transmittant PDF/Dir/BRDF here (...split between a standard Fresnel BRDF and a microfacet model...)
+// Volumetric PDF/Dir/BRDF here (...stochastic raymaching (i.e. random walks)...)
+
 // PDF finder for arbitrary reflectance/scattering/transmittance functions
 // [bxdfID] gives the reflectance/scattering/transmittance function selected
 // by the given material for the current ray

@@ -9,17 +9,7 @@ PipelineShader::PipelineShader()
 	// Construction occurs in child classes
 }
 
-PipelineShader::~PipelineShader()
-{
-	// Nullify the vertex input layout
-	inputLayout = nullptr;
-
-	// Nullify the pixel shader
-	pixelShader = nullptr;
-
-	// Nullify the vertex shader
-	vertShader = nullptr;
-}
+PipelineShader::~PipelineShader() {}
 
 void PipelineShader::BuildShader(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 								 HWND windowHandle,

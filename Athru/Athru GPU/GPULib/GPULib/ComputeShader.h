@@ -7,7 +7,8 @@
 class ComputeShader
 {
 	public:
-		ComputeShader(const Microsoft::WRL::ComPtr<ID3D11Device>& device, HWND windowHandle,
+		ComputeShader(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+					  HWND windowHandle,
 					  LPCWSTR shaderFilePath);
 		~ComputeShader();
 

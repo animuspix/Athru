@@ -1,6 +1,8 @@
 #include "GPUServiceCentre.h"
 #include "ScreenRect.h"
 #include "ScreenPainter.h"
+#include "PixHistory.h"
+#include <directxmath.h>
 
 ScreenPainter::ScreenPainter(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 							 HWND windowHandle,
@@ -57,14 +59,14 @@ ScreenPainter::ScreenPainter(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 	assert(SUCCEEDED(result));
 }
 
-ScreenPainter::~ScreenPainter()
-{
-	// Nullify the texture sampler state
-	wrapSamplerState = nullptr;
-}
+ScreenPainter::~ScreenPainter() {}
 
-void ScreenPainter::RenderShader(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& deviceContext)
+void ScreenPainter::Render(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& deviceContext,
+						   const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& displayTexReadable)
 {
+	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
+	deviceContext->PSSetSamplers(0, 1, wrapSamplerState.GetAddressOf());
+
 	// Set the vertex input layout.
 	deviceContext->IASetInputLayout(inputLayout.Get());
 
@@ -73,26 +75,15 @@ void ScreenPainter::RenderShader(const Microsoft::WRL::ComPtr<ID3D11DeviceContex
 	deviceContext->VSSetShader(vertShader.Get(), NULL, 0);
 	deviceContext->PSSetShader(pixelShader.Get(), NULL, 0);
 
-	// Render the screen rect
-	deviceContext->DrawIndexed(GraphicsStuff::SCREEN_RECT_INDEX_COUNT, 0, 0);
-}
-
-void ScreenPainter::Render(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& deviceContext,
-						   const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& displayTexReadable)
-{
-	// Pass a view of the display texture into the first pixel-shading
-	// register
+	// Pass the shader-resource version of the display texture along to the GPU
 	deviceContext->PSSetShaderResources(0, 1, displayTexReadable.GetAddressOf());
 
-	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
-	deviceContext->PSSetSamplers(0, 1, wrapSamplerState.GetAddressOf());
-
-	// Render the screen-rect with [this]
-	RenderShader(deviceContext);
+	// Render the screen rect
+	deviceContext->DrawIndexed(GraphicsStuff::SCREEN_RECT_INDEX_COUNT, 0, 0);
 
 	// Resources can't be exposed through unordered-access-views (read/write allowed) and shader-
 	// resource-views (read-only) simultaneously, so un-bind the local shader-resource-view
-	// over here
+	// of the display texture over here
 	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> nullSRV = nullptr;
 	deviceContext->PSSetShaderResources(0, 1, &nullSRV);
 }

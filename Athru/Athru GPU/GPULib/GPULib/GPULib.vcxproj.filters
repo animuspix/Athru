@@ -136,17 +136,18 @@
     <FxCompile Include="SceneVis.hlsl" />
     <FxCompile Include="PresentationColors.hlsl" />
     <FxCompile Include="PresentationVerts.hlsl" />
+    <FxCompile Include="PathReduce.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Lighting.hlsli" />
     <None Include="Core3D.hlsli" />
     <None Include="Fractals.hlsli" />
     <None Include="AA.hlsli" />
-    <None Include="PixIDs.hlsli" />
     <None Include="LightingUtility.hlsli" />
     <None Include="GenericUtility.hlsli" />
-    <None Include="Tonemapping.hlsli" />
     <None Include="Materials.hlsli" />
     <None Include="RasterCamera.hlsli" />
+    <None Include="TraceableIDs.hlsli" />
+    <None Include="ScenePost.hlsli" />
   </ItemGroup>
 </Project>

@@ -40,9 +40,6 @@ class Direct3D
 		// Stores information about the video adapter
 		DXGI_ADAPTER_DESC adapterInfo;
 
-		// Stores information about the render viewport used with [this]
-		//D3D11_VIEWPORT viewport;
-
 		// Direct3D internal types
 		Microsoft::WRL::ComPtr<IDXGISwapChain> swapChain;
 		Microsoft::WRL::ComPtr<ID3D11Device> device;

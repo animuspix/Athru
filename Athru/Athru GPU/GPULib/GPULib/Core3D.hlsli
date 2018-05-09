@@ -11,8 +11,9 @@ cbuffer InputStuffs
     matrix iViewMat;
     float4 deltaTime;
     uint4 currTimeSecs;
-    uint4 rendPassID;
-    uint4 numProgPatches;
+    uint4 traceableCtr;
+    uint4 numPathPatches; // Number of patches (groups) along each dispatch axis during path-traced rendering (y)
+                          // and pre-processing (x)
     uint4 maxNumBounces;
     uint4 numDirGaths;
     uint4 numIndirGaths;
@@ -43,10 +44,10 @@ struct Figure
     uint4 dfType;
 
     // Coefficients of the distance function used to render [this]
-    float4 distCoeffs[10];
+    float4 distCoeffs[5];
 
     // Coefficients of the color function used to tint [this]
-    float4 rgbaCoeffs[10];
+    float4 rgbaCoeffs[5];
 
     // Whether or not [this] has been fully defined on the GPU
     uint4 nonNull;
@@ -194,19 +195,7 @@ float PlantDF(float3 coord,
               Figure plant)
 {
     // Render plants as simple cylinders for now
-    // Attempt bump displacement from bark properties
-    coord = coord - plant.pos.xyz;
-    float2 bumpACrv = plant.distCoeffs[6].xy;
-    float bumpA = max(sin(coord.x * bumpACrv.x) * bumpACrv.y, plant.distCoeffs[6].w) * plant.distCoeffs[6].z;
-
-    float2 bumpBCrv = plant.distCoeffs[7].xy;
-    float bumpB = max(sin(coord.x * bumpACrv.x) * bumpACrv.y, plant.distCoeffs[7].w) * plant.distCoeffs[7].z;
-
-    float2 bumpCCrv = plant.distCoeffs[8].xy;
-    float bumpC = max(sin(coord.x * bumpCCrv.x) * bumpCCrv.y, plant.distCoeffs[8].w) * plant.distCoeffs[8].z;
-
-    float bump = bumpA + bumpB + bumpC;
-    return CylinderDF(coord, float2(plant.scaleFactor.x, plant.scaleFactor.x / 2.0f), plant) + bump;
+    return CylinderDF(coord, float2(plant.scaleFactor.x, plant.scaleFactor.x / 2.0f), plant);
 }
 
 // Return distance to the given critter
@@ -327,14 +316,16 @@ float BoundingSurfTrace(Figure fig,
     if (fig.dfType.x == DF_TYPE_PLANET ||
         fig.dfType.x == DF_TYPE_STAR)
     {
-        return (!BoundingSphereTrace(coord,
-                                     rayOri,
-                                     fig.pos.xyz,
-                                     fig.scaleFactor.x * 1.5f));
+        float fitting = 1.0f;
+        if (fig.dfType.x == DF_TYPE_PLANET) { fitting = 1.5f; }
+        return BoundingSphereTrace(coord,
+                                   rayOri,
+                                   fig.pos.xyz,
+                                   fig.scaleFactor.x * fitting);
     }
     else
     {
-        return (!BoundingBoxTrace());
+        return BoundingBoxTrace();
     }
 }
 
@@ -345,7 +336,7 @@ float FigDF(float3 coord,
             Figure fig)
 {
     if (useFigBounds &&
-        BoundingSurfTrace(fig, coord, rayOri))
+        !BoundingSurfTrace(fig, coord, rayOri))
     {
         return MAX_RAY_DIST;
     }

@@ -24,7 +24,7 @@ class Camera
 
 		// Set/get camera world position
 		void Translate(DirectX::XMVECTOR displacement);
-		DirectX::XMVECTOR GetTranslation();
+		DirectX::XMVECTOR& GetTranslation();
 
 		// Set camera rotation, extract rotation info in
 		// complex (quaternion) or angular (euler) form
@@ -35,7 +35,7 @@ class Camera
 		// Update the view matrix and look-vector, extract
 		// either for external calculations
 		void RefreshViewData();
-		DirectX::XMMATRIX GetViewMatrix();
+		DirectX::XMMATRIX& GetViewMatrix();
 		CameraLookData GetLookData();
 
 		// Fetch the viewfinder (screen rect) for post-processing/rendering

@@ -259,6 +259,7 @@ BidirVert ProcVert(float3 rayVec,
     // the camera/light subpaths after each one has propagated through the scene
     return BuildBidirVt(rayOri,
                         atten,
+                        normal,
                         figID,
                         bxdfID);
 }
@@ -288,7 +289,7 @@ float4 ConnectBidirVts(BidirVert camVt,
                        uint linPixID,
                        inout uint randVal)
 {
-    float4 connStratRGB = 0.0f.xxxx; // RGB spectra for the selected connection strategy
+    float4 connStratRGB = float4(0.0f.xxx, linPixID); // RGB spectra for the selected connection strategy
     if (numLightSamples == 0 && // Ignore the light sub-path
         subpathEnded.x && // Only valid if the camera sub-path reaches the local star
         numCamSamples == subpathBounces.x) // Only valid if the given camera vertex is the last vertex
@@ -323,10 +324,6 @@ float4 ConnectBidirVts(BidirVert camVt,
                      camVt.pos.xyz,
                      adaptEps)[1].w)
         {
-            // Cache the local normal at [lightVt.pos.xyz]
-            float3 normal = tetGrad(lightVt.pos.xyz,
-                                    adaptEps,
-                                    figuresReadable[lightVt.pos.w]).xyz;
             // Attenuate the importance at [lightVt] appropriately, then store the result
             // Assume unit attenuation at the camera and 100% transmittance
             connStratRGB.rgb = lightVt.atten.rgb * MatBXDF(FigMaterial(lightVt.pos.xyz,
@@ -341,7 +338,7 @@ float4 ConnectBidirVts(BidirVert camVt,
             if (lightVt.atten.w != BXDF_ID_VOLU)
             {
                 connStratRGB *= dot(importance[1].xyz,
-                                    normal);
+                                    lightVt.norml.xyz);
             }
         }
         else
@@ -379,14 +376,11 @@ float4 ConnectBidirVts(BidirVert camVt,
             // Cache the local material + normal + input/output angles at [camVt.pos.xyz]
             FigMat mat = FigMaterial(camVt.pos.xyz,
                                      camVt.pos.w);
-            float3 normal = tetGrad(camVt.pos.xyz,
-                                    adaptEps,
-                                    figuresReadable[camVt.pos.w]).xyz;
             float4 thetaPhiIO = RaysToAngles(occData[0].xyz,
                                              camIODirs[0],
                                              false);
             connStratRGB.rgb = DirIllumRadiance(stellarSurfPos,
-                                                normal,
+                                                camVt.norml.xyz,
                                                 star.rgbaCoeffs[0].xyz,
                                                 star.pos.xyz,
                                                 occData[0].w,
@@ -414,27 +408,18 @@ float4 ConnectBidirVts(BidirVert camVt,
                                    camVt.pos.xyz,
                                    adaptEps);
 
-        // Extract the local normals at [camVt.pos.xyz] and
-        // [lightVt.pos.xyz]
-        float3 camNormal = tetGrad(camVt.pos.xyz,
-                                   adaptEps,
-                                   figuresReadable[camVt.pos.w]).xyz;
-        float3 lightNormal = tetGrad(lightVt.pos.xyz,
-                                     adaptEps,
-                                     figuresReadable[lightVt.pos.w]).xyz;
-
         // Use the evaluated visibility to define the generalized visibility function [g]
         float g = !occData[1].w * // Point-to-point visibility
                   AngleToArea(lightVt.pos.xyz, // Angle-to-area integral conversion function
                               camVt.pos.xyz,
-                              lightNormal,
+                              lightVt.norml.xyz,
                               camVt.atten.w != BXDF_ID_VOLU);
 
         // AngleToArea[...] implicitly handles facing ratio for incident surfaces ([camVt.bxdfID]),
         // but not emissive ones ([lightVt.bxdfID]); account for that here (if appropriate)
         if (lightVt.atten.w != BXDF_ID_VOLU)
         {
-            g *= dot(camNormal,
+            g *= dot(camVt.norml.xyz,
                      normalize(camVt.pos.xyz - lightVt.pos.xyz));
         }
 

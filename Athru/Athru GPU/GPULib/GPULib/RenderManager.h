@@ -30,7 +30,10 @@ class RenderManager
 	private:
 		// Helper function, used to pre-fill the scene texture with ray-marched
 		// and post-processed color information
-		void RenderScene(Camera* mainCamera);
+		// Also performs pre-processing on the scene data to maximize
+		// compute occupancy in each frame
+		void RenderScene(DirectX::XMVECTOR& camPos,
+						 DirectX::XMMATRIX& viewMat);
 
 		// Helper function, used to present the scene texture to the user by
 		// projecting it onto a full-screen rectangle and using the graphics

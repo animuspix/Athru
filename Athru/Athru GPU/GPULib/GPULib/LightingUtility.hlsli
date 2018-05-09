@@ -8,16 +8,16 @@
 // included somewhere in the build process
 #define LIGHTING_UTILITIES_LINKED
 
-// Where the local star is stored in the per-frame
-// scene-array
-#define STELLAR_NDX 0
-
 // Maximum allowed number of bounces/path
 // (required for BDPT vertex caching so that
 // connection strategies can be performed between
 // every scatter site in the camera sub-path +
 // every scatter site in the light sub-path)
-#define MAX_BOUNCES_PER_SUBPATH 7
+#define MAX_BOUNCES_PER_SUBPATH 5
+
+// Where the local star is stored in the per-frame
+// scene-array
+#define STELLAR_NDX 0
 
 // Structure carrying data cached by BDPT during
 // subpath construction; needed for accurate
@@ -30,16 +30,19 @@ struct BidirVert
 {
     float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
+    float4 norml; // Surface normal at [pos]; [w] is unused
 };
 
 BidirVert BuildBidirVt(float3 pos,
                        float3 atten,
+                       float3 norml,
                        uint figID,
                        uint bxdfID)
 {
     BidirVert bdVt;
     bdVt.pos = float4(pos, figID);
     bdVt.atten = float4(atten, bxdfID);
+    bdVt.norml = float4(norml, 0.0f);
     return bdVt;
 }
 

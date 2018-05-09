@@ -16,7 +16,7 @@ Planet::Planet(float givenScale,
 	{
 		// Surface properties
 		// (= branch placement/growth functions, PDE constants)
-		DirectX::XMVECTOR plantDistCoeffs[10];
+		DirectX::XMVECTOR plantDistCoeffs[5];
 
 		// Should replace [rand()] with a better RNG at some point...
 
@@ -56,36 +56,6 @@ Planet::Planet(float givenScale,
 		// Alpha channel treated as leaf translucency, faintly randomized
 		plantDistCoeffs[4] = _mm_set_ps(0.5f, 0.67f, 0.84f, abs((1.0f / rand()) - 0.5f));
 
-		// Sixth vector defines lobe shape (via cubic bezier offsets in x and y) and roughness (via frequency/amplitude
-		// values components of a saw wave)
-		plantDistCoeffs[5] = _mm_set_ps(1.0f / ((rand() % 10) + 1),
-									    1.0f / ((rand() % 10) + 1),
-									    1.0f / ((rand() % 10) + 1),
-									    1.0f / ((rand() % 10) + 1));
-
-		// Seventh-through-ninth vectors define textural properties (esp. bark diffusion) (research needed here) (skippable for now)
-		// Bark SHOULD be organised through a cylindrical diffusion equation...
-		// But I have no training in PDEs at all and probably wouldn't get anything done in the (very, very) tired state
-		// I'm in atm
-		// So just lazy sine layering for now
-		// Every first value gives a frequency, second values give amplitudes, third values give weights
-		// Fourth values give cutoff height (for rounder/flatter sheets of bark)
-		// Sines are projected parallel to the edges of each cylindrical branch/stem/trunk
-		plantDistCoeffs[6] = _mm_set_ps(4.0f,
-										0.1f,
-										0.75f,
-										0.075f);
-
-		plantDistCoeffs[7] = _mm_set_ps(8.0f,
-										0.05f,
-										0.125f,
-										0.025f);
-
-		plantDistCoeffs[8] = _mm_set_ps(2.0f,
-										0.05f,
-										0.125f,
-										0.05f);
-
 		// Core research areas:
 		// - Fast venation
 		// - Bark diffusion
@@ -116,7 +86,7 @@ Planet::Planet(float givenScale,
 		// generation) and see where those end up...
 
 		// Bark/vascular coloration properties
-		DirectX::XMVECTOR plantRGBACoeffs[10];
+		DirectX::XMVECTOR plantRGBACoeffs[5];
 
 		// First vector describes baseline tissue colour
 		plantRGBACoeffs[0] = _mm_set_ps(0.94f, 1.0f, 1.0f, 1.0f);
@@ -130,7 +100,7 @@ Planet::Planet(float givenScale,
 		// Fourth vector (temporarily) describes diffuse/specular weighting (x, y)
 		plantRGBACoeffs[3] = _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f);
 
-		// Remaining vectors will be PDE constants (more research needed)
+		// Remaining vector will carry PDE constants (more research needed)
 
 		plants[i] = SceneFigure(_mm_set_ps(1, 0, 0, 0),
 								_mm_set_ps(givenScale, givenScale, givenScale, givenScale),

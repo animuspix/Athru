@@ -34,8 +34,9 @@ float3 PRayDir(uint2 pixID,
 {
     float2 viewSizes = (DISPLAY_SIZE_2D * pixWidth);
     zProj = viewSizes.y / tan(FOV_RADS / 2.0f);
-    return normalize(float3(pixID - (viewSizes / 2.0f),
-                            zProj));
+    float4 dir = float4(normalize(float3(pixID - (viewSizes / 2.0f),
+                                         zProj)), 1.0f);
+    return mul(dir, viewMat).xyz;
 }
 
 // Small utility function to compute the camera's world-space bounds at [EPSILON_MIN]
@@ -121,7 +122,7 @@ float4 PixToRay(uint2 pixID,
 
     // Convert the sample index into a super-sampled pixel coordinate
     float pixWidth = sqrt(NUM_AA_SAMPLES);
-    uint2 baseSSPixID = (pixID * pixWidth) + ((uint) pixWidth / 2).xx;
+    uint2 baseSSPixID = (pixID * pixWidth) + ((uint)pixWidth / 2).xx;
     float2 sampleXY = uint2(pixSampleNdx % pixWidth,
                             pixSampleNdx / pixWidth);
 

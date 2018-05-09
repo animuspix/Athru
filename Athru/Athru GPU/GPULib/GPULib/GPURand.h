@@ -45,6 +45,7 @@ struct GPURand
 													&seeds,
 													gpuRandStateView,
 													format,
+													(D3D11_BUFFER_UAV_FLAG)0,
 													numSeeds);
 
 		// We've safely passed our RNG seeds along to the GPU, so

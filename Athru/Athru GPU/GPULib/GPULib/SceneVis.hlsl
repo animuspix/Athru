@@ -1,17 +1,22 @@
 
 #include "Lighting.hlsli"
-#ifndef ANTI_ALIASING_LINKED
-    #include "AA.hlsli"
-#endif
-#include "Tonemapping.hlsli"
-#include "PixIDs.hlsli"
+#include "ScenePost.hlsli"
+#include "TraceableIDs.hlsli"
 #ifndef RASTER_CAMERA_LINKED
     #include "RasterCamera.hlsli"
 #endif
 
 // A two-dimensional texture representing the display; used
-// as the rasterization target during post-processing
+// as the image source during core rendering (required because
+// there's no support for direct render-target access in
+// DirectX)
 RWTexture2D<float4> displayTex : register(u1);
+
+// Buffer carrying traceable pixels + pixel information
+// Ray directions are in [0][xyz], filter values are in [1][x],
+// pixel indices are in [1][y], non-normalized ray z-offsets
+// are in 1[z]
+ConsumeStructuredBuffer<float2x3> traceables : register(u4);
 
 // The maximum number of steps allowed for the primary
 // ray-marcher
@@ -48,23 +53,31 @@ float AdaptEps(float3 camRayOri)
                EPSILON_MAX);
 }
 
-[numthreads(4, 4, 4)]
+[numthreads(8, 4, 4)]
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
 {
-    // Extract coordinates for the current pixel,
-    // also whether the current pixel is displayable
-    // (=> maps to coordinates within the display
-    // area)
-    bool valid = true;
-    uint2 pixID = PixelID(rendPassID.xy,
-                          threadID,
-                          groupID,
-                          numProgPatches.x,
-                          DISPLAY_WIDTH,
-                          DISPLAY_HEIGHT,
-                          valid);
-    //if (!valid) { return; } // Immediately break out if the current pixel sits outside the display
+    // The number of traceable elements emitted by [PathReduce]
+    // (i.e. the number of traceable elements) limits the number
+    // of path-tracing threads that can actually execute;
+    // immediately exit from any threads outside that limit
+    // (required because we want to spread path-tracing threads
+    // evenly through 3D dispatch-space (rational cube-roots are
+    // uncommon + force oversized dispatches), also because we
+    // can't set per-group thread outlook (i.e. [numthreads])
+    // programatically before dispatching [this])
+    uint groupWidth3D = ceil(pow(numPathPatches.y, 1.0f / 3.0f));
+    uint linGroupID = (groupID.x + groupID.y * groupWidth3D) +
+                      (groupID.z * (groupWidth3D * groupWidth3D));
+    uint linDispID = (linGroupID * 128) + (threadID + 1);
+    if (linDispID > traceableCtr.x) { return; }
+
+    // [Consume()] a pixel from the end of [traceables]
+    float2x3 traceable = traceables.Consume();
+
+    // Separately cache the pixel's screen position for later reference
+    uint2 pixID = uint2(traceable[1].y % DISPLAY_WIDTH,
+                        traceable[1].y / DISPLAY_WIDTH);
 
     // Extract a Xorshift-permutable value from [randBuf]
     // Also cache the accessor value used to retrieve that value in the first place
@@ -90,20 +103,10 @@ void main(uint3 groupID : SV_GroupID,
                                     //               float2(frand1D(pixID.x * threadID),
                                     //                      frand1D(pixID.y * rendPassID.x))));
 
-    // Generate a ray aligned to the camera's view frustum, also (given that
-    // ray directions are implicitly super-sampled + jittered) create a filter coefficient that we
-    // can apply to generated samples before integrating them during post-processing
-    uint linPixID = pixID.x + (pixID.y * DISPLAY_WIDTH); // Cache the local linearized pixel ID for later reference
-    float zProj; // Define a value to cache the standard non-normalized z-coordinate for the chosen field-of-view
-    float4 camRay = PixToRay(pixID,
-                             aaBuffer[linPixID].sampleCount.x + 1,
-                             zProj,
-                             randVal);
-
-    // Transform the generated camera ray direction to match the view matrix, also generate + cache a separate
+    // Transform [traceable]'s camera ray direction to match the view matrix, also generate + cache a separate
     // light ray direction
     float3 localStarNormal = normalize(subpathOris[1] - star.pos.xyz);
-    float2x3 rayDirs = float2x3(mul(float4(camRay.xyz, 1), viewMat).xyz,
+    float2x3 rayDirs = float2x3(traceable[0],
                                 localStarNormal);
 
     // Matrix defining the light/camera-relative position of rays during light/camera-subpath construction
@@ -121,26 +124,13 @@ void main(uint3 groupID : SV_GroupID,
 
     // March the scene
 
-    // First camera-relative scene intersection; initialized to [11] to identify rays that passed beyond the maximum ray distance
-    // (no more than [10] discrete figures allowed on the GPU at any one time)
-    uint zerothCamFig = 11;
-
     // Rays might reach their target light source before the maximum number of bounces; this switch checks
     // for that and allows the bounce-loop to end as soon as possible
     bool2 subpathEnded = false.xx;
 
-    // Rays emitted from the camera directly towards the local star will form a two-vertex path with no
-    // subpaths; check for that here so we can directly set path color from emitted radiance in that case
-    bool instantCamConn = false;
-
     // Some rays pass harmlessly through the scene because they were never emitted in the first place; check
     // for that case here so we can color those rays appropriately
     bool2 subpathEscaped = false.xx;
-
-    // Rays emitted directly from the camera through the scene with no intersections will form single-vertex
-    // paths with no subpaths; check for that here so we can directly set path color from the ambient background
-    // shading
-    bool instantCamEsc = false;
 
     // Spectral sub-path attenuation over multiple bounces and materials, initialized to one (for the camera)
     // and local radiance divided by the probability of selecting the chosen light sample (for the light source)
@@ -160,6 +150,7 @@ void main(uint3 groupID : SV_GroupID,
     // In/out ray directions model importance emission as transmission from the camera position through the lens/pinhole
     bidirVts[0].camVt = BuildBidirVt(subpathOris[0], // Cache world-space sample position
                                      atten[0], // Cache baseline attenuation
+                                     lensNormal,
                                      11, // Filler figure ID
                                      5); // Filler BXDF ID
 
@@ -168,17 +159,16 @@ void main(uint3 groupID : SV_GroupID,
     // In/out ray directions model radiance emission as transmission from the light position through the lens/pinhole
     bidirVts[0].lightVt = BuildBidirVt(subpathOris[1],
                                        atten[1],
+                                       localStarNormal,
                                        STELLAR_NDX,
                                        BXDF_ID_DIFFUSE);
 
     // Bounces + core ray-marching loop
     // Generate camera/light sub-paths here
-    bool joinSubpaths = true; // Records whether or not the renderer should connect the light/camera subpaths after ray propagation (not a good idea if e.g. a camera ray
-                              // immediately reached a light source after leaving the lens/pinhole)
     uint2 numBounces = 0u.xx; // While-loop so we can get correct averages across the local number of bounces in each path
     while (any(numBounces < maxNumBounces.xx &&
-           !subpathEnded &&
-           !subpathEscaped))
+               !subpathEnded &&
+               !subpathEscaped))
     {
         // Small flag to record whether or not intersections from a camera/light ray should be processed during
         // ray-marching; marching ends when neither ray should be processed (i.e. both have intersected with the scene/escaped)
@@ -206,29 +196,6 @@ void main(uint3 groupID : SV_GroupID,
             if (sceneField.x < adaptEps &&
                 rayActiVec.x)
             {
-                // Cache the intersected surface stored in [sceneField.y] (if any) so we can manipulate it in
-                // post-processing (but only if it was intersected by a primary camera ray)
-                if (numBounces.x == 0)
-                {
-                    zerothCamFig = sceneField.y;
-                }
-
-                // Terminate camera rays as soon as they reach the local star
-                if (sceneField.y == STELLAR_NDX)
-                {
-                    subpathEnded.x = true;
-
-                    // Break out early + skip path connection if a camera ray reached the local star before
-                    // the first bounce
-                    if (numBounces.x == 0)
-                    {
-                        instantCamConn = true;
-                        joinSubpaths = false;
-                        rayActiVec = false.xx;
-                        break;
-                    }
-                }
-
                 // Process the current intersection, then return + store a BDPT-friendly surface interaction
                 // Storage at [k + 1] because the zeroth index in either sub-path is reserved for the initial
                 // light/camera sample in the path
@@ -282,6 +249,7 @@ void main(uint3 groupID : SV_GroupID,
                     // We intersected the lens, so cache the intersection position and flag the end of the light-subpath
                     // (since we aren't expecting light to bounce back out of the camera)
                     bidirVts[numBounces.y + 1].lightVt = BuildBidirVt(subpathVecs[1],
+                                                                      float3(1.0f, 0.0f.xx), // Filler surface normal
                                                                       atten[1], // Assume no attenuation at the lens
                                                                       11, // Filler figure ID
                                                                       5); // Filler BXDF ID
@@ -299,31 +267,12 @@ void main(uint3 groupID : SV_GroupID,
             // Subtraction by epsilon is unneccessary and just provides consistency with the limiting
             // epsilon value used for intersection checks
             subpathEscaped = (rayDistVec > (MAX_RAY_DIST - adaptEps).xx);
-            if (any(subpathEscaped))
-            {
-                // Assume the ray has travelled through the scene without intersecting with anything,
-                // or that it bounced off the scene without touching the light source/the camera; skip subpath
-                // connection if this is happening to the camera ray before the first bounce (=> the rays
-                // travelled through the scene without touching anything)
-                if (subpathEscaped.x &&
-                    numBounces.x == 0)
-                {
-                    instantCamEsc = true;
-                    joinSubpaths = false;
-                }
 
-                // Ignore the escaped ray while the contained ray marches through the scene
-                // (unless the escaped ray came from the camera before the first bounce)
-                rayActiVec = rayActiVec && !subpathEscaped && joinSubpaths.xx;
-            }
+            // Ignore escaped rays while contained rays marche through the scene
+            rayActiVec = rayActiVec && !subpathEscaped;
         }
-
         // Step into the next bounce for each sub-path (if appropriate)
         numBounces += (!subpathEscaped && !subpathEnded && (numBounces < maxNumBounces.xx));
-
-        // Avoid progressing either sub-path if the camera path has instantly escaped/instantly reached the
-        // local star
-        if (!joinSubpaths) { break; }
     }
 
     // Attempt to integrate the camera/light subpaths if appropriate; otherwise, assign
@@ -337,6 +286,8 @@ void main(uint3 groupID : SV_GroupID,
     // Random camera-gathers emitted in previous frames might have deposited light
     // on the current sensor/pixel, so add that light into the current path
     // color if appropriate
+    // Cache a linearized version of the local pixel ID for later reference
+    uint linPixID = traceable[1].y;
     float3 pathRGB = aaBuffer[linPixID].incidentLight.rgb;
 
     // We want to avoid accumulating incidental radiance separately to per-pixel samples, so zero
@@ -345,7 +296,8 @@ void main(uint3 groupID : SV_GroupID,
 
     // We've collected + reset incident light for the current sensor/pixel, so now we can begin
     // integrating through the camera/light subpaths (if appropriate)
-    if (joinSubpaths)
+    // Avoid connecting the camera/light subpaths if the initial camera ray never intersects the scene
+    if (numBounces.x != 0)
     {
         // Bounce vertices are offset from baseline camera/light vertices, so total vertex count will always be
         // [numBounces + 1u.xx]
@@ -395,7 +347,7 @@ void main(uint3 groupID : SV_GroupID,
                                                   adaptEps,
                                                   subpathOris[0],
                                                   lensNormal,
-                                                  zProj,
+                                                  traceable[1].z,
                                                   linPixID,
                                                   randVal);
 
@@ -417,29 +369,19 @@ void main(uint3 groupID : SV_GroupID,
             }
         }
     }
-    else if (instantCamConn) // Skip connection and compute radiance directly for camera rays reaching the light before the zeroth bounce
+    else
     {
-        pathRGB += Emission(star); // Instant connection with no bounces, so no need to account for surface attenuation/throughput
-    }
-    else if (instantCamEsc) // Skip connection and fill in background color directly for camera rays that never intersected the scene
-    {
+        // Shade empty pixels with the ambient background color
         pathRGB = AMB_RGB;
     }
 
-    // Apply temporal anti-aliasing, also filter the sample appropriately + apply motion blur
-    pathRGB = FrameSmoothing(pathRGB,
-                             camRay.w,
-                             linPixID);
-
-    // Transform colors to low-dynamic-range with the Hejl and Burgess-Dawson operator
-    // Exposure will (eventually) be controlled by varying aperture size in a physically-based
-    // camera, so avoid adjusting luminance inside the tonemapping operator itself
-    pathRGB = HDR(pathRGB, 1.0f);
+    // Apply frame-smoothing + convert to HDR
+    pathRGB = PathPost(pathRGB,
+                       traceable[1].x,
+                       linPixID);
 
     // Write the final ray color to the display texture
-    // Embed figure ID in [w] so we can perform figure-specific
-    // post-processing (i.e. per-figure GUI labels)
-    displayTex[pixID] = float4(pathRGB, zerothCamFig);
+    displayTex[pixID] = float4(pathRGB, 1.0f);
 
     // No more random permutations at this point, so commit [randVal] back into
     // the GPU random-number buffer ([randBuf])

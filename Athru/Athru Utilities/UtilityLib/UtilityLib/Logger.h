@@ -15,7 +15,7 @@ class Logger
 
 			// Streams ONLY work if they're allocated on an external heap;
 			// ask SO what the fruit is going on there
-			logFileStreamPttr = DEBUG_NEW std::fstream();
+			logFileStreamPttr = new std::fstream();
 			logFileStreamPttr->open(logFilePath, std::ios::out);
 			*logFileStreamPttr << "Note:" << '\n';
 			*logFileStreamPttr << "Unions + structs/classes are too complicated to easily log members," << '\n';
@@ -30,7 +30,7 @@ class Logger
 			*logFileStreamPttr << "Thank you for reading :)" << '\n' << '\n';
 			logFileStreamPttr->close();
 
-			printStreamPttr = DEBUG_NEW std::ostringstream();
+			printStreamPttr = new std::ostringstream();
 			*printStreamPttr << "Note:" << '\n';
 			*printStreamPttr << "Unions + structs/classes are too complicated to easily log members," << '\n';
 			*printStreamPttr << "and it's impossible to easily log the names of enum values without" << '\n';

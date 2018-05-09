@@ -26,6 +26,9 @@
 #define TWO_PI 6.28318530718f
 #define FOUR_PI 12.56637061436f
 
+// Standard compute-shader group width (2D) for path-tracing shaders
+#define TRACING_GROUP_WIDTH 16
+
 // Linearly scales the rotational part of the given quaternion
 // while preserving the axis of rotation
 float4 QtnRotationalScale(float scaleBy, float4 qtn)

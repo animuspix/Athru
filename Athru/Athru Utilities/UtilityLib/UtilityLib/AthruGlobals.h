@@ -4,7 +4,6 @@
 #include <math.h>
 #include <assert.h>
 #include <d3d11.h>
-#include <functional>
 #include "Typedefs.h"
 #include <wrl\client.h>
 
@@ -149,17 +148,14 @@ namespace GraphicsStuff
 
 	// Rendering information
 	extern constexpr fourByteUnsigned SCREEN_RECT_INDEX_COUNT = 6;
-	extern constexpr fourByteUnsigned PROG_PASS_WIDTH = 8;
-	extern constexpr fourByteUnsigned PROG_PASS_HEIGHT = 8;
-	extern constexpr fourByteUnsigned PROG_PATCHES_PER_FRAME = 16;
-	extern constexpr fourByteUnsigned PROG_PATCHES_WIDTH = 4;
-	extern constexpr fourByteUnsigned PROG_PASS_AREA = PROG_PASS_WIDTH * PROG_PASS_HEIGHT * PROG_PATCHES_PER_FRAME;
-	extern constexpr fourByteUnsigned PROG_PASS_COUNT_X = DISPLAY_WIDTH / (PROG_PASS_WIDTH * PROG_PATCHES_WIDTH);
-	extern constexpr fourByteUnsigned PROG_PASS_COUNT_Y = DISPLAY_HEIGHT / (PROG_PASS_HEIGHT * PROG_PATCHES_WIDTH);
+	extern constexpr fourByteUnsigned PROG_PASSES_PER_IMAGE = 5;
+	extern constexpr fourByteUnsigned GROUP_WIDTH_PATH_REDUCTION = 16;
+	extern constexpr fourByteUnsigned GROUP_HEIGHT_PATH_REDUCTION = 16;
+	extern constexpr fourByteUnsigned GROUP_AREA_PATH_REDUCTION = 256;
 	extern constexpr fourByteUnsigned MAX_NUM_BOUNCES = 5;
 	extern constexpr fourByteUnsigned NUM_DIRECT_SAMPLES = 8;
 	extern constexpr fourByteUnsigned NUM_INDIRECT_SAMPLES = 1;
-	extern constexpr fourByteUnsigned NUM_AA_SAMPLES = 100;
+	extern constexpr fourByteUnsigned NUM_AA_SAMPLES = 256;
 }
 
 namespace SceneStuff
@@ -193,6 +189,7 @@ namespace GPGPUStuff
 									Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
 									const D3D11_SUBRESOURCE_DATA* baseDataPttr,
 									Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& rwView,
+									D3D11_BUFFER_UAV_FLAG uavFlags,
 									fourByteUnsigned bufLength)
 	{
 		// Describe the buffer we're creating and storing at
@@ -216,7 +213,7 @@ namespace GPGPUStuff
 		// processing
 		D3D11_BUFFER_UAV viewDescA;
 		viewDescA.FirstElement = 0;
-		viewDescA.Flags = 0;
+		viewDescA.Flags = uavFlags;
 		viewDescA.NumElements = bufLength;
 
 		D3D11_UNORDERED_ACCESS_VIEW_DESC viewDescB;
@@ -236,6 +233,7 @@ namespace GPGPUStuff
 							  const D3D11_SUBRESOURCE_DATA* baseDataPttr,
 							  Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& rwView,
 							  DXGI_FORMAT& viewFormat,
+					 		  D3D11_BUFFER_UAV_FLAG uavFlags,
 							  fourByteUnsigned& bufLength)
 	{
 		// Describe the buffer we're creating and storing at
@@ -260,7 +258,7 @@ namespace GPGPUStuff
 		// processing
 		D3D11_BUFFER_UAV viewDescA;
 		viewDescA.FirstElement = 0;
-		viewDescA.Flags = 0;
+		viewDescA.Flags = uavFlags;
 		viewDescA.NumElements = bufLength;
 
 		D3D11_UNORDERED_ACCESS_VIEW_DESC viewDescB;
@@ -270,6 +268,54 @@ namespace GPGPUStuff
 
 		// Construct a DirectX11 "view" over the data at [bufPttr]
 		result = device->CreateUnorderedAccessView(bufPttr.Get(), &viewDescB, rwView.GetAddressOf());
+		assert(SUCCEEDED(result));
+	}
+
+	// Construct a GPGPU staging buffer with the given primitive
+	// type
+	template<typename BufType>
+	static void BuildStagingBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+								   Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
+								   fourByteUnsigned bufLength)
+	{
+		// Describe the buffer we're creating and storing at
+		// [bufPttr]
+		D3D11_BUFFER_DESC bufferDesc;
+		bufferDesc.Usage = D3D11_USAGE_STAGING;
+		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
+		bufferDesc.BindFlags = 0;
+		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		bufferDesc.MiscFlags = 0;
+		bufferDesc.StructureByteStride = 0;
+
+		// Construct a buffer at [bufPttr] with the description given above
+		HRESULT result = device->CreateBuffer(&bufferDesc,
+											  nullptr,
+											  bufPttr.GetAddressOf());
+		assert(SUCCEEDED(result));
+	}
+
+	// Construct a GPGPU staging buffer with the given complex
+	// (non-pointer, non-enum, non-array, non-reference) type
+	template<typename BufType>
+	static void BuildStagingStructBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+										 Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
+										 fourByteUnsigned bufLength)
+	{
+		// Describe the buffer we're creating and storing at
+		// [bufPttr]
+		D3D11_BUFFER_DESC bufferDesc;
+		bufferDesc.Usage = D3D11_USAGE_STAGING;
+		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
+		bufferDesc.BindFlags = 0;
+		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
+		bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
+		bufferDesc.StructureByteStride = sizeof(BufType);
+
+		// Construct a buffer at [bufPttr] with the description given above
+		HRESULT result = device->CreateBuffer(&bufferDesc,
+											  nullptr,
+											  bufPttr.GetAddressOf());
 		assert(SUCCEEDED(result));
 	}
 }
