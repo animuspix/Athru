@@ -29,42 +29,26 @@ float2 rayJitter(uint2 aaPixID,
 // filtering/jitter applied by [PixToRay(...)]
 #define FOV_RADS 0.5 * PI
 float3 PRayDir(uint2 pixID,
-               float pixWidth,
+               uint pixWidth,
                inout float zProj)
 {
-    float2 viewSizes = (DISPLAY_SIZE_2D * pixWidth);
+    float2 viewSizes = DISPLAY_SIZE_2D * pixWidth;
     zProj = viewSizes.y / tan(FOV_RADS / 2.0f);
     float4 dir = float4(normalize(float3(pixID - (viewSizes / 2.0f),
                                          zProj)), 1.0f);
     return mul(dir, viewMat).xyz;
 }
 
-// Small utility function to compute the camera's world-space bounds at [EPSILON_MIN]
-// units away from the camera's centroid
-float2x3 WorldCamBounds()
+// Exactly equivalent to [PRayDir(...)] (see above), but returns a referentially-transparent
+// value without any hidden writes to [zProj]; also takes [zProj] as a pre-defined value
+// for efficiency (avoids one division + one tangent function)
+float3 safePRayDir(uint2 pixID,
+                   uint pixWidth,
+                   float zProj)
 {
-    // Compute initial hemispheric bounds at [length == 1]
-    float pixWidth = sqrt(NUM_AA_SAMPLES);
-    float zProj;
-    float2x3 minMaxXY = float2x3(PRayDir(0.0f.xx,
-                                         pixWidth,
-                                         zProj),
-                                 PRayDir(float2(DISPLAY_WIDTH - 1,
-                                                DISPLAY_HEIGHT - 1),
-                                         pixWidth,
-                                         zProj));
-
-    // Transform bounds to match the view matrix
-    // (is this a matrix or a tensor operation? Should check
-    // whether HLSL has an appropriate intrinsic here...)
-    minMaxXY[0] = mul(float4(minMaxXY[0], 1.0f), viewMat).xyz;
-    minMaxXY[1] = mul(float4(minMaxXY[1], 1.0f), viewMat).xyz;
-
-    // Flatten the the generated bounds into a bounding
-    // quadrilateral at [z == EPSILON_MIN], then return the
-    // result
-    return float2x3(minMaxXY[0] / (minMaxXY[0].z / EPSILON_MIN),
-                    minMaxXY[1] / (minMaxXY[1].z / EPSILON_MIN));
+    float2 viewSizes = DISPLAY_SIZE_2D * pixWidth;
+    return mul(float4(normalize(float3(pixID - (viewSizes / 2.0f),
+                                       zProj)), 1.0f), viewMat).xyz;
 }
 
 // Inverse of [PRayDir] (see above); transforms a given world-space
@@ -76,8 +60,7 @@ float2x3 WorldCamBounds()
 // Assumes a pinhole camera, also relies on the [cosTheta(...)] term
 // in [PerPointImportance(...)] to filter out rays placed behind the
 // camera
-uint3 PRayPix(float3 incidentDir/*,
-              float3 lensNormal*/,
+uint3 PRayPix(float3 incidentDir,
               float zProj) // Standard non-normalized z-value for the chosen FOV
 {
     // Flip [incidentDir] into an outgoing camera direction
@@ -85,15 +68,13 @@ uint3 PRayPix(float3 incidentDir/*,
     // it into baseline camera space + flatten it into the
     // [z = DISPLAY_HEIGHT / tan(FOV_RADS / 2.0f)] focal plane
     incidentDir *= -1.0f;
-    //incidentDir = mul(float4(incidentDir, 1.0f), iViewMat).xyz;
-    float2 viewSizes = DISPLAY_SIZE_2D; // Ignore multi-sampling for pixel re-projection
     incidentDir /= incidentDir.z / zProj;
 
     // Pixel ID can be related to direction (within the [z = DISPLAY_HEIGHT / tan(FOV_RADS / 2.0f)]
     // focal plane) with the following definitions; apply those here
     // pixID.x: dir.x + width / 2.0f
     // pixID.y: dir.y + height / 2.0f
-    uint2 pixID = incidentDir.xy + (viewSizes / 2.0f);
+    uint2 pixID = incidentDir.xy + (DISPLAY_SIZE_2D / 2.0f); // Ignore multi-sampling for pixel re-projection
 
     // Return the generated pixel ID in [xy] + a linearized version in [z]
     // Nothing stopping this from returning coordinates outside the actual
@@ -146,93 +127,91 @@ float4 PixToRay(uint2 pixID,
                                  length((pixWidth).xx)));
 }
 
-// Compute the importance (bidirectional equivalent to radiance)
-// emitted into the scene from some point on the film plane
-// (i.e. the display); also compute spatial (chance that a sensor
-// ray is exiting from any one point on the lens) and directional
-// (chance that a ray is exiting in any one direction) probability
-// density functions (PDFs)
-// Assumes a pinhole camera (all camera rays are emitted through the
-// sensors from a point-like source); the film plane is assumed to
-// lie [EPSILON_MIN] units away from the pinhole
-// [x] contains importance for the given ray, [y] contains the spatial
-// PDF, [z] contains the directional PDF
-// Lens normal is known-constant in each frame because we're using a
-// pinhole camera; will need to be re-calculated for physically-based
-// models
-float3 RayImportance(float3 camRayDir,
-                     float3 lensNormal)
+// Evaluate probability of a ray leaving from any one
+// pixel (sensor) in the camera
+#define LENS_AREA 1.0f
+float CamAreaPDFOut()
 {
-    // Evaluate the squared distance between the given ray and
-    // the film plane
-    float3 distVec = camRayDir / (camRayDir.z / EPSILON_MIN);
-    float dSqr = dot(distVec,
-                     distVec);
-
-    // Extract the cosine of the angle between the
-    // given ray direction and film plane's surface
-    // normal (assumed parallel to local-[z])
-    // Thresholded to [R, 0] to guarantee that rays
-    // entering from behind the film plane will
-    // always record zero importance (ray importance
-    // carries a cos^2 function; squaring e.g. -0.1
-    // would give +0.01 as the angular contribution
-    // even though the incoming ray would have been
-    // approaching from behind the lens/pinhole)
-    float cosTheta = max(dot(camRayDir, lensNormal), 0.0f);
-
-    // Evaluate the area of the film at [EPSILON_MIN]
-
-    // Model the film area with minimum/maximum keypoints
-    float2x3 camBounds = WorldCamBounds();
-
-    // Extract width and height for the film from each
-    // axis of the keypoints, then take the area by
-    // multiplying them together
-    float projArea = (camBounds[1].x - camBounds[0].x) *
-                     (camBounds[1].y - camBounds[0].y);
-
-    // Combine the above terms into a returnable importance
-    // function
-    float cosThetaSqr = cosTheta * cosTheta;
-    float rayImportance = (dSqr / (projArea * EPSILON_MIN * cosThetaSqr));
-
-    // Return the generated importance value, as well as it's spatial/directional PDFs
-    // (spatial in [y], directional in [z])
-    // Possibility to streamline PDF vaues into a simple multiplication and return
-    // scalar importance rather than importance + PDFs...
-    return float3(rayImportance,
-                  1.0f, // All rays exit from the same point in a pinhole camera, so the chance of choosing that point must be 100%
-                  dSqr / (projArea * cosTheta));
+    return 1.0f / LENS_AREA;
 }
 
-// Evaluate the importance emitted towards the camera from some point in the scene
-// Assumes a pinhole camera
-// Relies on foundational symmetry in BPT; light and importance are the same, thus
-// light reflected into the camera is exactly the same as importance emitted from
-// the lens into the scene
-// Generated importance value passes into [0][x]; probability that the sample ray
-// emitted towards the camera travelled from the given surface point through the eye
-// position passes into [0][y]
-// Connecting vector (useful for evaluating volumetric transmission/scattering over
-// the length of the gather ray) stored in [1][xyz]
-float2x3 PerPointImportance(float3 rayVec,
-                            float3 eyePos,
-                            float3 lensNormal)
+// Evaluate probability of a ray following any one
+// direction as it leaves the camera
+// Similar to spatial probability, but not identical
+// [camInfo] expects the lens normal in [xyz] and the
+// camera's z-scale in [w]
+float CamDirPDFOut(float3 dir, // Outgoing ray direction
+                   float4 camInfo,
+                   float sensArea) // Area of the sensor plane at [z == zProj])
 {
-    // Trace a ray back from [rayVec] towards the camera (i.e. send a gather
-    // ray towards the lens), then invert it (as if it had been emitted from the
-    // camera in the first place) and evaluate outgoing importance for the given
-    // ray direction
-    // Possibility to streamline PDF vaues into a simple multiplication and return
-    // scalar importance rather than importance + PDFs...
-    // Probability of emitted rays hitting any point on the lens is locked to [1]
-    // (since the lens is an ideal single-point pinhole), so no need to scale the
-    // PDF by [1 / lensArea]
-    float3 camVec = eyePos - rayVec;
-    float surfDist = length(camVec);
-    return float2x3(float3(RayImportance((camVec / surfDist) * -1.0f, lensNormal).x,
-                           (surfDist * surfDist) / dot(lensNormal, camVec),
-                           0.0f),
-                    camVec);
+    float cosTheta = max(dot(camInfo.w, dir), 0.0f);
+    float distVec = dir / (dir.z / camInfo.w) / cosTheta;
+    float distSqr = dot(distVec,
+                        distVec);
+    return distSqr / (sensArea * cosTheta * cosTheta);
+}
+
+// Evaluate probability of a ray entering the camera
+// through a differential area on the lens surface
+// We're using a pinhole camera (i.e. a differential
+// lens), so we only have one possible entrance area
+// to think about; the remaining factors (squared
+// distance, cosine attenuation) exist to match ray
+// probabilities to the perspective-projection we
+// use in [PixToRay(...)]
+float CamAreaPDFIn(float3 inVec,
+                   float3 lensNormal)
+{
+    return dot(inVec, inVec) * // Evaluate squared length
+           max(dot(lensNormal, inVec), 0.0f) / // Apply cosine attenuation (more rays closer to the lens normal)
+           LENS_AREA; // Account for even distribution over the lens area ([1.0f] for pinhole cameras)
+}
+
+// Small utility function to retrieve the area of the camera's sensor plane given
+// an anti-aliasing pixel width + the
+float SensArea(float2 sensInfo)
+{
+    // Generate vectors passing through upper-right/lower-left corners
+    // of the film plane
+    float2x3 boundVecs = float2x3(safePRayDir(DISPLAY_SIZE_2D - 1.0f.xx,
+                                              sensInfo.x, sensInfo.y),
+                                  safePRayDir(0.0f.xx,
+                                              sensInfo.x, sensInfo.y));
+
+    // Take the bounding vectors to the plane where [z == [zProj]]
+    // (projection here is *technically* arbitrary, but using [zProj] makes everything
+    // look more consistent anyway :P)
+    boundVecs /= float2x3(boundVecs[0].zzz / sensInfo.yyy,
+                          boundVecs[1].zzz / sensInfo.yyy);
+
+    // Evaluate the area of sensor plane at the given z-scale ([zProj]
+    // here, but unit projection would work too)
+    return abs((boundVecs[0].x - boundVecs[1].x) * // Width from difference on [x]
+               (boundVecs[0].y - boundVecs[1].y)); // Height from difference on [y]
+}
+
+// Compute the importance (bidirectional equivalent to radiance)
+// emitted by the camera through the given direction
+// Assumes a pinhole camera (all camera rays are emitted through the
+// sensors from a point-like source)
+// [camInfo] carries the sensor-plane's normal in [xyz] and the focal
+// depth (i.e. the z-value used for perspective projection) in [w];
+// both values are known-constant in each frame because we're using a
+// pinhole camera (i.e. a uniform lens), but they'd need to be
+// re-evaluated per-ray for physically-based models
+float3 RayImportance(float3 camRayDir,
+                     float4 camInfo,
+                     float pixWidth)
+{
+    // Extract the cosine of the angle between the given ray direction and sensor plane's
+    // surface normal (assumed parallel to local-[z])
+    // Thresholded to [R, 0] to guarantee that rays entering from behind the film plane
+    // will always record zero importance (ray importance carries a cos^2 function;
+    // squaring e.g. -0.1 would give +0.01 as the angular contribution even though the
+    // incoming ray would have been approaching from behind the lens/pinhole)
+    float cosTheta = max(dot(camInfo.xyz, camRayDir), 0.0f);
+
+    // Generate + return an importance value for the given outgoing direction
+    float cosThetaQrt = cosTheta * cosTheta * cosTheta * cosTheta;
+    return (1.0f / (SensArea(pixWidth) * cosThetaQrt)).xxx;
 }

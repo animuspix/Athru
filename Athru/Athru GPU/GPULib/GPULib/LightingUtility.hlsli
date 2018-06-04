@@ -30,19 +30,32 @@ struct BidirVert
 {
     float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
-    float4 norml; // Surface normal at [pos]; [w] is unused
+    float4 norml; // Surface normal at [pos]; [w] describes whether or not [this] lies on the camera lens
+                  // (lens PDFs are area-defined by default, so they need to be separated from the solid-angle PDFs used
+                  // by ray/scene interactions)
+    float4 ioSrs; // In/out ray directions, expressed as solid angles
+    float4 pdfIO; // Forward/reverse probability densities; [z] carries whether or not [this] lies on the local star ([w] is
+                  // unused) (emitters in Athru *do* use solid-angle PDFs, but the PDF functions themselves are inaccessible
+                  // from the [MatPDF(...)] interface (since emitters aren't technically materials); I might create a
+                  // generic PDF interface once I start simplifying the MIS implementation in [SceneVis.hlsl])
 };
 
 BidirVert BuildBidirVt(float3 pos,
                        float3 atten,
                        float3 norml,
+                       float4 thetaPhiIO,
+                       float2 pdfs,
                        uint figID,
-                       uint bxdfID)
+                       uint bxdfID,
+                       bool lensVt,
+                       bool starVt)
 {
     BidirVert bdVt;
     bdVt.pos = float4(pos, figID);
     bdVt.atten = float4(atten, bxdfID);
-    bdVt.norml = float4(norml, 0.0f);
+    bdVt.norml = float4(norml, lensVt);
+    bdVt.ioSrs = thetaPhiIO;
+    bdVt.pdfIO = float4(pdfs, starVt, 0.0f);
     return bdVt;
 }
 
@@ -96,8 +109,8 @@ float4 RaysToAngles(float3 inVec,
 
     // Return the generated angles + swap the incoming/outgoing
     // directions if they lie on a light path
-    return float4(thetaPhiIO[lightPath],
-                  thetaPhiIO[(lightPath + 1) % 2]);
+    return float4(thetaPhiIO[lightPath].xy,
+                  thetaPhiIO[(lightPath + 1) % 2].xy);
 }
 
 // Generates a transformation matrix for the
@@ -172,7 +185,7 @@ float3x3 NormalSpace(float3 normal)
 float AngleToArea(float3 posA,
                   float3 posB,
                   float3 normal,
-                  bool overSurface)
+                  bool overSurf)
 {
     // Projection over differential area is described with
     // (dA * cos(theta)) / d^2
@@ -185,20 +198,47 @@ float AngleToArea(float3 posA,
     // to the size of the patch ([dA]) scaled by the facing ratio of the patch towards [normal]
     // (if appropriate) and divided by the squared length of [posA - posB] (since radiance spreads out
     // over the surface area of the light volume at any given distance)
-    // [dA] isn't passed in as an parameter here, but it doesn't need to be; any solid-angle value scaled
+    // [dA] isn't passed in as a parameter here, but it doesn't need to be; any solid-angle value scaled
     // against the output of [this] will convert into it's area-based equivalent
-    float3 outVec = (posB - posA);
-    float dist = length(outVec);
-    float distSqr = dist * dist;
-    if (overSurface)
-    {
-        return dot(normal,
-                   outVec / dist) / distSqr;
-    }
-    else
-    {
-        return 1.0f / distSqr;
-    }
+
+    // Define values we'll need for the conversion function
+    float4 outVec = float4(posB - posA, 0.0f);
+    outVec.w = length(outVec.xyz);
+
+    // Most vertices will interact with surfaces rather than media, so
+    // evaluate facing ratio here
+    float cosAtten = dot(normal,
+                         outVec.xyz / outVec.w);
+    cosAtten = (cosAtten * !overSurf) + overSurf; // Lock attenuation to [1.0f] for vertices within scattering volumes
+                                                  // (like e.g. media, variable-density glass, vegetation...)
+    return cosAtten / (outVec.w * outVec.w); // Scale attenuation by the squared distance between incoming/outgoing vertices, then
+                                             // return the generated conversion to the callsite
+}
+
+// Specialized version of [AngleToArea(...)] for converting combined forward/reverse PDFs during MIS
+float2 AnglePDFsToArea(float3 inPos,
+                       float3 basePos,
+                       float3 outPos,
+                       float2x3 normals,
+                       bool2 overSurf)
+{
+    // Define values we'll need for the conversion function
+    float2x3 dirSet = float2x3(outPos - basePos,
+                               inPos - basePos);
+    float2 distVec = float2(length(dirSet[0]),
+                            length(dirSet[1]));
+    float2 distSqrVec = distVec * distVec;
+
+    // Most vertices will interact with surfaces rather than media, so
+    // evaluate facing ratio here
+    float2 cosAtten = float2(dot(normals[0],
+                                 dirSet[0] / distVec.x),
+                             dot(normals[1],
+                                 dirSet[1] / distVec.y));
+    cosAtten = (cosAtten * !overSurf) + overSurf; // Lock attenuation to [1.0f] for vertices within scattering volumes
+                                                  // (like e.g. media, variable-density glass, vegetation...)
+    return cosAtten / distSqrVec; // Scale attenuation by the squared distance between incoming/outgoing vertices, then
+                                  // return the generated conversion to the callsite
 }
 
 // A generic background color; used for contrast against dark surfaces in
@@ -208,24 +248,27 @@ float AngleToArea(float3 posA,
 // (no human-visible light in space beyond emittance from the local star)
 #define AMB_RGB 0.125f.xxx
 
-// Evaluate the angular size of the area on the star emitting rays towards the
-// given figure (allows us to importance-sample surface positions instead of picking
-// fully-random points on the local star)
-float EmissiveAnglesPerPlanet(float figScale,
-                              float starSize)
+// PDF associated with [PRayStellarSurfPos(...)], represents the probability of
+// selecting a direction through the section of the stellar surface with
+// absolute y-values below [MAX_PLANETARY_RING_HEIGHT]
+float PRayStellarPosPDF(float starSize)
 {
-    return atan(figScale * (1.0f / PLANETARY_RING_RADIUS)) * 2.0f;
+    // Evaluate stellar circumference at [y = MAX_PLANETARY_RING_HEIGHT]
+    // and [y = 0]
+    float c = (starSize - MAX_PLANETARY_RING_HEIGHT) * TWO_PI;
+
+    // Evaluate the area of the emissive band as the circumference multiplied
+    // by [MAX_PLANETARY_RING_HEIGHT]
+    float2 a = c * MAX_PLANETARY_RING_HEIGHT;
+
+    // Divide out squared radius to get the total solid angle within the
+    // emissive area, then return the final PDF as it's reciprocal
+    // (emitted rays are assumed to pass through some solid-angle region
+    // as they leave the (spherical) stellar surface)
+    return (starSize * starSize) / a;
 }
 
-// PDF associated with [StellarSurfPos(...)], represents the probability of
-// selecting a direction through the stellar surface given a conic distribution
-// with a maximum [theta] value of [cosMaxEmitAngles(...)]
-float StellarDirPDF(float cosMaxEmitAngles)
-{
-    return 1.0f / (TWO_PI * 1.0f - cosMaxEmitAngles);
-}
-
-// PDF associated with [AltStellarSurfPos(...), represents the probability of
+// PDF associated with [StellarSurfPos(...), represents the probability of
 // selecting any position within the spherical distribution covering the
 // entire stellar surface
 float StellarPosPDF()
@@ -233,62 +276,39 @@ float StellarPosPDF()
     return 1.0f / FOUR_PI;
 }
 
-// Alternative to [StellarSurfPos(...)] (see below); uses ordinary
-// uniform sphere sampling instead of conic importance sampling
-// Generally less efficient than [StellarSurfPos(...)] for ray emission,
-// but required for direct illumination; [StellarSurfPos(...)] restricting
-// emitted rays to a small circle on the source's surface works because the
-// output rays strictly follow the source normals + are guaranteed to reach
-// all accessible points on the planetary surface, whereas shadow rays are
-// cast back from those intersections towards random points within the
-// circle. Most of the circle is inaccessible to any one point on the
-// planetary surface, so nearly all the output rays are occluded and the
-// unoccluded rays end up highlighting the parts of the planetary surface
-// closest to perpendicularity with the throughline connecting the
-// relevant planet to the light source (a crescent shape atm since the
-// only light source is the local star)
-// Sphere sampling mitigates this by sampling a much broader range of
-// possible directions; even though the sampling function is generally
-// less efficient (since shadow rays are more likely to intersect areas
-// of the light source facing away from the planet), many of the rays that
-// would have been occluded during conic importance sampling successfully
-// intersect the light source and allow for more accurate illumination
-// overall
-float3 AltStellarSurfPos(float starSize,
-                         float3 starPos,
-                         float3 randUVW)
+// A function to generate arbitrary positions on the local star;
+// slightly less efficient than [PRayStellarSurfPos] for primary ray
+// emission but much better for light gathers because it samples
+// from a larger domain (=> lower chance for occlusion between scene
+// surfaces and generated points on the star)
+float3 StellarSurfPos(float starSize,
+                      float3 starPos,
+                      float3 randUVW)
 {
     return (normalize(randUVW) * starSize) + starPos;
 }
 
 // Generate an importance-sampled source position for
-// some ray passing from the local star towards a given
-// planet
-float3 StellarSurfPos(float starSize,
-                      float3 starPos,
-                      float3 targFigPos,
-                      float cosMaxEmitAngles,
-                      float2 randUV)
+// primary rays leaving the local star
+// [starInfo] has star-position in [xyz], star size
+// in [w]
+float3 PRayStellarSurfPos(float4 starInfo,
+                          float3 randUVW)
 {
-    // Generate a baseline surface position
-    float3 baseSurfPos = starPos + (normalize(targFigPos - starPos) * starSize);
+    // Scale [v] to the interval [0...MAX_Y]
+    float yPos = randUVW.y * MAX_PLANETARY_RING_HEIGHT;
 
-    // Convert the generated surface position to a [theta, phi] solid angle
-    float2 surfAngle = VecToAngles(baseSurfPos);
+    // Place [u, w] on the circle where y = [yPos]
+    float2 xzPos = normalize(randUVW.xz) *
+                   (starInfo.w - (abs(yPos) - starInfo.y));
 
-    // Extract a [theta, phi] solid angle from the given UV values, then apply
-    // it as an offset to the baseline surface angles defined above
-    float theta = acos((1.0f - randUV.x) + randUV.x * cosMaxEmitAngles);
-    float phi = randUV.y * TWO_PI;
-    surfAngle += float2(theta - (cosMaxEmitAngles / 2.0f), // We want to allow sampling below the equator/behind the central meridian
-                        phi - PI);
-
-    // Convert [surfAngle] back into a scaled Cartesian vector, then return the result
-    return AnglesToVec(surfAngle) * starSize;
+    // Construct a spherical position from the generated values,
+    // then return the result
+    return float3(xzPos.x, yPos, xzPos.y);
 }
 
 // Generate an importance-sampled outgoing ray direction
-// from the local star towards a given planet
+// from the local star towards a given point
 float3 StellarDir(float3 stellarSurfPos,
                   float3 samplePoint)
 {
@@ -404,24 +424,4 @@ float3x4 OccTest(float3 rayOri,
                     endPos,
                     occ,
                     nearID.xxxx);
-}
-
-// Evaluate the power heuristic for Multiple Importance Sampling (MIS);
-// used to balance importance-sampled radiances taken with different
-// sampling strategies (useful for e.g. sampling arbitrary materials
-// where some materials (like specular surfaces) respond better to
-// BSDF sampling whereas others (like diffuse surfaces) respond better
-// if you sample light sources directly)
-// This implementation is from Physically Based Rendering: From Theory
-// To Implementation (Pharr, Jakob, Humphreys)
-float MISWeight(int samplesDistroA,
-                float distroAPDF,
-                int samplesDistroB,
-                float distroBPDF)
-{
-    float distroA = samplesDistroA * distroAPDF;
-    float distroB = samplesDistroB * distroBPDF;
-    float distroASqr = distroA * distroA;
-    float distroBSqr = distroB * distroB;
-    return distroASqr / (distroASqr * distroBSqr);
 }

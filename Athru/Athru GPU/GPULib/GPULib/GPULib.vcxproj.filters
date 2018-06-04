@@ -147,7 +147,6 @@
     <None Include="GenericUtility.hlsli" />
     <None Include="Materials.hlsli" />
     <None Include="RasterCamera.hlsli" />
-    <None Include="TraceableIDs.hlsli" />
     <None Include="ScenePost.hlsli" />
   </ItemGroup>
 </Project>

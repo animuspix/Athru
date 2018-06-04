@@ -7,10 +7,10 @@
 // reflectance/scattering/transmittance function; one of
 // these is semi-randomly selected for each ray based
 // on weights given by [FigMat]
-#define BXDF_ID_DIFFUSE 0
-#define BXDF_ID_SPECULAR 1
-#define BXDF_ID_TRANSMITTANT 2
-#define BXDF_ID_VOLU 3
+#define BXDF_ID_DIFFU 0
+#define BXDF_ID_SPECU 1
+#define BXDF_ID_SSURF 2
+#define BXDF_ID_MEDIA 3
 
 // A small object used to store procedural material
 // definitions during path-tracing
@@ -127,25 +127,26 @@ float3 DiffuseDir(inout uint randVal)
         // we can safely map points from [-1.0f...1.0f]^2 onto
         // the disc without generating any artifacts
 
-        // Infer radial distance from the larger value between
-        // [uv.x] and [uv.y]
-        float r = max(uv.x, uv.y);
+        // Some changes from the PBR algorithm, mostly to
+        // minimize branching...
 
-        // Construct [theta]; generalization follows the notes below
-        bool thetaShifting = (r == uv.y);
-        float thetaShift = (PI / -2.0f) * thetaShifting; // Conditional rotation; pairs with [invTheta] and [uvRatio]
-                                                         // (see below) to recreate the function
-                                                         // [(pi / 2) - (pi / 4) * (uv.x / uv.y)] when [r] represents
-                                                         // polar radius
-        float uvRatio = uv[uv.x > uv.y] / uv[uv.y > uv.x]; // Take varying UV ratios depending on the value of [r]
-        float invTheta = ((-1.0f * thetaShifting) + !thetaShifting); // Invert [theta] if [uv.y] represents the radius
-        float theta = (((PI / 4.0f) * uvRatio) + thetaShift) * invTheta; // Modified/generalized theta-function
+        // Infer radial distance from the larger absolute value between
+        // [uv.x] and [uv.y], then re-apply the sign of the original
+        // axis
+        float2 absUV = abs(uv);
+        float r = max(absUV.x, absUV.y) *
+                  sign(uv[absUV.x < absUV.y]);
+
+        // Construct [theta]
+        float uvRatio = uv[absUV.x > absUV.y] / uv[absUV.y > absUV.x]; // Take varying UV ratios depending on the value of [r]
+        float3 coeffs = float3(-1.0f, 1.0f, (r == uv.y)); // Generic coefficients, needed to support a [theta] definition without [if]s
+        float theta = (((PI / 2.0f) * coeffs.z) - ((PI / 4.0f) * uvRatio)) * coeffs[coeffs.z]; // Generalized [theta] definition
 
         // Construct a scaled polar coordinate carrying the
         // generated [u, v] sampling values, then return it
         float2 outVec;
         sincos(theta, outVec.y, outVec.x);
-        uv = r * outVec;
+        uv = r.xx * outVec;
     }
 
     // We've placed [uv] on the unit disc (+ used a square mapping
@@ -160,19 +161,19 @@ float3 DiffuseDir(inout uint randVal)
 }
 
 // RGB diffuse reflectance away from any given surface; uses the Oren-Nayar BRDF
-float3 DiffuseBRDF(FigMat mat,
+// Surface carries color in [rgb], Oren-Nayar variance in [a]
+float3 DiffuseBRDF(float4 surf,
                    float4 thetaPhiIO)
 {
     // Generate the basis Lambert BRDF
-    float3 lambert = mat.rgb / PI;
-    return lambert;
+    float3 lambert = surf.rgb / PI;
 
     // Calculate the squared variance (will be needed later)
-    float variSqr = mat.vari * mat.vari;
+    float variSqr = surf.a * surf.a;
 
     // Generate Oren-Nayar parameter values
-    float a = 1 - (variSqr / (2.0f * (variSqr + 0.33f)));
-    float b = 0.45 * (variSqr / (variSqr + 0.09f));
+    float a = 1.0f - (variSqr / (2.0f * (variSqr + 0.33f)));
+    float b = (0.45 * variSqr) / (variSqr + 0.09f);
     float alpha = max(thetaPhiIO.x, thetaPhiIO.z);
     float beta = min(thetaPhiIO.x, thetaPhiIO.z);
     float cosPhiSection = cos(thetaPhiIO.y - thetaPhiIO.w);
@@ -193,21 +194,20 @@ float3 DiffuseBRDF(FigMat mat,
 // [bxdfID] gives the reflectance/scattering/transmittance function selected
 // by the given material for the current ray
 // Still very unsure about material definitions...
-float MatPDF(FigMat mat,
-             float4 thetaPhiIO,
+float MatPDF(float4 thetaPhiIO,
              uint bxdfID)
 {
     // No PDF functions for non-diffuse surfaces, so just return diffuse
     // for now...
     switch (bxdfID)
     {
-        case BXDF_ID_DIFFUSE:
+        case BXDF_ID_DIFFU:
             return DiffusePDF(thetaPhiIO.z);
-        case BXDF_ID_SPECULAR:
+        case BXDF_ID_SPECU:
             return 0.0f;
-        case BXDF_ID_TRANSMITTANT:
+        case BXDF_ID_SSURF:
             return 0.0f;
-        case BXDF_ID_VOLU:
+        case BXDF_ID_MEDIA:
             return 0.0f;
         default:
             return DiffusePDF(thetaPhiIO.z); // Assume diffuse surfaces for undefined [BXDFs]
@@ -221,13 +221,13 @@ float3 MatDir(inout uint randVal,
     // for now...
     switch (bxdfID)
     {
-        case BXDF_ID_DIFFUSE:
+        case BXDF_ID_DIFFU:
             return DiffuseDir(randVal);
-        case BXDF_ID_SPECULAR:
+        case BXDF_ID_SPECU:
             return 0.0f.xxx;
-        case BXDF_ID_TRANSMITTANT:
+        case BXDF_ID_SSURF:
             return 0.0f.xxx;
-        case BXDF_ID_VOLU:
+        case BXDF_ID_MEDIA:
             return 0.0f.xxx;
         default:
             return DiffuseDir(randVal); // Assume diffuse surfaces for undefined [BXDFs]
@@ -237,24 +237,24 @@ float3 MatDir(inout uint randVal,
 // BXDF finder for arbitrary materials
 // Still very unsure about material definitions...
 float3 MatBXDF(FigMat mat,
-              float4 thetaPhiIO,
-              uint bxdfID)
+               float4 thetaPhiIO,
+               uint bxdfID)
 {
     // No BXDFs for non-diffuse surfaces, so just return diffuse
     // for now...
     switch (bxdfID)
     {
-        case BXDF_ID_DIFFUSE:
-            return DiffuseBRDF(mat,
+        case BXDF_ID_DIFFU:
+            return DiffuseBRDF(float4(mat.rgb, mat.vari),
                                thetaPhiIO);
-        case BXDF_ID_SPECULAR:
+        case BXDF_ID_SPECU:
             return 0.0f.xxx;
-        case BXDF_ID_TRANSMITTANT:
+        case BXDF_ID_SSURF:
             return 0.0f.xxx;
-        case BXDF_ID_VOLU:
+        case BXDF_ID_MEDIA:
             return 0.0f.xxx;
         default:
-            return DiffuseBRDF(mat,
+            return DiffuseBRDF(float4(mat.rgb, mat.vari),
                                thetaPhiIO); // Assume diffuse surfaces for undefined [BXDFs]
     }
 }

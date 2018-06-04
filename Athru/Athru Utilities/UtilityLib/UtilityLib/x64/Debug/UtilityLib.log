@@ -1,6 +1,7 @@
 ﻿  Application.cpp
   AthruGlobals.cpp
   Input.cpp
+  Logger.cpp
   StackAllocator.cpp
   UtilityServiceCentre.cpp
   Generating Code...

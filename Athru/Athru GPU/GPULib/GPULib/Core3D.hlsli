@@ -72,6 +72,10 @@ RWStructuredBuffer<Figure> figuresWritable : register(u0);
 // describes the radius of that orbit
 #define PLANETARY_RING_RADIUS 800.0f
 
+// The planetary ring will have a maximum positive height, and recording it
+// makes it easier to focus stellar ray emissions; do that here
+#define MAX_PLANETARY_RING_HEIGHT 100.0f
+
 #include "GenericUtility.hlsli"
 
 // Cube DF here
@@ -222,23 +226,6 @@ float CubeDFProcedural(float3 coord,
     return min(max(edgeDistVec.x, max(edgeDistVec.y, edgeDistVec.z)), 0.0f) + length(max(edgeDistVec, float3(0, 0, 0)));
 }
 
-// Small test scene with color bleed; useful for debugging global illumination effects
-float TestSceneDF(float3 coord,
-                  Figure sceneData)
-{
-    float3 sceneOri = sceneData.pos.xyz;
-    float3 scaleVec = float3(80.0f, 20.0f, 200.0f);
-    float angle = -1.0f * (PI / 16.0f);
-    return min(CubeDFProcedural(coord,
-                                sceneOri - float3(0.0f, (sceneData.scaleFactor.x / 2.0f), 0.0f),
-                                scaleVec,
-                                float4(float3(0.0f, 0.0f, 1.0f) * sin(angle), cos(angle))),
-               CubeDFProcedural(coord,
-                                sceneOri + float3(0.0f, (sceneData.scaleFactor.x / 2.0f), 0.0f),
-                                scaleVec,
-                                float4(float3(0.0f, 0.0f, 1.0f) * sin(angle * -1.0f), cos(angle * -1.0f))));
-}
-
 // Primitive bounding surfaces
 // These are defined by ray-tracing functions rather than distance fields
 // They mostly exist to accelerate ray-marching (since we can (almost) freely discard
@@ -344,8 +331,8 @@ float FigDF(float3 coord,
     {
         if (fig.dfType.x == DF_TYPE_PLANET)
         {
-            return TestSceneDF(coord,
-                               fig);
+            return SphereDF(coord,
+                            fig);
         }
         else if (fig.dfType.x == DF_TYPE_STAR)
         {
