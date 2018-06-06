@@ -35,7 +35,7 @@ BidirVert ProcVert(float3 rayVec,
                             randVal);
 
     // Extract surface normal
-    float3 normal = tetGrad(rayVec, // Per-figure gradient because generic field gradient is too imperformant for my current PC
+    float3 normal = tetGrad(rayVec,
                             adaptEps,
                             figuresReadable[figID]).xyz;
 
@@ -54,18 +54,15 @@ BidirVert ProcVert(float3 rayVec,
                         bxdfID);
 
     // Cache the bi-directional vertex representing the current interaction
+    bool stellarIface = figID == STELLAR_NDX;
     BidirVert bdVt = BuildBidirVt(rayOri,
                                   atten,
                                   normal,
                                   thetaPhiIO,
                                   pdfO,
-                                  figID,
-                                  bxdfID,
-                                  false, // Lens vertices never pass through [ProcVert] at the moment, so we can
-                                         // safely lock this to [false] until if/when we start working on fancy
-                                         // lens filters/materials (like e.g. chromatic aberration, vignetting,
-                                         // color/shape masking...etc.)
-                                  figID == STELLAR_NDX);
+                                  interfaceID(figID, stellarIface + (2 * !stellarIface)), // No support for lens-materials atm, so
+                                                                                          // no need to account for lens-interfaces here...
+                                  bxdfID);
 
     // Update [out] parameters
 
@@ -155,7 +152,7 @@ float4 ConnectBidirVts(BidirVert camVt,
                                                    lightVt.ioSrs.xy);
             connStratRGB.rgb = lightVt.atten.rgb * // Emitted color from the source vertex on the light subpath
                                MatBXDF(FigMaterial(lightVt.pos.xyz,
-                                                   lightVt.pos.w),
+                                                   extractFigID(lightVt.pos.w)),
                                                    thetaPhiIO,
                                        lightVt.atten.w) * // Attenuation by the source interaction's local BXDF
                                RayImportance(occData[0].xyz,
@@ -214,7 +211,7 @@ float4 ConnectBidirVts(BidirVert camVt,
         {
             // Cache the local material + normal + input/output angles at [camVt.pos.xyz]
             FigMat mat = FigMaterial(rayOri,
-                                     camVt.pos.w);
+                                     extractFigID(camVt.pos.w));
             float4 thetaPhiIO = float4(VecToAngles(occData[0].xyz),
                                        camVt.ioSrs.zw);
             connStratRGB.rgb = DirIllumRadiance(stellarSurfPos,
@@ -282,11 +279,11 @@ float4 ConnectBidirVts(BidirVert camVt,
                                        float4(occVecToSr,
                                               camVt.ioSrs.zw));
         float3 camBXDF = MatBXDF(FigMaterial(camVt.pos.xyz,
-                                             camVt.pos.w),
+                                             extractFigID(camVt.pos.w)),
                                  camLightIO[0],
                                  camVt.atten.w);
         float3 lightBXDF = MatBXDF(FigMaterial(lightVt.pos.xyz,
-                                               lightVt.pos.w),
+                                               extractFigID(lightVt.pos.w)),
                                    camLightIO[1],
                                    lightVt.atten.w);
         connStratRGB.rgb = camVt.atten.rgb * camBXDF * // Evaluate + apply attenuated radiance on the camera subpath

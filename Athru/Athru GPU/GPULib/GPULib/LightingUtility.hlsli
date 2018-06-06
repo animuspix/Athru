@@ -28,34 +28,53 @@
 // vertices on the camera lens/pinhole
 struct BidirVert
 {
-    float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
+    float4 pos; // Position of [this] in eye-space ([xyz]); contains the local interface-ID in [w]
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
-    float4 norml; // Surface normal at [pos]; [w] describes whether or not [this] lies on the camera lens
-                  // (lens PDFs are area-defined by default, so they need to be separated from the solid-angle PDFs used
-                  // by ray/scene interactions)
+    float4 norml; // Surface normal at [pos]; [w] is unused
     float4 ioSrs; // In/out ray directions, expressed as solid angles
-    float4 pdfIO; // Forward/reverse probability densities; [z] carries whether or not [this] lies on the local star ([w] is
-                  // unused) (emitters in Athru *do* use solid-angle PDFs, but the PDF functions themselves are inaccessible
-                  // from the [MatPDF(...)] interface (since emitters aren't technically materials); I might create a
-                  // generic PDF interface once I start simplifying the MIS implementation in [SceneVis.hlsl])
+    float4 pdfIO; // Forward/reverse probability densities; [zw] are unused
 };
+
+// Small convenience function to generate interface-IDs
+// Interface-IDs are tuples of 30-bit figure-IDs and 2-bit interface 
+// properties; figure-IDs attached to lens-interfaces are automatically 
+// treated as camera indices (Athru *probably* won't ever support 
+// multiple cameras, but it's cleaner than implying that e.g. some part 
+// of the local star represents a lens)
+#define INTERFACE_PROPS_LENS 0x00000000
+#define INTERFACE_PROPS_LIGHT 0x00000001
+#define INTERFACE_PROPS_MAT 0x00000002
+uint interfaceID(uint figID, uint interfaceProps)
+{
+    return (figID << 30) | interfaceProps;
+}
+
+// Utility function to retrieve figure-ID from an interface-ID
+uint extractFigID(uint ifaceID)
+{
+    return ifaceID >> 30;
+}
+
+// Utility function to retrieve interface properties from an interface-ID
+uint extractIfaceProps(uint figID)
+{
+    return (ifaceID << 30) >> 30;
+}
 
 BidirVert BuildBidirVt(float3 pos,
                        float3 atten,
                        float3 norml,
                        float4 thetaPhiIO,
                        float2 pdfs,
-                       uint figID,
-                       uint bxdfID,
-                       bool lensVt,
-                       bool starVt)
+                       uint ifaceID,
+                       uint bxdfID)
 {
     BidirVert bdVt;
-    bdVt.pos = float4(pos, figID);
+    bdVt.pos = float4(pos, ifaceID);
     bdVt.atten = float4(atten, bxdfID);
-    bdVt.norml = float4(norml, lensVt);
+    bdVt.norml = float4(norml, 0.0f);
     bdVt.ioSrs = thetaPhiIO;
-    bdVt.pdfIO = float4(pdfs, starVt, 0.0f);
+    bdVt.pdfIO = float4(pdfs, 0.0f.xx);
     return bdVt;
 }
 
@@ -360,7 +379,7 @@ float3 Emission(Figure src)
 
 // Simple occlusion function, traces a shadow ray between two points to test
 // for visiblity (needed to validate generic sub-path connections in BDPT)
-// [0].xyz contains the tracing direction, [0].w contains the distance
+// [0].xyz contains the tracing direction, [0].w clontains the distance
 // travelled by the shadow ray, [1].xyz the final position at the head of
 // the shadow ray, [1].w contains the shadow ray's occlusion status
 // (false => reached [rayDest] without intersecting any earlier geometry;

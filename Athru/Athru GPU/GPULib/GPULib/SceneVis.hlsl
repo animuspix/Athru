@@ -149,10 +149,8 @@ void main(uint3 groupID : SV_GroupID,
                                      float2(CamAreaPDFOut(), // Output probability, i.e. chance of emitting a ray through [pixID]
                                             1.0f), // Filler input probability; depends on a defined importance/radiance source within the scene,
                                                    // which we obvs can't provide until we've generated the sub-path vertices
-                                     11, // Filler figure ID
-                                     5, // Filler BXDF ID
-                                     true, // This is the zeroth camera vertex, so it has to lie on the lens/pinhole; mark that here
-                                     false); // Initial camera vertices obvs can't lie on the local star
+                                     INTERFACE_PROPS, // Interface-ID for the zeroth lens
+                                     5); // Filler BXDF ID
 
     // Pre-fill the first vertex on the light sub-path with the baseline light sample
     // BXDF ID assumes that stars are 100% diffuse emitters
@@ -164,10 +162,8 @@ void main(uint3 groupID : SV_GroupID,
                                               VecToAngles(localStarNormal)), // Assume equivalent input/output directions for subpath endpoints
                                        float2(PRayStellarPosPDF(star.scaleFactor.x),
                                               StellarPosPDF()),
-                                       STELLAR_NDX,
-                                       BXDF_ID_DIFFU,
-                                       false,
-                                       true);
+                                       INTERFACE_PROPS_LIGHT, // Interface-ID for the local star (with [[figID] == 0])
+                                       BXDF_ID_DIFFU);
 
     // Bounces + core ray-marching loop
     // Generate camera/light sub-paths here
@@ -175,7 +171,7 @@ void main(uint3 groupID : SV_GroupID,
     while (any(numBounces < maxNumBounces.xx &&
                !subpathEnded &&
                !subpathEscaped))
-    {
+    {       
         // Small flag to record whether or not intersections from a camera/light ray should be processed during
         // ray-marching; marching ends when neither ray should be processed (i.e. both have intersected with the scene/escaped)
         bool2 rayActiVec = numBounces < maxNumBounces.xx;
@@ -265,11 +261,8 @@ void main(uint3 groupID : SV_GroupID,
                                                                                           lensNormal), // Probability of the light-subpath reaching the camera
                                                                                                        // from its previous bounce
                                                                              CamAreaPDFOut()), // Probability of a ray leaving the camera passing through [rayDirs[1]]
-                                                                      11, // Filler figure ID
-                                                                      5, // Filler BXDF ID
-                                                                      true, // Record the position of [this] on the lens so we can avoid transforming it's
-                                                                            // PDF when we evaluate MIS weights for bi-directional path integration
-                                                                      false); // [this] didn't intersect with the local star, so mark that flag [false]
+                                                                      INTERFACE_PROPS_LENS, // Interface ID for the zeroth lens in the scene
+                                                                      5); // Filler BXDF ID
                     subpathEnded.y = true;
                 }
                 // Ignore the current intersection while the camera-ray marches through the scene
@@ -423,65 +416,46 @@ void main(uint3 groupID : SV_GroupID,
                             // paths evaluated by each bi-directional connection strategy
 
                             // Update reverse PDF for the current camera-vertex
-                            if (bidirVts[k.x].camVt.norml.w)
-                            {
-                                // Generate a lens-specific reverse PDF for the current camera-vertex
-                                currPDFIO.y = CamAreaPDFIn(bidirVts[k.x].camVt.pos.xyz - bidirVts[k.y].lightVt.pos.xyz,
-                                                           lensNormal);
-                            }
-                            else
-                            {
-                                // Generate an appropriate surface/emitter PDF for the current camera-vertex
-                                if (bidirVts[k.y].lightVt.pdfIO.z)
-                                {
-                                    // Generate an emitter PDF for the current camera-vertex
-                                    currPDFIO.y = StellarPosPDF();
-                                }
-                                else
-                                {
-                                    // Generate a surface/volume/medium-specific reverse PDF for the current
-                                    // camera-vertex
-                                     currPDFIO.y = MatPDF(RaysToAngles(normalize(bidirVts[k.y].lightVt.pos.xyz - bidirVts[k.x].camVt.pos.xyz),
-                                                                      normalize(bidirVts[max(k.x - 1, 0)].camVt.pos.xyz - bidirVts[k.x].camVt.pos.xyz),
-                                                                      true),
-                                                         bidirVts[k.x].camVt.atten.w);
-                                }
-
-                                // These are scene vertices, so they'll need to convert from solid-angle integrals to
-                                // integrals over area; do that here
-                                currPDFIO.y *= AngleToArea(bidirVts[k.y].lightVt.pos.xyz,
-                                                           bidirVts[k.x].camVt.pos.xyz,
-                                                           bidirVts[k.x].camVt.norml.xyz,
-                                                           bidirVts[k.x].camVt.atten.w == BXDF_ID_MEDIA);
-                            }
-
-                            // Evaluate full-path PDFs for the current light-vertex
-                            if (bidirVts[k.x].camVt.norml.w)
-                            {
-                                // Generate lens-specific forward/reverse PDF values for the current camera-vertex
-                                currPDFIO.xy = float2(CamAreaPDFOut(),
-                                                      CamAreaPDFIn(bidirVts[k.x].camVt.pos.xyz - bidirVts[k.y].lightVt.pos.xyz,
-                                                                   lensNormal));
-                            }
-                            else
-                            {
-                                // Generate surface/volume/medium-specific forward/reverse PDF values for the current
-                                // camera-vertex
-                                currPDFIO.xy = float2(MatPDF(bidirVts[k.x].camVt.ioSrs,
-                                                             bidirVts[k.x].camVt.atten.w),
-                                                      MatPDF(bidirVts[k.x].camVt.ioSrs,
-                                                             bidirVts[k.x].camVt.atten.w));
-
-                                // These are scene vertices, so they'll need to convert from solid-angle integrals to
-                                // integrals over area; do that here
-                                //currPDFIO.xy *= AnglePDFsToArea(bidirVts[k.x],);
-                            }
+                            currPDFIO.y = BidirMISPDF(float2x4(bidirVts[k.y].lightVt.pos,
+                                                               bidirVts[k.y].lightVt.norml.xyz, bidirVts[k.y].lightVt.atten.w),
+                                                      float2x4(bidirVts[k.x].camtVt.pos,
+                                                               bidirVts[k.x].camtVt.norml.xyz, bidirVts[k.x].camVt.atten.w),
+                                                      float2x3(bidirVts[max(k.x - 1, 0)].camVt.pos.xyz - bidirVts[k.x].camVt.pos.xyz,
+                                                               lensNormal),
+                                                      false);
+                                                      
+                            // Update reverse PDF for the current light-vertex
+                            currPDFIO.w = BidirMISPDF(float2x4(bidirVts[k.x].camVt.pos,
+                                                               bidirVts[k.x].camVt.norml.xyz, bidirVts[k.y].camVt.atten.w),
+                                                      float2x4(bidirVts[k.y].lightVt.pos,
+                                                               bidirVts[k.y].lightVt.norml.xyz, bidirVts[k.x].lightVt.atten.w),
+                                                      float2x3(bidirVts[max(k.y - 1, 0)].lightVt.pos.xyz - bidirVts[k.y].lightVt.pos.xyz,
+                                                               lensNormal),
+                                                      true);
                         }
-                        else if (k == (kInit - 0x1.xx))
-                        {
-
-                        }
-                        else if (!bidirVts[k.x].camVt.norml.w)
+                        //else if (k == (kInit - 0x1.xx))
+                        //{
+                            // Update reverse PDF for the previous camera-vertex in the complete
+                            // connection strategy
+                            //currPDFIO.y = BidirMISPDF(float2x4(bidirVts[k.y].lightVt.pos,
+                            //                                   bidirVts[k.y].lightVt.norml.xyz, bidirVts[k.y].lightVt.atten.w),
+                            //                          float2x4(bidirVts[k.x].camtVt.pos,
+                            //                                   bidirVts[k.x].camtVt.norml.xyz, bidirVts[k.x].camVt.atten.w),
+                            //                          float2x3(bidirVts[max(k.x - 1, 0)].camVt.pos.xyz - bidirVts[k.x].camVt.pos.xyz,
+                            //                                   lensNormal),
+                            //                          false);
+//
+                            //// Update reverse PDF for the previous light-vertex in the complete
+                            //// connection strategy
+                            //currPDFIO.w = BidirMISPDF(float2x4(bidirVts[k.x].camVt.pos,
+                            //                                   bidirVts[k.x].camVt.norml.xyz, bidirVts[k.x].camVt.atten.w),
+                            //                          float2x4(bidirVts[k.y].lightVt.pos,
+                            //                                   bidirVts[k.y].lightVt.norml.xyz, bidirVts[k.x].lightVt.atten.w),
+                            //                          float2x3(bidirVts[max(k.y - 1, 0)].lightVt.pos.xyz - bidirVts[k.y].lightVt.pos.xyz,
+                            //                                   lensNormal),
+                            //                          true);
+                        //  }
+                        else if (extractIfaceProps(bidirVts[k.x].camVt.pos.w))
                         {
                             // Convert non-lens camera vertex PDFs to probabilities over area
                             currPDFIO.xy *= AnglePDFsToArea(bidirVts[vtIndices[1].x].camVt.pos.xyz,
