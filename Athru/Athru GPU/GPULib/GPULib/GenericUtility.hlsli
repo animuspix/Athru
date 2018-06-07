@@ -29,6 +29,10 @@
 // Standard compute-shader group width (2D) for path-tracing shaders
 #define TRACING_GROUP_WIDTH 16
 
+// Alpha tag for pixels ignored *just* to minimize work during path reduction
+// (rather than e.g. because their asociated rays intersected nothing in the scene)
+#define RAND_PATH_REDUCTION 0.1f
+
 // Linearly scales the rotational part of the given quaternion
 // while preserving the axis of rotation
 float4 QtnRotationalScale(float scaleBy, float4 qtn)

@@ -82,6 +82,36 @@ void main(uint3 groupID : SV_GroupID,
     // Also cache the accessor value used to retrieve that value in the first place
     uint randNdx = xorshiftNdx(pixID.x + (pixID.y * DISPLAY_WIDTH));
     uint randVal = randBuf[randNdx];
+    
+    // Reduce work for dense views by randomly culling some percentage
+    // of intersecting pixels
+    // Culling logic compares random numbers to a maximum threshold after
+    // scaling by the number of threads/pixel (i.e. the amount of GPU work
+    // per-frame); any threads with numbers below the threshold are rejected
+    // Stochastic pixel culling directly introduces image noise; we can 
+    // mitigate this by smudging surrounding pixels through the culled region,
+    // but that also introduces blur
+    // Scaling the culling threshold by thread density guarantees that image
+    // quality (>> blurriness) scales neatly with total workload, so that
+    // relatively un-demanding frames (like e.g. a 16,000-pixel traceable 
+    // circle) are affected much less than highly-demanding frames that fill 
+    // the whole screen
+    const float maxThresh = 0.5f;
+    float thrdDensity = traceableCtr / DISPLAY_AREA;
+    if (iToFloat(xorshiftPermu1D(randVal)) < (maxThresh * thrdDensity))
+    {
+        // Write an empty ray color to the display texture; also tag the
+        // alpha channel so the presentation shader can safely fill in
+        // [pixID] from nearby pixels
+        displayTex[pixID] = float4(0.0f.xxx, RAND_PATH_REDUCTION);
+
+        // No more random permutations at this point, so commit [randVal] back into
+        // the GPU random-number buffer ([randBuf])
+        randBuf[randNdx] = randVal;
+
+        // We want to avert path-tracing for culled pixels, so return here
+        return;
+    }
 
     // Cache/generate initial origin + direction for the light/camera subpaths
 

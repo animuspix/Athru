@@ -233,9 +233,9 @@ float3 SpecularDir()
 }
 
 // Evaluate the Fresnel coefficient for the given spectral refraction + 
-// extinction coefficients
+// extinction coefficients + outgoing solid-angle ray direction
 float3 SurfFres(float3x3 fresInfo,
-                float4 thetaPhiIO)
+                float4 thetaPhiO)
 {
     return 1.0f.xxx;
 }
@@ -251,16 +251,27 @@ float3 SurfFres(float3x3 fresInfo,
 // G -> Geometric attenuation, describes occlusion from nearby microfacets at each
 //      sampling location; I'm evaluating this with Smith's masking-shadowing function
 //      (see below)
+// Unsure about the derivations for Smith and GGX, should read the original papers
+// when possible
 float3 SpecularBRDF(float4 surf,
                     float4 thetaPhiIO)
 {
     // Evaluate the GGX microfacet distribution function for the given input/output
     // angles (the "D" term in the PBR D/F/G definition)
     float variSqr = surf.a * 2.0f; // Double variance here so we can re-use Oren-Nayar roughness :)
-    float2 facetAngles = VecToAngles(...); // Example microfacet angles (decomposed from a given microfacet normal [wh])
-    float2 distroTrig; // Vector carrying trigonometric values needed by GGX (tangent/cosine of [theta] in [xy],
-                       // sine/cosine of [phi] in [zw])
-    distroTrig.xy = float2(tan(facetAngles.x), cos(facetAngles.x)); // Evaluate cosine/tangent values for [theta]
+    float2 h = (thetaPhiIO.xy + thetaPhiIO.zw) * 0.5f.xx; // We want to simulate highly specular surfaces where
+                                                          // ideal reflection lies along the half-angle between [i] 
+                                                          // and [o], so it makes sense to only evaluate the 
+                                                          // differential area of microsurfaces that face the same 
+                                                          // direction (i.e. have normals parallel to [h])
+    
+    // Vector carrying trigonometric values needed by GGX (tangent/cosine of [theta])
+    // Would love to optimize [cos(h.x)] into a dot-product, but can't easily do that
+    // in spherical coordinates (+ I feel passing normalized directions as well as solid angles would
+    // add too much complexity to material definitions atm)
+    float cosTheta = cos(h.x);
+    float2 distroTrig = float2(sqrt(1.0f - cosTheta * cosTheta) / cosTheta, 
+                               cosTheta); 
     if (isinf(distroTrig.x)) { return 0.0f.xxx; } // Tangent values can easily generate singularities; escape here before those lead to NaNs (!!)
     distroTrig *= distroTrig; // Every trig value for GGX is (at least) squared, so handle that here
     
@@ -273,10 +284,22 @@ float3 SpecularBRDF(float4 surf,
     // Compute microfacet distribution with GGX
     float d = 1.0f / (PI * variSqr * (distroTrig.y * distroTrig.y) * ggxBeckmannExp); 
 
-    // Evaluate Smith shadowing/masking (the "G" term in D/F/G)
-    float g;
+    // Evaluate Smith masking/shadowing (the "G" term in D/F/G) for the incoming/outgoing directions
+    float2 absTanThetas = abs(tan(thetaPhiIO.xz)); // Evaluate the absolute tangent of each direction's angle
+                                                   // around [theta]
 
-    // Use the generated d/f/g values to compute + return the Torrance/Sparrow BRDF
+    // Evaluate ratio of hidden/visible microfacet area (>> "lambda") for GGX along the incoming/outgoing
+    // directions
+    float2 lam = (sqrt((1.0f + variSqr).xx + (absTanThetas * absTanThetas)) - 1.0f.xx) * 0.5f.xx;
+
+    // Avert tangent singularities here
+    if (isinf(absTanThetas.x)) { lam.x = 0.0f; }
+    if (isinf(absTanThetas.y)) { lam.y = 0.0f; }
+
+    // Compute the Smith masking/shadowing function 
+    float g = 1.0f / (1.0f + lam.x + lam.y); 
+
+    // Use the generated D/F/G values to compute + return the Torrance/Sparrow BRDF
     return d * surf.rgb * g / (4.0f * cos(thetaPhiIO.z) * cos(thetaPhiIO.x));
 }
 
