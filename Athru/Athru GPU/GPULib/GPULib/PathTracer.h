@@ -48,17 +48,15 @@ class PathTracer
 		// constants to the GPU
 		struct InputStuffs
 		{
-			DirectX::XMVECTOR cameraPos; // Camera position
+			DirectX::XMVECTOR cameraPos; // Camera position	
 			DirectX::XMMATRIX viewMat; // View matrix
 			DirectX::XMMATRIX iViewMat; // Inverse view matrix
-			DirectX::XMFLOAT4 deltaTime; // Change in time betweeen frames
-			DirectX::XMUINT4 currTimeSecs; // Current time (in seconds)
-			DirectX::XMUINT4 traceableCtr; // Number of traceable elements after each pre-processing pass
-			DirectX::XMUINT4 numPathPatches; // Number of patches (groups) along each dispatch axis during path-traced rendering (y)
-											 // and pre-processing (x)
+			DirectX::XMFLOAT4 timeDispInfo; // Time/dispatch info for each frame;
+											// delta-time in [x], current total time (seconds) in [y], 
+											// number of traceable elements after each pre-processing 
+											// pass in [z], number of patches (groups) deployed
+											// for path-tracing in [w]
 			DirectX::XMUINT4 maxNumBounces; // Number of bounces for each ray
-			DirectX::XMUINT4 numDirGaths; // Number of direct gathers (area light samples) for each ray
-			DirectX::XMUINT4 numIndirGaths; // Number of indirect gathers (local samples) for each ray
 		};
 
 		// ...And a reference to the buffer we'll need in order

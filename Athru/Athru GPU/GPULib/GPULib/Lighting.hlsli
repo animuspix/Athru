@@ -13,64 +13,61 @@
 // it feels like the only single-function way to process arbitrary
 // camera/light sub-paths without heavy code duplication in
 // [SceneVis.hlsl]'s core marching loop
-BidirVert ProcVert(float3 rayVec,
+BidirVert ProcVert(float4 rayVec,
                    inout float3 rayDir,
                    float adaptEps,
-                   uint figID,
+                   uint2 figIDDFType,
                    bool lightPath,
                    float3 lastVtPos,
                    inout float3 atten,
                    inout float3 rayOri,
+                   float2x3 prevFres, // Fresnel value for the volume traversed by [rayVec]
                    out float rayDist,
                    inout uint randVal)
 {
-    // Extract material for the current figure
-    FigMat mat = FigMaterial(rayVec,
-                             figID);
-
     // Extract a shading BXDF for illumination at the current vertex
-    uint bxdfID = MatBXDFID(figID,
-                            rayVec - figuresReadable[figID].pos.xyz,
-                            mat.bxdfWeights,
+    uint bxdfID = MatBXDFID(MatInfo(float2x3(MAT_PROP_BXDF_WEIGHTS,
+                                             figIDDFType.yx,
+                                             coord).x),
                             randVal);
 
     // Extract surface normal
-    float3 normal = tetGrad(rayVec,
+    float3 normal = tetGrad(rayVec.xyz,
                             adaptEps,
                             figuresReadable[figID]).xyz;
 
     // Generate an importance-sampled bounce direction
+    float3x3 normSpace = NormalSpace(normal);
     float3 bounceDir = mul(MatDir(randVal,
                                   bxdfID),
-                           NormalSpace(normal));
+                           normSpace);
 
     // Evaluate the current vertex's outgoing directions + PDF
     // (both needed for attenuation atm + path integration
     // later)
     float4 thetaPhiIO = RaysToAngles(bounceDir,
-                                     rayDir,
+                                     mul(rayDir, normSpace),
                                      lightPath);
-    float pdfO = MatPDF(thetaPhiIO,
-                        bxdfID);
+    float2 pdfIO = float2(MatPDF(thetaPhiIO,
+                                 bxdfID), // Probability of exiting along [bounceDir] after entering along [rayDir]
+                          MatPDF(thetaPhiIO.wzyx,
+                                 bxdfID)); // Probability of exiting along [rayDir] after entering along [bounceDir]
 
     // Cache the bi-directional vertex representing the current interaction
-    bool stellarIface = figID == STELLAR_NDX;
-    BidirVert bdVt = BuildBidirVt(rayOri,
-                                  atten,
-                                  normal,
+    BidirVert bdVt = BuildBidirVt(float4(rayOri, figIDDFType.x),
+                                  float4(atten, bxdfID),
+                                  float4(normal, figIDDFType.y),
                                   thetaPhiIO,
-                                  pdfO,
-                                  interfaceID(figID, stellarIface + (2 * !stellarIface)), // No support for lens-materials atm, so
-                                                                                          // no need to account for lens-interfaces here...
-                                  bxdfID);
+                                  float4(pdfIO, rayVec.w, 0.0f));
 
     // Update [out] parameters
 
     // Update path attenuation
     // Treat all surfaces as diffuse for now, add support for refraction/reflection later
-    atten *= MatBXDF(mat,
+    atten *= MatBXDF(rayVec.xyz,
+                     prevFres,
                      thetaPhiIO,
-                     bxdfID) * dot(normal, bounceDir) * pdfO;
+                     uint3(bxdfID, figIDDFType.yx)) * dot(normal, bounceDir) * pdfO;
 
     // Update light ray direction (if appropriate)
     rayDir = bounceDir;
@@ -78,7 +75,7 @@ BidirVert ProcVert(float3 rayVec,
     // Update light ray starting position
     // Shift the starting position just outside the figure surface so that rays avoid
     // immediately re-intersecting with the surface
-    rayOri = rayVec + (normal * adaptEps * 2.0f);
+    rayOri = rayVec.xyz + (normal * adaptEps * 2.0f);
 
     // Re-set ray distance as appropriate
     rayDist = adaptEps;
@@ -103,7 +100,6 @@ float4 ConnectBidirVts(BidirVert camVt,
                        uint numLightSamples,
                        uint2 subpathBounces,
                        bool2 subpathEnded,
-                       Figure star,
                        float adaptEps,
                        float3 eyePos,
                        float4 camInfo,
@@ -122,7 +118,7 @@ float4 ConnectBidirVts(BidirVert camVt,
     {
         // Attenuated emission or attenuated radiance here?
         // Very unsure, should probably ask CGSE...
-        connStratRGB = float4(Emission(star) * camVt.atten.rgb, // Cache attenuated emission
+        connStratRGB = float4(STELLAR_BRIGHTNESS.xxx * camVt.atten.rgb, // Cache attenuated emission
                               linPixID); // No thread relationship changes here, store the local pixel index in [w]
     }
     else if (numCamSamples == 0 && // Ignore the camera sub-path
@@ -132,7 +128,7 @@ float4 ConnectBidirVts(BidirVert camVt,
     {
         // Same issue as the camera subpath, attenuated emission or attenuated radiance?
         // Should ask CGSE about that eventually...
-        connStratRGB = float4(Emission(star) * lightVt.atten.rgb,
+        connStratRGB = float4(STELLAR_BRIGHTNESS.xxx * lightVt.atten.rgb,
                               PRayPix(cameraPos.xyz - lightVt.pos.xyz,
                                       camInfo.w).z);
     }
@@ -151,10 +147,12 @@ float4 ConnectBidirVts(BidirVert camVt,
             float4 thetaPhiIO = float4(VecToAngles(occData[0].xyz),
                                                    lightVt.ioSrs.xy);
             connStratRGB.rgb = lightVt.atten.rgb * // Emitted color from the source vertex on the light subpath
-                               MatBXDF(FigMaterial(lightVt.pos.xyz,
-                                                   extractFigID(lightVt.pos.w)),
-                                                   thetaPhiIO,
-                                       lightVt.atten.w) * // Attenuation by the source interaction's local BXDF
+                               MatBXDF(lightVt.pos.xyz,
+                                       AmbFres(lightVt.pdfs.z), // Not worrying about subsurface scattering just yet...
+                                       thetaPhiIO,
+                                       uint3(lightVt.atten.w, 
+                                             lightVt.norml.w, 
+                                             lightVt.pos.w)) * // Attenuation by the source interaction's local BXDF
                                RayImportance(occData[0].xyz,
                                              camInfo,
                                              pixWidth) / // Attenuation by the importance emitted from the camera towards [lightVt.pos.xyz]
@@ -207,11 +205,9 @@ float4 ConnectBidirVts(BidirVert camVt,
                                    adaptEps);
         float stellarPosPDF = StellarPosPDF();
         if (!occData[1].w ||
-             occData[2].x == STELLAR_NDX)
+             occData[2].x == STELLAR_FIG_ID)
         {
             // Cache the local material + normal + input/output angles at [camVt.pos.xyz]
-            FigMat mat = FigMaterial(rayOri,
-                                     extractFigID(camVt.pos.w));
             float4 thetaPhiIO = float4(VecToAngles(occData[0].xyz),
                                        camVt.ioSrs.zw);
             connStratRGB.rgb = DirIllumRadiance(stellarSurfPos,
@@ -220,9 +216,12 @@ float4 ConnectBidirVts(BidirVert camVt,
                                                 star.pos.xyz,
                                                 occData[0].w,
                                                 star.rgbaCoeffs[2].x) // Evaluate local radiance
-                                              * MatBXDF(mat,
+                                              * MatBXDF(camVt.pos.xyz,
+                                                        AmbFres(camVt.pdfs.z), // Not worrying about subsurface scattering just yet...
                                                         thetaPhiIO,
-                                                        camVt.atten.w) // Apply the surface BRDF
+                                                        uint3(camVt.atten.w, 
+                                                              camVt.norml.w, 
+                                                              camVt.pos.w)) * // Apply the surface BRDF
                                               * stellarPosPDF; // Account for the probability of selecting
                                                                // [stellarSurfPos] out of all possible
                                                                // positions on the surface of the local
@@ -277,15 +276,19 @@ float4 ConnectBidirVts(BidirVert camVt,
         float2x4 camLightIO = float2x4(float4(occVecToSr,
                                               camVt.ioSrs.zw),
                                        float4(occVecToSr,
-                                              camVt.ioSrs.zw));
-        float3 camBXDF = MatBXDF(FigMaterial(camVt.pos.xyz,
-                                             extractFigID(camVt.pos.w)),
+                                              lightVt.ioSrs.zw));
+        float3 camBXDF = MatBXDF(camVt.pos.xyz,
+                                 AmbFres(camVt.pdfs.z), // Not worrying about subsurface scattering atm...
                                  camLightIO[0],
-                                 camVt.atten.w);
-        float3 lightBXDF = MatBXDF(FigMaterial(lightVt.pos.xyz,
-                                               extractFigID(lightVt.pos.w)),
+                                 uint3(camVt.atten.w,
+                                       lightVt.norml.w,
+                                       camVt.pos.w));
+        float3 lightBXDF = MatBXDF(lightVt.pos.xyz,
+                                   AmbFres(lightVt.pdfs.z), // Not worrying about subsurface scattering atm...
                                    camLightIO[1],
-                                   lightVt.atten.w);
+                                   uint3(lightVt.atten.w,
+                                         camVt.norml.w,
+                                         lightVt.pos.w);
         connStratRGB.rgb = camVt.atten.rgb * camBXDF * // Evaluate + apply attenuated radiance on the camera subpath
                            lightVt.atten.rgb * lightBXDF * // Evaluate + apply attenuated radiance on the light subpath;
                            g; // Scale the integrated radiance by the relative visibility of [camVt] from

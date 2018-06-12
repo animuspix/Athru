@@ -26,26 +26,23 @@ float MISWeight(uint samplesDistroA,
 
 // Bi-directional MIS-specific PDF function; evaluates probabilities for 
 // arbitrary vertices on lens, scene, or emissive interfaces
-// Incoming/outgoing vertices contain positions in [0].xyz, interface-IDs
-// in [0].w, local normals in [1].xyz, and BXDF-IDs in [1].w 
-// (when appropriate)
+// Incoming/outgoing vertices contain positions in [0].xyz, 
+// distance-functions in [0].w, local normals in [1].xyz, and BXDF-IDs 
+// in [1].w (when appropriate)
 // [dirs] carrys the path's outgoing direction (i.e. the direction
-// towards the previous vertex on [outVt]s subpath) in [0] and
-// the lens normal (the direction "faced" by the camera) in
-// [1] 
+// towards the previous vertex on [outVt]s subpath) in [0] and the lens 
+// normal (the direction "faced" by the camera) in [1] 
 float BidirMISPDF(float2x4 inVt,
                   float2x4 outVt,
                   float2x3 dirs,
                   bool lightPath)
 {
-    uint inIfaceProps = extractIfaceProps(inVt[0].w);
-    uint outIfaceProps = extractIfaceProps(outVt[0].w);
     float pdf = 0;
     switch(inVt[0].w)
     {
         // Camera in/out PDFs are defined over area by default, so no
         // need to convert probabilities in that case
-        case INTERFACE_PROPS_LENS:
+        case DF_TYPE_LENS:
             if (lightPath)
             {
                 return CamAreaPDFOut(outVt[0].xyz - inVt[0].xyz,
@@ -56,14 +53,9 @@ float BidirMISPDF(float2x4 inVt,
                 return CamAreaPDFIn(outVt[0].xyz - inVt[0].xyz,
                                     dirs[1]);
             }
-        case INTERFACE_PROPS_LIGHT:
+        case DF_TYPE_STAR:
             pdf = StellarPosPDF();
-        case INTERFACE_PROPS_MAT:
-            pdf = MatPDF(RaysToAngles(normalize(inVt[0].xyz - outVt[0].xyz),
-                                      dirs[0],
-                                      lightPath),
-                         outVt[1].w);
-        default: // Assume interfaces represent materials by default
+        default: // Assume non-star, non-lens interfaces are valid scene materials
             pdf = MatPDF(RaysToAngles(normalize(inVt[0].xyz - outVt[0].xyz),
                                       dirs[0],
                                       lightPath),

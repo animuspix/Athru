@@ -9,7 +9,7 @@ class Planet : public SceneFigure
 	public:
 		Planet(float givenScale,
 			   DirectX::XMVECTOR offsetFromStar, DirectX::XMVECTOR qtnRotation,
-			   DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs);
+			   DirectX::XMVECTOR* distCoeffs);
 		~Planet();
 
 		// Retrieve a write-allowed reference to the specified critter

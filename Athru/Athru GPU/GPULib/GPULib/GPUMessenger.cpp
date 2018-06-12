@@ -96,8 +96,8 @@ void GPUMessenger::FrameEndSync()
 	{
 		// Extract the address of the original object associated with the current
 		// figure
-		MemoryStuff::addrValType addressLO = ((MemoryStuff::addrValType)gpuFigures[i].origin.x) << (MemoryStuff::halfAddrLength());
-		MemoryStuff::addrValType addressHI = ((MemoryStuff::addrValType)gpuFigures[i].origin.y);
+		MemoryStuff::addrValType addressLO = ((MemoryStuff::addrValType)gpuFigures[i].self.y) << (MemoryStuff::halfAddrLength());
+		MemoryStuff::addrValType addressHI = ((MemoryStuff::addrValType)gpuFigures[i].self.z);
 		SceneFigure* addressFull = (SceneFigure*)(addressLO | addressHI);
 
 		// Copy in the data for the current figure

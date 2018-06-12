@@ -15,9 +15,16 @@
 // every scatter site in the light sub-path)
 #define MAX_BOUNCES_PER_SUBPATH 5
 
-// Where the local star is stored in the per-frame
+// Figure-ID associated with the local star in each system
+// Also where the local star is stored in the per-frame
 // scene-array
-#define STELLAR_NDX 0
+#define STELLAR_FIG_ID 0
+
+// Figure-ID associated with the lens/pinhole during BDPT, unrelated
+// to any defined elements in the actual scene
+// Chosen because even super-complex ecologies shouldn't generate [(2^32)-1] different figures
+// in each system
+#define LENS_FIG_ID uFFFFFFFF
 
 // Structure carrying data cached by BDPT during
 // subpath construction; needed for accurate
@@ -28,53 +35,26 @@
 // vertices on the camera lens/pinhole
 struct BidirVert
 {
-    float4 pos; // Position of [this] in eye-space ([xyz]); contains the local interface-ID in [w]
+    float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
-    float4 norml; // Surface normal at [pos]; [w] is unused
+    float4 norml; // Surface normal at [pos]; contains the local distance-function type/ID in [w]
     float4 ioSrs; // In/out ray directions, expressed as solid angles
-    float4 pdfIO; // Forward/reverse probability densities; [zw] are unused
+    float4 pdfIO; // Forward/reverse probability densities; ([z] contains local planetary distance
+                  // (used for atmospheric refraction), [w] is unused)
 };
 
-// Small convenience function to generate interface-IDs
-// Interface-IDs are tuples of 30-bit figure-IDs and 2-bit interface 
-// properties; figure-IDs attached to lens-interfaces are automatically 
-// treated as camera indices (Athru *probably* won't ever support 
-// multiple cameras, but it's cleaner than implying that e.g. some part 
-// of the local star represents a lens)
-#define INTERFACE_PROPS_LENS 0x00000000
-#define INTERFACE_PROPS_LIGHT 0x00000001
-#define INTERFACE_PROPS_MAT 0x00000002
-uint interfaceID(uint figID, uint interfaceProps)
-{
-    return (figID << 30) | interfaceProps;
-}
-
-// Utility function to retrieve figure-ID from an interface-ID
-uint extractFigID(uint ifaceID)
-{
-    return ifaceID >> 30;
-}
-
-// Utility function to retrieve interface properties from an interface-ID
-uint extractIfaceProps(uint figID)
-{
-    return (ifaceID << 30) >> 30;
-}
-
-BidirVert BuildBidirVt(float3 pos,
-                       float3 atten,
-                       float3 norml,
+BidirVert BuildBidirVt(float4 posFigID,
+                       float4 attenBXDFID,
+                       float4 normlDFType,
                        float4 thetaPhiIO,
-                       float2 pdfs,
-                       uint ifaceID,
-                       uint bxdfID)
+                       float4 pdfsPlanetDist)
 {
     BidirVert bdVt;
-    bdVt.pos = float4(pos, ifaceID);
-    bdVt.atten = float4(atten, bxdfID);
-    bdVt.norml = float4(norml, 0.0f);
+    bdVt.pos = posFigID;
+    bdVt.atten = attenBXDFID;
+    bdVt.norml = normlDFType;
     bdVt.ioSrs = thetaPhiIO;
-    bdVt.pdfIO = float4(pdfs, 0.0f.xx);
+    bdVt.pdfIO = pdfs;
     return bdVt;
 }
 
@@ -370,12 +350,13 @@ float3 DirIllumRadiance(float3 traceVec,
 // be viewed as the special case of [DirIllumRadiance(...)] when the
 // irradiated point is perfectly transmittant + sitting on the surface
 // of the given light source
-float3 Emission(Figure src)
+float3 Emission(float3 srcRGB,
+                float3 srcBrightness)
 {
-    // Will (eventually) remove saturation here and use aperture settings
-    // to control exposure levels instead
-    return saturate(src.rgbaCoeffs[0].rgb * src.rgbaCoeffs[2].x);
+    return srcRGB * srcBrightness;
 }
+
+// Specialized version of [Emission] for stellar light sources
 
 // Simple occlusion function, traces a shadow ray between two points to test
 // for visiblity (needed to validate generic sub-path connections in BDPT)
@@ -386,6 +367,8 @@ float3 Emission(Figure src)
 // true => intersected geometry between [rayOri] and [rayDest]), and
 // [2].xyz contains the figure ID associated with the ray's intersection
 // point (if any)
+// Will need to modify this to return accumulated transmittance from
+// subsurface scattering...
 #define MAX_OCC_MARCHER_STEPS 256
 float3x4 OccTest(float3 rayOri,
                  float3 rayDest,

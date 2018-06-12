@@ -3,10 +3,10 @@
 
 Star::Star(float givenRadius,
 		   DirectX::XMVECTOR position,
-		   DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs) :
-	  SceneFigure(_mm_set_ps(0, 0, 0, 0), position, _mm_set_ps(1, 0, 0, 0),
-				  _mm_set_ps(1, 0, 0, 0), givenRadius, (fourByteUnsigned)FIG_TYPES::STAR,
-				  distCoeffs, rgbaCoeffs, 1)
+		   DirectX::XMVECTOR* distCoeffs) :
+	  SceneFigure(position, _mm_set_ps(1, 0, 0, 0),
+				  givenRadius, (fourByteUnsigned)FIG_TYPES::STAR,
+				  distCoeffs)
 {}
 
 Star::~Star()

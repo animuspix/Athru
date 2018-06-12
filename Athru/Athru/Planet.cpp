@@ -4,11 +4,11 @@
 
 Planet::Planet(float givenScale,
 			   DirectX::XMVECTOR position, DirectX::XMVECTOR qtnRotation,
-			   DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs) :
-		SceneFigure(_mm_set_ps(0, 0, 0, 0), position, _mm_set_ps(1, 0, 0, 0),
-					_mm_set_ps(1, 0, 0, 0), givenScale, (fourByteUnsigned)FIG_TYPES::PLANET,
-					distCoeffs, rgbaCoeffs,
-					1)
+			   DirectX::XMVECTOR* distCoeffs) :
+		SceneFigure(position,
+					_mm_set_ps(1, 0, 0, 0), givenScale, 
+					(fourByteUnsigned)FIG_TYPES::PLANET,
+					distCoeffs)
 {
 	// Initialise plants
 	plants = new SceneFigure[SceneStuff::MAX_NUM_SCENE_ORGANISMS];
@@ -16,7 +16,7 @@ Planet::Planet(float givenScale,
 	{
 		// Surface properties
 		// (= branch placement/growth functions, PDE constants)
-		DirectX::XMVECTOR plantDistCoeffs[5];
+		DirectX::XMVECTOR plantDistCoeffs[3];
 
 		// Should replace [rand()] with a better RNG at some point...
 
@@ -42,19 +42,6 @@ Planet::Planet(float givenScale,
 										max(PlantStuff::MAX_PLANT_SIZE / ((rand() % 10) + 1), 1.0f),
 										PlantStuff::MAX_TROPISM / ((rand() % 96) + 1),
 										(float)(rand() % 2));
-
-		// Fourth vector defines stem/branch rigidity (relevant to vascular plants, treated as 1.0 for woody plants),
-		// whether or not the current plant is branch-bearing (relevant to vascular plants, all trees are assumed to carry branches),
-		// whether this is a single-leaf or multi-leaf plant, and leaf lobe counts
-		plantDistCoeffs[3] = _mm_set_ps(1.0f / ((rand() % 10) + 1),
-										(float)(rand() % 2),
-										(float)(rand() % 2),
-										(float)(rand() % PlantStuff::MAX_LEAF_LOBE_COUNT));
-
-		// Fifth vector defines leaf vein colour
-		// Hardcoded soft blue veins for now (might introduce extra variation in future)
-		// Alpha channel treated as leaf translucency, faintly randomized
-		plantDistCoeffs[4] = _mm_set_ps(0.5f, 0.67f, 0.84f, abs((1.0f / rand()) - 0.5f));
 
 		// Core research areas:
 		// - Fast venation
@@ -85,32 +72,11 @@ Planet::Planet(float givenScale,
 		// create a test build in C# (for leaf generation) + a small shader (for simplified tree
 		// generation) and see where those end up...
 
-		// Bark/vascular coloration properties
-		DirectX::XMVECTOR plantRGBACoeffs[5];
-
-		// First vector describes baseline tissue colour
-		plantRGBACoeffs[0] = _mm_set_ps(0.94f, 1.0f, 1.0f, 1.0f);
-
-		// Second vector describes exterior bark color (if applicable)
-		plantRGBACoeffs[1] = _mm_set_ps(0.86f, 0.6f, 0.69f, 1.0f);
-
-		// Third vector describes exterior vascular coloration (relevant to vascular stems/branches, also leaves)
-		plantRGBACoeffs[2] = _mm_set_ps(0.134f, 0.87f, 0.43f, 1.0f);
-
-		// Fourth vector (temporarily) describes diffuse/specular weighting (x, y)
-		plantRGBACoeffs[3] = _mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f);
-
-		// Remaining vector will carry PDE constants (more research needed)
-
-		plants[i] = SceneFigure(_mm_set_ps(1, 0, 0, 0),
-								_mm_set_ps(givenScale, givenScale, givenScale, givenScale),
-								_mm_set_ps(1, 0, 0, 0),
+		plants[i] = SceneFigure(_mm_set_ps(0, 0, 0, 0),
 								_mm_set_ps(1, 0, 0, 0),
 								1.0,
 								(fourByteUnsigned)FIG_TYPES::PLANT,
-								plantDistCoeffs,
-								plantRGBACoeffs,
-								1);
+								plantDistCoeffs);
 	}
 
 	// Initialise critters
@@ -120,28 +86,15 @@ Planet::Planet(float givenScale,
 	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_ORGANISMS; i += 1)
 	{
 		// Should edit this to carry cellular propagation modifiers in future...
-		DirectX::XMVECTOR critterDistCoeffs[10] = { _mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0) };
+		DirectX::XMVECTOR critterDistCoeffs[3] = { _mm_set_ps(0, 0, 0, 0),
+												   _mm_set_ps(0, 0, 0, 0),
+												   _mm_set_ps(0, 0, 0, 0) };
 
-		// Should edit this to carry PDE constants in future...
-		DirectX::XMVECTOR critterRGBACoeffs[10] = { _mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0),
-													_mm_set_ps(0, 0, 0, 0), _mm_set_ps(0, 0, 0, 0) };
-
-		critters[i] = SceneFigure(_mm_set_ps(1, 0, 0, 0),
-								  _mm_set_ps(givenScale, givenScale, givenScale, givenScale),
-								  _mm_set_ps(1, 0, 0, 0),
+		critters[i] = SceneFigure(_mm_set_ps(0, 0, 0, 0),
 								  _mm_set_ps(1, 0, 0, 0),
 								  1.0,
 								  (fourByteUnsigned)FIG_TYPES::CRITTER,
-								  critterDistCoeffs,
-								  critterRGBACoeffs,
-								  1);
+								  critterDistCoeffs);
 	}
 }
 

@@ -188,29 +188,31 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 	fourByteUnsigned traceableCounter = *(fourByteUnsigned*)(traceableCount.pData);
 	context->Unmap(numTraceables.Get(), 0);
 
-	// Update the GPU-side version of [traceableCtr]
-	D3D11_MAPPED_SUBRESOURCE shaderInput;
-	context->Map(shaderInputBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
-	InputStuffs* shaderInputPtr = (InputStuffs*)shaderInput.pData;
-	shaderInputPtr->traceableCtr = DirectX::XMUINT4(traceableCounter,
-													traceableCounter,
-													traceableCounter,
-													traceableCounter);
-
 	// Assuming each frame is equivalent to one progressive pass, cache the total number of traceables
 	// to process over the full progressive render (if appropriate)
 	if (initProgPass) { currMaxTraceables = traceableCounter; }
+	
+	// Create a CPU-accessible reference to the shader input buffer
+	D3D11_MAPPED_SUBRESOURCE shaderInput;
+	context->Map(shaderInputBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
+	InputStuffs* shaderInputPtr = (InputStuffs*)shaderInput.pData;
 
-	// Calculate a dispatch width, update the dispatch-width stored in [shaderInputBuffer]
+	// Calculate a dispatch width
 	fourByteUnsigned immDispWidth = (fourByteUnsigned)std::ceil(std::cbrt((float)traceableCounter / 128));
 	fourByteUnsigned progDispWidth = (fourByteUnsigned)std::ceil(std::cbrt((float)currMaxTraceables / (128 * GraphicsStuff::PROG_PASSES_PER_IMAGE)));
 	fourByteUnsigned dispWidth = min(immDispWidth, progDispWidth);
-	shaderInputPtr->numPathPatches = DirectX::XMUINT4(GraphicsStuff::DISPLAY_AREA / GraphicsStuff::GROUP_AREA_PATH_REDUCTION,
-													  dispWidth * dispWidth * dispWidth,
-													  traceableCounter,
-													  traceableCounter);
 
-	// Data other than [traceableCtr] + [numPathPatches] will have been destroyed by [MAP_WRITE_DISCARD];
+	// Ask the standard chronometry library for the current time in seconds
+	std::chrono::nanoseconds currTimeNanoSecs = std::chrono::steady_clock::now().time_since_epoch();
+	fourByteUnsigned currTime = std::chrono::duration_cast<std::chrono::duration<fourByteUnsigned>>(currTimeNanoSecs).count();
+
+	// Update the GPU-side version of [timeDispInfo]
+	shaderInputPtr->traceableCtr = DirectX::XMUINT4(TimeStuff::deltaTime(),
+													currTimeSecs,
+													traceableCounter,
+													dispWidth * dispWidth * dispWidth);
+
+	// Data outside [timeDispInfo] will have been destroyed by [MAP_WRITE_DISCARD];
 	// replenish those over here
 
 	// Define the camera position + view-matrix + inverse view-matrix
@@ -218,20 +220,6 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 	shaderInputPtr->viewMat = viewMatrix;
 	shaderInputPtr->iViewMat = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(viewMatrix),
 														viewMatrix);
-
-	// Copy in the delta-time value at the current frame
-	float t = TimeStuff::deltaTime();
-	shaderInputPtr->deltaTime = DirectX::XMFLOAT4(t, t, t, t);
-
-	// Ask the standard chronometry library for the current time
-	// in seconds, then pass the value it returns into the input
-	// buffer
-	std::chrono::nanoseconds currTimeNanoSecs = std::chrono::steady_clock::now().time_since_epoch();
-	fourByteUnsigned currTime = std::chrono::duration_cast<std::chrono::duration<fourByteUnsigned>>(currTimeNanoSecs).count();
-	shaderInputPtr->currTimeSecs = DirectX::XMUINT4(currTime,
-													currTime,
-													currTime,
-													currTime);
 
 	// Define the number of bounces for each primary ray
 	shaderInputPtr->maxNumBounces = DirectX::XMUINT4(GraphicsStuff::MAX_NUM_BOUNCES,

@@ -26,7 +26,7 @@ void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
 {
     // Only perform pre-processing/path-reduction when the append-consume buffer is empty
-    if (traceableCtr.x != 0) { return; }
+    if (timeDispInfo.z != 0) { return; }
 
     // Extract a pixel ID from the given thread/group IDs
     uint2 pixID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
@@ -83,14 +83,14 @@ void main(uint3 groupID : SV_GroupID,
         // We don't want to define colours for these points yet, so return immediately
         return;
     }
-    else if (BoundingSurfTrace(figuresReadable[STELLAR_NDX],
+    else if (BoundingSurfTrace(figuresReadable[STELLAR_FIG_ID],
                                rayPt,
                                camPos))
     {
         // Test pixels that didn't intersect planets/plants/animals
         // against the local star; shade any that *do* intersect
         // the star according to its emissivity
-        rgb = Emission(figuresReadable[STELLAR_NDX]);
+        rgb = Emission(figuresReadable[STELLAR_FIG_ID]);
     }
     else
     {

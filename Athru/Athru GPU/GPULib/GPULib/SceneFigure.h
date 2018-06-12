@@ -15,10 +15,9 @@ class SceneFigure
 {
 	public:
 		SceneFigure();
-		SceneFigure(DirectX::XMVECTOR velo, DirectX::XMVECTOR position,
-					DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
-					fourByteUnsigned figType, DirectX::XMVECTOR* distCoeffs, DirectX::XMVECTOR* rgbaCoeffs,
-					fourByteUnsigned isNonNull);
+		SceneFigure(DirectX::XMVECTOR position,
+					DirectX::XMVECTOR qtnRotation, float scale,
+					fourByteUnsigned figType, DirectX::XMVECTOR* distCoeffs);
 		~SceneFigure();
 
 		// GPU-friendly version of [this]; should only be accessed
@@ -26,46 +25,34 @@ class SceneFigure
 		struct Figure
 		{
 			Figure() {}
-			Figure(DirectX::XMVECTOR velo, DirectX::XMVECTOR position,
-				   DirectX::XMVECTOR qtnAngularVelo, DirectX::XMVECTOR qtnRotation, float scale,
-				   fourByteUnsigned funcType, DirectX::XMVECTOR* distParams, DirectX::XMVECTOR* rgbaParams,
-				   fourByteUnsigned isNonNull, address originPttr) :
-				   pos(position),
+			Figure(DirectX::XMVECTOR position,
+				   DirectX::XMVECTOR qtnRotation, float scale,
+				   fourByteUnsigned funcType, DirectX::XMVECTOR* distParams,
+				   address originPttr) :
+				   linTransf{ position, scale },
 				   rotationQtn(qtnRotation),
-				   scaleFactor{ scale, scale, scale, 1 },
-				   dfType{ funcType, 0, 0, 0 },
-				   distCoeffs{ distParams[0], distParams[1], distParams[2], distParams[3], distParams[4] },
-				   rgbaCoeffs{ rgbaParams[0], rgbaParams[1], rgbaParams[2], rgbaParams[3], rgbaParams[4] },
-				   nonNull{	isNonNull, 0, 0, 0 },
-				   origin{ (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrHIMask()) >> MemoryStuff::halfAddrLength()),
-						   (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrLOMask())), 0, 0 } {}
+				   distCoeffs{ distParams[0], distParams[1], distParams[2] },
+				   origin{ funcType,
+					   	   (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrHIMask()) >> MemoryStuff::halfAddrLength()),
+						   (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrLOMask())), 0 } {}
 
-			// The location of this figure at any particular time
-			DirectX::XMVECTOR pos;
+			// The location of this figure at any particular time 
+			// (xyz) and a uniform scale factor (w)
+			DirectX::XMFLOAT4 linTransf;
 
 			// The quaternion rotation applied to this figure at
 			// any particular time
 			DirectX::XMVECTOR rotationQtn;
 
-			// Uniform object scale
-			DirectX::XMFLOAT4 scaleFactor;
-
-			// The distance function used to render [this]
-			DirectX::XMUINT4 dfType;
-
 			// Coefficients of the distance function used to render [this]
-			DirectX::XMVECTOR distCoeffs[5];
-
-			// Coefficients of the color function used to tint [this]
-			DirectX::XMVECTOR rgbaCoeffs[5];
-
-			// Whether or not [this] has been fully defined on the GPU
-			DirectX::XMUINT4 nonNull;
+			DirectX::XMVECTOR distCoeffs[3];
 
 			// Key marking which [SceneFigure] is associated with [this]
 			// (needed for tracing GPU-side [Figure]s back to CPU-side [SceneFigure]s
 			// after data is read back from the graphics card)
-			DirectX::XMUINT4 origin;
+			// Also carries the distanc function associated with [this]
+			// (DF in [x], pointer split across [xy], [w] is unused)
+			DirectX::XMUINT4 self;
 		};
 
 		// Retrieve the underlying distance function used
@@ -85,10 +72,6 @@ class SceneFigure
 		//   here)
 		// - Extract the angle by doubling the half-angle (duh)
 		DirectX::XMVECTOR GetQtnRotation();
-
-		// Get the coefficients of the color function associated
-		// with [this]
-		DirectX::XMVECTOR* GetRGBACoeffs();
 
 		// Get a copy of the GPU-friendly [Figure] associated with [this]
 		Figure GetCoreFigure();
