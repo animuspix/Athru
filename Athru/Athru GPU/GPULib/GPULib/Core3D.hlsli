@@ -28,7 +28,7 @@ cbuffer InputStuffs
 // Athru figures
 struct Figure
 {
-    // The location + uniform scale (in [w]) of this figure at 
+    // The location + uniform scale (in [w]) of this figure at
     // any particular time
     float4 linTransf;
 
@@ -136,9 +136,9 @@ float PlanetDF(float3 coord,
 {
     // Calculate a trivial planetary orbit for the current time,
     // then apply it to the figure origin
-    float3 orbiVec = float3(cos(currTimeSecs.x * planet.distCoeffs[2].x) * planet.pos.x,
+    float3 orbiVec = float3(cos(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.x,
                             0.0f,
-                            sin(currTimeSecs.x * planet.distCoeffs[2].x) * planet.pos.z);
+                            sin(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.z);
 
     // Translate rays to match the planet's orbit + the origin of the local star
     coord -= planet.linTransf.xyz; //figuresReadable[0].pos.xyz + orbiVec; // Working orbit, disabled until I get a more powerful testing computer
@@ -148,7 +148,7 @@ float PlanetDF(float3 coord,
 
     // Synthesize a quaternion representing native planetary spin
     float spinSpeed = planet.distCoeffs[1].w;
-    float currAngle = (sin(currTimeSecs.x) * spinSpeed) * 2.0f;
+    float currAngle = (sin(timeDispInfo.y) * spinSpeed) * 2.0f;
     float4 spinQtn = Qtn(planet.distCoeffs[1].xyz, currAngle);
 
     // Concatenate the synthesized spin into the figure's in-built offset (if any)
@@ -194,8 +194,8 @@ float PlantDF(float3 coord,
 float CritterDF(float3 coord,
                 Figure critter)
 {
-    return CubeDF(coord, 
-                  critter.linTransf, 
+    return CubeDF(coord,
+                  critter.linTransf,
                   critter.rotationQtn);
 }
 
@@ -298,8 +298,8 @@ float BoundingSurfTrace(float4 linTransf,
         if (dfType == DF_TYPE_PLANET) { fitting = 1.5f; }
         return BoundingSphereTrace(coord,
                                    rayOri,
-                                   linTransf.xyz,
-                                   linTransf.w * fitting);
+                                   float4(linTransf.xyz,
+										  linTransf.w * fitting));
     }
     else
     {
@@ -314,12 +314,12 @@ float2 FigDF(float3 coord,
              Figure fig)
 {
     if (useFigBounds &&
-        !BoundingSurfTrace(fig.linTransf, 
-                           fig.self.x, 
-                           coord, 
+        !BoundingSurfTrace(fig.linTransf,
+                           fig.self.x,
+                           coord,
                            rayOri))
     {
-        return float2(MAX_RAY_DIST, 
+        return float2(MAX_RAY_DIST,
                       fig.self.x);
     }
     else
@@ -327,7 +327,7 @@ float2 FigDF(float3 coord,
         switch(fig.self.x)
         {
             case DF_TYPE_PLANET:
-                return float2(SphereDF(coord, 
+                return float2(SphereDF(coord,
                                        fig.linTransf),
                               fig.self.x);
             case DF_TYPE_STAR:
@@ -335,13 +335,13 @@ float2 FigDF(float3 coord,
                                        fig.linTransf),
                               fig.self.x);
             case DF_TYPE_PLANT:
-                return float2(PlantDF(coord, 
-                                      fig.linTransf), 
+                return float2(PlantDF(coord,
+                                      fig.linTransf),
                               fig.self.x);
             default:
-                return float2(CritterDF(coord, 
+                return float2(CritterDF(coord,
                                         fig),
-                              fig.self.x); 
+                              fig.self.x);
         }
     }
 }
@@ -395,7 +395,7 @@ float4 grad(float3 samplePoint,
 
 // Heterogeneity-preserving [min] function
 // Returns the smaller of two numbers, along with
-// an ID value + distance-field type associated 
+// an ID value + distance-field type associated
 // with the smaller number
 // It isn't really possible to re-organise data
 // returned by [FigDF], so [this] takes interleaved
@@ -406,7 +406,7 @@ float4 grad(float3 samplePoint,
 float3 trackedMin(float4 xDFyDF,
                   uint2 ids)
 {
-    return float3(min(xDFyDF.x, xDFyDF.z), 
+    return float3(min(xDFyDF.x, xDFyDF.z),
                   xDFyDF.xz[xDFyDF.x > xDFyDF.z],
                   xDFyDF.yw[xDFyDF.x > xDFyDF.z]);
 }
@@ -415,7 +415,7 @@ float3 trackedMin(float4 xDFyDF,
 // Returns the distance to the nearest surface in the
 // scene from the given point, also figure-IDs (in [y])
 // and distance-field types (in [z])
-#define FILLER_SCREEN_ID uF
+#define FILLER_SCREEN_ID 0xFFFFFFFE
 float3 SceneField(float3 coord,
                   float3 rayOri,
                   bool useFigBounds,
@@ -425,45 +425,45 @@ float3 SceneField(float3 coord,
 
     // Define a super-union of just under a quarter of the figures
     // in the scene
-    float3 set0 = trackedMin(FigDF(coord, rayOri, useFigBounds, figuresReadable[0]),
-                             FigDF(coord, rayOri, useFigBounds, figuresReadable[1]),
+    float3 set0 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[0]),
+									FigDF(coord, rayOri, useFigBounds, figuresReadable[1])),
                              uint2(0, 1));
 
-    float3 set1 = trackedMin(FigDF(coord, rayOri, useFigBounds, figuresReadable[2]),
-                             FigDF(coord, rayOri, useFigBounds, figuresReadable[3]),
+    float3 set1 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[2]),
+									FigDF(coord, rayOri, useFigBounds, figuresReadable[3])),
                              uint2(2, 3));
 
-    float3 set0u1 = trackedMin(set0.x, set1.x,
+    float3 set0u1 = trackedMin(float4(set0.xz, set1.xz),
                                uint2(set0.y, set1.y));
 
     // Define a super-union having another quarter of the figures
     // in the scene
-    float3 set2 = trackedMin(FigDF(coord, rayOri, useFigBounds, figuresReadable[4]),
-                             FigDF(coord, rayOri, useFigBounds, figuresReadable[5]),
+    float3 set2 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[4]),
+									FigDF(coord, rayOri, useFigBounds, figuresReadable[5])),
                              uint2(4, 5));
 
-    float3 set3 = trackedMin(FigDF(coord, rayOri, useFigBounds, figuresReadable[6]),
-                             FigDF(coord, rayOri, useFigBounds, figuresReadable[7]),
+    float3 set3 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[6]),
+									FigDF(coord, rayOri, useFigBounds, figuresReadable[7])),
                              uint2(6, 7));
 
-    float3 set2u3 = trackedMin(set2.xz, set3.xz,
+    float3 set2u3 = trackedMin(float4(set2.xz, set3.xz),
                                uint2(set2.y, set3.y));
 
     // Define a hyper-union from the super-unions defined above
-    float3 majoritySet = trackedMin(set0u1.xz, set2u3.xz,
+    float3 majoritySet = trackedMin(float4(set0u1.xz, set2u3.xz),
                                     uint2(set0u1.y, set2u3.y));
 
     // Define an ultra-union of the hyper-union defined above +
     // two more figures
-    float3 set4 = trackedMin(FigDF(coord, rayOri, useFigBounds, figuresReadable[8]),
-                             FigDF(coord, rayOri, useFigBounds, figuresReadable[9]),
+    float3 set4 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[8]),
+								    FigDF(coord, rayOri, useFigBounds, figuresReadable[9])),
                              uint2(8, 9));
 
     // Return the complete union carrying every figure in the scene; also
     // filter out the given figure if appropriate
     float majoritySetScreen = (((int)screenedFig == majoritySet.y) * MAX_RAY_DIST);
     float set4Screen = (((int)screenedFig == set4.y) * MAX_RAY_DIST);
-    return trackedMin(float4(majoritySet.x + majoritySetScreen, majoritySet.z, 
+    return trackedMin(float4(majoritySet.x + majoritySetScreen, majoritySet.z,
                              set4.x + set4Screen, set4.z),
                       uint2(majoritySet.y, set4.y));
 }

@@ -148,5 +148,6 @@
     <None Include="Materials.hlsli" />
     <None Include="RasterCamera.hlsli" />
     <None Include="ScenePost.hlsli" />
+    <None Include="MIS.hlsli" />
   </ItemGroup>
 </Project>

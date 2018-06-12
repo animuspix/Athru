@@ -24,7 +24,7 @@
 // to any defined elements in the actual scene
 // Chosen because even super-complex ecologies shouldn't generate [(2^32)-1] different figures
 // in each system
-#define LENS_FIG_ID uFFFFFFFF
+#define LENS_FIG_ID 0xFFFFFFFF
 
 // Structure carrying data cached by BDPT during
 // subpath construction; needed for accurate
@@ -47,14 +47,14 @@ BidirVert BuildBidirVt(float4 posFigID,
                        float4 attenBXDFID,
                        float4 normlDFType,
                        float4 thetaPhiIO,
-                       float4 pdfsPlanetDist)
+                       float3 pdfsPlanetDist)
 {
     BidirVert bdVt;
     bdVt.pos = posFigID;
     bdVt.atten = attenBXDFID;
     bdVt.norml = normlDFType;
     bdVt.ioSrs = thetaPhiIO;
-    bdVt.pdfIO = pdfs;
+    bdVt.pdfIO = float4(pdfsPlanetDist, 0.0f);
     return bdVt;
 }
 

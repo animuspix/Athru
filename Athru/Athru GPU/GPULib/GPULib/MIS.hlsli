@@ -1,4 +1,11 @@
 
+#ifndef LIGHTING_UTILITIES_LINKED
+	#include "LightingUtility.hlsli"
+#endif
+#ifndef RASTER_CAMERA_LINKED
+	#include "RasterCamera.hlsli"
+#endif
+
 // Evaluate the power heuristic for Multiple Importance Sampling (MIS);
 // used to balance importance-sampled radiances taken with different
 // sampling strategies (useful for e.g. sampling arbitrary materials
@@ -24,14 +31,14 @@ float MISWeight(uint samplesDistroA,
     return distroASqr / (distroASqr * distroBSqr);
 }
 
-// Bi-directional MIS-specific PDF function; evaluates probabilities for 
+// Bi-directional MIS-specific PDF function; evaluates probabilities for
 // arbitrary vertices on lens, scene, or emissive interfaces
-// Incoming/outgoing vertices contain positions in [0].xyz, 
-// distance-functions in [0].w, local normals in [1].xyz, and BXDF-IDs 
+// Incoming/outgoing vertices contain positions in [0].xyz,
+// distance-functions in [0].w, local normals in [1].xyz, and BXDF-IDs
 // in [1].w (when appropriate)
 // [dirs] carrys the path's outgoing direction (i.e. the direction
-// towards the previous vertex on [outVt]s subpath) in [0] and the lens 
-// normal (the direction "faced" by the camera) in [1] 
+// towards the previous vertex on [outVt]s subpath) in [0] and the lens
+// normal (the direction "faced" by the camera) in [1]
 float BidirMISPDF(float2x4 inVt,
                   float2x4 outVt,
                   float2x3 dirs,
@@ -45,8 +52,7 @@ float BidirMISPDF(float2x4 inVt,
         case DF_TYPE_LENS:
             if (lightPath)
             {
-                return CamAreaPDFOut(outVt[0].xyz - inVt[0].xyz,
-                                     dirs[1]);
+                return CamAreaPDFOut();
             }
             else
             {

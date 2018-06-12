@@ -20,8 +20,10 @@
 #define EPSILON_MAX 0.1f
 #define EPSILON_MIN 0.00001f
 
-// Approximations of pi; very useful for anything involving circles, spheres,
+// Approximations/fractions of pi; very useful for anything involving circles, spheres,
 // hemispheres, etc.
+#define QTR_PI 0.78539816339
+#define HALF_PI 1.57079632679
 #define PI 3.14159265359f
 #define TWO_PI 6.28318530718f
 #define FOUR_PI 12.56637061436f

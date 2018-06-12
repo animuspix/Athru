@@ -194,9 +194,6 @@
     <ClInclude Include="Star.h" />
     <ClInclude Include="System.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="MIS.hlsli" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
