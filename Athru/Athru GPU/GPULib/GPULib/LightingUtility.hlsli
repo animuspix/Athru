@@ -289,9 +289,9 @@ float3 StellarSurfPos(float starSize,
 
 // Generate an importance-sampled source position for
 // primary rays leaving the local star
-// [starInfo] has star-position in [xyz], star size
+// [starLinTransf] has star-position in [xyz], star size
 // in [w]
-float3 PRayStellarSurfPos(float4 starInfo,
+float3 PRayStellarSurfPos(float4 starLinTransf,
                           float3 randUVW)
 {
     // Scale [v] to the interval [0...MAX_Y]
@@ -299,7 +299,7 @@ float3 PRayStellarSurfPos(float4 starInfo,
 
     // Place [u, w] on the circle where y = [yPos]
     float2 xzPos = normalize(randUVW.xz) *
-                   (starInfo.w - (abs(yPos) - starInfo.y));
+                   (starLinTransf.w - (abs(yPos) - starLinTransf.y));
 
     // Construct a spherical position from the generated values,
     // then return the result

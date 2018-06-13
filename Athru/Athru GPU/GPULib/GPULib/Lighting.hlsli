@@ -59,7 +59,7 @@ BidirVert ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance i
                                   float4(atten, bxdfID),
                                   float4(normal, figIDDFType.y),
                                   thetaPhiIO,
-                                  float4(pdfIO, rayVec.w, 0.0f));
+                                  float3(pdfIO, rayVec.w));
 
     // Update [out] parameters
 
@@ -68,7 +68,8 @@ BidirVert ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance i
     atten *= MatBXDF(rayVec.xyz,
                      prevFres,
                      thetaPhiIO,
-                     uint3(bxdfID, figIDDFType.yx)) * dot(normal, bounceDir) * pdfO;
+                     true,
+                     uint3(bxdfID, figIDDFType.yx)) * dot(normal, bounceDir) * pdfIO.x;
 
     // Update light ray direction (if appropriate)
     rayDir = bounceDir;
@@ -104,6 +105,7 @@ float4 ConnectBidirVts(BidirVert camVt,
                        float adaptEps,
                        float3 eyePos,
                        float4 camInfo,
+                       float4 starLinTransf, // Star position in [xyz], star radius in [w]
                        out float2 gatherPDFs,
                        out float3 gatherPos,
                        float pixWidth,
@@ -194,8 +196,8 @@ float4 ConnectBidirVts(BidirVert camVt,
         float3 randUVW = float3(iToFloat(xorshiftPermu1D(randVal)),
                                 iToFloat(xorshiftPermu1D(randVal)),
                                 iToFloat(xorshiftPermu1D(randVal)));
-        float3 stellarSurfPos = StellarSurfPos(star.scaleFactor.x,
-                                               star.pos.xyz,
+        float3 stellarSurfPos = StellarSurfPos(starLinTransf.w,
+                                               starLinTransf.xyz,
                                                randUVW);
 
         // Trace a shadow/gather ray between the last vertex of the camera subpath towards the
@@ -214,16 +216,17 @@ float4 ConnectBidirVts(BidirVert camVt,
                                        camVt.ioSrs.zw);
             connStratRGB.rgb = DirIllumRadiance(stellarSurfPos,
                                                 camVt.norml.xyz,
-                                                star.rgbaCoeffs[0].xyz,
-                                                star.pos.xyz,
+                                                STELLAR_RGB,
+                                                starLinTransf.xyz,
                                                 occData[0].w,
-                                                star.rgbaCoeffs[2].x) // Evaluate local radiance
+                                                STELLAR_BRIGHTNESS) // Evaluate local radiance
                                               * MatBXDF(camVt.pos.xyz,
-                                                        AmbFres(camVt.pdfs.z), // Not worrying about subsurface scattering just yet...
+                                                        AmbFres(camVt.pdfIO.z), // Not worrying about subsurface scattering just yet...
                                                         thetaPhiIO,
+                                                        false,
                                                         uint3(camVt.atten.w,
                                                               camVt.norml.w,
-                                                              camVt.pos.w)) * // Apply the surface BRDF
+                                                              camVt.pos.w)) // Apply the surface BRDF
                                               * stellarPosPDF; // Account for the probability of selecting
                                                                // [stellarSurfPos] out of all possible
                                                                // positions on the surface of the local
@@ -280,14 +283,16 @@ float4 ConnectBidirVts(BidirVert camVt,
                                        float4(occVecToSr,
                                               lightVt.ioSrs.zw));
         float3 camBXDF = MatBXDF(camVt.pos.xyz,
-                                 AmbFres(camVt.pdfs.z), // Not worrying about subsurface scattering atm...
+                                 AmbFres(camVt.pdfIO.z), // Not worrying about subsurface scattering atm...
                                  camLightIO[0],
+                                 false,
                                  uint3(camVt.atten.w,
                                        lightVt.norml.w,
                                        camVt.pos.w));
         float3 lightBXDF = MatBXDF(lightVt.pos.xyz,
-                                   AmbFres(lightVt.pdfs.z), // Not worrying about subsurface scattering atm...
+                                   AmbFres(lightVt.pdfIO.z), // Not worrying about subsurface scattering atm...
                                    camLightIO[1],
+                                   false,
                                    uint3(lightVt.atten.w,
                                          camVt.norml.w,
                                          lightVt.pos.w);

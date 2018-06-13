@@ -94,6 +94,11 @@ float2x3 rgbToFres(float3 rgb)
 // so I can vary it between systems
 #define STELLAR_BRIGHTNESS 8.0f
 
+// Stellar radiance at unit brightness; mostly just defined for
+// readability since any star bright enough to illuminate the
+// system will wash out to white for human observers
+#define STELLAR_RGB 1.0f.xxx
+
 // Alternative material model, much simpler and data-oriented
 // Database-like design, takes a figure type + property request ID and
 // generates the requested property on-demand
@@ -393,10 +398,10 @@ float3 SurfFres(float4x3 fresInfoIO, // Incoming/outgoing fresnel values (refrac
 // Unsure about the derivations for Smith and GGX, should read the original papers
 // when possible
 // Considering generalizing this to the mixed transmittant/reflective version described in PBR;
-// unsure how scope-creepy that is or 
+// unsure how scope-creepy that is or
 float3 SpecularBRDF(float4 surf,
                     float4 thetaPhiIO,
-                    bool estimO)
+                    bool estimI)
 {
     // Extract Torrance-Sparrow roughness values from [surf.a] (materials use Oren-Nayar roughness by default)
     float variSqr = (surf.a * surf.a) * 2.0f;
@@ -526,7 +531,7 @@ float3 MatBXDF(float3 coord,
                                   // entered by the previous vertex in the relevant
                                   // subpath
                float4 thetaPhiIO,
-			   bool estimO, // Whether or not the outgoing direction was importance-sampled
+			   bool estimI, // Whether or not the incoming light direction was importance-sampled
 							// for the local BXDF; arbitrary (i.e. not importance-sampled)
 							// directions have zero radiance in the perfectly-smooth
 							// specular case
@@ -554,7 +559,7 @@ float3 MatBXDF(float3 coord,
                                                         surfInfo.yz,
                                                         coord)).x),
                                 thetaPhiIO,
-								estimO);
+								estimI);
         case BXDF_ID_SSURF:
             return 0.0f.xxx; // No defined sub-surface scattering BXDF yet
         case BXDF_ID_MEDIA:
