@@ -268,17 +268,24 @@ float3 SpecularDir(float3 inDir,
     // Research found on the HAL INRIA open-archives repository at:
     // https://hal.archives-ouvertes.fr/hal-01509746
 
-    // Distort x/y values in the view-vector to counter different microfacet
-    // densities + maintain a unit hemisphere over the domain
-    inDir = normalize(float3(inDir.xy * ggxVari, inDir.z));
+    // Heitz' updated method assumes unit roughness (where GGX forms a uniform hemisphere);
+	// maintaining microfacet visibility under that assumption means applying the actual
+	// surface roughness to displace the incoming direction within [XZ] (the plane incident
+	// with the hemisphere's disc in local space)
+	// Heitz refers to this as "stretching" the view-vector, but it can also be described as
+	// rotating the incoming direction through GGX until the visible microfacet area
+	// at unit roughness corresponds to the visible area with the raw viewing direction
+	// and [ggxVari] surface variance
+	// Very unsure about wording here, will edit at home...
+    float3 ggxDir = normalize(float3(inDir.x * ggxVari, inDir.y, inDir.z * ggxVari));
 
     // Generate GGX-specific UV values
     float2 ggxUV = float2(iToFloat(xorshiftPermu1D(randVal)),
-                          iToFloat(xorshiftPermu1D(randVal)));
+						  iToFloat(xorshiftPermu1D(randVal)));
 
-    // Derive a sample point on the unit hemisphere; allow]
+    // Derive a sample point on the unit hemisphere; allow points
 
-    // Construct basis vectors normal to the
+    // Construct basis vectors normal to the given view direction
 
     return 0.0f.xxx;
 }
@@ -384,6 +391,14 @@ float3 SurfFres(float4x3 fresInfoIO, // Incoming/outgoing fresnel values (refrac
     return 0.5f * cplxMul(reflOrtho, reflOrtho)[1] + cplxMul(reflParall, reflParall)[1];
 }
 
+// Placeholder PSR mollification function
+// PSR implementation is after Kaplanyan and Dachsbacher, see:
+// http://cg.ivd.kit.edu/english/PSR.php
+float3 PSRMollify()
+{
+    return 0.0f.xxx;
+}
+
 // RGB specular reflectance away from any given surface; uses the Torrance-Sparrow BRDF
 // described in Physically Based Rendering: From Theory to Implementation
 // (Pharr, Jakob, Humphreys)
@@ -423,7 +438,8 @@ float3 SpecularBRDF(float4 surf,
         }
         else
         {
-            return 0.0f.xxx; // Apply PSR mollification here...
+			// Mollify the zero parts of the specular distribution with PSR
+            return PSRMollify();
         }
     }
 
