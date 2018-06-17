@@ -247,47 +247,173 @@ float3 DiffuseBRDF(float4 surf,
     return lambert * orenNayar;
 }
 
-// Probability density function (PDF) for directions sampled over specular surfaces; assumes
-// directions importance-sample the GGX/Smith BRDF
-float SpecularPDF()
+// Compute visible microfacet area for GGX interactions
+// with the given half-angles
+float GGX(float2 thetaPhiH,
+          float surfVari)
 {
-    return 0.0f;
+    // Vector carrying trigonometric values needed by GGX (tangent/cosine of [theta])
+    // Would love to optimize [cos(h.x)] into a dot-product, but can't easily do that
+    // in spherical coordinates (+ I feel passing normalized directions as well as solid angles would
+    // add too much complexity to material definitions atm)
+    float cosTheta = cos(h.x);
+    float2 distroTrig = float2(sqrt(1.0f - cosTheta * cosTheta) / cosTheta,
+                               cosTheta);
+    if (isinf(distroTrig.x)) { return 0.0f.xxx; } // Tangent values can easily generate singularities; escape here before those lead to NaNs (!!)
+    distroTrig *= distroTrig; // Every trig value for GGX is (at least) squared, so handle that here
+
+    // GGX is essentially normalized Beckmann-Spizzichino and re-uses the Beckmann-Spizzichino exponent
+    // as a factor inside the denominator; cache the GGX version here for convenience before we
+    // evaluate the complete distribution function
+    float ggxBeckmannExp = 1.0f + distroTrig.x / variSqr;
+    ggxBeckmannExp *= ggxBeckmannExp;
+
+    // Evaluate + return microfacet distribution with GGX
+    return 1.0f / (PI * variSqr * (distroTrig.y * distroTrig.y) * ggxBeckmannExp);
 }
 
-// Importance-sampled ray generator for Torrance-Sparrow specular surfaces
-float3 SpecularDir(float3 inDir,
-                   float ggxVari,
-                   inout uint randVal)
+// Placeholder PSR mollification function
+// PSR implementation is after Kaplanyan and Dachsbacher, see:
+// http://cg.ivd.kit.edu/english/PSR.php
+float3 PSRMollify()
 {
-    // Generate a microfacet normal matching the GGX normal-distribution-function
-    // Implemented from the unbiased hemisphere sampling strategy described
-    // by Heitz in
-    // Eric Heitz.
-    // A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals.
-    // [Research Report] Unity Technologies. 2017
-    // Research found on the HAL INRIA open-archives repository at:
-    // https://hal.archives-ouvertes.fr/hal-01509746
+    return 0.0f.xxx;
+}
 
+// Probability density function (PDF) for directions sampled over specular surfaces; assumes
+// directions importance-sample the GGX microfacet distribution
+float SpecularPDF(float4 surfGeo, // Angular microfacet normal in [xyz], surface roughness 
+                                  // in [w]
+                  float4 iDirInfo) // The local incoming light direction (xyz) + 
+                                   // whether or not it was importance sampled (w)
+{
+    // Perfectly smooth surfaces are only sampleable with directions on equal
+    // sides of the surface normal; we're assuming that those directions will 
+    // only ever appear from importance sampling, so immediately return a 
+    // mollified delta-distribution here instead of the GGX probability
+    // function
+    if (!iDirInfo.z && (surfGeo.z == 0.0f)) { return PSRMollify(); }
+
+    // Return visible microfacet area (mirrorlike reflection will always have
+    // the half-vector equal to the local normal, so we can safely propagate
+    // the sampled microfacet normal here); our samples come directly from GGX,
+    // so visible microfacet area through the given normal will naturally
+    // describe the chance of reflecting around that direction (since 
+    // "large" regions with lots of visible area would be expected to reflect
+    // more light towards the viewing direction than "small" regions with heavy
+    // occlusion and much less microsurface exposure) 
+    // Also attenuate the generated GGX value with [cos([theta])] since incoming 
+    // rays are unlikely to meet microfacets close to parallel with the 
+    // macrosurface normal
+    // Unsure about this explanation, should maebs check with CGSE
+    float2 microNormlSrs = VecToAngles(surfGeo.xyz);
+    float ggxPDF = GGX(microNormlSrs,
+                       surfGeo.w * 2.0f) * cos(microNormlSrs.x);
+
+    // The GGX distribution is defined for the half-angle vector, but our PDFs are
+    // expected to return results defined over incoming/outgoing directions; we can
+    // convert betweeen those with the half-angle/incoming-angle sampling ratio
+    // derived by PBR, so apply that here before returning to the callsite
+    // ("PBR" means 
+    // Physically Based Rendering: From
+    // Theory to Implementation (Pharr, Jakob, Humphreys),
+    // and the derivation is available around page ~812)
+    return ggxPDF / (4.0f * dot(iDirInfo.xyz,
+                                surfGeo.xyz));
+}
+
+// Small function to generate microfacet normals matching the GGX 
+// normal-distribution-function
+// Implemented from the exact hemisphere sampling strategy described
+// by Heitz in
+// Eric Heitz.
+// A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals.
+// [Research Report] Unity Technologies. 2017
+// Research found on the HAL INRIA open-archives repository at:
+// https://hal.archives-ouvertes.fr/hal-01509746
+float3 GGXMicroNorml(float3 oDir,
+                     float ggxVari,
+                     inout uint randVal)
+{
     // Heitz' updated method assumes unit roughness (where GGX forms a uniform hemisphere);
 	// maintaining microfacet visibility under that assumption means applying the actual
-	// surface roughness to displace the incoming direction within [XZ] (the plane incident
-	// with the hemisphere's disc in local space)
-	// Heitz refers to this as "stretching" the view-vector, but it can also be described as
-	// rotating the incoming direction through GGX until the visible microfacet area
-	// at unit roughness corresponds to the visible area with the raw viewing direction
-	// and [ggxVari] surface variance
-	// Very unsure about wording here, will edit at home...
-    float3 ggxDir = normalize(float3(inDir.x * ggxVari, inDir.y, inDir.z * ggxVari));
+	// surface roughness to displace the outgoing direction within [XZ] (the plane incident
+	// with the hemisphere's disc in local space) before renormalizing; this can be seen as
+    // rotating the given direction through the GGX distribution until the visible
+    // microfacet area is the same in the [alpha = 1] case as when the [alpha = ggxVari]
+    // case is seen from the un-rotated output direction
+    // Microfacet normals naturally fall back into the [y] axis (equivalent to the local
+    // macrosurface normal) for totally smooth surfaces, so we don't need any specific
+    // handling for perfect mirrors here ^_^
+    float3 ggxDir = normalize(float3(oDir.x * ggxVari, 
+                                     oDir.y, 
+                                     oDir.z * ggxVari));
 
     // Generate GGX-specific UV values
     float2 ggxUV = float2(iToFloat(xorshiftPermu1D(randVal)),
 						  iToFloat(xorshiftPermu1D(randVal)));
 
-    // Derive a sample point on the unit hemisphere; allow points
+    // Heitz' method splits the GGX sampling space into two half-disc regions projected
+    // through the shading hemisphere; one within a plane orthogonal to the outgoing 
+    // direction and one incident with the base of the hemisphere itself
+    // This is intuitive; visible microfacets at any roughness will mostly lie in
+    // the plane normal to the viewing (outgoing) direction
+    // Heitz samples from the full disc composed from the projections of either 
+    // half-disc, and represents sample positions in polar coordinates [([r], [theta])];
+    // the [theta] component is scaled to match the probability of selecting either 
+    // half-disc ([pTangent = 1.0f / (1.0f + ggxDir.z)] for the half-disc within the 
+    // tangent plane, [1.0f - pTangent] for the half-disc within the base of the shading 
+    // hemisphere)
+    float pTangPlane = 1.0f / (1.0f + ggxDir.y);
+    bool tangPlanePt = !(ggxUV.y < pTangPlane);
+    ggxUV.x = sqrt(ggxUV.x); // This might be removable given uniform UV values; maybe test
+                             // when I have working specular shading...
+    // Could be worth trying to implement these in Cartesian coordinates straight away 
+    // instead of starting in polar and converting afterwards...
+    if (tangPlanePt) { ggxUV.y = (ggxUV.y / pTangPlane) * PI; } 
+    else { ggxUV.y = ((ggxUV.y - pTangPlane) / (1.0f - pTangPlane)) * PI) + PI; }
 
-    // Construct basis vectors normal to the given view direction
+    // Convert samples to 2D Cartesian coordinates
+    float2 sinCosPhi;
+    sincos(ggxUV.y, sinCosPhi.x, sinCosPhi.y);
+    ggxUV *= sinCosPhi.yx;
+    if (tangPlanePt) { ggxUV.y *= ggxDir.z; }
+    
+    // Construct basis vectors for the space about [oDir]
+    float3 oSpaceX = normalize(cross(oDir, float3(0.0f, 1.0f, 0.0f)));
+    float3 oSpaceZ = cross(oSpaceX, oDir);
 
-    return 0.0f.xxx;
+    // Combine the previous values to project [ggxUV] onto the view-orthogonal
+    // plane (=> the region with the most visible area relative to [oDir])
+    float3 inPt = (ggxUV.x * oSpaceX) + 
+                   ((ggxUV.y * oSpaceZ) * ((oDir.y * pTangPlanePt) + !pTangPlanePt));
+
+    // Generate a hemisphere position
+    float3 microNorml = inPt + // Use positions on the view-orthogonal disc as a local offset 
+                        (sqrt(1.0f - dot(inPt, inPt)) * oDir); // Scale the known disc positions
+                                                               // out to the hemisphere; perform
+                                                               // scaling along the direction
+                                                               // described by [oDir]
+
+    // Transform the generated position to the unit-alpha GGX distribution (this is the same 
+    // transformation we applied to the outgoing ray direction before; see above for how/why 
+    // we did that) and normalize (giving a roughened GGX-style direction through the 
+    // hemisphere), then return
+    return normalize(float3(microNorml.x * ggxVari, 
+                            microNorml.y, 
+                            microNorml * ggxVari));
+}
+
+// Importance-sampled ray generator for Torrance-Sparrow specular surfaces
+float3 SpecularDir(float3 oDir,
+                   float3 microNorml,
+                   inout uint randVal)
+{
+    // Reflect the outgoing direction about the given microfacet normal, then
+    // return
+    // Was *sure* I'd need to do all sorts of fancy processing here, but after re-reading
+    // it looks like I was wrong about that ^_^ 
+    return reflect(oDir, microNorml);
 }
 
 // Short convenience function for vectorized complex division
@@ -391,14 +517,6 @@ float3 SurfFres(float4x3 fresInfoIO, // Incoming/outgoing fresnel values (refrac
     return 0.5f * cplxMul(reflOrtho, reflOrtho)[1] + cplxMul(reflParall, reflParall)[1];
 }
 
-// Placeholder PSR mollification function
-// PSR implementation is after Kaplanyan and Dachsbacher, see:
-// http://cg.ivd.kit.edu/english/PSR.php
-float3 PSRMollify()
-{
-    return 0.0f.xxx;
-}
-
 // RGB specular reflectance away from any given surface; uses the Torrance-Sparrow BRDF
 // described in Physically Based Rendering: From Theory to Implementation
 // (Pharr, Jakob, Humphreys)
@@ -412,35 +530,20 @@ float3 PSRMollify()
 //      (see below)
 // Unsure about the derivations for Smith and GGX, should read the original papers
 // when possible
-// Considering generalizing this to the mixed transmittant/reflective version described in PBR;
-// unsure how scope-creepy that is or
 float3 SpecularBRDF(float4 surf,
-                    float4 thetaPhiIO,
-                    bool estimI)
+                    float4 thetaPhiIO)
 {
     // Extract Torrance-Sparrow roughness values from [surf.a] (materials use Oren-Nayar roughness by default)
-    float variSqr = (surf.a * surf.a) * 2.0f;
+    float variSqr = surf.a * 2.0f;
 
     // Zeroed rougness means the surface is a perfect mirror; perfect mirrors are
-    // described by delta-distributed BRDFs that only have value for rays reflected
-    // about the surface normal  (i.e. pairs where [wi] has the same angle from the
-    // normal as [wo])
-    // Torrance-Sparrow doesn't encompass the nonzero case at perfect smoothness,
-    // so handle that here and return early instead
+    // described by specialized BRDFs missed by Torrance-Sparrow, so handle those
+    // here and return early instead
     if (variSqr == 0.0f)
     {
-        if (thetaPhiIO.x == thetaPhiIO.z) // Valid smooth specular reflections will have equal
-                                          // incoming/outgoing angles from the normal
-        {
-            // We're using wavelength-dependant indices of refraction + extinction coefficients
-            // already, so no reason to scale our fresnel value against [mat.rgb]
-            return surf.rgb / cos(thetaPhiIO.x);
-        }
-        else
-        {
-			// Mollify the zero parts of the specular distribution with PSR
-            return PSRMollify();
-        }
+        // We're using wavelength-dependant indices of refraction + extinction coefficients
+        // already, so no reason to scale our fresnel value against [mat.rgb]
+        return surf.rgb / cos(thetaPhiIO.x);
     }
 
     // Evaluate the GGX microfacet distribution function for the given input/output
@@ -451,25 +554,19 @@ float3 SpecularBRDF(float4 surf,
                                                           // differential area of microsurfaces that face the same
                                                           // direction (i.e. have normals parallel to [h])
                                                           // Might be using bad values for [h] here, should validate later...
-
-    // Vector carrying trigonometric values needed by GGX (tangent/cosine of [theta])
-    // Would love to optimize [cos(h.x)] into a dot-product, but can't easily do that
-    // in spherical coordinates (+ I feel passing normalized directions as well as solid angles would
-    // add too much complexity to material definitions atm)
-    float cosTheta = cos(h.x);
-    float2 distroTrig = float2(sqrt(1.0f - cosTheta * cosTheta) / cosTheta,
-                               cosTheta);
-    if (isinf(distroTrig.x)) { return 0.0f.xxx; } // Tangent values can easily generate singularities; escape here before those lead to NaNs (!!)
-    distroTrig *= distroTrig; // Every trig value for GGX is (at least) squared, so handle that here
-
-    // GGX is essentially normalized Beckmann-Spizzichino and re-uses the Beckmann-Spizzichino exponent
-    // as a factor inside the denominator; cache the GGX version here for convenience before we
-    // evaluate the complete distribution function
-    float ggxBeckmannExp = 1.0f + distroTrig.x / variSqr;
-    ggxBeckmannExp *= ggxBeckmannExp;
-
-    // Compute microfacet distribution with GGX
-    float d = 1.0f / (PI * variSqr * (distroTrig.y * distroTrig.y) * ggxBeckmannExp);
+    // Can optimize this by recycling values from the specula BRDF, 
+    // but that would be kinda messy...strongly leaning towards a
+    // generic material evaluator nows instead
+    // (solves + returns the BRDF and PDF for arbitrary materials, chooses
+    // between generated and provided bounce directions depending on 
+    // context)
+    // Would allow for less code, faster exits, etc.
+    // Less argument passing, so possibly simpler code as well...
+    // Definitely a plausible refactor after implementing PSR
+    // (want to finish specular, do that, debug + validate everything,
+    // *then* implement transmittance before starting any major
+    // refactors/releasing demo videos/looking for work)
+    float d = GGX(h);
 
     // Evaluate Smith masking/shadowing (the "G" term in D/F/G) for the incoming/outgoing directions
     float2 absTanThetas = abs(tan(thetaPhiIO.xz)); // Evaluate the absolute tangent of each direction's angle
@@ -500,38 +597,86 @@ float3 SpecularBRDF(float4 surf,
 // Media PDF/Dir/BRDF here (...stochastic raymaching (i.e. random walks)... + phase functions)
 
 // PDF finder for arbitrary reflectance/scattering/transmittance functions
-// [bxdfInfo] gives the reflectance/scattering/transmittance function selected
-// by the given material for the current ray in [x] and the probability of selecting
-// that material in [y]
-float MatPDF(float4 thetaPhiIO,
-             float2 bxdfInfo)
+// [surfInfo] gives the reflectance/scattering/transmittance function selected
+// by the given material for the current ray in [x], the surface's distance-field 
+// type + figure-ID in [yz], and whether or not the incoming light direction was
+// importance-sampled for the local BXDF in [w]
+// [ioSurfDirs] describes input/output directions in surface coordinates (i.e. with
+// y-up); this simplifies physically-based shading (no need to transform microfacet 
+// normals) and conceptually neatens the sampling process by allowing everything 
+// to occur in the same coordinate space
+// [coord] carries global surface position in [xyz] and whether the surface lies on 
+// the light subpath in [w]
+float MatPDF(float2x3 ioSurfDirs,
+             float4 coord,
+             float4 surfInfo) 
 {
+    if (coord.w)
+    {
+        // Swap in/out directions on the light path
+        ioDirs[0] = rayDir; 
+        ioDirs[1] = bounceDir;
+    }
+
+    // Evaluate probabilities for the given material + input/ouput
+    // directions
     float pdf = 0.0f;
-    switch (bxdfInfo.x)
+    switch (surfInfo.x)
     {
         case BXDF_ID_DIFFU:
-            pdf = DiffusePDF(thetaPhiIO.z);
+            pdf = DiffusePDF(VecToAngles(ioSurfDirs[1]).x);
+            break;
         case BXDF_ID_SPECU:
-            pdf = SpecularPDF();
+            pdf = SpecularPDF(float4(normalize(ioSurfDirs[0] + ioSurfDirs[1]), // Half-angle vector (i.e. microfacet normal) from
+                                                                               // reconstructed from the given input/output 
+                                                                               // directions
+                                     MatInfo(float2x3(MAT_PROP_VARI,       
+                                                      surfInfo.yz,             
+                                                      coord))),
+                              float4(ioSurfDirs[0], 
+                                     surfInfo.w));
+            break;
         case BXDF_ID_SSURF:
             pdf = 0.0f;
+            break;
         case BXDF_ID_MEDIA:
             pdf = 0.0f;
+            break;
         default:
-            pdf = DiffusePDF(thetaPhiIO.z); // Assume diffuse surfaces for undefined [BXDFs]
+            pdf = DiffusePDF(ioSurfDirs[1].x); // Assume diffuse surfaces for undefined [BXDFs]
+            break;
     }
-    return pdf * bxdfInfo.y;
+    return pdf * MatInfo(float2x3(MAT_PROPS_BXDF_FREQS,
+                                  surfInfo.yz,
+                                  coord))[bxdfID];
 }
 
-float3 MatDir(inout uint randVal,
-              uint bxdfID)
+// [surfInfo] gives the reflectance/scattering/transmittance function selected
+// by the given material for the current ray in [x] and the distance-field type + 
+// figure-ID at [coord] in [yz]
+float3 MatDir(float3 oDir,
+              float3 coord,
+              out float3 microNorml, // Microfacet normal direction for
+                                     // GGX (useful for e.g. specular surfaces,
+                                     // possibly volumetric materials as well)
+              inout uint randVal,
+              float3 surfInfo)
 {
-    switch (bxdfID)
+    switch (surfInfo.x)
     {
         case BXDF_ID_DIFFU:
             return DiffuseDir(randVal);
         case BXDF_ID_SPECU:
-            return SpecularDir(randVal);
+            // Generate a microfacet normal matching the GGX normal-distribution-function
+            float3 mNorml = GGXMicroNorml(oDir,
+                                          sqrt(MatInfo(float2x3(MAT_PROPS_VARI,
+                                                                surfInfo.yz,
+                                                                coord)).x * 2.0f), // Convert to GGX variance here
+                                          randVal);
+            microNorml = mNorml;
+            return SpecularDir(oDir,
+                               mNorml,
+                               randVal);
         case BXDF_ID_SSURF:
             return 0.0f.xxx;
         case BXDF_ID_MEDIA:
@@ -547,10 +692,6 @@ float3 MatBXDF(float3 coord,
                                   // entered by the previous vertex in the relevant
                                   // subpath
                float4 thetaPhiIO,
-			   bool estimI, // Whether or not the incoming light direction was importance-sampled
-							// for the local BXDF; arbitrary (i.e. not importance-sampled)
-							// directions have zero radiance in the perfectly-smooth
-							// specular case
                uint3 surfInfo) // BXDF-ID in [x], distance-field type in [y], figure-ID in [z]
 {
     switch (surfInfo.x)
@@ -574,8 +715,7 @@ float3 MatBXDF(float3 coord,
                                        MatInfo(float2x3(MAT_PROP_VARI,
                                                         surfInfo.yz,
                                                         coord)).x),
-                                thetaPhiIO,
-								estimI);
+                                thetaPhiIO);
         case BXDF_ID_SSURF:
             return 0.0f.xxx; // No defined sub-surface scattering BXDF yet
         case BXDF_ID_MEDIA:

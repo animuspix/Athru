@@ -42,6 +42,8 @@ float MISWeight(uint samplesDistroA,
 float BidirMISPDF(float2x4 inVt,
                   float2x4 outVt,
                   float2x3 dirs,
+                  float2 ioFigIDs,
+                  inout uint randVal,
                   bool lightPath)
 {
     float pdf = 0;
@@ -61,11 +63,18 @@ float BidirMISPDF(float2x4 inVt,
             }
         case DF_TYPE_STAR:
             pdf = StellarPosPDF();
+            break;
         default: // Assume non-star, non-lens interfaces are valid scene materials
-            pdf = MatPDF(RaysToAngles(normalize(inVt[0].xyz - outVt[0].xyz),
-                                      dirs[0],
-                                      lightPath),
-                         outVt[1].w);
+            float2x3 ioDirs = float2x3(normalize(inVt[0].xyz - outVt[0].xyz),
+                                       dirs[0]);
+            pdf = MatPDF(ioDirs,
+                         float4(rayVec.xyz,
+                                lightPath),
+                         float4(outVt[1].w,
+                                float2(outVt[0].w, 
+                                       ioFigIDs.y),
+                                false));
+            break;
     }
 
     // Camera PDFs return early, so any values for [pdf] are guaranteed to be defined over solid-angle; convert + return

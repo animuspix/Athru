@@ -39,20 +39,34 @@ BidirVert ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance i
 
     // Generate an importance-sampled bounce direction
     float3x3 normSpace = NormalSpace(normal);
-    float3 bounceDir = mul(MatDir(randVal,
-                                  bxdfID),
-                           normSpace);
+    float3 bounceDir = MatDir(rayDir,
+                              rayVec,
+                              randVal,
+                              float3(bxdfID, 
+                                     figIDDFType.yx));
 
     // Evaluate the current vertex's outgoing directions + PDF
     // (both needed for attenuation atm + path integration
     // later)
-    float4 thetaPhiIO = RaysToAngles(bounceDir,
+    float2x3 ioDirs = float2x3(bounceDir, 
+                               rayDir);
+    float2 pdfIO = float2(MatPDF(ioDirs,
+                                 float4(rayVec.xyz, 
+                                        lightPath),
+                                 float4(bxdfID, 
+                                        figIDDFType.yx,
+                                        true)), // Probability of exiting along [bounceDir] after entering along [rayDir]
+                          MatPDF(float2x3(ioDirs[1], 
+                                          ioDirs[0]),
+                                 float4(rayVec.xyz, 
+                                        lightPath),
+                                 float4(bxdfID,
+                                        figIDDFType.yx,
+                                        true))); // Probability of exiting along [rayDir] after entering along [bounceDir]
+
+    float4 thetaPhiIO = RaysToAngles(mul(bounceDir, normSpace),
                                      mul(rayDir, normSpace),
                                      lightPath);
-    float2 pdfIO = float2(MatPDF(thetaPhiIO,
-                                 bxdfID), // Probability of exiting along [bounceDir] after entering along [rayDir]
-                          MatPDF(thetaPhiIO.wzyx,
-                                 bxdfID)); // Probability of exiting along [rayDir] after entering along [bounceDir]
 
     // Cache the bi-directional vertex representing the current interaction
     BidirVert bdVt = BuildBidirVt(float4(rayOri, figIDDFType.x),
