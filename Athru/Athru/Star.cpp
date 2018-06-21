@@ -2,7 +2,7 @@
 #include "Star.h"
 
 Star::Star(float givenRadius,
-		   DirectX::XMVECTOR position,
+		   DirectX::XMFLOAT3 position,
 		   DirectX::XMVECTOR* distCoeffs) :
 	  SceneFigure(position, _mm_set_ps(1, 0, 0, 0),
 				  givenRadius, (fourByteUnsigned)FIG_TYPES::STAR,

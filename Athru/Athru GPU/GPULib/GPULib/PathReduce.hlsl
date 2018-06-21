@@ -15,7 +15,7 @@ RWTexture2D<float4> displayTex : register(u1);
 // pixel indices are in [1][y], z-scale is in [1][z]
 AppendStructuredBuffer<float2x3> traceables : register(u4);
 
-#include "LightingUtility.hlsli"
+#include "Lighting.hlsli"
 #ifndef RASTER_CAMERA_LINKED
     #include "RasterCamera.hlsli"
 #endif
@@ -64,7 +64,8 @@ void main(uint3 groupID : SV_GroupID,
     {
         // Pixels count as "intersecting the scene" if their camera rays
         // intersect at least one surface that isn't the local star
-        isectPx = BoundingSurfTrace(figuresReadable[i],
+        isectPx = BoundingSurfTrace(figuresReadable[i].linTransf,
+                                    figuresReadable[i].self.x,
                                     rayPt,
                                     camPos) || isectPx;
     }
@@ -83,14 +84,15 @@ void main(uint3 groupID : SV_GroupID,
         // We don't want to define colours for these points yet, so return immediately
         return;
     }
-    else if (BoundingSurfTrace(figuresReadable[STELLAR_FIG_ID],
+    else if (BoundingSurfTrace(figuresReadable[STELLAR_FIG_ID].linTransf,
+                               figuresReadable[STELLAR_FIG_ID].self.x,
                                rayPt,
                                camPos))
     {
         // Test pixels that didn't intersect planets/plants/animals
         // against the local star; shade any that *do* intersect
         // the star according to its emissivity
-        rgb = Emission(figuresReadable[STELLAR_FIG_ID]);
+        rgb = Emission(STELLAR_RGB, STELLAR_BRIGHTNESS);
     }
     else
     {

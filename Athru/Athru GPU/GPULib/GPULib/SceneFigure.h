@@ -15,7 +15,7 @@ class SceneFigure
 {
 	public:
 		SceneFigure();
-		SceneFigure(DirectX::XMVECTOR position,
+		SceneFigure(DirectX::XMFLOAT3 position,
 					DirectX::XMVECTOR qtnRotation, float scale,
 					fourByteUnsigned figType, DirectX::XMVECTOR* distCoeffs);
 		~SceneFigure();
@@ -25,18 +25,19 @@ class SceneFigure
 		struct Figure
 		{
 			Figure() {}
-			Figure(DirectX::XMVECTOR position,
-				   DirectX::XMVECTOR qtnRotation, float scale,
-				   fourByteUnsigned funcType, DirectX::XMVECTOR* distParams,
+			Figure(DirectX::XMFLOAT4 linTrans,
+				   DirectX::XMVECTOR qtnRotation,
+				   fourByteUnsigned funcType,
+				   DirectX::XMVECTOR* distParams,
 				   address originPttr) :
-				   linTransf{ position, scale },
+				   linTransf(linTrans),
 				   rotationQtn(qtnRotation),
 				   distCoeffs{ distParams[0], distParams[1], distParams[2] },
-				   origin{ funcType,
-					   	   (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrHIMask()) >> MemoryStuff::halfAddrLength()),
-						   (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrLOMask())), 0 } {}
+				   self{ funcType,
+					   	 (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrHIMask()) >> MemoryStuff::halfAddrLength()),
+						 (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrLOMask())), 0 } {}
 
-			// The location of this figure at any particular time 
+			// The location of this figure at any particular time
 			// (xyz) and a uniform scale factor (w)
 			DirectX::XMFLOAT4 linTransf;
 

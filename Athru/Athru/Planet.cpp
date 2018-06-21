@@ -3,10 +3,10 @@
 #include "Planet.h"
 
 Planet::Planet(float givenScale,
-			   DirectX::XMVECTOR position, DirectX::XMVECTOR qtnRotation,
+			   DirectX::XMFLOAT3 position, DirectX::XMVECTOR qtnRotation,
 			   DirectX::XMVECTOR* distCoeffs) :
 		SceneFigure(position,
-					_mm_set_ps(1, 0, 0, 0), givenScale, 
+					_mm_set_ps(1, 0, 0, 0), givenScale,
 					(fourByteUnsigned)FIG_TYPES::PLANET,
 					distCoeffs)
 {
@@ -72,7 +72,7 @@ Planet::Planet(float givenScale,
 		// create a test build in C# (for leaf generation) + a small shader (for simplified tree
 		// generation) and see where those end up...
 
-		plants[i] = SceneFigure(_mm_set_ps(0, 0, 0, 0),
+		plants[i] = SceneFigure(DirectX::XMFLOAT3(0, 0, 0),
 								_mm_set_ps(1, 0, 0, 0),
 								1.0,
 								(fourByteUnsigned)FIG_TYPES::PLANT,
@@ -90,7 +90,7 @@ Planet::Planet(float givenScale,
 												   _mm_set_ps(0, 0, 0, 0),
 												   _mm_set_ps(0, 0, 0, 0) };
 
-		critters[i] = SceneFigure(_mm_set_ps(0, 0, 0, 0),
+		critters[i] = SceneFigure(DirectX::XMFLOAT3(0, 0, 0),
 								  _mm_set_ps(1, 0, 0, 0),
 								  1.0,
 								  (fourByteUnsigned)FIG_TYPES::CRITTER,

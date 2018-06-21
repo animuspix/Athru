@@ -2,23 +2,23 @@
 
 SceneFigure::SceneFigure()
 {
-	DirectX::XMVECTOR baseDistCoeffs[3] = { _mm_set_ps(0, 0, 0, 0), 
-											_mm_set_ps(0, 0, 0, 0), 
+	DirectX::XMVECTOR baseDistCoeffs[3] = { _mm_set_ps(0, 0, 0, 0),
+											_mm_set_ps(0, 0, 0, 0),
 											_mm_set_ps(0, 0, 0, 0) };
 
-	coreFigure = Figure(_mm_set_ps(0, 0, 0, 0),
-						_mm_set_ps(1, 0, 0, 0), 1.0f,
-						(fourByteUnsigned)FIG_TYPES::CRITTER, baseDistCoeffs,
+	coreFigure = Figure(DirectX::XMFLOAT4(0, 0, 0, 1.0f),
+						_mm_set_ps(1, 0, 0, 0),
+						(fourByteUnsigned)FIG_TYPES::CRITTER,
+						baseDistCoeffs,
 						this);
 }
 
-SceneFigure::SceneFigure(DirectX::XMVECTOR position,
+SceneFigure::SceneFigure(DirectX::XMFLOAT3 position,
 						 DirectX::XMVECTOR qtnRotation, float scale,
 						 fourByteUnsigned figType, DirectX::XMVECTOR* distCoeffs)
 {
-	coreFigure = Figure(position, 
+	coreFigure = Figure(DirectX::XMFLOAT4(position.x, position.y, position.z, scale),
 						DirectX::XMQuaternionInverse(qtnRotation),
-						scale, 
 						(fourByteUnsigned)figType, distCoeffs,
 						this);
 }

@@ -145,7 +145,7 @@ float CamDirPDFOut(float3 dir, // Outgoing ray direction
                    float sensArea) // Area of the sensor plane at [z == zProj])
 {
     float cosTheta = max(dot(camInfo.w, dir), 0.0f);
-    float distVec = dir / (dir.z / camInfo.w) / cosTheta;
+    float3 distVec = dir / (dir.z / camInfo.w) / cosTheta;
     float distSqr = dot(distVec,
                         distVec);
     return distSqr / (sensArea * cosTheta * cosTheta);

@@ -7,7 +7,7 @@ class System
 {
 	public:
 		System() {};
-		System(DirectX::XMVECTOR sysPos);
+		System(DirectX::XMFLOAT3 sysPos);
 		~System();
 
 		// Update the orbits of the items associated with [this]
@@ -17,7 +17,7 @@ class System
 		void Update();
 
 		// Retrieve the global position of [this]
-		DirectX::XMVECTOR GetPos();
+		DirectX::XMFLOAT3 GetPos();
 
 		// Retrieve a reference to the star associated with [this]
 		Star* GetStar();
@@ -34,6 +34,6 @@ class System
 	private:
 		Star* star;
 		Planet* planets[SceneStuff::MAX_NUM_SCENE_FIGURES - 1];
-		DirectX::XMVECTOR position;
+		DirectX::XMFLOAT3 position;
 };
 

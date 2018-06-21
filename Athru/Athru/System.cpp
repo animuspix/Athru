@@ -5,17 +5,20 @@
 // avoid actually simulating them for now and just stick to relatively
 // simple static renders
 
-System::System(DirectX::XMVECTOR sysPos)
+System::System(DirectX::XMFLOAT3 sysPos)
 {
 	// Temp distance coefficients (star)
-	DirectX::XMVECTOR starDistCoeffs[3S] = { _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
-											 _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
+	DirectX::XMVECTOR starDistCoeffs[3] = { _mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											_mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f),
+											_mm_set_ps(0.0f, 0.0f, 0.0f, 0.0f) };
 
-	DirectX::XMVECTOR starPos = sysPos;
+	DirectX::XMVECTOR starPos = _mm_set_ps(0.0f,
+										   sysPos.z,
+										   sysPos.y,
+										   sysPos.x);
 	float starRadius = 400.0f;
 	star = new Star(starRadius,
-					starPos,
+					sysPos,
 					starDistCoeffs);
 
 	// Create local planets
@@ -33,12 +36,15 @@ System::System(DirectX::XMVECTOR sysPos)
 
 		float radius = 100.0f;//(float)((rand() % 100) + 50); // Should introduce more accurate variance here
 		float offset = 1.5f;
+		float* planetPos = _mm_add_ps(_mm_set_ps(0,
+								      /*(radius * offset) + starRadius*/0, // Z-offsets are good, but hard to view with 0.1FPS performance :P
+								      0,
+								      (starRadius * float(i + 2))),
+								      starPos).m128_f32;
 		planets[i] = new Planet(radius,
-								_mm_add_ps(_mm_set_ps(0,
-													  /*(radius * offset) + starRadius*/0, // Z-offsets are good, but hard to view with 0.1FPS performance :P
-													  0,
-													  (starRadius * float(i + 2))),
-													  starPos),
+								DirectX::XMFLOAT3(planetPos[0],
+												  planetPos[1],
+												  planetPos[2]),
 								_mm_set_ps(1.0f, 0.0f, 0.0f, 0.0f),
 								planetDistCoeffs);
 	}
@@ -54,7 +60,7 @@ System::~System()
 void System::Update()
 {}
 
-DirectX::XMVECTOR System::GetPos()
+DirectX::XMFLOAT3 System::GetPos()
 {
 	return position;
 }

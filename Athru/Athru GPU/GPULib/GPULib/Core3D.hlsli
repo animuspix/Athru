@@ -307,7 +307,9 @@ float BoundingSurfTrace(float4 linTransf,
     }
 }
 
-// Return distance to an arbitrary figure
+// Return distance to an arbitrary figure (x) + the
+// distance function associated with the given
+// figure (y)
 float2 FigDF(float3 coord,
              float3 rayOri,
              bool useFigBounds,

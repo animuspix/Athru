@@ -5,6 +5,9 @@
 #ifndef RASTER_CAMERA_LINKED
 	#include "RasterCamera.hlsli"
 #endif
+#ifndef MATERIALS_LINKED
+    #include "Materials.hlsli"
+#endif
 
 // Evaluate the power heuristic for Multiple Importance Sampling (MIS);
 // used to balance importance-sampled radiances taken with different
@@ -42,45 +45,76 @@ float MISWeight(uint samplesDistroA,
 float BidirMISPDF(float2x4 inVt,
                   float2x4 outVt,
                   float2x3 dirs,
-                  float2 ioFigIDs,
-                  inout uint randVal,
-                  bool lightPath)
+                  float3 ioInfo, // Input figure ID in [x], output figure ID in [y],
+                                 // mollification radius (for specular interactions)
+                                 // in [z]
+                                 // Kaplanyan and Dachsbacher discuss an extra weight for
+                                 // BDPT that only mollifies the most distant vertices in
+                                 // the shortest candidate paths, but I wanted to avoid
+                                 // the preprocessing cost to discover those paths ahead
+                                 // of time; Athru just uses the standard mollification
+                                 // bandwidth and allows bias to fall over time (as the
+                                 // the bandwidth shrinks) instead
+                  bool2 pathInfo) // Whether integration is occurring on the light path (x) +
+                                  // whether to mollify specular interactions (y)
 {
     float pdf = 0;
-    switch(inVt[0].w)
+    bool cvtToArea = true;
+    switch(outVt[0].w)
     {
         // Camera in/out PDFs are defined over area by default, so no
         // need to convert probabilities in that case
         case DF_TYPE_LENS:
-            if (lightPath)
+            if (pathInfo.x)
             {
-                return CamAreaPDFOut();
+                pdf = CamAreaPDFOut();
             }
             else
             {
-                return CamAreaPDFIn(outVt[0].xyz - inVt[0].xyz,
-                                    dirs[1]);
+                pdf = CamAreaPDFIn(outVt[0].xyz - inVt[0].xyz,
+                                   dirs[1]);
             }
+            cvtToArea = false;
+            break;
         case DF_TYPE_STAR:
             pdf = StellarPosPDF();
             break;
         default: // Assume non-star, non-lens interfaces are valid scene materials
-            float2x3 ioDirs = float2x3(normalize(inVt[0].xyz - outVt[0].xyz),
+            float3 connVec = (inVt[0].xyz - outVt[0].xyz);
+            float ioDist = length(connVec);
+            float2x3 ioDirs = float2x3(connVec / ioDist,
                                        dirs[0]);
             pdf = MatPDF(ioDirs,
-                         float4(rayVec.xyz,
-                                lightPath),
+                         float4(outVt[0].xyz,
+                                pathInfo.x),
                          float4(outVt[1].w,
-                                float2(outVt[0].w, 
-                                       ioFigIDs.y),
+                                float2(outVt[0].w,
+                                       ioInfo.y),
                                 false));
+            if (pathInfo.y)
+            {
+                if (outVt[1].w == BXDF_ID_MIRRO ||
+                    outVt[1].w == BXDF_ID_REFRA)
+                {
+                    // Mollify reflection at [outVt]
+                    pdf = PSRMollify(ioInfo.z,
+                                     ioDirs,
+                                     ioDist);
+                }
+            }
             break;
     }
 
-    // Camera PDFs return early, so any values for [pdf] are guaranteed to be defined over solid-angle; convert + return
-    // those here
-    return pdf * AngleToArea(inVt[0].xyz,
-                             outVt[0].xyz,
-                             outVt[1].xyz,
-                             outVt[1].w == BXDF_ID_MEDIA);
+    // Convert [pdf] to a probability over area if appropriate
+    if (cvtToArea)
+    {
+        return pdf * AngleToArea(inVt[0].xyz,
+                                 outVt[0].xyz,
+                                 outVt[1].xyz,
+                                 outVt[1].w == BXDF_ID_VOLUM);
+    }
+    else
+    {
+        return pdf;
+    }
 }
