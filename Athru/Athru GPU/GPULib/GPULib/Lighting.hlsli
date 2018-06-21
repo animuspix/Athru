@@ -1,7 +1,9 @@
 
 #include "Core3D.hlsli"
 #include "LightingUtility.hlsli"
-#include "Materials.hlsli"
+#ifndef MATERIALS_LINKED
+    #include "Materials.hlsli"
+#endif
 #ifndef RASTER_CAMERA_LINKED
     #include "RasterCamera.hlsli"
 #endif

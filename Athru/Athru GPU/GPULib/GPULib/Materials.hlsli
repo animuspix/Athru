@@ -334,18 +334,21 @@ float3 MatDir(float3 oDir,
             return DiffuseDir(randVal);
         case BXDF_ID_MIRRO:
             // Generate a microfacet normal matching the GGX normal-distribution-function
-            float3 mNorml = GGXMicroNorml(oDir,
+            return SpecularDir(oDir,
+                               GGXMicroNorml(oDir,
                                           sqrt(MatInfo(float2x3(MAT_PROP_VARI,
                                                                 surfInfo.yz,
                                                                 coord)).x * 2.0f), // Convert to GGX variance here
-                                          randVal);
-            return SpecularDir(oDir,
-                               mNorml,
+                                          randVal),
                                randVal);
         case BXDF_ID_REFRA:
             // Remap refractions to perfect specular interactions for now...
             return SpecularDir(oDir,
-                               mNorml,
+                               GGXMicroNorml(oDir,
+                                          sqrt(MatInfo(float2x3(MAT_PROP_VARI,
+                                                                surfInfo.yz,
+                                                                coord)).x * 2.0f), // Convert to GGX variance here
+                                          randVal),
                                randVal);
         case BXDF_ID_VOLUM:
             return 0.0f.xxx;
@@ -386,11 +389,13 @@ float3 MatBXDF(float3 coord,
                                 thetaPhiIO);
         case BXDF_ID_REFRA:
             // Remap refractions to perfect specular interactions for now...
+            float2 sinCosThetaIRefr;
+            sincos(thetaPhiIO.x, sinCosThetaIRefr.x, sinCosThetaIRefr.y);
             return SpecularBRDF(float4(SurfFres(float4x3(prevFres,
 														 rgbToFres(MatInfo(float2x3(MAT_PROP_RGB,
 																					surfInfo.yz,
 																					coord)).rgb)),
-												sinCosThetaI),
+												sinCosThetaIRefr),
                                        MatInfo(float2x3(MAT_PROP_VARI,
                                                         surfInfo.yz,
                                                         coord)).x),

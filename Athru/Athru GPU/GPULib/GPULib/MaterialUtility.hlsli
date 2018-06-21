@@ -235,7 +235,7 @@ float3 GGXMicroNorml(float3 oDir,
     // handling for perfect mirrors here ^_^
     float3 ggxDir = normalize(float3(oDir.x * ggxVari,
                                      oDir.y,
-                                     oDir.z * ggxVari));
+                                     oDir.z * ggxVari) + EPSILON_MIN.xxx);
 
     // Generate GGX-specific UV values
     float2 ggxUV = float2(iToFloat(xorshiftPermu1D(randVal)),
@@ -277,7 +277,7 @@ float3 GGXMicroNorml(float3 oDir,
     }
 
     // Construct basis vectors for the space about [oDir]
-    float3 oSpaceX = normalize(cross(oDir, float3(0.0f, 1.0f, 0.0f)));
+    float3 oSpaceX = normalize(cross(oDir, float3(0.0f, 1.0f, 0.0f)) + EPSILON_MIN.xxx);
     float3 oSpaceZ = cross(oSpaceX, oDir);
 
     // Combine the previous values to project [ggxUV] onto the view-orthogonal
@@ -423,14 +423,14 @@ float3 RefractPos(float3 startPos,
             currRayDist += FigDF(rayVec,
                                  startPos,
                                  false,
-                                 figuresReadable[surfInfo.y]) * -1.0f; // We're moving *inside* scene figures, so make sure to
+                                 figuresReadable[surfInfo.y]).x * -1.0f; // We're moving *inside* scene figures, so make sure to
                                                                        // trace inverse PDFs here
         }
         return rayVec + refrDir * (adaptEps * 2.0f); // Translate the generated position just outside the SDF of the
                                                      // refracted figure (to prevent immediate occlusion during ray
                                                      // propagation through the scene)
     }
-    else if (surfInfo.x == BXDF_ID_VOLUM)
+    else // Volumetric scattering implied here, refraction through non-transmissive/volumetric materials is invalid
     {
         // Return the input position for now, will implement for multiple
         // scattering events later on...

@@ -238,7 +238,7 @@ float3x4 OccTest(float4 rayOri,
         float destDist = length(rayDest.xyz - rayVecs[0]); // Naive one-dimensional distance function for the point at
                                                            // [rayDest] as perceived by the explicit shadow ray
         bool hitDest = (destDist < adaptEps) ||
-                       ((sceneField[0] == rayDest.w) && rayOri.w); // Ignore figure matches if [rayOri.w] is [false]
+                       ((sceneField[0].z == rayDest.w) && rayOri.w); // Ignore figure matches if [rayOri.w] is [false]
         if ((sceneField[0].x < adaptEps ||
              hitDest) && actiVec[0])
         {
@@ -247,7 +247,7 @@ float3x4 OccTest(float4 rayOri,
                 // Assume rays that pass within [adaptEps] of the destination point or
                 // reach the target figure-ID are un-occluded and return [false]
                 occ = false;
-                endPos = rayDest; // Clip the intersection point into [rayDest]
+                endPos[0] = rayDest.xyz; // Clip the intersection point into [rayDest]
                 actiVec.x = false; // The main shadow ray reached the destination point,
                                    // so start ignoring it here
             }
@@ -289,7 +289,7 @@ float3x4 OccTest(float4 rayOri,
                     // cache the world-space position of the intersection point, and start
                     // ignoring [rayVecs[0]] here
                     occ = true;
-                    endPos = rayVecs[0];
+                    endPos[0] = rayVecs[0];
                     actiVec.x = false;
                 }
             }
@@ -328,11 +328,11 @@ float3x4 OccTest(float4 rayOri,
                         bxdfID == BXDF_ID_VOLUM)
                     {
                         // Update refracted ray direction
-                        misInfo = MatDir(misInfo.xyz,
-                                         rayVecs[1],
-                                         randVal,
-                                         uint3(bxdfID,
-                                               sceneField[1].zy));
+                        misInfo.xyz = MatDir(misInfo.xyz,
+                                             rayVecs[1],
+                                             randVal,
+                                             uint3(bxdfID,
+                                                   sceneField[1].zy));
 
                         // Update refracted ray position
                         rayVecs[1] = RefractPos(rayVecs[1],
