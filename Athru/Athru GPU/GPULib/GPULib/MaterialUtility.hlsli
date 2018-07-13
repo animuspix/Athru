@@ -92,7 +92,7 @@ float2x3 rgbToFres(float3 rgb)
 
 // Constant stellar brightness; might make this a [cbuffer] value
 // so I can vary it between systems
-#define STELLAR_BRIGHTNESS 8.0f
+#define STELLAR_BRIGHTNESS 80000000.0f
 
 // Stellar radiance at unit brightness; mostly just defined for
 // readability since any star bright enough to illuminate the
@@ -110,7 +110,7 @@ float2x3 rgbToFres(float3 rgb)
 // figure-ID in [0][z], and position in [1]
 float4 MatInfo(float2x3 query)
 {
-    switch (query[0].x)
+    switch (query[0].y)
     {
         case DF_TYPE_PLANET:
             switch (query[0].x)
@@ -134,8 +134,8 @@ float4 MatInfo(float2x3 query)
                     return float4(1.0f, 0.0f.xxx); // Stars are diffuse emitters
                 case MAT_PROP_RGB:
                     return STELLAR_BRIGHTNESS.xxxx; // Stars are bright enough to only emit
-                                                   // white light from a human perspective
-                                                   // (+ no redshifting in Athru)
+                                                    // white light from a human perspective
+                                                    // (+ no redshifting in Athru)
                 case MAT_PROP_VARI:
                     return 0.0f.xxxx; // Stars are assumed to have smooth surfaces
                 default:
@@ -423,7 +423,7 @@ float3 RefractPos(float3 startPos,
             currRayDist += FigDF(rayVec,
                                  startPos,
                                  false,
-                                 figuresReadable[surfInfo.y]).x * -1.0f; // We're moving *inside* scene figures, so make sure to
+                                 figuresReadable[surfInfo.y])[0].x * -1.0f; // We're moving *inside* scene figures, so make sure to
                                                                        // trace inverse PDFs here
         }
         return rayVec + refrDir * (adaptEps * 2.0f); // Translate the generated position just outside the SDF of the

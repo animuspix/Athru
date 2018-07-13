@@ -9,6 +9,10 @@
     #include "Materials.hlsli"
 #endif
 
+// Small flag to mark whether [this] has already been
+// included somewhere in the build process
+#define MIS_FNS_LINKED
+
 // Evaluate the power heuristic for Multiple Importance Sampling (MIS);
 // used to balance importance-sampled radiances taken with different
 // sampling strategies (useful for e.g. sampling arbitrary materials
@@ -22,16 +26,16 @@
 // strategies with exactly two distributions. Strategies with arbitrary
 // distributions (like e.g. BDPT vertex integration) should use
 // hard-coded MIS implementations instead
-float MISWeight(uint samplesDistroA,
+float MISWeight(float samplesDistroA,
                 float distroAPDF,
-                uint samplesDistroB,
+                float samplesDistroB,
                 float distroBPDF)
 {
     float distroA = samplesDistroA * distroAPDF;
     float distroB = samplesDistroB * distroBPDF;
     float distroASqr = distroA * distroA;
     float distroBSqr = distroB * distroB;
-    return distroASqr / (distroASqr * distroBSqr);
+    return distroASqr / (distroASqr + distroBSqr);
 }
 
 // Bi-directional MIS-specific PDF function; evaluates probabilities for

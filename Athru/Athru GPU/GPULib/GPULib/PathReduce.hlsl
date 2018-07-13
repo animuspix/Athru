@@ -92,7 +92,10 @@ void main(uint3 groupID : SV_GroupID,
         // Test pixels that didn't intersect planets/plants/animals
         // against the local star; shade any that *do* intersect
         // the star according to its emissivity
-        rgb = Emission(STELLAR_RGB, STELLAR_BRIGHTNESS);
+        // Lazy tonemapping to improve filtering here, will use smth more elegant
+        // later...
+        rgb = min(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS,
+                           length(figuresReadable[STELLAR_FIG_ID].linTransf.xyz - camPos) - figuresReadable[STELLAR_FIG_ID].linTransf.w), 8.0f.xxx);
     }
     else
     {

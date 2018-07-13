@@ -22,20 +22,20 @@ float4 main(Pixel pixIn) : SV_TARGET
 
     // Define randomly-screened pixels as the box-filtered average of their
     // immediate neighbours
-    if (currPx.a == RAND_PATH_REDUCTION)
-    {
-        // UV steps with x-increment in [xy] and y-increment in [zw]
-        float4 uvStep = float4(float2(1.0f / DISPLAY_WIDTH, 0.0f),
-                               float2(0.0f, 1.0f / DISPLAY_HEIGHT));
-        float4x3 nearPxls = float4x3(displayTex.Sample(wrapSampler, pixIn.texCoord + uvStep[0]).rgb,
-                                     displayTex.Sample(wrapSampler, pixIn.texCoord - uvStep[0]).rgb,
-                                     displayTex.Sample(wrapSampler, pixIn.texCoord + uvStep[1]).rgb,
-                                     displayTex.Sample(wrapSampler, pixIn.texCoord - uvStep[1]).rgb);
-        currPx.rgb = (nearPxls[0] +
-                      nearPxls[1] +
-                      nearPxls[2] +
-                      nearPxls[3]) / 4.0f;
-    }
+    //if (currPx.a == RAND_PATH_REDUCTION)
+    //{
+    //    // UV steps with x-increment in [xy] and y-increment in [zw]
+    //    float4 uvStep = float4(float2(1.0f / DISPLAY_WIDTH, 0.0f),
+    //                           float2(0.0f, 1.0f / DISPLAY_HEIGHT));
+    //    float4x3 nearPxls = float4x3(displayTex.Sample(wrapSampler, pixIn.texCoord + uvStep.xy).rgb,
+    //                                 displayTex.Sample(wrapSampler, pixIn.texCoord - uvStep.xy).rgb,
+    //                                 displayTex.Sample(wrapSampler, pixIn.texCoord + uvStep.zw).rgb,
+    //                                 displayTex.Sample(wrapSampler, pixIn.texCoord - uvStep.zw).rgb);
+    //    currPx.rgb = (nearPxls[0] +
+    //                  nearPxls[1] +
+    //                  nearPxls[2] +
+    //                  nearPxls[3]) / 4.0f;
+    //}
 
     // Pass the filtered screen texture into the display :)
     return currPx;

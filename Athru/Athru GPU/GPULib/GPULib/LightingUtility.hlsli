@@ -41,6 +41,7 @@
 struct BidirVert
 {
     float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
+    float4 dfOri; // Position of the figure associated with [this]; [w] is unused
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
     float4 norml; // Surface normal at [pos]; contains the local distance-function type/ID in [w]
     float4 ioSrs; // In/out ray directions, expressed as solid angles
@@ -49,6 +50,7 @@ struct BidirVert
 };
 
 BidirVert BuildBidirVt(float4 posFigID,
+                       float3 figPos,
                        float4 attenBXDFID,
                        float4 normlDFType,
                        float4 thetaPhiIO,
@@ -56,6 +58,7 @@ BidirVert BuildBidirVt(float4 posFigID,
 {
     BidirVert bdVt;
     bdVt.pos = posFigID;
+    bdVt.dfOri = float4(figPos, 0.0f);
     bdVt.atten = attenBXDFID;
     bdVt.norml = normlDFType;
     bdVt.ioSrs = thetaPhiIO;
@@ -81,105 +84,67 @@ struct BidirVtPair
 // the local star
 // Development only, release builds should use a constant [0.0f.xxx] background color
 // (no human-visible light in space beyond emittance from the local star)
-#define AMB_RGB 0.125f.xxx
-
-// PDF associated with [PRayStellarSurfPos(...)], represents the probability of
-// selecting a direction through the section of the stellar surface with
-// absolute y-values below [MAX_PLANETARY_RING_HEIGHT]
-float PRayStellarPosPDF(float starSize)
-{
-    // Evaluate stellar circumference at [y = MAX_PLANETARY_RING_HEIGHT]
-    // and [y = 0]
-    float c = (starSize - MAX_PLANETARY_RING_HEIGHT) * TWO_PI;
-
-    // Evaluate the area of the emissive band as the circumference multiplied
-    // by [MAX_PLANETARY_RING_HEIGHT]
-    float a = c * MAX_PLANETARY_RING_HEIGHT;
-
-    // Divide out squared radius to get the total solid angle within the
-    // emissive area, then return the final PDF as it's reciprocal
-    // (emitted rays are assumed to pass through some solid-angle region
-    // as they leave the (spherical) stellar surface)
-    return (starSize * starSize) / a;
-}
+#define AMB_RGB 0.0f.xxx
 
 // PDF associated with [StellarSurfPos(...), represents the probability of
-// selecting any position within the spherical distribution covering the
-// entire stellar surface
+// selecting any position within the (hemispheric) distribution described
+// by [StellarSurfPos(...)]
 float StellarPosPDF()
 {
-    return 1.0f / FOUR_PI;
+    return 1.0f / TWO_PI;
 }
 
-// A function to generate arbitrary positions on the local star;
-// slightly less efficient than [PRayStellarSurfPos] for primary ray
-// emission but much better for light gathers because it samples
-// from a larger domain (=> lower chance for occlusion between scene
-// surfaces and generated points on the star)
-float3 StellarSurfPos(float starSize,
-                      float3 starPos,
-                      float3 randUVW)
+// A function to generate unpredictable emission/sample positions on
+// the local star; positions are importance-sampled by limiting sampling
+// to positions in the same hemisphere as the target figure
+float3 StellarSurfPos(float4 starInfo, // Position in [xyz], size in [w]
+                      uint randVal,
+                      float3 targFigPos)
 {
-    return (normalize(randUVW) * starSize) + starPos;
-}
+    //return (normalize(float3(iToFloat(xorshiftPermu1D(randVal)),
+    //                         iToFloat(xorshiftPermu1D(randVal)),
+    //                         iToFloat(xorshiftPermu1D(randVal)))) * starInfo.w) + starInfo.xyz;;
+    // Generate initial direction (this chooses our sampling hemisphere)
+    float3 targVec = (starInfo.xyz - targFigPos);
 
-// Generate an importance-sampled source position for
-// primary rays leaving the local star
-// [starLinTransf] has star-position in [xyz], star size
-// in [w]
-float3 PRayStellarSurfPos(float4 starLinTransf,
-                          float3 randUVW)
-{
-    // Scale [v] to the interval [0...MAX_Y]
-    float yPos = randUVW.y * MAX_PLANETARY_RING_HEIGHT;
+    // Generate random planar samples in the range [-starInfo.w...starInfo.w]
+    float2 randUV = ((float2(iToFloat(xorshiftPermu1D(randVal)),
+                             iToFloat(xorshiftPermu1D(randVal))) * 2.0f.xx) - 1.0f.xx) * starInfo.w;
 
-    // Place [u, w] on the circle where y = [yPos]
-    float2 xzPos = normalize(randUVW.xz) *
-                   (starLinTransf.w - (abs(yPos) - starLinTransf.y));
+    // System figures will always be coplanar with [XZ], so the sampling hemisphere
+    // must be coplanar with [y]; cache appropriate jitter here
+    float3 yJitter = float3(0.0f, randUV.y, 0.0f); // [randUV] is assumed signed (range [-1.0...1.0])
 
-    // Construct a spherical position from the generated values,
-    // then return the result
-    return float3(xzPos.x, yPos, xzPos.y);
-}
+    // The local-x direction within the sampling plane (i.e. the direction coplanar with the
+    // sampling hemisphere and orthogonal to [y]) must be orthogonal to [targVec] AND [y], so we
+    // can construct it with the cross-product; generate appropriate jitter and cache that
+    // direction here
+    float3 localXJitter = cross(normalize(targVec), float3(0.0f, 1.0f, 0.0f)) * randUV.x; // [randUV] is assumed signed (range [-1.0...1.0])
 
-// Generate an importance-sampled outgoing ray direction
-// from the local star towards a given point
-float3 StellarDir(float3 stellarSurfPos,
-                  float3 samplePoint)
-{
-    // Taking advantage of analytical spherical normals
-    // here (n = normalize(p - centroP))
-    return normalize(stellarSurfPos - samplePoint);
+    // Apply the jittered directions to the original target vector, then normalize, scale back to
+    // the star's radius, and offset to the star's position
+    return (normalize(targVec + yJitter + localXJitter) * starInfo.w) + starInfo.xyz;
 }
 
 // Radiance at the given point due to direct illumination from some other
 // point in the scene
-float3 DirIllumRadiance(float3 traceVec,
+float3 DirIllumRadiance(float3 traceDir,
                         float3 localNorm,
                         float3 lightRGB,
-                        float3 lightPos,
                         float distToLight,
                         float lightPow)
 {
-    // Extract the local light direction
-    // Stars are represented by spheres, and spheres
-    // are known to have normals exactly equivalent
-    // to points in their local space; that means we
-    // can optimize out the call to our explicit
-    // gradient function and use simple vector math
-    // instead
-    float3 lightDir = normalize(lightPos - traceVec);
-
     // Calculate lighting coefficients
-    float nDotL = dot(localNorm, lightDir); // Vector interpretation of [cos(theta)]
+    float nDotL = dot(localNorm, traceDir);
     float distToLightSqr = (distToLight * distToLight);
     float3 invSquare = (lightPow / (FOUR_PI * distToLightSqr));
 
     // Calculate + store directly-illuminated color
     // Will (eventually) remove saturation here and use aperture settings
     // to control exposure levels instead
-    return saturate(lightRGB * // RGB light spectrum/color
-                   (invSquare * nDotL)); // Attenuation
+    return 1.0f.xxx // RGB light spectra/color
+           * invSquare // Distance attenuation
+           * nDotL; // Attenuation for facing ratio
 }
 
 // Return emitted spectra in RGB format for the given light source; can
@@ -187,9 +152,122 @@ float3 DirIllumRadiance(float3 traceVec,
 // irradiated point is perfectly transmittant + sitting on the surface
 // of the given light source
 float3 Emission(float3 srcRGB,
-                float3 srcBrightness)
+                float3 srcBrightness,
+                float distance)
 {
-    return srcRGB * srcBrightness;
+    return (srcRGB * srcBrightness) /
+           (FOUR_PI * max(distance * distance, 1.0f));
+}
+
+// ID's of different light types in Athru
+// Only stellar light sources defined for now...
+#define LIGHT_ID_STELLAR 0
+
+// Probability of selecting any solid angle within the
+// unit hemisphere; equivalent to the constant probability
+// density for rays sampled uniformly over hemispheric
+// distributions
+// Used because light emission directions can't logically
+// be thoroughly occluded, so working with a
+// cosine-weighted hemisphere doesn't offer the same
+// sampling optimization as it does for diffuse surface
+// reflection
+float DiffuseLiPDF()
+{
+    return 1.0f / TWO_PI;
+}
+
+// Diffuse emission profile; uses a full hemispheric distribution
+// instead of the cosine-weighted distribution chosen for sampling
+// diffuse reflection
+// Algorithm taken from page 775 of Physically Based Rendering: From
+// Theory to Implementation, Third Edition (Pharr, Jakob, Humphreys)
+float3 DiffuseLiDir(uint randVal)
+{
+    // Generate random sample values
+    float2 uv = float2(iToFloat(xorshiftPermu1D(randVal)),
+                       iToFloat(xorshiftPermu1D(randVal)));
+
+    // Generate a scaling factor to keep [x,z] parameters at the hemisphere
+    // surface regardless of the value generated for [uv.x] (taken as the
+    // y-position/sample altitude later on)
+    float r = sqrt(1.0f - (uv.x * uv.x));
+
+    // Generate [x,z] directions from the azimuthal angle ([phi]) + the
+    // sample value at [uv.y]
+    float2 xZ = (2.0f * PI * uv.y).xx;
+    sincos(xZ.x, xZ.x, xZ.y);
+
+    // Scale the generated directions out to [r]
+    xZ *= r.xx;
+
+    // Generate final direction vector (probably don't need to normalize, but
+    // but aren't micro-optimizing atm and don't want to think about scaling bugs
+    // rn anyway :P)
+    return normalize(float3(xZ.x,
+                            uv.x,
+                            xZ.y));
+}
+
+// Probabilities for each illumination profile accessed by [LightEmitDir]; only defined for
+// stellar light sources atm
+float LightEmitPDF(uint lightID)
+{
+    switch (lightID)
+    {
+        case LIGHT_ID_STELLAR:
+            return DiffuseLiPDF();
+        default:
+            return DiffuseLiPDF();
+    }
+}
+
+// Direction generator for light emissions; diffuse directions are
+// assumed for all lights atm (might consider more illumination
+// profiles later on...)
+float3 LightEmitDir(uint lightID,
+                    uint randVal)
+{
+    switch (lightID)
+    {
+        case LIGHT_ID_STELLAR:
+            return DiffuseLiDir(randVal); // Stellar light sources are hemispheric diffuse emitters
+        default:
+            return DiffuseLiDir(randVal); // Assume hemispheric diffuse emission by default
+    }
+}
+
+// Probabilities for each light sampler accessed by [LightSurfPos]; only defined for
+// stellar light sources atm
+float LightPosPDF(uint lightID)
+{
+    switch (lightID)
+    {
+        case LIGHT_ID_STELLAR:
+            return StellarPosPDF();
+        default:
+            return StellarPosPDF();
+    }
+}
+
+// Standardized light sampler; allows a single interface for arbitrary
+// illuminant types (stars, phosphorescent minerals, glowy plants/animals/fungi, etc.)
+float3 LightSurfPos(uint lightID,
+                    float4 lightInfo, // Light position (in [xyz]) and size (in [w])
+                    float3 targFigPos,
+                    uint randVal)
+{
+    switch (lightID)
+    {
+        case LIGHT_ID_STELLAR:
+            return StellarSurfPos(lightInfo,
+                                  randVal,
+                                  targFigPos);
+        default:
+            return StellarSurfPos(lightInfo,
+                                  randVal,
+                                  targFigPos); // Assume stellar light sources by default
+    }
 }
 
 // Simple occlusion function, traces a shadow ray between two points to test
@@ -201,179 +279,105 @@ float3 Emission(float3 srcRGB,
 // true => intersected geometry between [rayOri] and [rayDest]), and
 // [2].xyzw contains the figure ID associated with the ray's intersection
 // point (if any)
-// [rayDest] carries the destination point in [xyz] and the target
-// figure-ID in [w]
-// [misInfo] carries a BXDF-sampled direction in [xyz] and whether or not
-// to to trace a MIS ray in [w]
+// [rayDir] carries a ray direction in [xyz] and the target figure-ID in
+// [w]
 // [rayOri] carries whether or not to occlude on refraction in [w] and the ray
 // origin in [xyz]
+// [rayDest] carries a specific ray destination in [xyz] (required for bi-directional
+// connection) and whether to validate against ray destinations instead of figure-IDs
+// in [w]
 #define MAX_OCC_MARCHER_STEPS 256
 float3x4 OccTest(float4 rayOri,
+                 float4 rayDir,
                  float4 rayDest,
-                 float4 misInfo,
-                 out float3x4 misOcc,
                  float adaptEps,
                  inout uint randVal)
 {
-    float3 rayDir = normalize(rayDest.xyz - rayOri.xyz);
-    float2 currRayDist = (adaptEps * 2.0f).xx;
-    bool2 occ = true.xx;
-    bool2 actiVec = bool2(true.x, misInfo.w); // Whether or not either ray is propagating through the scene
-    float2x3 endPos = float2x3(rayDest.xyz, 0.0f.xxx);
-    uint2 nearID = 0x11.xx;
+    // High surface repulsion here, many bounces will be close to
+    // parallel with the scene surface
+    float currRayDist = (adaptEps * 16.0f);
+    bool occ = true;
+    float3 endPos = rayOri.xyz;
+    uint nearID = 0x11;
     float refrLoss = 0.0f; // Total energy lost from refraction between [rayOri]
                            // and the target figure
-    while (any(actiVec))
+    for (int i = 0; i < MAX_OCC_MARCHER_STEPS; i += 1)
     {
-        float2x3 rayVecs = float2x3((rayDir * currRayDist.x) + rayOri.xyz,
-                                    (misInfo.xyz * currRayDist.y) + rayOri.xyz);
-        float2x3 sceneField = float2x3(SceneField(rayVecs[0],
-                                                  rayOri.xyz,
-                                                  true,
-                                                  FILLER_SCREEN_ID), // Filler filter ID
-                                       SceneField(rayVecs[1],
-                                                  rayOri.xyz,
-                                                  true,
-                                                  FILLER_SCREEN_ID)); // Filler filter ID
-        float destDist = length(rayDest.xyz - rayVecs[0]); // Naive one-dimensional distance function for the point at
-                                                           // [rayDest] as perceived by the explicit shadow ray
-        bool hitDest = (destDist < adaptEps) ||
-                       ((sceneField[0].z == rayDest.w) && rayOri.w); // Ignore figure matches if [rayOri.w] is [false]
-        if ((sceneField[0].x < adaptEps ||
-             hitDest) && actiVec[0])
+        float3 rayVec = float3((rayDir.xyz * currRayDist) + rayOri.xyz);
+        float2x3 sceneField = SceneField(rayVec,
+                                         rayOri.xyz,
+                                         true,
+                                         FILLER_SCREEN_ID); // Filler filter ID
+        float destPtDist = length(rayDest.xyz - rayVec);
+        bool hitDest = (sceneField[0].y == rayDir.w); // Check if incident figures/points match the destination figure/point
+        if (rayDest.w) { hitDest = (destPtDist < adaptEps); } // Uncomfortable with this layout, considering revising
+        if (sceneField[0].x < adaptEps ||
+            destPtDist < adaptEps)
         {
             if (hitDest)
             {
-                // Assume rays that pass within [adaptEps] of the destination point or
-                // reach the target figure-ID are un-occluded and return [false]
+                // Assume rays that reach the target figure-ID are un-occluded and return
+                // [false]
                 occ = false;
-                endPos[0] = rayDest.xyz; // Clip the intersection point into [rayDest]
-                actiVec.x = false; // The main shadow ray reached the destination point,
-                                   // so start ignoring it here
+                // Clip the intersection point into [rayDest] if validating against ray destinations; otherwise
+                // set it to [rayVec]
+                if (rayDest.w) { endPos = rayDest.xyz; }
+                else { endPos = rayVec; }
             }
-            else if (rayOri.w)
+            else
             {
                 // Find the BXDF-ID at the intersection point
                 uint bxdfID = MatBXDFID(MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
                                                          sceneField[0].zy,
-                                                         rayVecs[0])),
+                                                         rayVec)),
                                         randVal);
 
                 // Pass through refractive surfaces
                 // Invoke a transmittance check here (not all rays will have enough energy
                 // left to pass through the surface)
-                if (bxdfID == BXDF_ID_REFRA ||
-                    bxdfID == BXDF_ID_VOLUM)
+                if ((bxdfID == BXDF_ID_REFRA ||
+                     bxdfID == BXDF_ID_VOLUM) &&
+                    !rayOri.w)
                 {
                     // Update refracted ray direction
-                    rayDir = MatDir(rayDir,
-                                    rayVecs[0],
-                                    randVal,
-                                    uint3(bxdfID,
-                                          sceneField[1].zy));
+                    rayDir.xyz = MatDir(rayDir.xyz,
+                                        rayVec,
+                                        randVal,
+                                        uint3(bxdfID,
+                                              sceneField[0].zy));
 
                     // Update refracted ray position
-                    rayVecs[1] = RefractPos(rayVecs[0],
-                                            rayDir,
-                                            float3(bxdfID,
-                                                   sceneField[1].zy),
-                                            adaptEps,
-                                            randVal);
-
-                    // Reset MIS ray distance
-                    currRayDist.y = 0.0f;
+                    rayVec = RefractPos(rayVec,
+                                        rayDir.xyz,
+                                        float3(bxdfID,
+                                               sceneField[0].zy),
+                                        adaptEps,
+                                        randVal);
                 }
                 else
                 {
-                    // The main shadow ray was occluded by [sceneField[0].z], so return [false]
-                    // cache the world-space position of the intersection point, and start
-                    // ignoring [rayVecs[0]] here
+                    // The shadow ray was occluded by [sceneField[0].z], so return [true] and
+                    // cache the world-space position of the intersection point
                     occ = true;
-                    endPos[0] = rayVecs[0];
-                    actiVec.x = false;
+                    endPos = rayVec;
                 }
             }
 
             // Cache the figure-ID associated with intersection point
             nearID.x = (uint)sceneField[0].y;
-            actiVec.x == false;
+            break;
         }
-        else if (actiVec.y)
-        {
-            // Check for occlusion along the implicit shadow ray
-            // Implicit shadow rays can be safely refracted (since they aren't assoicated with
-            // a defined target point), so handle that case here as well
-            if (sceneField[1].x < adaptEps)
-            {
-                // Find the BXDF-ID at the intersection point
-                uint bxdfID = MatBXDFID(MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
-                                                         sceneField[1].zy,
-                                                         rayVecs[1])),
-                                        randVal);
-                if (sceneField[1].z == rayDest.w)
-                {
-                    // The MIS ray reached the target figure, so write out MIS occlusion
-                    // information and start ignoring it here
-                    occ.y = false;
-                    nearID = sceneField[1].z;
-                    endPos[1] = rayVecs[1];
-                    actiVec.y = false;
-                }
-                else
-                {
-                    // Pass through refractive surfaces
-                    // Invoke a transmittance check here (not all rays will have enough energy
-                    // left to pass through the surface)
-                    if (bxdfID == BXDF_ID_REFRA ||
-                        bxdfID == BXDF_ID_VOLUM)
-                    {
-                        // Update refracted ray direction
-                        misInfo.xyz = MatDir(misInfo.xyz,
-                                             rayVecs[1],
-                                             randVal,
-                                             uint3(bxdfID,
-                                                   sceneField[1].zy));
 
-                        // Update refracted ray position
-                        rayVecs[1] = RefractPos(rayVecs[1],
-                                                misInfo.xyz,
-                                                float3(bxdfID,
-                                                       sceneField[1].zy),
-                                                adaptEps,
-                                                randVal);
-
-                        // Reset MIS ray distance
-                        currRayDist.y = 0.0f;
-                    }
-                    else
-                    {
-                        // The MIS ray was occluded by [sceneField[1].z], so write out MIS occlusion
-                        // information and start ignoring it here
-                        occ.y = true;
-                        nearID = sceneField[1].z;
-                        endPos[1] = rayVecs[1];
-                        actiVec.y = false;
-                    }
-                }
-            }
-
-            // No intersections yet + [rayVec] hasn't passed within [adaptEps] units
-            // of [rayDest]; continue marching through the scene
-            currRayDist += float2(min(sceneField[0].x, destDist),
-                                  sceneField[1].x);
-        }
+        // No intersections yet + [rayVec] hasn't passed within [adaptEps] units
+        // of [rayDest]; continue marching through the scene
+        if (!rayDest.w) { currRayDist += sceneField[0].x; }
+        else { currRayDist += min(sceneField[0].x, destPtDist); }
     }
 
     // Return occlusion information for the given context
-    // MIS occlusion is returned in [misOcc], see above
-    misOcc = float3x4(misInfo.xyz,
-                      currRayDist.y,
-                      endPos[1],
-                      occ.y,
-                      nearID.yyyy);
-    return float3x4(rayDir,
-                    currRayDist.x,
-                    endPos[0],
-                    occ.x,
+    return float3x4(rayDir.xyz,
+                    currRayDist,
+                    endPos,
+                    occ,
                     nearID.xxxx);
 }

@@ -11,8 +11,8 @@ float3 AnglesToVec(float2 thetaPhi)
     sincos(thetaPhi.x, thetaPhiSiCo.x, thetaPhiSiCo.y);
     sincos(thetaPhi.y, thetaPhiSiCo.z, thetaPhiSiCo.w);
     return float3(thetaPhiSiCo.x * thetaPhiSiCo.w,
-                  thetaPhiSiCo.y,
-                  thetaPhiSiCo.x * thetaPhiSiCo.z);
+                  thetaPhiSiCo.x * thetaPhiSiCo.z,
+                  thetaPhiSiCo.y);
 }
 
 // Converts the given Cartesian vector to normalized spherical (theta, phi) coordinates;
@@ -22,8 +22,8 @@ float2 VecToAngles(float3 rayVec)
 {
     // Extract spherical coordinates, then return the result
     // Conversion function assumes y-up
-    return float2(acos(rayVec.y),
-                  atan(rayVec.z / rayVec.x));
+    return float2(acos(rayVec.z),
+                  atan(rayVec.y / rayVec.x));
 }
 
 // Generates input/output spherical angles for
@@ -102,6 +102,30 @@ float3x3 NormalSpace(float3 normal)
                     normal,
                     normalize(cross(normal, basisX)));
 }
+
+// Small convenience function for 3x3 matrix inverses
+// 3x3-specific inversion algorithm from
+// https://www.wikihow.com/Find-the-Inverse-of-a-3x3-Matrix
+//float3x3 MatInv(float3x3 mat)
+//{
+//    // Find 3D determinant of the initial matrix
+//    float det3D = determinant(mat);
+//    mat = transpose(mat); // Tranpose [mat]
+//    if (det3D == 0) { return mat; } // Return the transpose for matrices with no valid inverse
+//
+//    // Generate cofactor matrix
+//    // 1 0 0
+//    // 0 1 0
+//    // 0 0 1
+//    float3x3 cofMat = float3x3(determinant(float2x2(mat._22_23_32_33)), determinant(float2x2(mat._21_32_13_33)), determinant(float2x2(mat._12_22_13_23)),
+//                               determinant(float2x2(mat._21_31_32_33)), determinant(float2x2(mat._21_32_13_33)), determinant(float2x2(mat._21_32_13_33)),
+//                               determinant(float2x2(mat._21_21_22_23)), determinant(float2x2(mat._21_32_13_33)), determinant(float2x2(mat._21_32_13_33)));
+//
+//    // Alter signs as appropriate, apply the inverse 3D determinant, then return
+//    return cofMat * float3x3(1.0f, -1.0f, 1.0f,
+//                             -1.0f, 1.0f, -1.0f,
+//                             1.0f, -1.0f, 1.0f) / det3D;
+//}
 
 // Physically-correct path tracing is strictly defined in terms of area, but it's often
 // more convenient to use integrals over solid angle instead; this function provides a

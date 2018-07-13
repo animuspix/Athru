@@ -16,7 +16,7 @@
 // Probability density function (PDF) for directions sampled over diffuse surfaces
 float DiffusePDF(float thetaO)
 {
-    return cos(thetaO) / PI;
+    return abs(cos(thetaO)) / PI;
 }
 
 // Importance-sampled ray generator for diffuse surfaces
@@ -336,10 +336,10 @@ float3 MatDir(float3 oDir,
             // Generate a microfacet normal matching the GGX normal-distribution-function
             return SpecularDir(oDir,
                                GGXMicroNorml(oDir,
-                                          sqrt(MatInfo(float2x3(MAT_PROP_VARI,
-                                                                surfInfo.yz,
-                                                                coord)).x * 2.0f), // Convert to GGX variance here
-                                          randVal),
+                                             sqrt(MatInfo(float2x3(MAT_PROP_VARI,
+                                                                   surfInfo.yz,
+                                                                   coord)).x * 2.0f), // Convert to GGX variance here
+                                             randVal),
                                randVal);
         case BXDF_ID_REFRA:
             // Remap refractions to perfect specular interactions for now...
@@ -403,7 +403,7 @@ float3 MatBXDF(float3 coord,
         case BXDF_ID_VOLUM:
             return 0.0f.xxx; // No defined BXDF for participating media yet
         default:
-            return 1.0f.xxx / PI; // Assume white Lambert surfaces for undefined [BXDFs]
+            return (1.0f.xxx / PI); // Assume white Lambert surfaces for undefined [BXDFs]
     }
 }
 

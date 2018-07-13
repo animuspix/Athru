@@ -72,8 +72,8 @@ RWStructuredBuffer<Figure> figuresWritable : register(u0);
 // Core distance function found within:
 // http://www.iquilezles.org/www/articles/distfunctions/distfunctions.htm
 float CubeDF(float3 coord,
-              float4 linTransf,
-              float4 rotationQtn)
+             float4 linTransf,
+             float4 rotationQtn)
 {
     // Transformations (except scale) applied here
     float3 shiftedCoord = coord - linTransf.xyz;
@@ -130,18 +130,19 @@ float LensDF(float3 coord,
 
 #include "Fractals.hlsli"
 
-// Return distance to the given planet
-float PlanetDF(float3 coord,
-               Figure planet)
+// Return distance to the given planet (in [x]), also planet position for the
+// current time (in [yzw])
+float4 PlanetDF(float3 coord,
+                Figure planet)
 {
-    // Calculate a trivial planetary orbit for the current time,
-    // then apply it to the figure origin
-    float3 orbiVec = float3(cos(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.x,
-                            0.0f,
-                            sin(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.z);
+    // Calculate a trivial planetary orbit for the current time
+    float3 planetPos = float3(cos(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.x,
+                              0.0f,
+                              sin(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.z) +
+                       planet.linTransf.xyz;
 
-    // Translate rays to match the planet's orbit + the origin of the local star
-    coord -= planet.linTransf.xyz; //figuresReadable[0].pos.xyz + orbiVec; // Working orbit, disabled until I get a more powerful testing computer
+    // Translate rays to match the planet's orbit
+    coord -= planetPos;
 
     // Concatenate local planetary spin for the current time into the
     // figure's rotation, then orient incoming rays appropriately
@@ -179,24 +180,29 @@ float PlanetDF(float3 coord,
     // same actual value) our scaling after evaluating the distance
     // estimator; this ensures that initial distances will be scaled (since
     // we applied the division /before/ sampling the field)
-    return (0.5 * log(r) * r / dr) * planet.linTransf.w;
+    return float4((0.5 * log(r) * r / dr) * planet.linTransf.w,
+                  planetPos); // Orbital planet position
+
 }
 
-// Return distance to the given plant
-float PlantDF(float3 coord,
-              float4 linTransf)
+// Return distance to the given plant (in [x]) and plant position
+// (in [yzw])
+float4 PlantDF(float3 coord,
+               float4 linTransf)
 {
     // Render plants as simple cylinders for now
-    return CylinderDF(coord, float2(linTransf.w, linTransf.w / 2.0f));
+    return float4(CylinderDF(coord, float2(linTransf.w, linTransf.w / 2.0f)),
+                  linTransf.xyz); // Non-displaced figure position (no transformations for now)
 }
 
-// Return distance to the given critter
-float CritterDF(float3 coord,
-                Figure critter)
+// Return distance to the given critter (in [x]) and critter position (in [yzw])
+float4 CritterDF(float3 coord,
+                 float4 linTransf)
 {
-    return CubeDF(coord,
-                  critter.linTransf,
-                  critter.rotationQtn);
+    return float4(CubeDF(coord,
+                         linTransf,
+                         Qtn(float3(0.0f, 1.0f, 0.0f), sin(timeDispInfo.y))),
+                    linTransf.xyz); // Non-displaced figure position (no transformations for now)
 }
 
 float CubeDFProcedural(float3 coord,
@@ -307,13 +313,17 @@ float BoundingSurfTrace(float4 linTransf,
     }
 }
 
-// Return distance to an arbitrary figure (x) + the
+// Return distance to an arbitrary figure ([0].x) + the
 // distance function associated with the given
-// figure (y)
-float2 FigDF(float3 coord,
-             float3 rayOri,
-             bool useFigBounds,
-             Figure fig)
+// figure ([0].y) ([z] is unused)
+// [1] carries the world-space origin for
+// each figure (known ahead of time for stars, but
+// not for procedurally-displaced figures like planets,
+// critters, plants, etc.)
+float2x3 FigDF(float3 coord,
+               float3 rayOri,
+               bool useFigBounds,
+               Figure fig)
 {
     if (useFigBounds &&
         !BoundingSurfTrace(fig.linTransf,
@@ -321,29 +331,41 @@ float2 FigDF(float3 coord,
                            coord,
                            rayOri))
     {
-        return float2(MAX_RAY_DIST,
-                      fig.self.x);
+        return float2x3(MAX_RAY_DIST,
+                        fig.self.x,
+                        0.0f,
+                        coord);
     }
     else
     {
         switch(fig.self.x)
         {
             case DF_TYPE_PLANET:
-                return float2(SphereDF(coord,
-                                       fig.linTransf),
-                              fig.self.x);
+                return float2x3(SphereDF(coord,
+                                         fig.linTransf),
+                                fig.self.x,
+                                0.0f, // No info for [z] atm...
+                                fig.linTransf.xyz); // No planetary displacement during debugging
             case DF_TYPE_STAR:
-                return float2(SphereDF(coord,
+                return float2x3(SphereDF(coord,
                                        fig.linTransf),
-                              fig.self.x);
+                                fig.self.x,
+                                0.0f,
+                                fig.linTransf.xyz); // Stars never leave the system origin
             case DF_TYPE_PLANT:
-                return float2(PlantDF(coord,
-                                      fig.linTransf),
-                              fig.self.x);
+                float4 plantDF = PlantDF(coord,
+                                         fig.linTransf); // Locally-cached DF for easy reordering at return
+                return float2x3(plantDF.x,
+                                fig.self.x,
+                                0.0f,
+                                plantDF.yzw);
             default:
-                return float2(CritterDF(coord,
-                                        fig),
-                              fig.self.x);
+                float4 critterDF = CritterDF(coord,
+                                             fig.linTransf); // Locally-cached DF for easy reordering at return
+                return float2x3(critterDF.x,
+                                fig.self.x,
+                                0.0f,
+                                critterDF.yzw);
         }
     }
 }
@@ -359,10 +381,10 @@ float4 tetGrad(float3 samplePoint,
                Figure fig)
 {
     float2 e = float2(-1.0f, 1.0f) * adaptEps;
-    float t1 = FigDF(samplePoint + e.yxx, 0.0f.xxx, false, fig).x;
-    float t2 = FigDF(samplePoint + e.xxy, 0.0f.xxx, false, fig).x;
-    float t3 = FigDF(samplePoint + e.xyx, 0.0f.xxx, false, fig).x;
-    float t4 = FigDF(samplePoint + e.yyy, 0.0f.xxx, false, fig).x;
+    float t1 = FigDF(samplePoint + e.yxx, 0.0f.xxx, false, fig)[0].x;
+    float t2 = FigDF(samplePoint + e.xxy, 0.0f.xxx, false, fig)[0].x;
+    float t3 = FigDF(samplePoint + e.xyx, 0.0f.xxx, false, fig)[0].x;
+    float t4 = FigDF(samplePoint + e.yyy, 0.0f.xxx, false, fig)[0].x;
 
     float3 gradVec = t1 * e.yxx +
                      t2 * e.xxy +
@@ -380,12 +402,12 @@ float4 grad(float3 samplePoint,
             float adaptEps,
 			Figure fig)
 {
-    float gradXA = FigDF(float3(samplePoint.x + adaptEps, samplePoint.y, samplePoint.z), 0.0f.xxx, false, fig).x;
-    float gradXB = FigDF(float3(samplePoint.x - adaptEps, samplePoint.y, samplePoint.z), 0.0f.xxx, false, fig).x;
-    float gradYA = FigDF(float3(samplePoint.x, samplePoint.y + adaptEps, samplePoint.z), 0.0f.xxx, false, fig).x;
-    float gradYB = FigDF(float3(samplePoint.x, samplePoint.y - adaptEps, samplePoint.z), 0.0f.xxx, false, fig).x;
-    float gradZA = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z + adaptEps), 0.0f.xxx, false, fig).x;
-    float gradZB = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z - adaptEps), 0.0f.xxx, false, fig).x;
+    float gradXA = FigDF(float3(samplePoint.x + adaptEps, samplePoint.y, samplePoint.z), 0.0f.xxx, false, fig)[0].x;
+    float gradXB = FigDF(float3(samplePoint.x - adaptEps, samplePoint.y, samplePoint.z), 0.0f.xxx, false, fig)[0].x;
+    float gradYA = FigDF(float3(samplePoint.x, samplePoint.y + adaptEps, samplePoint.z), 0.0f.xxx, false, fig)[0].x;
+    float gradYB = FigDF(float3(samplePoint.x, samplePoint.y - adaptEps, samplePoint.z), 0.0f.xxx, false, fig)[0].x;
+    float gradZA = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z + adaptEps), 0.0f.xxx, false, fig)[0].x;
+    float gradZB = FigDF(float3(samplePoint.x, samplePoint.y, samplePoint.z - adaptEps), 0.0f.xxx, false, fig)[0].x;
 
     float3 gradVec = float3(gradXA - gradXB,
                             gradYA - gradYB,
@@ -395,77 +417,59 @@ float4 grad(float3 samplePoint,
     return float4(gradVec / gradMag, gradMag);
 }
 
-// Heterogeneity-preserving [min] function
-// Returns the smaller of two numbers, along with
-// an ID value + distance-field type associated
-// with the smaller number
-// It isn't really possible to re-organise data
-// returned by [FigDF], so [this] takes interleaved
-// distances and DF types; [xDFyDF] can be seen
-// as a tuple of two [float2]s each carrying
-// distance values in [x] and distance-field types
-// in [y]
-float3 trackedMin(float4 xDFyDF,
-                  uint2 ids)
+// Heterogeneity-preserving figure union function
+// Returns the smaller of each distance ([[0].x]), along with
+// an ID value ([[0].y]), a distance-field type ([[0].z]), and a
+// position associated with the closest figure ([[1].xyz])
+// Each half of [figInfo] (so ([0],[1]) and ([2],[3])) has the
+// same layout as the return data to allow for faux recursion
+// (=> nested unions)
+float2x3 trackedFigUnion(float4x3 figInfo)
 {
-    return float3(min(xDFyDF.x, xDFyDF.z),
-                  xDFyDF.xz[xDFyDF.x > xDFyDF.z],
-                  xDFyDF.yw[xDFyDF.x > xDFyDF.z]);
+    bool distSel = figInfo[0].x > figInfo[2].x;
+    return float2x3(min(figInfo[0].x, figInfo[2].x),
+                    figInfo._12_32[distSel],
+                    figInfo._13_33[distSel],
+                    float2x3(figInfo[2],
+                             figInfo[3])[distSel]);
 }
 
 // Scene distance field here
 // Returns the distance to the nearest surface in the
 // scene from the given point, also figure-IDs (in [y])
 // and distance-field types (in [z])
+// Outputs figure position in
 #define FILLER_SCREEN_ID 0xFFFFFFFE
-float3 SceneField(float3 coord,
-                  float3 rayOri,
-                  bool useFigBounds,
-                  uint screenedFig)
+float2x3 SceneField(float3 coord,
+                    float3 rayOri,
+                    bool useFigBounds,
+                    uint screenedFig)
 {
     // Fold field distances into a single returnable value
+    // Sparse matrix used to insert ID values into the data
+    // returned by each distance function
+    const int2x3 idMat = float2x3(0.0f.xx, 1.0f,
+                                  0.0f.xxx);
 
-    // Define a super-union of just under a quarter of the figures
-    // in the scene
-    float3 set0 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[0]),
-									FigDF(coord, rayOri, useFigBounds, figuresReadable[1])),
-                             uint2(0, 1));
-
-    float3 set1 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[2]),
-									FigDF(coord, rayOri, useFigBounds, figuresReadable[3])),
-                             uint2(2, 3));
-
-    float3 set0u1 = trackedMin(float4(set0.xz, set1.xz),
-                               uint2(set0.y, set1.y));
-
-    // Define a super-union having another quarter of the figures
-    // in the scene
-    float3 set2 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[4]),
-									FigDF(coord, rayOri, useFigBounds, figuresReadable[5])),
-                             uint2(4, 5));
-
-    float3 set3 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[6]),
-									FigDF(coord, rayOri, useFigBounds, figuresReadable[7])),
-                             uint2(6, 7));
-
-    float3 set2u3 = trackedMin(float4(set2.xz, set3.xz),
-                               uint2(set2.y, set3.y));
-
-    // Define a hyper-union from the super-unions defined above
-    float3 majoritySet = trackedMin(float4(set0u1.xz, set2u3.xz),
-                                    uint2(set0u1.y, set2u3.y));
-
-    // Define an ultra-union of the hyper-union defined above +
-    // two more figures
-    float3 set4 = trackedMin(float4(FigDF(coord, rayOri, useFigBounds, figuresReadable[8]),
-								    FigDF(coord, rayOri, useFigBounds, figuresReadable[9])),
-                             uint2(8, 9));
+    // Define a union over the first eight figures in the scene
+    float2x3 setA = trackedFigUnion(float4x3(trackedFigUnion(float4x3(trackedFigUnion(float4x3(FigDF(coord, rayOri, useFigBounds, figuresReadable[0]) + (idMat * 0),
+									                                                           FigDF(coord, rayOri, useFigBounds, figuresReadable[1]) + (idMat * 1))),
+                                                                      trackedFigUnion(float4x3(FigDF(coord, rayOri, useFigBounds, figuresReadable[2]) + (idMat * 2),
+	                                                                  					       FigDF(coord, rayOri, useFigBounds, figuresReadable[3]) + (idMat * 3))))),
+                                             trackedFigUnion(float4x3(trackedFigUnion(float4x3(FigDF(coord, rayOri, useFigBounds, figuresReadable[4]) + (idMat * 4),
+									                                                           FigDF(coord, rayOri, useFigBounds, figuresReadable[5]) + (idMat * 5))),
+                                                                      trackedFigUnion(float4x3(FigDF(coord, rayOri, useFigBounds, figuresReadable[6]) + (idMat * 6),
+									                                                           FigDF(coord, rayOri, useFigBounds, figuresReadable[7]) + (idMat * 7)))))));
+    // Define another union from the last two scene figures
+    float2x3 setB = trackedFigUnion(float4x3(FigDF(coord, rayOri, useFigBounds, figuresReadable[8]),
+			   					             FigDF(coord, rayOri, useFigBounds, figuresReadable[9])));
 
     // Return the complete union carrying every figure in the scene; also
     // filter out the given figure if appropriate
-    float majoritySetScreen = (((int)screenedFig == majoritySet.y) * MAX_RAY_DIST);
-    float set4Screen = (((int)screenedFig == set4.y) * MAX_RAY_DIST);
-    return trackedMin(float4(majoritySet.x + majoritySetScreen, majoritySet.z,
-                             set4.x + set4Screen, set4.z),
-                      uint2(majoritySet.y, set4.y));
+    float setAScreen = (((int)screenedFig == setA[0].y) * MAX_RAY_DIST);
+    float setBScreen = (((int)screenedFig == setB[0].y) * MAX_RAY_DIST);
+    return trackedFigUnion(float4x3(float2x3(setA[0].x + setAScreen, setA[0].yz,
+                                             setA[1]),
+                                    float2x3(setB[0].x + setBScreen, setB[0].yz,
+                                             setB[1])));
 }
