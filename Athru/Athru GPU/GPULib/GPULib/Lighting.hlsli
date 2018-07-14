@@ -168,68 +168,12 @@ float4 ConnectBidirVts(BidirVert camVt,
             connStratRGB = float4(0.0f.xxx,
                                   linPixID);
         }
-        connStratRGB.rgb = 0.0f.xxx;
+
         // No light or camera gathers here
         gatherPDFs = 0.0f.xx;
         gatherPos = 0.0f.xxx;
     }
-    else if (sampleInfo.x == 1) // Emit gather rays towards the camera from the given vertex on the light subpath
-    {
-        // Only assign color to [connStratRGB] if the camera-gather is unoccluded; assume the camera's
-        // importance is "shadowed" and set [connStratRGB] to [0.0f.xxx] otherwise
-        // No default lens intersections rn so MIS-weighted lens gathers are impossible; tempting to
-        // change that later to simplify path integration
-        float3x4 occData = OccTest(float4(lightVt.pos.xyz, true),
-                                   float4(normalize(cameraPos.xyz - lightVt.pos.xyz), LENS_FIG_ID), // Placeholder figure-ID here (no default lens intersections rn)
-                                   float4(cameraPos.xyz, true),
-                                   adaptEps,
-                                   randVal);
-        if (!occData[1].w)
-        {
-            // Attenuate the importance at [lightVt] appropriately, then store the result
-            // Assume unit attenuation at the camera and 100% transmittance
-            float4 thetaPhiIO = float4(VecToAngles(occData[0].xyz),
-                                                   lightVt.ioSrs.xy);
-            connStratRGB.rgb = lightVt.atten.rgb * // Emitted color from the source vertex on the light subpath
-                               MatBXDF(lightVt.pos.xyz,
-                                       AmbFres(lightVt.pdfIO.z), // Not worrying about subsurface scattering just yet...
-                                       thetaPhiIO,
-                                       uint3(lightVt.atten.w,
-                                             lightVt.norml.w,
-                                             lightVt.pos.w)) * // Attenuation by the source interaction's local BXDF
-                               RayImportance(occData[0].xyz,
-                                             camInfo,
-                                             pixWidth) / // Attenuation by the importance emitted from the camera towards [lightVt.pos.xyz]
-                               CamAreaPDFIn(lightVt.pos.xyz - camVt.pos.xyz, // Scaling to match the probability of gather rays reaching the lens/pinhole along [occData[0].xyz]
-                                            camInfo.xyz);
-
-            // Grains of participating media are treated like perfect re-emitters, so only
-            // attenuate lighting by facing ratio for solid surfaces
-            if (lightVt.atten.w != BXDF_ID_VOLUM)
-            {
-                connStratRGB *= dot(occData[0].xyz,
-                                    lightVt.norml.xyz);
-            }
-        }
-        else
-        {
-            connStratRGB.rgb = 0.0f.xxx;
-        }
-        connStratRGB.rgb = 0.0f.xxx;
-        // We integrated a sample outside the camera/light subpaths, so define [gatherPDFs] appropriately
-        gatherPDFs = float2(CamAreaPDFIn(lightVt.pos.xyz - camVt.pos.xyz,
-                                         camInfo.xyz),
-                            CamAreaPDFOut());
-
-        // Record the gather's position here so we can accurately convert PDFs for MIS weights
-        // during integration
-        gatherPos = occData[1].xyz;
-
-        // Encode shading pixel location in [w]
-        connStratRGB.w = PRayPix(normalize(occData[0].xyz),
-                                 camInfo.w).z;
-    }
-    else if (sampleInfo.y == 1) // Emit a gather ray towards the light from the given vertex on the camera subpath
+    else if (sampleInfo.y == 1 && sampleInfo.x != 1) // Emit a gather ray towards the light from the given vertex on the camera subpath
     {
         // Initialise ray-marching values
         float3 rayOri = camVt.pos.xyz;
@@ -345,6 +289,62 @@ float4 ConnectBidirVts(BidirVert camVt,
         // No thread relationship changes here, so store the local pixel index in [w]
         connStratRGB.w = linPixID;
     }
+    else if (sampleInfo.x == 1) // Emit gather rays towards the camera from the given vertex on the light subpath
+    {
+        // Only assign color to [connStratRGB] if the camera-gather is unoccluded; assume the camera's
+        // importance is "shadowed" and set [connStratRGB] to [0.0f.xxx] otherwise
+        // No default lens intersections rn so MIS-weighted lens gathers are impossible; tempting to
+        // change that later to simplify path integration
+        float3x4 occData = OccTest(float4(lightVt.pos.xyz, true),
+                                   float4(normalize(cameraPos.xyz - lightVt.pos.xyz), LENS_FIG_ID), // Placeholder figure-ID here (no default lens intersections rn)
+                                   float4(cameraPos.xyz, true),
+                                   adaptEps,
+                                   randVal);
+        if (!occData[1].w)
+        {
+            // Attenuate the importance at [lightVt] appropriately, then store the result
+            // Assume unit attenuation at the camera and 100% transmittance
+            float4 thetaPhiIO = float4(VecToAngles(occData[0].xyz),
+                                                   lightVt.ioSrs.xy);
+            connStratRGB.rgb = lightVt.atten.rgb * // Emitted color from the source vertex on the light subpath
+                               MatBXDF(lightVt.pos.xyz,
+                                       AmbFres(lightVt.pdfIO.z), // Not worrying about subsurface scattering just yet...
+                                       thetaPhiIO,
+                                       uint3(lightVt.atten.w,
+                                             lightVt.norml.w,
+                                             lightVt.pos.w)); // * // Attenuation by the source interaction's local BXDF
+                               RayImportance(occData[0].xyz,
+                                             camInfo,
+                                             pixWidth) / // Attenuation by the importance emitted from the camera towards [lightVt.pos.xyz]
+                               CamAreaPDFIn(lightVt.pos.xyz - camVt.pos.xyz, // Scaling to match the probability of gather rays reaching the lens/pinhole along [occData[0].xyz]
+                                            camInfo.xyz);
+
+            // Grains of participating media are treated like perfect re-emitters, so only
+            // attenuate lighting by facing ratio for solid surfaces
+            if (lightVt.atten.w != BXDF_ID_VOLUM)
+            {
+                connStratRGB *= dot(occData[0].xyz,
+                                    lightVt.norml.xyz);
+            }
+        }
+        else
+        {
+            connStratRGB.rgb = 0.0f.xxx;
+        }
+
+        // We integrated a sample outside the camera/light subpaths, so define [gatherPDFs] appropriately
+        gatherPDFs = float2(CamAreaPDFIn(lightVt.pos.xyz - camVt.pos.xyz,
+                                         camInfo.xyz),
+                            CamAreaPDFOut());
+
+        // Record the gather's position here so we can accurately convert PDFs for MIS weights
+        // during integration
+        gatherPos = occData[1].xyz;
+
+        // Encode shading pixel location in [w]
+        connStratRGB.w = PRayPix(normalize(occData[0].xyz),
+                                 camInfo.w).z;
+    }
     else // Handle generic bi-directional connection strategies
     {
         // Evaluate visibility between [lightVt] and [camVt]
@@ -396,7 +396,6 @@ float4 ConnectBidirVts(BidirVert camVt,
                               // [lightVt]'s perspective (and vice-versa, since BDPT is symmetrical)
         // No thread relationship changes here, so store the local pixel index in [w]
         connStratRGB.w = linPixID;
-        connStratRGB.rgb = 0.0f.xxx;
 
         // No light or camera gathers here
         gatherPDFs = 0.0f.xx;

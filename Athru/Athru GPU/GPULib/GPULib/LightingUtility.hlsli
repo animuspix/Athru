@@ -101,9 +101,6 @@ float3 StellarSurfPos(float4 starInfo, // Position in [xyz], size in [w]
                       uint randVal,
                       float3 targFigPos)
 {
-    //return (normalize(float3(iToFloat(xorshiftPermu1D(randVal)),
-    //                         iToFloat(xorshiftPermu1D(randVal)),
-    //                         iToFloat(xorshiftPermu1D(randVal)))) * starInfo.w) + starInfo.xyz;;
     // Generate initial direction (this chooses our sampling hemisphere)
     float3 targVec = (starInfo.xyz - targFigPos);
 
@@ -364,7 +361,7 @@ float3x4 OccTest(float4 rayOri,
             }
 
             // Cache the figure-ID associated with intersection point
-            nearID.x = (uint)sceneField[0].y;
+            nearID = (uint)sceneField[0].y;
             break;
         }
 

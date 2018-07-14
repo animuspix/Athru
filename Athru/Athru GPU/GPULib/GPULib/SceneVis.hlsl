@@ -613,7 +613,7 @@ void main(uint3 groupID : SV_GroupID,
                     // The light subpath bounced off a surface and hit a different sensor to the one
                     // associated with this thread; pass [bdVtData] into the AA buffer instead so
                     // it can be integrated for the relevant pixel as soon as possible
-                    //aaBuffer[(int)bdVtData.w].incidentLight.rgb = bdVtData.rgb;
+                    aaBuffer[(int)bdVtData.w].incidentLight.rgb = bdVtData.rgb;
                 }
             }
         }
