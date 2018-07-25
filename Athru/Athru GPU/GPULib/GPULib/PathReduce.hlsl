@@ -94,7 +94,7 @@ void main(uint3 groupID : SV_GroupID,
         // the star according to its emissivity
         // Lazy tonemapping to improve filtering here, will use smth more elegant
         // later...
-        rgb = min(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS,
+        rgb = max(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS,
                            length(figuresReadable[STELLAR_FIG_ID].linTransf.xyz - camPos) - figuresReadable[STELLAR_FIG_ID].linTransf.w), 8.0f.xxx);
     }
     else

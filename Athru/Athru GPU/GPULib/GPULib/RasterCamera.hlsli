@@ -103,15 +103,15 @@ float4 PixToRay(uint2 pixID,
 
     // Convert the sample index into a super-sampled pixel coordinate
     float pixWidth = sqrt(NUM_AA_SAMPLES);
-    uint2 baseSSPixID = (pixID * pixWidth) + ((uint)pixWidth / 2).xx;
-    float2 sampleXY = uint2(pixSampleNdx % pixWidth,
-                            pixSampleNdx / pixWidth);
+    uint2 baseSSPixID = (pixID * pixWidth) + ((uint)pixWidth / 2.0f).xx;
+    float2 sampleXY = uint2((float)pixSampleNdx % pixWidth,
+                            (float)pixSampleNdx / pixWidth);
 
     // Jitter the selected coordinate
     float jitterRange = pixWidth;
     sampleXY += rayJitter(baseSSPixID + sampleXY,
                           jitterRange,
-                          randVal) - (jitterRange / 2).xx;
+                          randVal) - (jitterRange / 2.0f).xx;
 
     // Restrict samples to the domain of the current pixel
     sampleXY %= pixWidth.xx;

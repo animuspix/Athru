@@ -92,7 +92,7 @@ float2x3 rgbToFres(float3 rgb)
 
 // Constant stellar brightness; might make this a [cbuffer] value
 // so I can vary it between systems
-#define STELLAR_BRIGHTNESS 80000000.0f
+#define STELLAR_BRIGHTNESS 80000.0f
 
 // Stellar radiance at unit brightness; mostly just defined for
 // readability since any star bright enough to illuminate the

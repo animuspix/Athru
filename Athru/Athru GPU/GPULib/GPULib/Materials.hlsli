@@ -14,9 +14,10 @@
 #define MATERIALS_LINKED
 
 // Probability density function (PDF) for directions sampled over diffuse surfaces
-float DiffusePDF(float thetaO)
+float DiffusePDF(float3 oDir,
+                 float3 norml)
 {
-    return abs(cos(thetaO)) / PI;
+    return abs(dot(norml, oDir)) / PI;
 }
 
 // Importance-sampled ray generator for diffuse surfaces
@@ -90,7 +91,7 @@ float3 DiffuseDir(inout uint randVal)
 // RGB diffuse reflectance away from any given surface; uses the Oren-Nayar BRDF
 // Surface carries color in [rgb], RMS microfacet roughness/variance in [a]
 float3 DiffuseBRDF(float4 surf,
-                   float4 thetaPhiIO)
+                   float3x3 surfDirs)
 {
     // Generate the basis Lambert BRDF
     float3 lambert = surf.rgb / PI;
@@ -101,12 +102,20 @@ float3 DiffuseBRDF(float4 surf,
     // Generate Oren-Nayar parameter values
     float a = 1.0f - (variSqr / (2.0f * (variSqr + 0.33f)));
     float b = (0.45 * variSqr) / (variSqr + 0.09f);
-    float alpha = max(thetaPhiIO.x, thetaPhiIO.z);
-    float beta = min(thetaPhiIO.x, thetaPhiIO.z);
-    float cosPhiSection = cos(thetaPhiIO.y - thetaPhiIO.w);
+    float2 cThetaIO = float2(dot(surfDirs[2], surfDirs[0]), // Cosines are equal to [n . [l | v]]
+                             dot(surfDirs[2], surfDirs[1]));
+    float2 sThetaIO = sqrt(1.0f.xx - (cThetaIO * cThetaIO)); // Sines are derivable from cosines
 
-    // Evaluate the Oren-Nayar microfacet contribution
-    float orenNayar = a + (b * max(0, cosPhiSection)) * sin(alpha) * tan(beta);
+    // Sneaky implementation of [cosPhiSection] borrowed from iq:
+    // https://www.shadertoy.com/view/ldBGz3
+    float cosPhiSection = dot(surfDirs[1] - surfDirs[2] * cThetaIO.y,
+                              surfDirs[0] - surfDirs[2] * cThetaIO.x);
+
+    // Evaluate microfacet attenuation for the Oren-Nayar BRDF
+    float orenNayar = a + (b * max(0, cosPhiSection)) * // Straight copy from the standard Oren-Nayar definition here...
+                      (sThetaIO.x * sThetaIO.y) / // Cleaner this way than defining a separate [alpha] value
+                      max(cThetaIO.x, cThetaIO.y); // Tangent is defined as sine/cosine, no reason
+                                                   // to conditionally access sine values when both are used anyways
 
     // Generate the BRDF by applying the microfacet contribution to the basis Lambert reflectance
     // function, then return the result
@@ -261,22 +270,20 @@ float3 SpecularBRDF(float4 surf,
 // by the given material for the current ray in [x], the surface's distance-field
 // type + figure-ID in [yz], and whether or not the incoming light direction was
 // importance-sampled for the local BXDF in [w]
-// [ioSurfDirs] describes input/output directions in surface coordinates (i.e. with
-// y-up); this simplifies physically-based shading (no need to transform microfacet
-// normals) and conceptually neatens the sampling process by allowing everything
-// to occur in the same coordinate space
+// [surfDirs] carries input/output directions in ([0],[1]) and the local surface
+// normal in [2]
 // [coord] carries global surface position in [xyz] and whether the surface lies on
 // the light subpath in [w]
-float MatPDF(float2x3 ioSurfDirs,
+float MatPDF(float3x3 surfDirs,
              float4 coord,
              uint4 surfInfo)
 {
     if (coord.w)
     {
         // Swap in/out directions on the light path
-        float3 iDir = ioSurfDirs[0];
-        ioSurfDirs[0] = ioSurfDirs[1];
-        ioSurfDirs[1] = iDir;
+        float3 iDir = surfDirs[0];
+        surfDirs[0] = surfDirs[1];
+        surfDirs[1] = iDir;
     }
 
     // Evaluate probabilities for the given material + input/ouput
@@ -285,34 +292,36 @@ float MatPDF(float2x3 ioSurfDirs,
     switch (surfInfo.x)
     {
         case BXDF_ID_DIFFU:
-            pdf = DiffusePDF(VecToAngles(ioSurfDirs[1]).x);
+            pdf = DiffusePDF(surfDirs[1],
+                             surfDirs[2]);
             break;
         case BXDF_ID_MIRRO:
-            pdf = SpecularPDF(float4(normalize(ioSurfDirs[0] + ioSurfDirs[1]), // Half-angle vector (i.e. microfacet normal)
+            pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
                                                                                // reconstructed from the given input/output
                                                                                // directions
                                      MatInfo(float2x3(MAT_PROP_VARI,
                                                       surfInfo.yz,
                                                       coord.xyz)).x),
-                              float4(ioSurfDirs[0],
+                              float4(surfDirs[0],
                                      surfInfo.w));
             break;
         case BXDF_ID_REFRA:
             // Remap refractions to perfect specular interactions for now...
-            pdf = SpecularPDF(float4(normalize(ioSurfDirs[0] + ioSurfDirs[1]), // Half-angle vector (i.e. microfacet normal)
+            pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
                                                                                // reconstructed from the given input/output
                                                                                // directions
                                      MatInfo(float2x3(MAT_PROP_VARI,
                                                       surfInfo.yz,
                                                       coord.xyz)).x),
-                              float4(ioSurfDirs[0],
+                              float4(surfDirs[0],
                                      surfInfo.w));;
             break;
         case BXDF_ID_VOLUM:
             pdf = 0.0f;
             break;
         default:
-            pdf = DiffusePDF(ioSurfDirs[1].x); // Assume diffuse surfaces for undefined [BXDFs]
+            pdf = DiffusePDF(surfDirs[1],
+                             surfDirs[2]); // Assume diffuse surfaces for undefined [BXDFs]
             break;
     }
     return pdf * MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
@@ -362,9 +371,13 @@ float3 MatBXDF(float3 coord,
                float2x3 prevFres, // Refraction/extinction coefficients for the volume
                                   // entered by the previous vertex in the relevant
                                   // subpath
-               float4 thetaPhiIO,
+               float3x3 surfDirs, // Light direction in [0], camera direction in [1], normal vector in [2]
                uint3 surfInfo) // BXDF-ID in [x], distance-field type in [y], figure-ID in [z]
 {
+    surfDirs[1] *= -1.0f; // BXDFs assume camera rays point towards the lens
+    float4 thetaPhiIO = RaysToAngles(surfDirs[0],
+                                             surfDirs[1],
+                                             false); // Temporary remapping so I can avoid rewriting specular reflection with vector math...
     switch (surfInfo.x)
     {
         case BXDF_ID_DIFFU:
@@ -374,7 +387,7 @@ float3 MatBXDF(float3 coord,
                                       MatInfo(float2x3(MAT_PROP_VARI,
 													   surfInfo.yz,
 													   coord)).x),
-                               thetaPhiIO);
+                               surfDirs);
         case BXDF_ID_MIRRO:
             float2 sinCosThetaI;
             sincos(thetaPhiIO.x, sinCosThetaI.x, sinCosThetaI.y);
@@ -388,7 +401,6 @@ float3 MatBXDF(float3 coord,
                                                         coord)).x),
                                 thetaPhiIO);
         case BXDF_ID_REFRA:
-            // Remap refractions to perfect specular interactions for now...
             float2 sinCosThetaIRefr;
             sincos(thetaPhiIO.x, sinCosThetaIRefr.x, sinCosThetaIRefr.y);
             return SpecularBRDF(float4(SurfFres(float4x3(prevFres,

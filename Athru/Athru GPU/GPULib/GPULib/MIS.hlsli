@@ -49,6 +49,7 @@ float MISWeight(float samplesDistroA,
 float BidirMISPDF(float2x4 inVt,
                   float2x4 outVt,
                   float2x3 dirs,
+                  float2x3 normls,
                   float3 ioInfo, // Input figure ID in [x], output figure ID in [y],
                                  // mollification radius (for specular interactions)
                                  // in [z]
@@ -86,9 +87,10 @@ float BidirMISPDF(float2x4 inVt,
         default: // Assume non-star, non-lens interfaces are valid scene materials
             float3 connVec = (inVt[0].xyz - outVt[0].xyz);
             float ioDist = length(connVec);
-            float2x3 ioDirs = float2x3(connVec / ioDist,
-                                       dirs[0]);
-            pdf = MatPDF(ioDirs,
+            float3x3 surfDirs = float3x3(connVec / ioDist,
+                                         dirs[0],
+                                         normls[0]);
+            pdf = MatPDF(surfDirs,
                          float4(outVt[0].xyz,
                                 pathInfo.x),
                          float4(outVt[1].w,
@@ -102,7 +104,8 @@ float BidirMISPDF(float2x4 inVt,
                 {
                     // Mollify reflection at [outVt]
                     pdf = PSRMollify(ioInfo.z,
-                                     ioDirs,
+                                     float2x3(surfDirs[0],
+                                              surfDirs[1]),
                                      ioDist);
                 }
             }

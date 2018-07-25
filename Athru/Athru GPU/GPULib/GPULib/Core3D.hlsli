@@ -136,9 +136,9 @@ float4 PlanetDF(float3 coord,
                 Figure planet)
 {
     // Calculate a trivial planetary orbit for the current time
-    float3 planetPos = float3(cos(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.x,
-                              0.0f,
-                              sin(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.z) +
+    float3 planetPos = //float3(cos(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.x,
+                       //       0.0f,
+                       //       sin(timeDispInfo.y * planet.distCoeffs[2].x) * planet.linTransf.z) +
                        planet.linTransf.xyz;
 
     // Translate rays to match the planet's orbit
@@ -182,7 +182,6 @@ float4 PlanetDF(float3 coord,
     // we applied the division /before/ sampling the field)
     return float4((0.5 * log(r) * r / dr) * planet.linTransf.w,
                   planetPos); // Orbital planet position
-
 }
 
 // Return distance to the given plant (in [x]) and plant position
@@ -341,11 +340,16 @@ float2x3 FigDF(float3 coord,
         switch(fig.self.x)
         {
             case DF_TYPE_PLANET:
-                return float2x3(SphereDF(coord,
-                                         fig.linTransf),
+                float4 planetDF = PlanetDF(coord, fig);
+                return float2x3(planetDF.x,
                                 fig.self.x,
-                                0.0f, // No info for [z] atm...
-                                fig.linTransf.xyz); // No planetary displacement during debugging
+                                0.0f,
+                                planetDF.yzw);
+                       //float2x3(SphereDF(coord,
+                       //                  fig.linTransf),
+                       //         fig.self.x,
+                       //         0.0f, // No info for [z] atm...
+                       //         fig.linTransf.xyz); // No planetary displacement during debugging
             case DF_TYPE_STAR:
                 return float2x3(SphereDF(coord,
                                        fig.linTransf),

@@ -11,7 +11,7 @@
 
 // Maximum supported number of samples-per-pixel
 // for anti-aliasing
-#define NUM_AA_SAMPLES 256
+#define NUM_AA_SAMPLES 131072
 
 // Samples + counter variables for each pixel
 // (needed for temporal smoothing)
@@ -70,7 +70,8 @@ float3 FrameSmoothing(float3 rgb,
     // Check if the (un-updated) sample-count is exactly modulo-[NUM_AA_SAMPLES] and update
     // [prevSampleAccum] (+ reset [currSampleAccum]) if appropriate
     float4 prevAccum = pixHistory.prevSampleAccum;
-    if (sampleCount % NUM_AA_SAMPLES == 0)
+    if (sampleCount % NUM_AA_SAMPLES == 0 &&
+        sampleCount != 0)
     {
         currAccum -= pixHistory.currSampleAccum;
         prevAccum = pixHistory.currSampleAccum;
@@ -86,7 +87,7 @@ float3 FrameSmoothing(float3 rgb,
     // Interpolate between the most-recent/current sample-sets/filter-coefficients
     // Only apply interpolation to the displayed color, not the sample actually cached
     // in [aaBuffer]
-    float4 retRGBW = lerp(prevAccum, currAccum, ((float)sampleCount / NUM_AA_SAMPLES) % 1.0f);
+    float4 retRGBW = lerp(prevAccum, currAccum, ((float)sampleCount / (float)NUM_AA_SAMPLES) % 1.0f);
 
     // Pass the updated pixel history back into the AA buffer
     // (also update the pixel's sample-set to include the current sample)

@@ -129,7 +129,7 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 	fourByteUnsigned tSecs = std::chrono::duration_cast<std::chrono::duration<fourByteUnsigned>>(currTimeNanoSecs).count();
 	fourByteUnsigned traceableCtr = *(fourByteUnsigned*)(traceableCount.pData);
 	shaderInputPtr->timeDispInfo = DirectX::XMFLOAT4(dt, // Change-in-time in seconds
-													 tSecs, // Current time in seconds
+													 (float)tSecs, // Current time in seconds
 													 (float)traceableCtr, // Number of traceables remaining from the previous frame
 													 GraphicsStuff::DISPLAY_AREA / GraphicsStuff::GROUP_AREA_PATH_REDUCTION); // Total group count (preprocessing)
 

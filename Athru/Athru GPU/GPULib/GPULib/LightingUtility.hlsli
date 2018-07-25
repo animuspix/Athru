@@ -44,7 +44,8 @@ struct BidirVert
     float4 dfOri; // Position of the figure associated with [this]; [w] is unused
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
     float4 norml; // Surface normal at [pos]; contains the local distance-function type/ID in [w]
-    float4 ioSrs; // In/out ray directions, expressed as solid angles
+    float4 iDir; // Incoming ray direction
+    float4 oDir; // Outgoing ray direction
     float4 pdfIO; // Forward/reverse probability densities; ([z] contains local planetary distance
                   // (used for atmospheric refraction), [w] is unused)
 };
@@ -53,7 +54,7 @@ BidirVert BuildBidirVt(float4 posFigID,
                        float3 figPos,
                        float4 attenBXDFID,
                        float4 normlDFType,
-                       float4 thetaPhiIO,
+                       float2x3 ioDirs,
                        float3 pdfsPlanetDist)
 {
     BidirVert bdVt;
@@ -61,7 +62,8 @@ BidirVert BuildBidirVt(float4 posFigID,
     bdVt.dfOri = float4(figPos, 0.0f);
     bdVt.atten = attenBXDFID;
     bdVt.norml = normlDFType;
-    bdVt.ioSrs = thetaPhiIO;
+    bdVt.iDir = float4(ioDirs[0], 0.0f);
+    bdVt.oDir = float4(ioDirs[1], 0.0f);
     bdVt.pdfIO = float4(pdfsPlanetDist, 0.0f);
     return bdVt;
 }
@@ -124,7 +126,8 @@ float3 StellarSurfPos(float4 starInfo, // Position in [xyz], size in [w]
 }
 
 // Radiance at the given point due to direct illumination from some other
-// point in the scene
+// point in the scene; used for evaluating contributions from light
+// gather rays
 float3 DirIllumRadiance(float3 traceDir,
                         float3 localNorm,
                         float3 lightRGB,
@@ -139,7 +142,7 @@ float3 DirIllumRadiance(float3 traceDir,
     // Calculate + store directly-illuminated color
     // Will (eventually) remove saturation here and use aperture settings
     // to control exposure levels instead
-    return 1.0f.xxx // RGB light spectra/color
+    return lightRGB // RGB light spectra/color
            * invSquare // Distance attenuation
            * nDotL; // Attenuation for facing ratio
 }
@@ -179,7 +182,7 @@ float DiffuseLiPDF()
 // diffuse reflection
 // Algorithm taken from page 775 of Physically Based Rendering: From
 // Theory to Implementation, Third Edition (Pharr, Jakob, Humphreys)
-float3 DiffuseLiDir(uint randVal)
+float3 DiffuseLiDir(inout uint randVal)
 {
     // Generate random sample values
     float2 uv = float2(iToFloat(xorshiftPermu1D(randVal)),
@@ -199,11 +202,11 @@ float3 DiffuseLiDir(uint randVal)
     xZ *= r.xx;
 
     // Generate final direction vector (probably don't need to normalize, but
-    // but aren't micro-optimizing atm and don't want to think about scaling bugs
+    // aren't micro-optimizing atm and don't want to think about scaling bugs
     // rn anyway :P)
-    return normalize(float3(xZ.x,
+    return normalize(float3(xZ.y,
                             uv.x,
-                            xZ.y));
+                            xZ.x));
 }
 
 // Probabilities for each illumination profile accessed by [LightEmitDir]; only defined for
@@ -292,7 +295,7 @@ float3x4 OccTest(float4 rayOri,
 {
     // High surface repulsion here, many bounces will be close to
     // parallel with the scene surface
-    float currRayDist = (adaptEps * 16.0f);
+    float currRayDist = (adaptEps * 8.0f);
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;
