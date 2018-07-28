@@ -46,8 +46,8 @@ JuliaProps Julia(float4 juliaCoeffs,
     // the rate of change in the image signal between
     // separate rays
     // [2.0f] is the base case (applies when the camera
-    // is positioned at the fractal's local origin)
-    float dzScalar = 2.0f + length(coord) / 10.0f;
+    // is positioned near the fractal surface)
+    float dzScalar = 2.0f + (length(coord) / 10.0f);
 
     // Iterate the fractal
     int i = 0;

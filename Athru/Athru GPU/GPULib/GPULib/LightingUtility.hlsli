@@ -270,6 +270,27 @@ float3 LightSurfPos(uint lightID,
     }
 }
 
+// Small function to generate surface-agnostic offsets for occlusion tests +
+// BXDF ray bounces
+float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
+                float4 rayDir) // Ray direction in [xyz], adaptive epsilon in [w]
+{
+    float offset = rayDir.w;
+    bool inSurf = true;
+    while (inSurf)
+    {
+        float3 rayVec = (offset * rayDir.xyz) + rayOri.xyz;
+        float dist = FigDF(rayVec,
+                           rayOri.xyz,
+                           false,
+                           figuresReadable[(int)rayOri.w])[0].x;
+        inSurf = dist < rayDir.w;
+        if (!inSurf) { break; }
+        offset += rayDir.w / 8.0f;
+    }
+    return offset;
+}
+
 // Simple occlusion function, traces a shadow ray between two points to test
 // for visiblity (needed to validate generic sub-path connections in BDPT)
 // [0].xyz contains the tracing direction, [0].w clontains the distance
@@ -293,9 +314,8 @@ float3x4 OccTest(float4 rayOri,
                  float adaptEps,
                  inout uint randVal)
 {
-    // High surface repulsion here, many bounces will be close to
-    // parallel with the scene surface
-    float currRayDist = (adaptEps * 8.0f);
+    float currRayDist = RayOffset(float4(rayOri.xyz, rayDir.w),
+                                  float4(rayDir.xyz, adaptEps));
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;

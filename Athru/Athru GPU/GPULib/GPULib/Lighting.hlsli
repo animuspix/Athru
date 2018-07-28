@@ -90,14 +90,14 @@ BidirVert ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance i
     rayDir = bounceDir;
 
     // Update light ray starting position
-    // Shift the starting position just outside the figure surface so that rays avoid
-    // immediately re-intersecting with the surface
-    // Small surface repulsion here, most bounces will tend towards the local normal
-    // and avoid skimming the scene surface
-    rayOri = rayVec.xyz + (normal * adaptEps * 2.0f);
+    // Shift the starting position just outside the surface so that rays avoid
+    // immediately re-intersecting with the figure
+    float rayOffs = RayOffset(float4(rayVec.xyz, figIDDFType.x),
+                              float4(rayDir.xyz, adaptEps));
+    rayOri = rayVec.xyz + (normal * rayOffs);
 
     // Re-set ray distance as appropriate
-    rayDist = (adaptEps * 2.0f);
+    rayDist = 0.0f;
 
     // Return the bi-directional vertex we cached before
     return bdVt;

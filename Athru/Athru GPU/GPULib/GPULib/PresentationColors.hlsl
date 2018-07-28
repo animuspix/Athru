@@ -15,28 +15,67 @@ struct Pixel
     float2 texCoord : TEXCOORD0;
 };
 
+// Small convenience function for squaring long expressions
+float3 Sqr(float3 expr)
+{
+    return expr * expr;
+}
+
+// Conservative filter function for persistent noise that doesn't
+// fade under multisampling; preserves ray-traced grain while
+// removing fireflies and dark speckling
+// Standard deviation definition from:
+// https://en.wikipedia.org/wiki/Standard_deviation#Estimation
+// using the uncorrected per-sample variation
+float4 Denoise(float4 localPx,
+               float2 uv)
+{
+    // Outliers will lie at least two standard deviations beyond the local mean
+    const float sdFac = 2.0f;
+
+    // Denoising will operate over a 25-pixel kernel (two rings)
+    const uint krnRad = 5.0f;
+    uint krnArea = krnRad * krnRad;
+
+    // Cache uv step size, starting uv-index before sampling the filter kernel
+    float2 uvStep = 1.0f.xx / DISPLAY_SIZE_2D;
+    float2 minKrnUV = uv - (uvStep * ((float)(krnRad - 1) / 2.0f)).xx;
+
+    // Sample + cache the filter kernel; also cache local mean + standard deviation
+    // Possibly linearizable in SM6...
+    float2x3 stats = float2x3(0.0f.xxx, 0.0f.xxx); // Mean in [0][rgb], standard deviation in [1][rgb]
+    float3 krn[25];
+    for (uint i = 0; i < krnArea; i += 1) // Evaluate the mean (unsure how to compute SD inline with the mean, separating each for now)
+    {
+        float2 currStep = minKrnUV + (float2(i % krnRad,
+                                             i / krnRad) * uvStep);
+        float3 currSample = displayTex.Sample(wrapSampler, currStep).rgb;
+        krn[i] = currSample; // Cache the current sample value
+        stats[0] += currSample / krnArea; // Update local mean
+    }
+    for (uint j = 0; j < krnArea; j += 1) // Evaluate standard deviation
+    {
+        stats[1] += Sqr(krn[j].rgb - stats[0]) / krnArea;
+    }
+    stats[1] = sqrt(stats[1]); // SD definition involves a square-root over the series, apply that here
+
+    // Check whether [localPx] is an outlier, and replace the centroid at [uv] with the mean if so
+    // This is equivalent to a box-filter; cleaner blurs (like e.g. a Gaussian) would probably be
+    // better
+    if (length(localPx.rgb) >= length(stats[0] + (stats[1] * sdFac))) // Check whether the local pixel is at least [sdFac] standard deviations above the mean
+                                                                      // Denoiser only cares about brightness for now, not hue
+    {
+        return float4(stats[0], 1.0f);
+    }
+    else
+    {
+        return localPx;
+    }
+}
+
 float4 main(Pixel pixIn) : SV_TARGET
 {
-    // Read color for the current pixel from [displayTex]
-    float4 currPx = displayTex.Sample(wrapSampler, pixIn.texCoord);
-
-    // Define randomly-screened pixels as the box-filtered average of their
-    // immediate neighbours
-    //if (currPx.a == RAND_PATH_REDUCTION)
-    //{
-    //    // UV steps with x-increment in [xy] and y-increment in [zw]
-    //    float4 uvStep = float4(float2(1.0f / DISPLAY_WIDTH, 0.0f),
-    //                           float2(0.0f, 1.0f / DISPLAY_HEIGHT));
-    //    float4x3 nearPxls = float4x3(displayTex.Sample(wrapSampler, pixIn.texCoord + uvStep.xy).rgb,
-    //                                 displayTex.Sample(wrapSampler, pixIn.texCoord - uvStep.xy).rgb,
-    //                                 displayTex.Sample(wrapSampler, pixIn.texCoord + uvStep.zw).rgb,
-    //                                 displayTex.Sample(wrapSampler, pixIn.texCoord - uvStep.zw).rgb);
-    //    currPx.rgb = (nearPxls[0] +
-    //                  nearPxls[1] +
-    //                  nearPxls[2] +
-    //                  nearPxls[3]) / 4.0f;
-    //}
-
-    // Pass the filtered screen texture into the display :)
-    return currPx;
+    // Output denoised color for the current pixel from [displayTex]
+    return Denoise(displayTex.Sample(wrapSampler, pixIn.texCoord),
+                   pixIn.texCoord);
 }
