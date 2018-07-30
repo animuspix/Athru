@@ -148,7 +148,6 @@ namespace GraphicsStuff
 
 	// Rendering information
 	extern constexpr fourByteUnsigned SCREEN_RECT_INDEX_COUNT = 6;
-	extern constexpr fourByteUnsigned PROG_PASSES_PER_IMAGE = 5;
 	extern constexpr fourByteUnsigned GROUP_WIDTH_PATH_REDUCTION = 16;
 	extern constexpr fourByteUnsigned GROUP_HEIGHT_PATH_REDUCTION = 16;
 	extern constexpr fourByteUnsigned GROUP_AREA_PATH_REDUCTION = 256;

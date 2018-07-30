@@ -48,20 +48,25 @@ class PathTracer
 		// constants to the GPU
 		struct InputStuffs
 		{
-			DirectX::XMVECTOR cameraPos; // Camera position	
+			DirectX::XMVECTOR cameraPos; // Camera position
 			DirectX::XMMATRIX viewMat; // View matrix
 			DirectX::XMMATRIX iViewMat; // Inverse view matrix
 			DirectX::XMFLOAT4 timeDispInfo; // Time/dispatch info for each frame;
-											// delta-time in [x], current total time (seconds) in [y], 
-											// number of traceable elements after each pre-processing 
+											// delta-time in [x], current total time (seconds) in [y],
+											// number of traceable elements after each pre-processing
 											// pass in [z], number of patches (groups) deployed
 											// for path-tracing in [w]
+			DirectX::XMFLOAT4 prevNumTraceables; // Number of traceable elements in the previous frame in [x]
+												 // ([yzw] are empty)
 			DirectX::XMUINT4 maxNumBounces; // Number of bounces for each ray
 		};
 
 		// ...And a reference to the buffer we'll need in order
 		// to send that input data over to the GPU
 		Microsoft::WRL::ComPtr<ID3D11Buffer> shaderInputBuffer;
+
+		// Frame counter for managing time-dependant input values (like [prevNumTraceables])
+		fourByteUnsigned prevNumTraceables;
 
 		// Small buffer letting us restrict path-tracing dispatches to pixels intersecting
 		// planets, plants, and/or animals
@@ -73,15 +78,6 @@ class PathTracer
 		// Small staging buffer, used so we can read the length of [traceables] between
 		// the pre-processing/path-tracing stages and avert [Consume] calls as appropriate
 		Microsoft::WRL::ComPtr<ID3D11Buffer> numTraceables;
-
-		// Especially heavy frames will require progressive rendering to safely process; cache the
-		// number of [traceables] at the start of each multi-frame render here to allow for
-		// consistent dispatch sizes in each pass
-		fourByteUnsigned currMaxTraceables;
-
-		// Whether or not the path-tracer is processing the initial frame in a multi-frame
-		// (progressive) render
-		bool initProgPass;
 
 		// Whether or not the first frame for the current session is being rendered;
 		// allows us to zero [traceableBuffer]'s counter then and never again

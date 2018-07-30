@@ -30,8 +30,12 @@ float3 Sqr(float3 expr)
 float4 Denoise(float4 localPx,
                float2 uv)
 {
-    // Outliers will lie at least two standard deviations beyond the local mean
-    const float sdFac = 2.0f;
+    // Outliers will lie at least ~three standard deviations beyond the local mean
+    // [3.2] works well as a compromise value (essentially no edge distortion, effective
+    // noise mitigation) but can't always remove severe highlights/speckles; stronger
+    // treatments may need variance-guiding to generate appropriate thresholds for
+    // arbitrary surface images
+    const float sdFac = 3.2f;
 
     // Denoising will operate over a 25-pixel kernel (two rings)
     const uint krnRad = 5.0f;
@@ -62,8 +66,8 @@ float4 Denoise(float4 localPx,
     // Check whether [localPx] is an outlier, and replace the centroid at [uv] with the mean if so
     // This is equivalent to a box-filter; cleaner blurs (like e.g. a Gaussian) would probably be
     // better
-    if (length(localPx.rgb) >= length(stats[0] + (stats[1] * sdFac))) // Check whether the local pixel is at least [sdFac] standard deviations above the mean
-                                                                      // Denoiser only cares about brightness for now, not hue
+    if (abs(length(localPx.rgb) - length(stats[0])) >= length(stats[1] * sdFac)) // Check whether the local pixel is at least [sdFac] standard deviations above the mean
+                                                                                 // Denoiser only cares about brightness for now, not hue
     {
         return float4(stats[0], 1.0f);
     }

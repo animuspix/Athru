@@ -21,6 +21,11 @@ AppendStructuredBuffer<float2x3> traceables : register(u4);
 #endif
 #include "ScenePost.hlsli"
 
+// #define controlling stochastic work reduction; slightly boosts performance and maintains framerate
+// through especially dense scenes, but slightly increases AA render time (no filtering for skipped
+// pixels)
+#define SWR_ENABLED
+
 [numthreads(8, 8, 4)]
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
@@ -77,12 +82,33 @@ void main(uint3 groupID : SV_GroupID,
     float3 rgb = 1.0f.xxx;
     if (isectPx)
     {
-        traceables.Append(float2x3(rayDir.xyz,
-                                   float3(rayDir.w,
-                                          linPixID,
-                                          zProj)));
-        // We don't want to define colours for these points yet, so return immediately
-        return;
+        #ifdef SWR_ENABLED
+            // Difficult to validate [cullFreq] by hand, test with shadertoy...
+            const float maxCullThresh = 0.8f; // Never cull more than 80% of traceable pixels
+            float cullFreq = prevNumTraceables.x / (float)DISPLAY_AREA; // Match per-frame culling frequency to relative screen density (number of traceable elements/pixel)
+            if (iToFloat(xorshiftPermu1D(randVal)) > min(cullFreq, maxCullThresh))
+            {
+                traceables.Append(float2x3(rayDir.xyz,
+                                           float3(rayDir.w,
+                                                  linPixID,
+                                                  zProj)));
+                // We don't want to define colours for these points yet, so return immediately
+                return;
+            }
+            else
+            {
+                // This sample was elided by stochastic work reduction, so just recycle the pixel's value from the previous frame
+                // and avoid outputting anything to the display texture
+                return;
+            }
+        #else
+            traceables.Append(float2x3(rayDir.xyz,
+                                       float3(rayDir.w,
+                                              linPixID,
+                                              zProj)));
+            // We don't want to define colours for these points yet, so return immediately
+            return;
+        #endif
     }
     else if (BoundingSurfTrace(figuresReadable[STELLAR_FIG_ID].linTransf,
                                figuresReadable[STELLAR_FIG_ID].self.x,

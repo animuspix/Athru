@@ -12,6 +12,7 @@ cbuffer InputStuffs
     float4 timeDispInfo; // Delta-time in [x], current time (seconds) in [y], number of
                          // traceables for the current frame in [z], and number of patches
                          // (groups) along each dispatch axis during path-tracing (w)
+    float4 prevNumTraceables; // Previous traceable-element count in [x], [yzw] are empty
     uint4 maxNumBounces;
 };
 
@@ -340,16 +341,16 @@ float2x3 FigDF(float3 coord,
         switch(fig.self.x)
         {
             case DF_TYPE_PLANET:
-                float4 planetDF = PlanetDF(coord, fig);
-                return float2x3(planetDF.x,
-                                fig.self.x,
-                                0.0f,
-                                planetDF.yzw);
-                       //float2x3(SphereDF(coord,
-                       //                  fig.linTransf),
+                //float4 planetDF = PlanetDF(coord, fig);
+                return //float2x3(planetDF.x,
                        //         fig.self.x,
-                       //         0.0f, // No info for [z] atm...
-                       //         fig.linTransf.xyz); // No planetary displacement during debugging
+                       //         0.0f,
+                       //         planetDF.yzw);
+                       float2x3(SphereDF(coord,
+                                         fig.linTransf),
+                                fig.self.x,
+                                0.0f, // No info for [z] atm...
+                                fig.linTransf.xyz); // No planetary displacement during debugging
             case DF_TYPE_STAR:
                 return float2x3(SphereDF(coord,
                                        fig.linTransf),

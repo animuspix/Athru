@@ -11,7 +11,7 @@
 
 // Maximum supported number of samples-per-pixel
 // for anti-aliasing
-#define NUM_AA_SAMPLES 131072
+#define NUM_AA_SAMPLES 8192
 
 // Samples + counter variables for each pixel
 // (needed for temporal smoothing)
