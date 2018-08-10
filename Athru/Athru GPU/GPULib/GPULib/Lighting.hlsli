@@ -11,13 +11,13 @@
 
 // Process + cache surface data for the interaction occurring at
 // [rayVec]
-// Also return a store-able [BidirVert] so we can account for this
+// Also return a store-able [PathVt] so we can account for this
 // interaction during bi-directional path connection/integration
 // Not a huge fan of all these side-effecty [out] variables, but
 // it feels like the only single-function way to process arbitrary
 // camera/light sub-paths without heavy code duplication in
 // [SceneVis.hlsl]'s core marching loop
-BidirVert ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [w]
+PathVt ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [w]
 								  // (used for basic atmospheric shading)
                    float3 figPos, // Central position for the closest figure to [rayVec]
                    inout float3 rayDir,
@@ -77,7 +77,7 @@ BidirVert ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance i
                      uint3(bxdfID, figIDDFType.yx)) * abs(dot(normal, bounceDir)) * pdfIO.x;
 
     // Cache the bi-directional vertex representing the current interaction
-    BidirVert bdVt = BuildBidirVt(float4(rayVec.xyz, figIDDFType.x),
+    PathVt bdVt = BuildBidirVt(float4(rayVec.xyz, figIDDFType.x),
                                   figPos,
                                   float4(atten, bxdfID),
                                   float4(normal, figIDDFType.y),
@@ -106,7 +106,7 @@ BidirVert ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance i
 // Camera gathers for surface light vertices
 // Not MIS-weighted just yet, need to cleanly integrate the lens DF into the scene field before I
 // look at that...
-float4 CamGather(BidirVert liVt, // A surface light vertex
+float4 CamGather(PathVt liVt, // A surface light vertex
                  float4 camInfo, // Camera information needed for lens interactions; contains the lens normal in [xyz] and
                                  // the camera z-scale (projective depth used for perspective projection before normalization)
                                  // in [w]
@@ -166,7 +166,7 @@ float4 CamGather(BidirVert liVt, // A surface light vertex
 }
 
 // Light gathers for surface camera vertices
-float3 LiGather(BidirVert camVt, // A surface camera vertex
+float3 LiGather(PathVt camVt, // A surface camera vertex
                 float4 liLinTransf, // Position/size for the given light (all lights are area lights in Athru)
                 float adaptEps, // The adaptive epsilon value chosen for the current frame
                 inout uint randVal) // The permutable random value used for the current shader instance
@@ -272,8 +272,8 @@ float3 LiGather(BidirVert camVt, // A surface camera vertex
 // Function handling connections between bi-directional vertices and
 // returning path colors for the given connection strategy (defined
 // by the number of samples selected for each sub-path)
-float3 ConnectBidirVts(BidirVert camVt,
-                       BidirVert lightVt,
+float3 ConnectBidirVts(PathVt camVt,
+                       PathVt lightVt,
                        float adaptEps,
                        inout uint randVal)
 {

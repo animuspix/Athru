@@ -297,8 +297,8 @@ float MatPDF(float3x3 surfDirs,
             break;
         case BXDF_ID_MIRRO:
             pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
-                                                                               // reconstructed from the given input/output
-                                                                               // directions
+                                                                           // reconstructed from the given input/output
+                                                                           // directions
                                      MatInfo(float2x3(MAT_PROP_VARI,
                                                       surfInfo.yz,
                                                       coord.xyz)).x),
@@ -308,8 +308,8 @@ float MatPDF(float3x3 surfDirs,
         case BXDF_ID_REFRA:
             // Remap refractions to perfect specular interactions for now...
             pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
-                                                                               // reconstructed from the given input/output
-                                                                               // directions
+                                                                           // reconstructed from the given input/output
+                                                                           // directions
                                      MatInfo(float2x3(MAT_PROP_VARI,
                                                       surfInfo.yz,
                                                       coord.xyz)).x),

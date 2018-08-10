@@ -177,7 +177,18 @@ namespace CritterStuff
 
 namespace GPGPUStuff
 {
+	// Number of random seeds to expose to the GPU random number generator
 	extern constexpr fourByteUnsigned NUM_RAND_SEEDS = 88917504;
+
+	// Supported buffer types in Athru
+	struct CBuffer {}; // Constant buffer, read/writable from the CPU/GPU
+	struct GPURWBuffer {}; // Generic UAV buffer, read/writable from the GPU but not the CPU
+	struct AppBuffer : GPURWBuffer {}; // Generic UAV buffer with the same read/write qualities as [GPURWBuffer], but behaves
+									   // like a parallel stack instead of an array (insertion with [Append()], removal with
+									   // [Consume()])
+	struct GPURBuffer {};  // Generic SRV buffer, readable but not writable from the GPU, inaccessible from the CPU
+	struct StgBuffer {}; // Staging buffer, used to copy GPU-only information across to the CPU (useful for e.g.
+					     // extracting structure counts from append/consume buffers)
 
 	// Construct a GPGPU read/write buffer with the given complex
 	// (non-pointer, non-enum, non-array, non-reference) type

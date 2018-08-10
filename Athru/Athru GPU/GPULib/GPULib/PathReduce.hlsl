@@ -15,6 +15,11 @@ RWTexture2D<float4> displayTex : register(u1);
 // pixel indices are in [1][y], z-scale is in [1][z]
 AppendStructuredBuffer<float2x3> traceables : register(u4);
 
+// Small counter buffer describing the maximum number of traceable elements
+// emitted by each frame (traceable element-count can be randomly reduced
+// by stochastic path reduction)
+AppendStructuredBuffer<uint> maxTraceables : register(u5);
+
 #include "Lighting.hlsli"
 #ifndef RASTER_CAMERA_LINKED
     #include "RasterCamera.hlsli"
@@ -92,23 +97,22 @@ void main(uint3 groupID : SV_GroupID,
                                            float3(rayDir.w,
                                                   linPixID,
                                                   zProj)));
-                // We don't want to define colours for these points yet, so return immediately
-                return;
-            }
-            else
-            {
-                // This sample was elided by stochastic work reduction, so just recycle the pixel's value from the previous frame
-                // and avoid outputting anything to the display texture
-                return;
             }
         #else
             traceables.Append(float2x3(rayDir.xyz,
                                        float3(rayDir.w,
                                               linPixID,
                                               zProj)));
-            // We don't want to define colours for these points yet, so return immediately
-            return;
         #endif
+
+        // Update the upper-value ray-intersection counter (ignoring SWR)
+        const uint marker = 0xFFFFFF;
+        maxTraceables.Append(marker);
+
+        // Either we're recycling older color values for these points (SWR elision) or we're waiting until path-tracing to
+        // have valid tonemapped radiances; either way, we want to return immediately instead of outputting a processed
+        // stellar/background color
+        return;
     }
     else if (BoundingSurfTrace(figuresReadable[STELLAR_FIG_ID].linTransf,
                                figuresReadable[STELLAR_FIG_ID].self.x,

@@ -1,6 +1,7 @@
 #pragma once
 
 #include <d3d11.h>
+#include "AthruBuffer.h"
 #include "ComputeShader.h"
 
 class PathTracer
@@ -54,9 +55,9 @@ class PathTracer
 			DirectX::XMFLOAT4 timeDispInfo; // Time/dispatch info for each frame;
 											// delta-time in [x], current total time (seconds) in [y],
 											// number of traceable elements after each pre-processing
-											// pass in [z], number of patches (groups) deployed
-											// for path-tracing in [w]
-			DirectX::XMFLOAT4 prevNumTraceables; // Number of traceable elements in the previous frame in [x]
+											// pass in [z], number of patches (groups) per-axis
+											// deployed for path tracing in [w]
+			DirectX::XMFLOAT4 prevNumTraceables; // Maximum number of traceable elements in the previous frame in [x]
 												 // ([yzw] are empty)
 			DirectX::XMUINT4 maxNumBounces; // Number of bounces for each ray
 		};
@@ -70,18 +71,28 @@ class PathTracer
 
 		// Small buffer letting us restrict path-tracing dispatches to pixels intersecting
 		// planets, plants, and/or animals
+		// (excluding pixels culled by SWR)
 		Microsoft::WRL::ComPtr<ID3D11Buffer> traceables;
 
 		// A GPU read/write view over the intersection-buffer declared above
 		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> traceablesAppendView;
 
-		// Small staging buffer, used so we can read the length of [traceables] between
-		// the pre-processing/path-tracing stages and avert [Consume] calls as appropriate
+		// Small staging buffer, used so we can read the length of [traceables] after
+		// the pre-processing stage and deploy path-tracing threads appropriately
 		Microsoft::WRL::ComPtr<ID3D11Buffer> numTraceables;
 
-		// Whether or not the first frame for the current session is being rendered;
-		// allows us to zero [traceableBuffer]'s counter then and never again
-		bool zerothFrame;
+		// Secondary buffer defining the maximum number of intersections in each
+		// path-reduction pass (including pixels culled by SWR)
+		Microsoft::WRL::ComPtr<ID3D11Buffer> maxTraceables;
+
+		// A GPU read/write view over the data stored in [maxTraceables]
+		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> maxTraceablesAppendView;
+
+		// Secondary staging buffer carrying the maximum number of traceables in each frame
+		// before stochastic work reduction; used so we can calculate an appropriate culling
+		// frequency per-frame without referencing the most recent (culled) value in
+		// [numTraceables]
+		Microsoft::WRL::ComPtr<ID3D11Buffer> maxNumTraceables;
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time

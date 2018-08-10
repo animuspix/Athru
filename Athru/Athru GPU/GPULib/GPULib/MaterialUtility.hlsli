@@ -108,6 +108,15 @@ float2x3 rgbToFres(float3 rgb)
 // return this way will fit in float4 anyways :)
 // [query] has requested property in [0][x], distance-field type in [0][y]
 // figure-ID in [0][z], and position in [1]
+// This approach works well at reducing unnecessary calculations when every
+// query returns a constant value and vertices are rarely sampled more than
+// once, but falls down for bi-directional light transport with dynamic
+// materials (since the material generator has to re-run for every
+// gather/connection ray)
+// Future materials will be generated from 2x4 matrices (4 dimensions of BXDF
+// variation, three color dimensions, one dimension of surface roughness)
+// populated during vertex processing and immediately embedded inside
+// surface vertices (see [LightingUtility.hlsli] for layout info)
 float4 MatInfo(float2x3 query)
 {
     switch (query[0].y)

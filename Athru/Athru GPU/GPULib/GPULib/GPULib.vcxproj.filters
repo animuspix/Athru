@@ -81,6 +81,9 @@
     <ClInclude Include="PixHistory.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="AthruBuffer.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -137,6 +140,7 @@
     <FxCompile Include="PresentationColors.hlsl" />
     <FxCompile Include="PresentationVerts.hlsl" />
     <FxCompile Include="PathReduce.hlsl" />
+    <FxCompile Include="VtBuilder.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Lighting.hlsli" />
@@ -149,5 +153,7 @@
     <None Include="RasterCamera.hlsli" />
     <None Include="ScenePost.hlsli" />
     <None Include="MIS.hlsli" />
+    <None Include="GeometricUtility.hlsli" />
+    <None Include="MaterialUtility.hlsli" />
   </ItemGroup>
 </Project>

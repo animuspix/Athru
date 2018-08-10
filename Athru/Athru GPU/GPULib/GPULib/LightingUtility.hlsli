@@ -36,28 +36,29 @@
 // light transport during path integration
 // (easiest to perform that separately to
 // core ray propagation/bouncing)
-// [figID], and [bxdfID] are ignored for
+// [figID] and [bxdfID] are ignored for
 // vertices on the camera lens/pinhole
-struct BidirVert
+struct PathVt
 {
     float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
-    float4 dfOri; // Position of the figure associated with [this]; [w] is unused
+    float4 dfOri; // Position of the figure associated with [this]; [w] carries local surface variance
+                  // (not implemented just yet)
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
     float4 norml; // Surface normal at [pos]; contains the local distance-function type/ID in [w]
-    float4 iDir; // Incoming ray direction
-    float4 oDir; // Outgoing ray direction
+    float4 iDir; // Incoming ray direction in [xyz], surface redness in [w] (not implemented just yet)
+    float4 oDir; // Outgoing ray direction in [xyz], surface greenness in [w] (not implemented just yet)
     float4 pdfIO; // Forward/reverse probability densities; ([z] contains local planetary distance
-                  // (used for atmospheric refraction), [w] is unused)
+                  // (used for atmospheric refraction), [w] carries surface blueness (not implemented just yet))
 };
 
-BidirVert BuildBidirVt(float4 posFigID,
+PathVt BuildBidirVt(float4 posFigID,
                        float3 figPos,
                        float4 attenBXDFID,
                        float4 normlDFType,
                        float2x3 ioDirs,
                        float3 pdfsPlanetDist)
 {
-    BidirVert bdVt;
+    PathVt bdVt;
     bdVt.pos = posFigID;
     bdVt.dfOri = float4(figPos, 0.0f);
     bdVt.atten = attenBXDFID;
@@ -77,8 +78,8 @@ BidirVert BuildBidirVt(float4 posFigID,
 // arrays
 struct BidirVtPair
 {
-    BidirVert lightVt;
-    BidirVert camVt;
+    PathVt lightVt;
+    PathVt camVt;
 };
 
 // A generic background color; used for contrast against dark surfaces in

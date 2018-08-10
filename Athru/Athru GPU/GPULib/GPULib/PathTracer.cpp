@@ -9,10 +9,10 @@ PathTracer::PathTracer(LPCWSTR sceneVisFilePath,
 					   const Microsoft::WRL::ComPtr<ID3D11Device>& device) :
 			tracers{ LocalComputeShader(device,
 										windowHandle,
-										sceneVisFilePath),
+										pathReduceFilePath),
 					 LocalComputeShader(device,
 					 					windowHandle,
-					 					pathReduceFilePath) }
+					 					sceneVisFilePath) }
 {
 	// Describe the shader input buffer we'll be using
 	// for shader i/o operations through [this]
@@ -57,9 +57,21 @@ PathTracer::PathTracer(LPCWSTR sceneVisFilePath,
 													 numTraceables,
 													 1);
 
-	// We haven't rendered anything yet, so start [prevDispWidth] at [0] + [zerothFrame] at [true]
+	// Create the duplicate intersection buffer
+	GPGPUStuff::BuildRWStructBuffer<fourByteUnsigned>(device,
+													  maxTraceables,
+													  nullptr,
+													  maxTraceablesAppendView,
+													  D3D11_BUFFER_UAV_FLAG_APPEND,
+													  GraphicsStuff::DISPLAY_AREA);
+
+	// Create the counter buffer associated with [maxTraceables]
+	GPGPUStuff::BuildStagingBuffer<fourByteUnsigned>(device,
+												     maxNumTraceables,
+													 1);
+
+	// Initially zero [prevNumTraceables]
 	prevNumTraceables = 0;
-	zerothFrame = true;
 }
 
 PathTracer::~PathTracer() {}
@@ -70,10 +82,10 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 							DirectX::XMMATRIX& viewMatrix)
 {
 	// Pass the pre-processing shader onto the GPU
-	context->CSSetShader(tracers[1].d3dShader().Get(), 0, 0);
+	context->CSSetShader(tracers[0].d3dShader().Get(), nullptr, 0);
 
 	// Pass all the path-tracing elements we expect to use onto the GPU as well
-		// Path-tracing needs random ray directions, so pass a write-allowed view of our shader-friendly
+	// Path-tracing needs random ray directions, so pass a write-allowed view of our shader-friendly
 	// random-number buffer onto the GPU over here
 	const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
 	context->CSSetUnorderedAccessViews(2, 1, gpuRandView.GetAddressOf(), 0);
@@ -84,11 +96,7 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 
 	// ...and it also exposes selected pixels to the path-tracer via [traceables], so we need to
 	// pass that to the GPU as well
-	// [-1] as the argument for [UAVInitialCounts] tells DirectX not to change the append/consume counter
-	// outside GPU processing, which is what we want beyond the first frame
-	UINT appendCtr = (UINT)(-1 + (fourByteSigned)zerothFrame); // Zero [traceableBuffer]'s append/consume counter in
-															   // the first frame (but never again)
-	context->CSSetUnorderedAccessViews(4, 1, traceablesAppendView.GetAddressOf(), &appendCtr);
+	context->CSSetUnorderedAccessViews(4, 1, traceablesAppendView.GetAddressOf(), 0);
 
 	// We want to perform stratified anti-aliasing (basically tracing pseudo-random
 	// subpixel rays each frame) and integrate the results over time, so push
@@ -110,34 +118,20 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 	shaderInputPtr->iViewMat = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(viewMatrix),
 														viewMatrix);
 
-	// Copy [traceables]' hidden counter into [numTraceables]
-	// (needed if we want to support multi-frame tracing)
-	context->CopyStructureCount(numTraceables.Get(), 0, traceablesAppendView.Get());
-
-	// Map [numTraceables] onto a local [void*] so we can feed it back into
-	// the pre-processor (...and avoid appending elements to [traceables] while there's
-	// still some left over from the previous frame)
-	D3D11_MAPPED_SUBRESOURCE traceableCount;
-	context->Map(numTraceables.Get(), 0, D3D11_MAP_READ, 0, &traceableCount);
-
 	// Copy in time/dispatch information for the current frame
 	float dt = TimeStuff::deltaTime();
 	std::chrono::nanoseconds currTimeNanoSecs = std::chrono::steady_clock::now().time_since_epoch();
 	fourByteUnsigned tSecs = std::chrono::duration_cast<std::chrono::duration<fourByteUnsigned>>(currTimeNanoSecs).count();
-	fourByteUnsigned traceableCtr = *(fourByteUnsigned*)(traceableCount.pData);
 	shaderInputPtr->timeDispInfo = DirectX::XMFLOAT4(dt, // Change-in-time in seconds
 													 (float)tSecs, // Current time in seconds
-													 (float)traceableCtr, // Number of traceables remaining from the previous frame
+													 0.0f, // Number of traceables remaining from the previous frame
 													 GraphicsStuff::DISPLAY_AREA / GraphicsStuff::GROUP_AREA_PATH_REDUCTION); // Total group count (preprocessing)
 
-    // Update the GPU-side copy of [prevNumTraceables]
+	// Update the GPU-side version of [prevNumTraceables]
 	shaderInputPtr->prevNumTraceables = DirectX::XMFLOAT4((float)prevNumTraceables,
 														  (float)prevNumTraceables,
 														  (float)prevNumTraceables,
 													      (float)prevNumTraceables);
-
-	// Release the local mapping/read-allowed-connection to [numTraceables]
-	context->Unmap(numTraceables.Get(), 0);
 
 	// Break the write-allowed connection to the shader input buffer
 	context->Unmap(shaderInputBuffer.Get(), 0);
@@ -149,10 +143,6 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
 					  GraphicsStuff::DISPLAY_HEIGHT / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
 					  1);
-
-	// We've rendered beyond the zeroth frame, so give the GPU full control over
-	// [traceables]' hidden counter from now onwards
-	zerothFrame = false;
 }
 
 void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
@@ -161,7 +151,7 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 {
 	// Most of the shader inputs we expect to use were set during pre-processing, so no reason to
 	// set them again over here
-	context->CSSetShader(tracers[0].d3dShader().Get(), 0, 0);
+	context->CSSetShader(tracers[1].d3dShader().Get(), nullptr, 0);
 
 	// ...but we will have (usually) [Append()]'d some data to [traceables] during pre-processing,
 	// so read the length of that back into a local value here
@@ -171,11 +161,20 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 	fourByteUnsigned traceableCounter = *(fourByteUnsigned*)(traceableCount.pData);
 	context->Unmap(numTraceables.Get(), 0);
 
+	// Also cache the total number of intersections from the last frame (excluding SWR)
+	// Needed for calibrating SWR intensity
+	D3D11_MAPPED_SUBRESOURCE maxTraceableCount;
+	context->CopyStructureCount(maxNumTraceables.Get(), 0, maxTraceablesAppendView.Get());
+	context->Map(maxNumTraceables.Get(), 0, D3D11_MAP_READ, 0, &maxTraceableCount);
+	fourByteUnsigned maxTraceableCounter = *(fourByteUnsigned*)(maxTraceableCount.pData);
+	context->Unmap(maxNumTraceables.Get(), 0);
+	prevNumTraceables = maxTraceableCounter;
+
 	// Create a CPU-accessible reference to the shader input buffer
 	D3D11_MAPPED_SUBRESOURCE shaderInput;
 	context->Map(shaderInputBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
 	InputStuffs* shaderInputPtr = (InputStuffs*)shaderInput.pData;
-
+	
 	// Calculate a dispatch width
 	fourByteUnsigned dispWidth = (fourByteUnsigned)std::ceil(std::cbrt((float)traceableCounter / 128));
 
@@ -187,19 +186,16 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 	shaderInputPtr->timeDispInfo = DirectX::XMFLOAT4(TimeStuff::deltaTime(),
 													 (float)currTime,
 													 (float)traceableCounter,
-													 (float)dispWidth * dispWidth * dispWidth);
+													 (float)dispWidth);
 
-	// Refill the GPU-side version of [prevNumTraceables] with the same value we passed along during preprocessing
-	shaderInputPtr->prevNumTraceables = DirectX::XMFLOAT4((float)prevNumTraceables,
-														  (float)prevNumTraceables,
-														  (float)prevNumTraceables,
-													      (float)prevNumTraceables);
+	// Pass filler values into [prevNumTraceables]
+	shaderInputPtr->prevNumTraceables = DirectX::XMFLOAT4(0.0f,
+														  0.0f,
+														  0.0f,
+													      0.0f);
 
-	// Cache the current dispatch width so we can choose an appropriate culling frequency for the next frame
-	prevNumTraceables = traceableCounter;
-
-	// Data outside [timeDispInfo] will have been destroyed by [MAP_WRITE_DISCARD];
-	// replenish those over here
+	// Data outside [timeDispInfo] and [prevNumTraceables] will have been destroyed by
+	// [MAP_WRITE_DISCARD]; replenish those over here
 
 	// Define the camera position + view-matrix + inverse view-matrix
 	shaderInputPtr->cameraPos = cameraPosition;
@@ -217,15 +213,13 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 	context->Unmap(shaderInputBuffer.Get(), 0);
 
 	// Dispatch the path tracer
-	// The number of patches-per-frame is perfectly cubic, so we can evenly fill each axis
 	context->Dispatch(dispWidth,
 					  dispWidth,
 					  dispWidth);
 
 	// Resources can't be exposed through unordered-access-views (read/write allowed) and shader-
 	// resource-views (read-only) simultaneously, so un-bind the local unordered-access-view
-	// over here
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> nullUAV = nullptr;
+	// of the display texture over here
 	context->CSSetUnorderedAccessViews(1, 1, &nullUAV, 0);
 }
 
