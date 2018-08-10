@@ -140,7 +140,6 @@
     <FxCompile Include="PresentationColors.hlsl" />
     <FxCompile Include="PresentationVerts.hlsl" />
     <FxCompile Include="PathReduce.hlsl" />
-    <FxCompile Include="VtBuilder.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Lighting.hlsli" />
