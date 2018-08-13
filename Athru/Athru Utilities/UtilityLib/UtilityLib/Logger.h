@@ -63,7 +63,7 @@ class Logger
 
 		// Logging for pure types, or decoded references to types (i.e. any case where [dataLogging]
 		// is *not* a pointer to data of type [loggableType])
-		template<typename loggableType> void Log(loggableType dataLogging, DESTINATIONS destination)
+		template<typename loggableType> void Log(loggableType dataLogging, DESTINATIONS destination = DESTINATIONS::CONSOLE)
 		{
 			// Boilerplate to fend off over-eager MSVC [if constexpr] validations
 			constexpr bool arithData = std::is_arithmetic<loggableType>{};
@@ -245,7 +245,7 @@ class Logger
 
 		// Logging for references-to-types (i.e. any case where [dataLogging] *is* a
 		// pointer to data of type [loggableType])
-		template<typename loggableType> void Log(loggableType* dataLogging, DESTINATIONS destination)
+		template<typename loggableType> void Log(loggableType* dataLogging, DESTINATIONS destination = DESTINATIONS::CONSOLE)
 		{
 			if (dataLogging != nullptr)
 			{

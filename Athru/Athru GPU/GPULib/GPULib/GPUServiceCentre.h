@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Direct3D.h"
-#include "RenderManager.h"
+#include "Renderer.h"
 #include "GPUUpdateManager.h"
 #include "GPUMessenger.h"
 #include "GPURand.h"
@@ -39,15 +39,18 @@ namespace AthruGPU
 			gpuRand = new GPURand(d3DPttr->GetDevice());
 
 			// Initialise the rendering manager + the GPU update manager
-			renderManagerPttr = new RenderManager();
+			rendererPttr = new Renderer(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND(),
+										d3DPttr->GetDevice(),
+										d3DPttr->GetDeviceContext());
+
 			//gpuUpdateManagerPttr = new GPUUpdateManager();
 		}
 
 		static void DeInit()
 		{
 			// Clean-up the rendering manager
-			renderManagerPttr->~RenderManager();
-			renderManagerPttr = nullptr;
+			rendererPttr->~Renderer();
+			rendererPttr = nullptr;
 
 			// Clean-up the GPU update manager
 			//gpuUpdateManagerPttr->~GPUUpdateManager();
@@ -86,9 +89,9 @@ namespace AthruGPU
 			return gpuMessengerPttr;
 		}
 
-		static RenderManager* AccessRenderManager()
+		static Renderer* AccessRenderer()
 		{
-			return renderManagerPttr;
+			return rendererPttr;
 		}
 
 		//static GPUUpdateManager* AccessGPUUpdateManager()
@@ -111,7 +114,7 @@ namespace AthruGPU
 
 		// Visibility/lighting calculations, also
 		// post-production and presentation
-		static RenderManager* renderManagerPttr;
+		static Renderer* rendererPttr;
 
 		// GPU updates for highly-parallel data
 		// (animal cells, plant/animal predation,

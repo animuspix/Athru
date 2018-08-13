@@ -6,14 +6,11 @@ ComputeShader::ComputeShader(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 							 HWND windowHandle,
 							 LPCWSTR shaderFilePath)
 {
-	// Value used to store success/failure for different DirectX operations
-	fourByteUnsigned result;
-
 	// Declare a buffer to store the imported shader data
 	Microsoft::WRL::ComPtr<ID3DBlob> shaderBuffer;
 
 	// Import the given file into DirectX with [D3DReadFileToBlob(...)]
-	result = D3DReadFileToBlob(shaderFilePath, &shaderBuffer);
+	HRESULT result = D3DReadFileToBlob(shaderFilePath, &shaderBuffer);
 	assert(SUCCEEDED(result));
 
 	// Construct the shader object from the buffer populated above

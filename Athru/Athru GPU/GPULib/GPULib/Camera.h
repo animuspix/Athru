@@ -1,7 +1,7 @@
 #pragma once
 
 #include <directxmath.h>
-#include "ScreenRect.h"
+#include "ViewFinder.h"
 
 struct CameraLookData
 {
@@ -39,7 +39,7 @@ class Camera
 		CameraLookData GetLookData();
 
 		// Fetch the viewfinder (screen rect) for post-processing/rendering
-		ScreenRect* GetViewFinder();
+		ViewFinder* GetViewFinder();
 
 		// Classical mouse-look function; causes the camera to rotate
 		// horizontally (about local-Y) when the mouse moves
@@ -68,9 +68,9 @@ class Camera
 		// simulated depth of field
 		CameraLookData lookInfo;
 
-		// A rect (one-sided square) projected onto the screen; used to render the screen
+		// A rect (one-sided rectangle) projected onto the screen; used to render the screen
 		// texture after post-processing
-		ScreenRect* viewfinder;
+		ViewFinder* viewfinder;
 
 		// Whether or not to enable mouselook; settable because the current voxel grid width
 		// (100 units, so volume is 100^3) is taxing enough that free look becomes super

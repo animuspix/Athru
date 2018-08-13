@@ -2,29 +2,38 @@
 
 #include <d3d11.h>
 #include "AthruBuffer.h"
+#include "PixHistory.h"
 #include "ComputeShader.h"
+#include "ScreenPainter.h"
+#include "Camera.h"
 
-class PathTracer
+class Renderer
 {
 	public:
-		PathTracer(LPCWSTR sceneVisFilePath,
-				   LPCWSTR pathReduceFilePath,
-				   HWND windowHandle,
-				   const Microsoft::WRL::ComPtr<ID3D11Device>& device);
-		~PathTracer();
-		void PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
-						const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexWritable,
-						DirectX::XMVECTOR& cameraPosition,
-						DirectX::XMMATRIX& viewMatrix);
-		void Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
-					  DirectX::XMVECTOR& cameraPosition,
-					  DirectX::XMMATRIX& viewMatrix);
+		Renderer(HWND windowHandle,
+				 const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+				 const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext);
+		~Renderer();
+		void Render(Camera* camera);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
+		// Private utility function to pre-process the scene for path-tracing
+		void PreProcess(DirectX::XMVECTOR& cameraPosition,
+						DirectX::XMMATRIX& viewMatrix,
+						Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexWritable);
+
+		// Private utility function to initiate path-tracing
+		void Trace(DirectX::XMVECTOR& cameraPosition,
+				   DirectX::XMMATRIX& viewMatrix);
+
+		// Private utility function to present the scene to the player through the DirectX
+		// geometry pipeline (would love a more direct way to do this)
+		void Present(ViewFinder* viewFinder);
+
 		// Small struct to let us access the [shader] member in each local compute shader
 		// (so we can pass it into the pipeline) without neccessarily making all [shader]
 		// members public in all shader wrapper objects (like e.g. [ScreenPainter])
@@ -64,40 +73,36 @@ class PathTracer
 
 		// ...And a reference to the buffer we'll need in order
 		// to send that input data over to the GPU
-		Microsoft::WRL::ComPtr<ID3D11Buffer> shaderInputBuffer;
+		AthruBuffer<InputStuffs, GPGPUStuff::CBuffer> shaderInputBuffer;
 
 		// Frame counter for managing time-dependant input values (like [prevNumTraceables])
-		fourByteUnsigned prevNumTraceables;
+		fourByteSigned prevNumTraceables;
 
 		// Small buffer letting us restrict path-tracing dispatches to pixels intersecting
 		// planets, plants, and/or animals
 		// (excluding pixels culled by SWR)
-		Microsoft::WRL::ComPtr<ID3D11Buffer> traceables;
-
-		// A GPU read/write view over the intersection-buffer declared above
-		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> traceablesAppendView;
+		struct float2x3 { DirectX::XMFLOAT3 rows[2]; };
+		AthruBuffer<float2x3, GPGPUStuff::AppBuffer> traceables;
 
 		// Small staging buffer, used so we can read the length of [traceables] after
 		// the pre-processing stage and deploy path-tracing threads appropriately
-		Microsoft::WRL::ComPtr<ID3D11Buffer> numTraceables;
+		AthruBuffer<fourByteUnsigned, GPGPUStuff::StgBuffer> numTraceables;
 
-		// Secondary buffer defining the maximum number of intersections in each
+		// Secondary buffer counting the maximum number of intersections in each
 		// path-reduction pass (including pixels culled by SWR)
-		Microsoft::WRL::ComPtr<ID3D11Buffer> maxTraceables;
+		AthruBuffer<fourByteSigned, GPGPUStuff::GPURWBuffer> maxTraceablesCtr;
 
-		// A GPU read/write view over the data stored in [maxTraceables]
-		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> maxTraceablesAppendView;
-
-		// Secondary staging buffer carrying the maximum number of traceables in each frame
-		// before stochastic work reduction; used so we can calculate an appropriate culling
-		// frequency per-frame without referencing the most recent (culled) value in
-		// [numTraceables]
-		Microsoft::WRL::ComPtr<ID3D11Buffer> maxNumTraceables;
+		// Staging buffer providing CPU access to [traceableCtr]
+		AthruBuffer<fourByteSigned, GPGPUStuff::StgBuffer> maxTraceablesCtrCPU;
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
-		Microsoft::WRL::ComPtr<ID3D11Buffer> aaBuffer;
+		AthruBuffer<PixHistory, GPGPUStuff::GPURWBuffer> aaBuffer;
 
-		// A GPU read/write allowed view of the AA integration buffer
-		Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> aaBufferView;
+		// Reference to the Direct3D device context
+		const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context;
+
+		// Reference to the pipeline shader needed to denoise traced imagery before
+		// passing it along to the DX11 render target
+		ScreenPainter screenPainter;
 };

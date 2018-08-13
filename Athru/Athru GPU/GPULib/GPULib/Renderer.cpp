@@ -1,85 +1,88 @@
 #include "UtilityServiceCentre.h"
 #include "GPUServiceCentre.h"
-#include "PathTracer.h"
+#include "Renderer.h"
 #include "PixHistory.h"
+#include "Camera.h"
 
-PathTracer::PathTracer(LPCWSTR sceneVisFilePath,
-					   LPCWSTR pathReduceFilePath,
-					   HWND windowHandle,
-					   const Microsoft::WRL::ComPtr<ID3D11Device>& device) :
+Renderer::Renderer(HWND windowHandle,
+				   const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+				   const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext) :
 			tracers{ LocalComputeShader(device,
 										windowHandle,
-										pathReduceFilePath),
+										L"PathReduce.cso"),
 					 LocalComputeShader(device,
 					 					windowHandle,
-					 					sceneVisFilePath) }
+					 					L"SceneVis.cso") },
+			screenPainter(device,
+						  windowHandle,
+						  L"PresentationVerts.cso",
+						  L"PresentationColors.cso"),
+			context(d3dContext)
 {
-	// Describe the shader input buffer we'll be using
+	// Construct the input buffer we'll be using
 	// for shader i/o operations through [this]
-	D3D11_BUFFER_DESC inputBufferDesc;
-	inputBufferDesc.Usage = D3D11_USAGE_DYNAMIC;
-	inputBufferDesc.ByteWidth = sizeof(InputStuffs);
-	inputBufferDesc.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
-	inputBufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
-	inputBufferDesc.MiscFlags = 0;
-	inputBufferDesc.StructureByteStride = 0;
-
-	// Instantiate the input buffer from the description
-	// we made above
-	HRESULT result = device->CreateBuffer(&inputBufferDesc, NULL, shaderInputBuffer.GetAddressOf());
-	assert(SUCCEEDED(result));
+	shaderInputBuffer = AthruBuffer<InputStuffs, GPGPUStuff::CBuffer>(device,
+																	  nullptr);
 
 	// Build the buffer we'll be using to store
 	// image samples for temporal
 	// smoothing/anti-aliasing
-	fourByteUnsigned length = GraphicsStuff::DISPLAY_AREA;
-	GPGPUStuff::BuildRWStructBuffer<PixHistory>(device,
-												aaBuffer,
-												nullptr,
-												aaBufferView,
-												(D3D11_BUFFER_UAV_FLAG)0,
-												length);
+	aaBuffer = AthruBuffer<PixHistory, GPGPUStuff::GPURWBuffer>(device,
+																nullptr,
+																GraphicsStuff::DISPLAY_AREA);
 	// Create the intersection buffer
 	// [traceables] are [float2x3]'s in shader code, so no reason to use
 	// a fancy globally-visible discrete type when a small temporary
 	// wrapper around an array of [XMFLOAT3]s will work too
-	struct float2x3 { DirectX::XMFLOAT3 rows[2]; };
-	GPGPUStuff::BuildRWStructBuffer<float2x3>(device,
-											  traceables,
-											  nullptr,
-											  traceablesAppendView,
-											  D3D11_BUFFER_UAV_FLAG_APPEND,
-											  GraphicsStuff::DISPLAY_AREA);
+	traceables = AthruBuffer<float2x3, GPGPUStuff::AppBuffer>(device,
+															  nullptr,
+															  GraphicsStuff::DISPLAY_AREA);
 
 	// Create the buffer we'll use to capture [traceables]' hidden counter
 	// value
-	GPGPUStuff::BuildStagingBuffer<fourByteUnsigned>(device,
-													 numTraceables,
-													 1);
-
-	// Create the duplicate intersection buffer
-	GPGPUStuff::BuildRWStructBuffer<fourByteUnsigned>(device,
-													  maxTraceables,
-													  nullptr,
-													  maxTraceablesAppendView,
-													  D3D11_BUFFER_UAV_FLAG_APPEND,
-													  GraphicsStuff::DISPLAY_AREA);
-
-	// Create the counter buffer associated with [maxTraceables]
-	GPGPUStuff::BuildStagingBuffer<fourByteUnsigned>(device,
-												     maxNumTraceables,
-													 1);
-
+	numTraceables = AthruBuffer<fourByteUnsigned, GPGPUStuff::StgBuffer>(device,
+																	     nullptr,
+																	     GraphicsStuff::DISPLAY_AREA);
+	// Create the intersection counter buffer
+	maxTraceablesCtr = AthruBuffer<fourByteSigned, GPGPUStuff::GPURWBuffer>(device,
+																			nullptr,
+																			1,
+																			DXGI_FORMAT::DXGI_FORMAT_R32_SINT);
+	// Create the staging buffer associated with [maxTraceables]
+	maxTraceablesCtrCPU = AthruBuffer<fourByteSigned, GPGPUStuff::StgBuffer>(device,
+																			 nullptr,
+																			 1,
+																			 DXGI_FORMAT::DXGI_FORMAT_R32_SINT);
 	// Initially zero [prevNumTraceables]
 	prevNumTraceables = 0;
 }
 
-PathTracer::~PathTracer() {}
+Renderer::~Renderer(){}
 
-void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
-							const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexWritable,
-							DirectX::XMVECTOR& cameraPosition,
-							DirectX::XMMATRIX& viewMatrix)
+void Renderer::Render(Camera* camera)
+{
+	// Initialize the current frame through the Direct3D interface
+	AthruGPU::GPUServiceCentre::AccessD3D()->BeginScene();
+
+	// Pre-process the scene
+	this->PreProcess(camera->GetTranslation(),
+					 camera->GetViewMatrix(),
+					 camera->GetViewFinder()->GetDisplayTex().asWritableShaderResource);
+
+	// Perform path-tracing
+	this->Trace(camera->GetTranslation(),
+				camera->GetViewMatrix());
+
+	// Publish traced results to the display
+	this->Present(camera->GetViewFinder());
+
+	// Ask the GPU to start processing committed rendering work
+	AthruGPU::GPUServiceCentre::AccessD3D()->EndScene();
+}
+
+void Renderer::PreProcess(DirectX::XMVECTOR& cameraPosition,
+						  DirectX::XMMATRIX& viewMatrix,
+						  Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexWritable)
 {
 	// Pass the pre-processing shader onto the GPU
 	context->CSSetShader(tracers[0].d3dShader().Get(), nullptr, 0);
@@ -96,16 +99,18 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 
 	// ...and it also exposes selected pixels to the path-tracer via [traceables], so we need to
 	// pass that to the GPU as well
-	context->CSSetUnorderedAccessViews(4, 1, traceablesAppendView.GetAddressOf(), 0);
+	// Also pass the max-traceables buffer along to the GPU (needed for SWR)
+	context->CSSetUnorderedAccessViews(4, 1, traceables.view().GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(5, 1, maxTraceablesCtr.view().GetAddressOf(), 0);
 
 	// We want to perform stratified anti-aliasing (basically tracing pseudo-random
 	// subpixel rays each frame) and integrate the results over time, so push
 	// the anti-aliasing buffer onto the GPU as well
-	context->CSSetUnorderedAccessViews(3, 1, aaBufferView.GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(3, 1, aaBuffer.view().GetAddressOf(), 0);
 
 	// Expose the local input buffer for writing
 	D3D11_MAPPED_SUBRESOURCE shaderInput;
-	HRESULT result = context->Map(shaderInputBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
+	HRESULT result = context->Map(shaderInputBuffer.buf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
 	assert(SUCCEEDED(result));
 
 	// Get a pointer to the raw data in the shader input buffer
@@ -134,10 +139,10 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 													      (float)prevNumTraceables);
 
 	// Break the write-allowed connection to the shader input buffer
-	context->Unmap(shaderInputBuffer.Get(), 0);
+	context->Unmap(shaderInputBuffer.buf.Get(), 0);
 
 	// Pass the data in the local input buffer over to the GPU
-	context->CSSetConstantBuffers(0, 1, shaderInputBuffer.GetAddressOf());
+	context->CSSetConstantBuffers(0, 1, shaderInputBuffer.buf.GetAddressOf());
 
 	// Dispatch the pre-processing shader
 	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
@@ -145,9 +150,8 @@ void PathTracer::PreProcess(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& c
 					  1);
 }
 
-void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
-						  DirectX::XMVECTOR& cameraPosition,
-						  DirectX::XMMATRIX& viewMatrix)
+void Renderer::Trace(DirectX::XMVECTOR& cameraPosition,
+					 DirectX::XMMATRIX& viewMatrix)
 {
 	// Most of the shader inputs we expect to use were set during pre-processing, so no reason to
 	// set them again over here
@@ -156,25 +160,25 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 	// ...but we will have (usually) [Append()]'d some data to [traceables] during pre-processing,
 	// so read the length of that back into a local value here
 	D3D11_MAPPED_SUBRESOURCE traceableCount;
-	context->CopyStructureCount(numTraceables.Get(), 0, traceablesAppendView.Get());
-	context->Map(numTraceables.Get(), 0, D3D11_MAP_READ, 0, &traceableCount);
+	context->CopyStructureCount(numTraceables.buf.Get(), 0, traceables.view().Get());
+	context->Map(numTraceables.buf.Get(), 0, D3D11_MAP_READ, 0, &traceableCount);
 	fourByteUnsigned traceableCounter = *(fourByteUnsigned*)(traceableCount.pData);
-	context->Unmap(numTraceables.Get(), 0);
+	context->Unmap(numTraceables.buf.Get(), 0);
 
 	// Also cache the total number of intersections from the last frame (excluding SWR)
 	// Needed for calibrating SWR intensity
 	D3D11_MAPPED_SUBRESOURCE maxTraceableCount;
-	context->CopyStructureCount(maxNumTraceables.Get(), 0, maxTraceablesAppendView.Get());
-	context->Map(maxNumTraceables.Get(), 0, D3D11_MAP_READ, 0, &maxTraceableCount);
-	fourByteUnsigned maxTraceableCounter = *(fourByteUnsigned*)(maxTraceableCount.pData);
-	context->Unmap(maxNumTraceables.Get(), 0);
+	context->CopyResource(maxTraceablesCtrCPU.buf.Get(), maxTraceablesCtr.buf.Get());
+	context->Map(maxTraceablesCtrCPU.buf.Get(), 0, D3D11_MAP_READ, 0, &maxTraceableCount);
+	fourByteSigned maxTraceableCounter = *(fourByteSigned*)(maxTraceableCount.pData);
+	context->Unmap(maxTraceablesCtrCPU.buf.Get(), 0);
 	prevNumTraceables = maxTraceableCounter;
 
 	// Create a CPU-accessible reference to the shader input buffer
 	D3D11_MAPPED_SUBRESOURCE shaderInput;
-	context->Map(shaderInputBuffer.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
+	context->Map(shaderInputBuffer.buf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
 	InputStuffs* shaderInputPtr = (InputStuffs*)shaderInput.pData;
-	
+
 	// Calculate a dispatch width
 	fourByteUnsigned dispWidth = (fourByteUnsigned)std::ceil(std::cbrt((float)traceableCounter / 128));
 
@@ -210,7 +214,7 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 													 GraphicsStuff::MAX_NUM_BOUNCES);
 
 	// Break the write-allowed connection to [shaderInputBuffer]
-	context->Unmap(shaderInputBuffer.Get(), 0);
+	context->Unmap(shaderInputBuffer.buf.Get(), 0);
 
 	// Dispatch the path tracer
 	context->Dispatch(dispWidth,
@@ -220,18 +224,26 @@ void PathTracer::Dispatch(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& con
 	// Resources can't be exposed through unordered-access-views (read/write allowed) and shader-
 	// resource-views (read-only) simultaneously, so un-bind the local unordered-access-view
 	// of the display texture over here
+	ID3D11UnorderedAccessView* nullUAV = nullptr;
 	context->CSSetUnorderedAccessViews(1, 1, &nullUAV, 0);
 }
 
+void Renderer::Present(ViewFinder* viewFinder)
+{
+	viewFinder->GetViewGeo().PassToGPU(context);
+	screenPainter.Render(context,
+					     viewFinder->GetDisplayTex().asReadOnlyShaderResource);
+}
+
 // Push constructions for this class through Athru's custom allocator
-void* PathTracer::operator new(size_t size)
+void* Renderer::operator new(size_t size)
 {
 	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<PathTracer>(), false);
+	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Renderer>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing
-void PathTracer::operator delete(void* target)
+void Renderer::operator delete(void* target)
 {
 	return;
 }

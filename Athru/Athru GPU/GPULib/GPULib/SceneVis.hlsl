@@ -20,6 +20,11 @@ RWTexture2D<float4> displayTex : register(u1);
 // are in 1[z]
 ConsumeStructuredBuffer<float2x3> traceables : register(u4);
 
+// Intersection counter ([traceables] without SWR); included
+// here because there's no safe way to reset it per-frame
+// from within [PathReduce.hlsl]
+RWBuffer<int> maxTraceables : register(u5);
+
 // Tracing modes to use for scene visualization
 #define TRACE_MODE_REVERSE 0 // Trace single paths out from the camera towards the light source
 //#define TRACE_MODE_FORWARD 1 // Trace single paths out from the light source towards the lens
@@ -72,6 +77,11 @@ float AdaptEps(float3 camRayOri)
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
 {
+    // The maximum number of traceables for this frame was cached on the CPU
+    // immediately after [PathReduce.hlsl] finished executing, so zero
+    // [maxTraceables] here
+    InterlockedAnd(maxTraceables[0], 0);
+
     // The number of traceable elements emitted by [PathReduce]
     // (i.e. the number of traceable elements) limits the number
     // of path-tracing threads that can actually execute;

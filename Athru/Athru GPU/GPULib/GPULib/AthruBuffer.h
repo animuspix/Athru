@@ -12,7 +12,7 @@ struct AthruBuffer
 						  // will be needed to create a useful buffer/resource-view
 		AthruBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 					const D3D11_SUBRESOURCE_DATA* baseDataPttr,
-					fourByteUnsigned& bufLength,
+					fourByteUnsigned bufLength = 1,
 					DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN) // Allow optional view-format definition for GPU-viewable,
 															   // non-structured buffers; default assumes unknown structured data
 		{
@@ -120,9 +120,7 @@ struct AthruBuffer
 		}
 		fourByteUnsigned bufBindFlags() // Small function returning appropriate binding flags for different buffer types
 		{
-			if constexpr ((std::is_class<ContentType>::value &&
-						   std::is_same<AthruBufType, GPGPUStuff::GPURWBuffer>::value) ||
-						  std::is_same<AthruBufType, GPGPUStuff::AppBuffer>::value)
+			if constexpr (std::is_base_of<GPGPUStuff::GPURWBuffer, AthruBufType>::value)
 			{
 				return D3D11_BIND_UNORDERED_ACCESS;
 			}

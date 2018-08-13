@@ -1,5 +1,5 @@
 #include "GPUServiceCentre.h"
-#include "ScreenRect.h"
+#include "ViewFinder.h"
 #include "ScreenPainter.h"
 #include "PixHistory.h"
 #include <directxmath.h>

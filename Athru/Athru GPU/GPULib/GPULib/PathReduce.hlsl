@@ -18,7 +18,7 @@ AppendStructuredBuffer<float2x3> traceables : register(u4);
 // Small counter buffer describing the maximum number of traceable elements
 // emitted by each frame (traceable element-count can be randomly reduced
 // by stochastic path reduction)
-AppendStructuredBuffer<uint> maxTraceables : register(u5);
+RWBuffer<int> maxTraceables : register(u5);
 
 #include "Lighting.hlsli"
 #ifndef RASTER_CAMERA_LINKED
@@ -35,13 +35,13 @@ AppendStructuredBuffer<uint> maxTraceables : register(u5);
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
 {
-    // Only perform pre-processing/path-reduction when the append-consume buffer is empty
-    if (timeDispInfo.z != 0) { return; }
-
     // Extract a pixel ID from the given thread/group IDs
     uint2 pixID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
                         (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
     uint linPixID = pixID.x + (pixID.y * DISPLAY_WIDTH);
+
+    // Assume pixels contain traceable rays and add [1] per-thread to [maxTraceables]
+    //InterlockedAdd(maxTraceables[0], 1);
 
     // Extract a permutable value from [randBuf]
     // (needed for ray jitter)
@@ -80,6 +80,9 @@ void main(uint3 groupID : SV_GroupID,
                                     camPos) || isectPx;
     }
 
+    // Increment [maxTraceables] once for every intersecting pixel
+    InterlockedAdd(maxTraceables[0], isectPx);
+
     // Append ray-tracing data for [this] to [traceables], but
     // only if [pixIn] intersects at least one non-star figure
     // in the scene
@@ -106,8 +109,8 @@ void main(uint3 groupID : SV_GroupID,
         #endif
 
         // Update the upper-value ray-intersection counter (ignoring SWR)
-        const uint marker = 0xFFFFFF;
-        maxTraceables.Append(marker);
+        //const uint marker = 0xFFFFFF;
+        //maxTraceables.Append(marker);
 
         // Either we're recycling older color values for these points (SWR elision) or we're waiting until path-tracing to
         // have valid tonemapped radiances; either way, we want to return immediately instead of outputting a processed
