@@ -9,7 +9,7 @@ class Scene
 		Scene();
 		~Scene();
 		void Update();
-		SceneFigure* CollectLocalFigures();
+		SceneFigure::Figure* CollectLocalFigures();
 
 		// Retrieve a reference to the
 		// main camera associated with [this]
@@ -32,6 +32,6 @@ class Scene
 
 		// Transfer array used to move data out of the "scene" and into the GPU for
 		// highly-parallel updates/rendering
-		SceneFigure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
+		SceneFigure::Figure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
 };
 

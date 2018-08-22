@@ -3,17 +3,6 @@
 // somewhere in the build process
 #define UTILITIES_LINKED
 
-// The width and height of the application window
-#define DISPLAY_WIDTH 1024
-#define DISPLAY_HEIGHT 768
-
-// Vectorized display width/height
-#define DISPLAY_SIZE_2D float2(DISPLAY_WIDTH,\
-                               DISPLAY_HEIGHT)
-
-// The area of the display texture defined above
-#define DISPLAY_AREA (DISPLAY_WIDTH * DISPLAY_HEIGHT)
-
 // Bounds on possible epsilon lengths for ray intersection, gradient, etc;
 // adaptive epsilons allow for fewer steps (=> better performance) at large
 // distances with lots of ray intersections but little surface detail
@@ -85,7 +74,7 @@ float3 QtnRotate(float3 vec, float4 qtn)
 }
 
 // State buffer for the random number generator (see [irand1D], below)
-RWBuffer<uint> randBuf : register(u2);
+RWBuffer<uint> randBuf : register(u1);
 
 // Length of the PRNG state buffer (see above)
 // Every call to the PRNG repeats the same pattern, and after enough

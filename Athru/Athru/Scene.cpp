@@ -27,23 +27,23 @@ void Scene::Update()
 	// Non-GPU updates here (networking, player stats, UI stuffs, etc.)
 }
 
-SceneFigure* Scene::CollectLocalFigures()
+SceneFigure::Figure* Scene::CollectLocalFigures()
 {
 	// Pass the player's local environment into an array of
 	// generic [SceneFigure]s
 	System* currSys = galaxy->GetCurrentSystem(mainCamera->GetTranslation());
 	Star* star = currSys->GetStar();
 	Planet** planets = currSys->GetPlanets();
-	currFigures[0] = *(SceneFigure*)(star);
-	currFigures[1] = *(SceneFigure*)(planets[0]);
-	currFigures[2] = *(SceneFigure*)(planets[1]);
-	currFigures[3] = *(SceneFigure*)(planets[2]);
-	currFigures[4] = *(SceneFigure*)(planets[3]);
-	currFigures[5] = *(SceneFigure*)(planets[4]);
-	currFigures[6] = *(SceneFigure*)(planets[5]);
-	currFigures[7] = *(SceneFigure*)(planets[6]);
-	currFigures[8] = *(SceneFigure*)(planets[7]);
-	currFigures[9] = *(SceneFigure*)(planets[8]);
+	currFigures[0] = star->GetCoreFigure();
+	currFigures[1] = planets[0]->GetCoreFigure();
+	currFigures[2] = planets[1]->GetCoreFigure();
+	currFigures[3] = planets[2]->GetCoreFigure();
+	currFigures[4] = planets[3]->GetCoreFigure();
+	currFigures[5] = planets[4]->GetCoreFigure();
+	currFigures[6] = planets[5]->GetCoreFigure();
+	currFigures[7] = planets[6]->GetCoreFigure();
+	currFigures[8] = planets[7]->GetCoreFigure();
+	currFigures[9] = planets[8]->GetCoreFigure();
 	return currFigures;
 }
 

@@ -34,25 +34,11 @@ class Renderer
 		// geometry pipeline (would love a more direct way to do this)
 		void Present(ViewFinder* viewFinder);
 
-		// Small struct to let us access the [shader] member in each local compute shader
-		// (so we can pass it into the pipeline) without neccessarily making all [shader]
-		// members public in all shader wrapper objects (like e.g. [ScreenPainter])
-		struct LocalComputeShader : ComputeShader
-		{
-			public:
-				LocalComputeShader(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-								   HWND windowHandle,
-								   LPCWSTR shaderFilePath) : ComputeShader(device,
-																		   windowHandle,
-																		   shaderFilePath) {}
-				const Microsoft::WRL::ComPtr<ID3D11ComputeShader>& d3dShader() { return shader; }
-		};
-
 		// Small array of compute shaders; [0] contains the scene-visualization shader (performs BPDT with PSR),
 		// [1] contains the path-reduction shader (instantly shades non-intersecting pixels/pixels that immediately
 		// intersect the local star, only passes guaranteed-intersecting pixels along for full bi-directional path
 		// tracing)
-		LocalComputeShader tracers[2];
+		ComputeShader tracers[2];
 
 		// A simple input struct that provides various per-frame
 		// constants to the GPU
@@ -69,13 +55,15 @@ class Renderer
 			DirectX::XMFLOAT4 prevNumTraceables; // Maximum number of traceable elements in the previous frame in [x]
 												 // ([yzw] are empty)
 			DirectX::XMUINT4 maxNumBounces; // Number of bounces for each ray
+			DirectX::XMUINT4 resInfo; // Resolution info carrier; contains app resolution in [xy],
+									  // AA sampling rate in [z], and display area in [w]
 		};
 
 		// ...And a reference to the buffer we'll need in order
 		// to send that input data over to the GPU
-		AthruBuffer<InputStuffs, GPGPUStuff::CBuffer> shaderInputBuffer;
+		AthruBuffer<InputStuffs, GPGPUStuff::CBuffer> renderInputBuffer;
 
-		// Frame counter for managing time-dependant input values (like [prevNumTraceables])
+		// CPU-local copy of [prevNumTraceables]
 		fourByteSigned prevNumTraceables;
 
 		// Small buffer letting us restrict path-tracing dispatches to pixels intersecting
@@ -98,6 +86,16 @@ class Renderer
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
 		AthruBuffer<PixHistory, GPGPUStuff::GPURWBuffer> aaBuffer;
+
+		// Another input struct, this time limited to information related to per-frame presentation
+		// (so basically just display size/area/AA sampling rate)
+		struct DisplayInfo
+		{
+			DirectX::XMVECTOR display; // Carries width in [x], height in [y], area in [z], AA sampling rate in [w]
+		};
+
+		// A reference to the presentation-only input/constant buffer (with layout defined by [DisplayInfo])
+		AthruBuffer<DisplayInfo, GPGPUStuff::CBuffer> displayInputBuffer;
 
 		// Reference to the Direct3D device context
 		const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context;

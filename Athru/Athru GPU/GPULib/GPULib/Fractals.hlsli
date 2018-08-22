@@ -18,22 +18,61 @@ float4 QtnProduct2(float4 qtnA, float4 qtnB)
 #define ITERATIONS_JULIA 8
 #define BAILOUT_JULIA 16.0
 
-// Stored iteration count, value of [z], and value
-// of [dz] for an arbitrary quaternionic Julia
-// fractal
-struct JuliaProps
-{
-    float iter;
-    float4 z;
-    float4 dz;
-};
-
-// Quaternionic Julia iteration function (designed for distance estimation)
-JuliaProps Julia(float4 juliaCoeffs,
+// Analytical Julia normal generator; original from:
+// https://www.shadertoy.com/view/MsfGRr
+// by [iq]. Thanks! :D
+float3 JuliaGrad(float4 juliaCoeffs,
                  float3 coord,
                  int maxIter)
 {
-    // Initialise escape-time value (z), escape-time derivative (dz),
+    // Initialise iteration point (z) and Julia constant (c)
+    float4 z = float4(coord, juliaCoeffs.w);
+    float4 c = juliaCoeffs;
+
+    // Initialize the Jacobian matrix [j]; used to compute the
+    // gradient at [z] (i.e. the analytical normal)
+    // We need a Jacobian matrix here because [dz] captures
+    // average rate of change near [z], whereas the quality we
+    // want (the gradient) is defined as the direction of
+    // *greatest* change at the same point, which depends on
+    // the rates of change along every direction near [z]
+    // (=> the partial derivatives in the Jacobian)
+    float4x4 j = float4x4(1.0f, 0.0f, 0.0f, 0.0f,
+                          0.0f, 1.0f, 0.0f, 0.0f,
+                          0.0f, 0.0f, 1.0f, 0.0f,
+                          0.0f, 0.0f, 0.0f, 1.0f);
+    // Iterate the fractal
+    int i = 0;
+    float sqrBailout = (BAILOUT_JULIA * BAILOUT_JULIA);
+    while (i < maxIter &&
+           dot(z, z) < sqrBailout)
+    {
+        // Update the Jacobian term [j]
+        float3 w = z.yzw * -1.0f.xxx;
+        j = j * float4x4(z.x, w.x, w.y, w.z,
+                         z.y, z.x, 0.0f, 0.0f,
+                         z.z, 0.0f, z.x, 0.0f,
+                         z.w, 0.0f, 0.0f, z.x);
+
+        // Displace the Julia coordinate [z]
+        z = QtnProduct2(z, z) + c;
+
+        // Update the iteration count
+        i += 1;
+    }
+
+    // Extract local gradient from the iterated Jacobian, then
+    // return
+    return normalize(mul(j, z).xyz);
+}
+
+// Quaternionic Julia iteration function (designed for distance estimation)
+float Julia(float4 juliaCoeffs,
+            float3 coord,
+            int maxIter,
+            float adaptEps)
+{
+    // Initialise iteration point (z), escape-time derivative (dz),
     // and Julia constant (c)
     float4 z = float4(coord, juliaCoeffs.w);
     float4 dz = float4(1.0f, 0.0f, 0.0f, 0.0f);
@@ -55,16 +94,18 @@ JuliaProps Julia(float4 juliaCoeffs,
     while (i < maxIter &&
            dot(z, z) < sqrBailout)
     {
+        // Update the Julia differential [dz]
         dz = dzScalar * QtnProduct2(z, dz);
+
+        // Displace the Julia coordinate [z]
         z = QtnProduct2(z, z) + c;
+
+        // Update the iteration count
         i += 1;
     }
 
     // Return relevant values (number of iterations, terminal
     // value of [z], terminal value of [z]'s derivative [dz])
-    JuliaProps props;
-    props.iter = i;
-    props.z = z;
-    props.dz = dz;
-    return props;
+    float r = length(z);
+    return (0.5 * log(r) * r / length(dz));
 }

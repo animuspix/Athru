@@ -16,7 +16,7 @@ class ComputeShader
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
-	protected:
+	public:
 		// The core shader object associated with [this]
 		Microsoft::WRL::ComPtr<ID3D11ComputeShader> shader;
 };

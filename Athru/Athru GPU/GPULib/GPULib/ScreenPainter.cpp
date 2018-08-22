@@ -55,17 +55,18 @@ ScreenPainter::ScreenPainter(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 	samplerDesc.MaxLOD = D3D11_FLOAT32_MAX;
 
 	// Create the texture sampler state
-	result = device->CreateSamplerState(&samplerDesc, &wrapSamplerState);
+	result = device->CreateSamplerState(&samplerDesc, &texSampler);
 	assert(SUCCEEDED(result));
 }
 
 ScreenPainter::~ScreenPainter() {}
 
 void ScreenPainter::Render(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& deviceContext,
+						   const Microsoft::WRL::ComPtr<ID3D11Buffer>& displayInput,
 						   const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& displayTexReadable)
 {
 	// Initialise the pixel shader's texture sampler state with [wrapSamplerState]
-	deviceContext->PSSetSamplers(0, 1, wrapSamplerState.GetAddressOf());
+	deviceContext->PSSetSamplers(0, 1, texSampler.GetAddressOf());
 
 	// Set the vertex input layout.
 	deviceContext->IASetInputLayout(inputLayout.Get());
@@ -74,6 +75,9 @@ void ScreenPainter::Render(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& de
 	// the screen rect
 	deviceContext->VSSetShader(vertShader.Get(), NULL, 0);
 	deviceContext->PSSetShader(pixelShader.Get(), NULL, 0);
+
+	// Pass the given input buffer along to the GPU
+	deviceContext->PSSetConstantBuffers(0, 1, displayInput.GetAddressOf());
 
 	// Pass the shader-resource version of the display texture along to the GPU
 	deviceContext->PSSetShaderResources(0, 1, displayTexReadable.GetAddressOf());

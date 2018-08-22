@@ -12,9 +12,10 @@ class ScreenPainter : public PipelineShader
 		~ScreenPainter();
 
 		void Render(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& deviceContext,
+					const Microsoft::WRL::ComPtr<ID3D11Buffer>& displayInput,
 					const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& displayTexReadable);
 
 	private:
 		// The texture sampler used by [this]
-		Microsoft::WRL::ComPtr<ID3D11SamplerState> wrapSamplerState;
+		Microsoft::WRL::ComPtr<ID3D11SamplerState> texSampler;
 };

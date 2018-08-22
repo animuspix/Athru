@@ -276,7 +276,9 @@ float3 SpecularBRDF(float4 surf,
 // the light subpath in [w]
 float MatPDF(float3x3 surfDirs,
              float4 coord,
-             uint4 surfInfo)
+             uint4 surfInfo,
+             float4 bxdfFreqs,
+             float surfVari)
 {
     if (coord.w)
     {
@@ -299,9 +301,7 @@ float MatPDF(float3x3 surfDirs,
             pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
                                                                            // reconstructed from the given input/output
                                                                            // directions
-                                     MatInfo(float2x3(MAT_PROP_VARI,
-                                                      surfInfo.yz,
-                                                      coord.xyz)).x),
+                                     surfVari),
                               float4(surfDirs[0],
                                      surfInfo.w));
             break;
@@ -310,9 +310,7 @@ float MatPDF(float3x3 surfDirs,
             pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
                                                                            // reconstructed from the given input/output
                                                                            // directions
-                                     MatInfo(float2x3(MAT_PROP_VARI,
-                                                      surfInfo.yz,
-                                                      coord.xyz)).x),
+                                     surfVari),
                               float4(surfDirs[0],
                                      surfInfo.w));;
             break;
@@ -324,18 +322,16 @@ float MatPDF(float3x3 surfDirs,
                              surfDirs[2]); // Assume diffuse surfaces for undefined [BXDFs]
             break;
     }
-    return pdf * MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
-                                  surfInfo.yz,
-                                  coord.xyz))[surfInfo.x];
+    return pdf * bxdfFreqs[surfInfo.x];
 }
 
 // [surfInfo] gives the reflectance/scattering/transmittance function selected
-// by the given material for the current ray in [x] and the distance-field type +
-// figure-ID at [coord] in [yz]
+// by the given material for the current ray in [x], the distance-field type +
+// figure-ID at [coord] in [yz], and the local surface variance in [w]
 float3 MatDir(float3 oDir,
               float3 coord,
               inout uint randVal,
-              uint3 surfInfo)
+              float4 surfInfo)
 {
     switch (surfInfo.x)
     {
@@ -345,19 +341,15 @@ float3 MatDir(float3 oDir,
             // Generate a microfacet normal matching the GGX normal-distribution-function
             return SpecularDir(oDir,
                                GGXMicroNorml(oDir,
-                                             sqrt(MatInfo(float2x3(MAT_PROP_VARI,
-                                                                   surfInfo.yz,
-                                                                   coord)).x * 2.0f), // Convert to GGX variance here
+                                             sqrt(surfInfo.w) * 2.0f, // Convert to GGX variance here
                                              randVal),
                                randVal);
         case BXDF_ID_REFRA:
             // Remap refractions to perfect specular interactions for now...
             return SpecularDir(oDir,
                                GGXMicroNorml(oDir,
-                                          sqrt(MatInfo(float2x3(MAT_PROP_VARI,
-                                                                surfInfo.yz,
-                                                                coord)).x * 2.0f), // Convert to GGX variance here
-                                          randVal),
+                                             sqrt(surfInfo.w) * 2.0f, // Convert to GGX variance here
+                                             randVal),
                                randVal);
         case BXDF_ID_VOLUM:
             return 0.0f.xxx;
@@ -372,7 +364,8 @@ float3 MatBXDF(float3 coord,
                                   // entered by the previous vertex in the relevant
                                   // subpath
                float3x3 surfDirs, // Light direction in [0], camera direction in [1], normal vector in [2]
-               uint3 surfInfo) // BXDF-ID in [x], distance-field type in [y], figure-ID in [z]
+               float4 surfInfo, // BXDF-ID in [x], distance-field type in [y], figure-ID in [z], surface variance in [w]
+               float3 rgb)
 {
     surfDirs[1] *= -1.0f; // BXDFs assume camera rays point towards the lens
     float4 thetaPhiIO = RaysToAngles(surfDirs[0],
@@ -381,36 +374,24 @@ float3 MatBXDF(float3 coord,
     switch (surfInfo.x)
     {
         case BXDF_ID_DIFFU:
-            return DiffuseBRDF(float4(MatInfo(float2x3(MAT_PROP_RGB,
-													   surfInfo.yz,
-													   coord)).rgb,
-                                      MatInfo(float2x3(MAT_PROP_VARI,
-													   surfInfo.yz,
-													   coord)).x),
+            return DiffuseBRDF(float4(rgb,
+                                      surfInfo.w),
                                surfDirs);
         case BXDF_ID_MIRRO:
             float2 sinCosThetaI;
             sincos(thetaPhiIO.x, sinCosThetaI.x, sinCosThetaI.y);
             return SpecularBRDF(float4(SurfFres(float4x3(prevFres,
-														 rgbToFres(MatInfo(float2x3(MAT_PROP_RGB,
-																					surfInfo.yz,
-																					coord)).rgb)),
+														 rgbToFres(rgb)),
 												sinCosThetaI),
-                                       MatInfo(float2x3(MAT_PROP_VARI,
-                                                        surfInfo.yz,
-                                                        coord)).x),
+                                       surfInfo.w),
                                 thetaPhiIO);
         case BXDF_ID_REFRA:
             float2 sinCosThetaIRefr;
             sincos(thetaPhiIO.x, sinCosThetaIRefr.x, sinCosThetaIRefr.y);
             return SpecularBRDF(float4(SurfFres(float4x3(prevFres,
-														 rgbToFres(MatInfo(float2x3(MAT_PROP_RGB,
-																					surfInfo.yz,
-																					coord)).rgb)),
+														 rgbToFres(rgb)),
 												sinCosThetaIRefr),
-                                       MatInfo(float2x3(MAT_PROP_VARI,
-                                                        surfInfo.yz,
-                                                        coord)).x),
+                                       surfInfo.w),
                                 thetaPhiIO);
         case BXDF_ID_VOLUM:
             return 0.0f.xxx; // No defined BXDF for participating media yet

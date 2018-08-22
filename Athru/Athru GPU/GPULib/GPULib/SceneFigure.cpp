@@ -8,29 +8,19 @@ SceneFigure::SceneFigure()
 
 	coreFigure = Figure(DirectX::XMFLOAT4(0, 0, 0, 1.0f),
 						_mm_set_ps(1, 0, 0, 0),
-						(fourByteUnsigned)FIG_TYPES::CRITTER,
-						baseDistCoeffs,
-						this);
+						baseDistCoeffs);
 }
 
 SceneFigure::SceneFigure(DirectX::XMFLOAT3 position,
 						 DirectX::XMVECTOR qtnRotation, float scale,
-						 fourByteUnsigned figType, DirectX::XMVECTOR* distCoeffs)
+						 DirectX::XMVECTOR* distCoeffs)
 {
 	coreFigure = Figure(DirectX::XMFLOAT4(position.x, position.y, position.z, scale),
 						DirectX::XMQuaternionInverse(qtnRotation),
-						(fourByteUnsigned)figType, distCoeffs,
-						this);
+						distCoeffs);
 }
 
-SceneFigure::~SceneFigure()
-{
-}
-
-FIG_TYPES SceneFigure::GetDistFuncType()
-{
-	return (FIG_TYPES)coreFigure.self.x;
-}
+SceneFigure::~SceneFigure() {}
 
 void SceneFigure::SetRotation(DirectX::XMVECTOR axis,
 							  float angle)

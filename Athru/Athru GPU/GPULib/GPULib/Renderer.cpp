@@ -7,12 +7,12 @@
 Renderer::Renderer(HWND windowHandle,
 				   const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 				   const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext) :
-			tracers{ LocalComputeShader(device,
-										windowHandle,
-										L"PathReduce.cso"),
-					 LocalComputeShader(device,
-					 					windowHandle,
-					 					L"SceneVis.cso") },
+			tracers{ ComputeShader(device,
+								   windowHandle,
+								   L"PathReduce.cso"),
+					 ComputeShader(device,
+					 			   windowHandle,
+					 			   L"SceneVis.cso") },
 			screenPainter(device,
 						  windowHandle,
 						  L"PresentationVerts.cso",
@@ -21,7 +21,7 @@ Renderer::Renderer(HWND windowHandle,
 {
 	// Construct the input buffer we'll be using
 	// for shader i/o operations through [this]
-	shaderInputBuffer = AthruBuffer<InputStuffs, GPGPUStuff::CBuffer>(device,
+	renderInputBuffer = AthruBuffer<InputStuffs, GPGPUStuff::CBuffer>(device,
 																	  nullptr);
 
 	// Build the buffer we'll be using to store
@@ -53,6 +53,15 @@ Renderer::Renderer(HWND windowHandle,
 																			 nullptr,
 																			 1,
 																			 DXGI_FORMAT::DXGI_FORMAT_R32_SINT);
+
+	// Construct the presentation-only constant buffer
+	DirectX::XMVECTOR displayInfo[1] = { _mm_set_ps(GraphicsStuff::DISPLAY_WIDTH,
+													GraphicsStuff::DISPLAY_HEIGHT,
+													GraphicsStuff::DISPLAY_AREA,
+													GraphicsStuff::NUM_AA_SAMPLES) };
+	displayInputBuffer = AthruBuffer<DisplayInfo, GPGPUStuff::CBuffer>(device,
+																	   (void*)&displayInfo);
+
 	// Initially zero [prevNumTraceables]
 	prevNumTraceables = 0;
 }
@@ -85,32 +94,32 @@ void Renderer::PreProcess(DirectX::XMVECTOR& cameraPosition,
 						  Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexWritable)
 {
 	// Pass the pre-processing shader onto the GPU
-	context->CSSetShader(tracers[0].d3dShader().Get(), nullptr, 0);
+	context->CSSetShader(tracers[0].shader.Get(), nullptr, 0);
 
 	// Pass all the path-tracing elements we expect to use onto the GPU as well
 	// Path-tracing needs random ray directions, so pass a write-allowed view of our shader-friendly
 	// random-number buffer onto the GPU over here
 	const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& gpuRandView = AthruGPU::GPUServiceCentre::AccessGPURandView();
-	context->CSSetUnorderedAccessViews(2, 1, gpuRandView.GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(1, 1, gpuRandView.GetAddressOf(), 0);
 
 	// This render-stage publishes to the screen, so we need to pass the
 	// display texture along to the GPU
-	context->CSSetUnorderedAccessViews(1, 1, displayTexWritable.GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(0, 1, displayTexWritable.GetAddressOf(), 0);
 
 	// ...and it also exposes selected pixels to the path-tracer via [traceables], so we need to
 	// pass that to the GPU as well
 	// Also pass the max-traceables buffer along to the GPU (needed for SWR)
-	context->CSSetUnorderedAccessViews(4, 1, traceables.view().GetAddressOf(), 0);
-	context->CSSetUnorderedAccessViews(5, 1, maxTraceablesCtr.view().GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(3, 1, traceables.view().GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(4, 1, maxTraceablesCtr.view().GetAddressOf(), 0);
 
 	// We want to perform stratified anti-aliasing (basically tracing pseudo-random
 	// subpixel rays each frame) and integrate the results over time, so push
 	// the anti-aliasing buffer onto the GPU as well
-	context->CSSetUnorderedAccessViews(3, 1, aaBuffer.view().GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(2, 1, aaBuffer.view().GetAddressOf(), 0);
 
 	// Expose the local input buffer for writing
 	D3D11_MAPPED_SUBRESOURCE shaderInput;
-	HRESULT result = context->Map(shaderInputBuffer.buf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
+	HRESULT result = context->Map(renderInputBuffer.buf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
 	assert(SUCCEEDED(result));
 
 	// Get a pointer to the raw data in the shader input buffer
@@ -138,11 +147,17 @@ void Renderer::PreProcess(DirectX::XMVECTOR& cameraPosition,
 														  (float)prevNumTraceables,
 													      (float)prevNumTraceables);
 
+	// Update the GPU-side version of [resInfo]
+	shaderInputPtr->resInfo = DirectX::XMUINT4(GraphicsStuff::DISPLAY_WIDTH,
+											   GraphicsStuff::DISPLAY_HEIGHT,
+											   GraphicsStuff::DISPLAY_AREA,
+											   GraphicsStuff::NUM_AA_SAMPLES);
+
 	// Break the write-allowed connection to the shader input buffer
-	context->Unmap(shaderInputBuffer.buf.Get(), 0);
+	context->Unmap(renderInputBuffer.buf.Get(), 0);
 
 	// Pass the data in the local input buffer over to the GPU
-	context->CSSetConstantBuffers(0, 1, shaderInputBuffer.buf.GetAddressOf());
+	context->CSSetConstantBuffers(0, 1, renderInputBuffer.buf.GetAddressOf());
 
 	// Dispatch the pre-processing shader
 	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
@@ -155,7 +170,7 @@ void Renderer::Trace(DirectX::XMVECTOR& cameraPosition,
 {
 	// Most of the shader inputs we expect to use were set during pre-processing, so no reason to
 	// set them again over here
-	context->CSSetShader(tracers[1].d3dShader().Get(), nullptr, 0);
+	context->CSSetShader(tracers[1].shader.Get(), nullptr, 0);
 
 	// ...but we will have (usually) [Append()]'d some data to [traceables] during pre-processing,
 	// so read the length of that back into a local value here
@@ -176,7 +191,7 @@ void Renderer::Trace(DirectX::XMVECTOR& cameraPosition,
 
 	// Create a CPU-accessible reference to the shader input buffer
 	D3D11_MAPPED_SUBRESOURCE shaderInput;
-	context->Map(shaderInputBuffer.buf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
+	context->Map(renderInputBuffer.buf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &shaderInput);
 	InputStuffs* shaderInputPtr = (InputStuffs*)shaderInput.pData;
 
 	// Calculate a dispatch width
@@ -206,15 +221,19 @@ void Renderer::Trace(DirectX::XMVECTOR& cameraPosition,
 	shaderInputPtr->viewMat = viewMatrix;
 	shaderInputPtr->iViewMat = DirectX::XMMatrixInverse(&DirectX::XMMatrixDeterminant(viewMatrix),
 														viewMatrix);
-
 	// Define the number of bounces for each primary ray
 	shaderInputPtr->maxNumBounces = DirectX::XMUINT4(GraphicsStuff::MAX_NUM_BOUNCES,
 													 GraphicsStuff::MAX_NUM_BOUNCES,
 													 GraphicsStuff::MAX_NUM_BOUNCES,
 													 GraphicsStuff::MAX_NUM_BOUNCES);
+	// Re-fill the GPU-side version of [resInfo]
+	shaderInputPtr->resInfo = DirectX::XMUINT4(GraphicsStuff::DISPLAY_WIDTH,
+											   GraphicsStuff::DISPLAY_HEIGHT,
+											   GraphicsStuff::DISPLAY_AREA,
+											   GraphicsStuff::NUM_AA_SAMPLES);
 
 	// Break the write-allowed connection to [shaderInputBuffer]
-	context->Unmap(shaderInputBuffer.buf.Get(), 0);
+	context->Unmap(renderInputBuffer.buf.Get(), 0);
 
 	// Dispatch the path tracer
 	context->Dispatch(dispWidth,
@@ -225,13 +244,14 @@ void Renderer::Trace(DirectX::XMVECTOR& cameraPosition,
 	// resource-views (read-only) simultaneously, so un-bind the local unordered-access-view
 	// of the display texture over here
 	ID3D11UnorderedAccessView* nullUAV = nullptr;
-	context->CSSetUnorderedAccessViews(1, 1, &nullUAV, 0);
+	context->CSSetUnorderedAccessViews(0, 1, &nullUAV, 0);
 }
 
 void Renderer::Present(ViewFinder* viewFinder)
 {
 	viewFinder->GetViewGeo().PassToGPU(context);
 	screenPainter.Render(context,
+						 displayInputBuffer.buf,
 					     viewFinder->GetDisplayTex().asReadOnlyShaderResource);
 }
 

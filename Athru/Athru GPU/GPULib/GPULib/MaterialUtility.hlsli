@@ -99,63 +99,6 @@ float2x3 rgbToFres(float3 rgb)
 // system will wash out to white for human observers
 #define STELLAR_RGB 1.0f.xxx
 
-// Alternative material model, much simpler and data-oriented
-// Database-like design, takes a figure type + property request ID and
-// generates the requested property on-demand
-// Magic nested switch statements to *only* generate the most relevant
-// data for each request :)
-// No template returns in HLSL, but no ish; all the data we want to
-// return this way will fit in float4 anyways :)
-// [query] has requested property in [0][x], distance-field type in [0][y]
-// figure-ID in [0][z], and position in [1]
-// This approach works well at reducing unnecessary calculations when every
-// query returns a constant value and vertices are rarely sampled more than
-// once, but falls down for bi-directional light transport with dynamic
-// materials (since the material generator has to re-run for every
-// gather/connection ray)
-// Future materials will be generated from 2x4 matrices (4 dimensions of BXDF
-// variation, three color dimensions, one dimension of surface roughness)
-// populated during vertex processing and immediately embedded inside
-// surface vertices (see [LightingUtility.hlsli] for layout info)
-float4 MatInfo(float2x3 query)
-{
-    switch (query[0].y)
-    {
-        case DF_TYPE_PLANET:
-            switch (query[0].x)
-            {
-                // No ID-dependant properties just yet, maybe later...
-                case MAT_PROP_BXDF_FREQS:
-                    return float4(1.0f, 0.0f.xxx); // Just pure diffuse for now
-                case MAT_PROP_RGB:
-                    return 1.0f.xxxx; // Ordinary all-white colour
-                case MAT_PROP_VARI:
-                    return PI.xxxx; // Middling surface roughness for planets
-                default:
-                    return 0.0f.xxxx; // Unclear query, return a null vector
-                                      // to the callsite
-            }
-        case DF_TYPE_STAR:
-            switch (query[0].x)
-            {
-                // No ID-dependant properties just yet, maybe later...
-                case MAT_PROP_BXDF_FREQS:
-                    return float4(1.0f, 0.0f.xxx); // Stars are diffuse emitters
-                case MAT_PROP_RGB:
-                    return STELLAR_BRIGHTNESS.xxxx; // Stars are bright enough to only emit
-                                                    // white light from a human perspective
-                                                    // (+ no redshifting in Athru)
-                case MAT_PROP_VARI:
-                    return 0.0f.xxxx; // Stars are assumed to have smooth surfaces
-                default:
-                    return 0.0f.xxxx; // Unclear query, return a null vector
-                                      // to the callsite
-            }
-        default:
-            return 0.0f.xxxx; // No defined materials beyond stars and planets rn
-    }
-}
-
 // Return whether or not the given BXDF-ID describes a delta distribution
 // Only valid for reflective/refractive specular materials atm; I'll update for
 // volumetric materials once I've implemented them + decided how to preserve
@@ -416,33 +359,33 @@ float3 SurfFres(float4x3 fresInfoIO, // Incoming/outgoing fresnel values (refrac
 // and a figure-ID in [w]
 // [surfInfo] has a BXDF-ID in [x], a figure-ID
 // in [y], and a distance-function type in [z]
-float3 RefractPos(float3 startPos,
-                  float3 refrDir,
-                  float3 surfInfo,
-                  float adaptEps,
-                  inout uint randVal)
-{
-    float currRayDist = adaptEps * 2.0f;
-    float3 rayVec = startPos;
-    if (surfInfo.x == BXDF_ID_REFRA)
-    {
-        while (currRayDist > adaptEps)
-        {
-            rayVec = startPos + (refrDir * currRayDist);
-            currRayDist += FigDF(rayVec,
-                                 startPos,
-                                 false,
-                                 figuresReadable[surfInfo.y])[0].x * -1.0f; // We're moving *inside* scene figures, so make sure to
-                                                                       // trace inverse PDFs here
-        }
-        return rayVec + refrDir * (adaptEps * 2.0f); // Translate the generated position just outside the SDF of the
-                                                     // refracted figure (to prevent immediate occlusion during ray
-                                                     // propagation through the scene)
-    }
-    else // Volumetric scattering implied here, refraction through non-transmissive/volumetric materials is invalid
-    {
-        // Return the input position for now, will implement for multiple
-        // scattering events later on...
-        return startPos;
-    }
-}
+//float3 RefractPos(float3 startPos,
+//                  float3 refrDir,
+//                  float3 surfInfo,
+//                  float adaptEps,
+//                  inout uint randVal)
+//{
+//    float currRayDist = adaptEps * 2.0f;
+//    float3 rayVec = startPos;
+//    if (surfInfo.x == BXDF_ID_REFRA)
+//    {
+//        while (currRayDist > adaptEps)
+//        {
+//            rayVec = startPos + (refrDir * currRayDist);
+//            currRayDist += FigDF(rayVec,
+//                                 startPos,
+//                                 false,
+//                                 figures[surfInfo.y])[0].x * -1.0f; // We're moving *inside* scene figures, so make sure to
+//                                                                       // trace inverse PDFs here
+//        }
+//        return rayVec + refrDir * (adaptEps * 2.0f); // Translate the generated position just outside the SDF of the
+//                                                     // refracted figure (to prevent immediate occlusion during ray
+//                                                     // propagation through the scene)
+//    }
+//    else // Volumetric scattering implied here, refraction through non-transmissive/volumetric materials is invalid
+//    {
+//        // Return the input position for now, will implement for multiple
+//        // scattering events later on...
+//        return startPos;
+//    }
+//}

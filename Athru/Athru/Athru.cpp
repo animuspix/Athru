@@ -10,7 +10,7 @@ void GameLoop()
 	GPUMessenger* athruGPUMessenger = AthruGPU::GPUServiceCentre::AccessGPUMessenger();
 
 	// Cache a local reference to the render-manager
-	RenderManager* athruRendering = AthruGPU::GPUServiceCentre::AccessRenderManager();
+	Renderer* athruRendering = AthruGPU::GPUServiceCentre::AccessRenderer();
 
 	// Cache a local reference to the GPU update manager
 	//GPUUpdateManager* athruGPUUpdates = AthruGPU::GPUServiceCentre::AccessGPUUpdateManager();
@@ -36,28 +36,21 @@ void GameLoop()
 		//AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
 		//AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
 
-		// Update the game
+		// Update the game, push current scene to the GPU
 		athruScene->Update();
 
-		// Synchronize CPU/GPU content for updates/rendering
-		athruGPUMessenger->FrameStartSync(athruScene->CollectLocalFigures());
+		// Pass scene data to the GPU for updates/rendering
+		athruGPUMessenger->SceneToGPU(AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext(),
+									  athruScene->CollectLocalFigures());
 
 		// Perform GPU updates here
 		// GPU updates are used for highly-parallel stuffs like:
 		// - Physics processing (with fluid packets, rays, densely-sampled signal processing, etc.)
 		// - Planet-scale predator-prey relationships between plant/critter and critter/critter species
-		// - Structural critter simulation (cell diffusion and organisation)
 		//athruGPUUpdates->Update();
 
 		// Render the area around the player
 		athruRendering->Render(athruScene->GetMainCamera());
-
-		// Synchronize GPU/CPU content so GPU updates persist between
-		// frames
-		// Commented out because no actual updates are happening atm, and
-		// syncing the ([null], because no updates) GPU data with the CPU
-		// will wipe the figures :P
-		//AthruGPU::GPUServiceCentre::AccessGPUMessenger()->FrameEndSync();
 
 		// Record the time at this frame so we can calculate
 		// [deltaTime]

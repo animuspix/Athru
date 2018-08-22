@@ -12,18 +12,18 @@
 // as the image source during core rendering (required because
 // there's no support for direct render-target access in
 // DirectX)
-RWTexture2D<float4> displayTex : register(u1);
+RWTexture2D<float4> displayTex : register(u0);
 
 // Buffer carrying traceable pixels + pixel information
 // Ray directions are in [0][xyz], filter values are in [1][x],
 // pixel indices are in [1][y], non-normalized ray z-offsets
 // are in 1[z]
-ConsumeStructuredBuffer<float2x3> traceables : register(u4);
+ConsumeStructuredBuffer<float2x3> traceables : register(u3);
 
 // Intersection counter ([traceables] without SWR); included
 // here because there's no safe way to reset it per-frame
 // from within [PathReduce.hlsl]
-RWBuffer<int> maxTraceables : register(u5);
+RWBuffer<int> maxTraceables : register(u4);
 
 // Tracing modes to use for scene visualization
 #define TRACE_MODE_REVERSE 0 // Trace single paths out from the camera towards the light source
@@ -50,10 +50,10 @@ float AdaptEps(float3 camRayOri)
     float avgDist = 0.0f;
     for (uint i = 0; i < MAX_NUM_FIGURES; i += 1)
     {
-        avgDist += FigDF(camRayOri,
-                         0.0f.xxx,
-                         false,
-                         figuresReadable[i])[0].x;
+        avgDist += PlanetDF(camRayOri,
+                            figures[i],
+                            i,
+                            EPSILON_MAX)[0].x;
     }
 
     // Initialise an epsilon value to [EPSILON_MIN] and make it twice as
@@ -101,34 +101,34 @@ void main(uint3 groupID : SV_GroupID,
     float2x3 traceable = traceables.Consume();
 
     // Separately cache the pixel's screen position for later reference
-    uint2 pixID = uint2(traceable[1].y % DISPLAY_WIDTH,
-                        traceable[1].y / DISPLAY_WIDTH);
+    uint2 pixID = uint2(traceable[1].y % resInfo.x,
+                        traceable[1].y / resInfo.x);
 
     // Extract a Xorshift-permutable value from [randBuf]
     // Also cache the accessor value used to retrieve that value in the first place
-    uint randNdx = xorshiftNdx(pixID.x + (pixID.y * DISPLAY_WIDTH));
+    uint randNdx = xorshiftNdx(pixID.x + (pixID.y * resInfo.x));
     uint randVal = randBuf[randNdx];
 
     // Cache/generate initial origin + direction for the light/camera subpaths
 
     // Cache initial origin for the light/camera subpaths
     // Importance-sampled rays are emitted for random planets
-    Figure star = figuresReadable[STELLAR_FIG_ID];
+    Figure star = figures[STELLAR_FIG_ID];
     float2x3 subpathOris = float2x3(cameraPos.xyz,
                                     LightSurfPos(LIGHT_ID_STELLAR,
                                                  star.linTransf,
-                                                 FigDF(0.0f.xxx, // We only care about planet position here, so input an arbitrary ray location + origin and ignore figure boundaries
-                                                       0.0f.xxx,
-                                                       false,
-                                                       figuresReadable[min((xorshiftPermu1D(randVal) % 10) + 1, 9)])[1].xyz,
-                                                       randVal));
+                                                 PlanetDF(0.0f.xxx, // We only care about planet position here, so input an arbitrary ray location + origin and ignore figure boundaries
+                                                          figures[1],
+                                                          0x1,
+                                                          EPSILON_MAX)[1].xyz,
+                                                 randVal));
 
     // Transform [traceable]'s camera ray direction to match the view matrix, also generate + cache a separate
     // light ray direction
     float3 initLiNorml = normalize(subpathOris[1] - star.linTransf.xyz);
-    float3 liDir = mul(LightEmitDir(LIGHT_ID_STELLAR,
-                       randVal),
-                       NormalSpace(initLiNorml));
+    float3 liDir = LightEmitDir(LIGHT_ID_STELLAR,
+                                subpathOris[1],
+                                randVal);
     float2x3 rayDirs = float2x3(traceable[0],
                                 liDir);
 
@@ -180,13 +180,16 @@ void main(uint3 groupID : SV_GroupID,
                                      float4(lensNormal, DF_TYPE_LENS), // Cache lens normal + lens distance-function type
                                      float2x3(rayDirs[0],
                                               rayDirs[0]), // Assume equivalent input/output directions for subpath endpoints
+                                     float2x4(0.0f.xxxx,
+                                              0.0f.xxxx), // Null material since light never explicitly interacts with the lens atm
                                      float3(CamAreaPDFOut(), // Output probability, i.e. chance of emitting a ray through [pixID]
                                             1.0f, // Filler input probability; depends on a defined importance/radiance source within the scene
                                                   // so left undefined for now
                                             SceneField(subpathOris[0],
                                                        0.0f.xxx,
                                                        false,
-                                                       STELLAR_FIG_ID)[0].x)); // Planetary distance for the lens/pinhole position
+                                                       STELLAR_FIG_ID,
+                                                       adaptEps)[0].x)); // Planetary distance for the lens/pinhole position
 
     // Pre-fill the first vertex on the light sub-path with the baseline light sample
     // BXDF ID assumes that stars are 100% diffuse emitters
@@ -197,12 +200,15 @@ void main(uint3 groupID : SV_GroupID,
                                        float4(initLiNorml, DF_TYPE_STAR),
                                        float2x3(liDir,
                                                 liDir), // Assume equivalent input/output directions for subpath endpoints
+                                       MatGen(subpathOris[1],
+                                              initLiNorml,
+                                              DF_TYPE_STAR,
+                                              randVal),
                                        float3(StellarPosPDF(),
                                               StellarPosPDF(),
                                               EPSILON_MAX * 2.0f)); // No way points on the star would ever be less than [EPSILON_MAX] from a
                                                                     // planetary surface, so set this to a reasonably-high filler value
                                                                     // instead of calculating it directly from [SceneField(...)]
-
     // Bounces + core ray-marching loop
     // Generate camera/light sub-paths here
     uint2 numBounces = 0u.xx; // While-loop so we can get correct averages across the local number of bounces in each path
@@ -226,11 +232,13 @@ void main(uint3 groupID : SV_GroupID,
             float4x3 sceneField = float4x3(SceneField(subpathVecs[0],
                                                       subpathOris[0],
                                                       true,
-                                                      FILLER_SCREEN_ID), // Filler filter ID
+                                                      FILLER_SCREEN_ID,
+                                                      adaptEps), // Filler filter ID
                                            SceneField(subpathVecs[1],
                                                       subpathOris[1],
                                                       true,
-                                                      STELLAR_FIG_ID)); // We want to avoid light rays re-intersecting with the local star
+                                                      STELLAR_FIG_ID,
+                                                      adaptEps)); // We want to avoid light rays re-intersecting with the local star
 
             // Process camera-ray intersections if appropriate
             if (sceneField[0].x < adaptEps &&
@@ -302,6 +310,8 @@ void main(uint3 groupID : SV_GroupID,
                                                                       float4(lensNormal, DF_TYPE_LENS), // Lens normal + lens distance-function type
                                                                       float2x3(rayDirs[1],
                                                                                rayDirs[1]), // Assume equivalent input/output directions for subpath endpoints
+                                                                      float2x4(0.0f.xxxx,
+                                                                               0.0f.xxxx), // Null material for lens interactions
                                                                       float3(CamAreaPDFIn(bidirVts[numBounces.y].lightVt.pos.xyz,
                                                                                           lensNormal), // Probability of the light-subpath reaching the camera
                                                                                                        // from its previous bounce
@@ -329,13 +339,6 @@ void main(uint3 groupID : SV_GroupID,
         // Step into the next bounce for each sub-path (if appropriate)
         numBounces += (!subpathEscaped && !subpathEnded && (numBounces < maxNumBounces.xx));
     }
-
-    // Attempt to integrate the camera/light subpaths if appropriate; otherwise, assign
-    // the estimated path color from the radiance at the intersected light source
-    // (same result as attempting connection strategies for that context, much cheaper
-    // than calling [ConnectBidirVts(...)]) or assign pixel color directly from the
-    // ambient shading (no possible connections for rays that never intersected the
-    // scene/the light source)
 
     // Estimated path color associated with the current pixel
     // Random camera-gathers emitted in previous frames might have deposited light
@@ -371,7 +374,6 @@ void main(uint3 groupID : SV_GroupID,
                 pathRGB += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastCamVt.pos.xyz - lastCamVt.pos.xyz)) * lastCamVt.atten.rgb;
             }
         #endif
-
         #ifdef TRACE_MODE_REVERSE
             // Evaluate MIS-weighted light gathers for every surface vertex in the camera subpath (for bi-directional integration) or just
             // for final vertices in paths that failed to reach a light source (for uni-directional integration)
@@ -386,10 +388,11 @@ void main(uint3 groupID : SV_GroupID,
             #else
                 if (!subpathEnded.x)
                 {
-                    pathRGB += LiGather(bidirVts[numBounces.x].camVt,
+                    pathRGB += LiGather(bidirVts[min(numBounces.x + 1, (maxNumBounces.x - 1))].camVt,
                                         star.linTransf, // Only stellar light sources atm
                                         adaptEps,
-                                        randVal);
+                                        randVal) * bidirVts[numBounces.x].camVt.atten.rgb; // Should technically scale this by the previous vertex's attenuation, buuuuuuut it looks worse so
+                                                  // I'm sticking to my biased alternative for now :)
                 }
             #endif
         #endif
@@ -400,14 +403,13 @@ void main(uint3 groupID : SV_GroupID,
             {
                 // Camera path radiance is taken as the illumination at the second-last camera vertex in the scene adjusted for attenuation
                 // at the final vertex
-                BidirVert lastLiVt = bidirVts[numBounces.y + 1].lightVt;
-                BidirVert secndLastLiVt = bidirVts[numBounces.y].lightVt;
-                //pathRGB = float3(1.0f, 0.0f.xx);
-                aaBuffer[(int)PRayPix(normalize(cameraPos.xyz - lastLiVt.pos.xyz),
-                                                camInfo.w).z].incidentLight.rgb += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastLiVt.pos.xyz - lastLiVt.pos.xyz)) * lastLiVt.atten.rgb;
+                PathVt lastLiVt = bidirVts[numBounces.y + 1].lightVt;
+                PathVt secndLastLiVt = bidirVts[numBounces.y].lightVt;
+                pathRGB = float3(1.0f, 0.0f.xx);
+                //aaBuffer[(int)PRayPix(normalize(cameraPos.xyz - lastLiVt.pos.xyz),
+                //                                camInfo.w).z].incidentLight.rgb += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastLiVt.pos.xyz - lastLiVt.pos.xyz)) * lastLiVt.atten.rgb;
             }
         #endif
-
         #ifdef TRACE_MODE_FORWARD
             // Evaluate MIS-weighted camera gathers for every surface vertex in the light subpath (for bi-directional integration) or just
             // for final vertices in paths that failed to reach the lens (for uni-directional integration)
@@ -421,17 +423,16 @@ void main(uint3 groupID : SV_GroupID,
                     aaBuffer[(int)gathInfo.w].incidentLight.rgb = /*gathInfo.rgb */float3(1.0f, 0.0f.xx);
                 }
             #else
-                if (!subpathEnded.y)
+                if (/*!subpathEnded.y && */numBounces.y > 0)
                 {
                     float4 gathInfo = CamGather(bidirVts[numBounces.y].lightVt,
                                                 camInfo,
                                                 adaptEps,
                                                 randVal);
-                    aaBuffer[(int)gathInfo.w].incidentLight.rgb = /*gathInfo.rgb */float3(1.0f, 0.0f.xx);
+                    aaBuffer[/*(int)gathInfo.w*/linPixID].incidentLight.rgb = 1.0f.xxx;//gathInfo.rgb;
                 }
             #endif
         #endif
-
         #ifdef TRACE_MODE_BIDIREC
             // Attempt connections between every surface vertex in either subpath
             for (int k = 1; k <= numBounces.x; k += 1) // Zeroth vertices lie on the lens/the light

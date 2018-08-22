@@ -11,13 +11,12 @@ struct AthruBuffer
 						  // generated values are invalid and a call to the expanded constructor (see below)
 						  // will be needed to create a useful buffer/resource-view
 		AthruBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-					const D3D11_SUBRESOURCE_DATA* baseDataPttr,
+					const void* baseDataPttr,
 					fourByteUnsigned bufLength = 1,
 					DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN) // Allow optional view-format definition for GPU-viewable,
 															   // non-structured buffers; default assumes unknown structured data
 		{
-			// Describe the buffer we're creating and storing at
-			// [bufPttr]
+			// Describe the local buffer
 			D3D11_BUFFER_DESC bufferDesc;
 			bufferDesc.Usage = bufUsage();
 			bufferDesc.ByteWidth = sizeof(ContentType) * bufLength;
@@ -26,10 +25,21 @@ struct AthruBuffer
 			bufferDesc.MiscFlags = bufMiscFlags();
 			bufferDesc.StructureByteStride = bufByteStride();
 
-			// Construct the state buffer using the seeds + description
+			// Format starting data inside a [D3D11_SUBRESOURCE]
+			D3D11_SUBRESOURCE_DATA baseData;
+			baseData.pSysMem = baseDataPttr;
+			baseData.SysMemPitch = 0;
+			baseData.SysMemSlicePitch = 0;
+
+			// Subresource pointers must be [nullptr] if [pSysMem] is undefined,
+			// so create an interface to safely remap those cases here
+			const D3D11_SUBRESOURCE_DATA* safeBaseData[2] = { nullptr,
+															  &baseData };
+
+			// Construct the local buffer using the starting data + description
 			// defined above
 			HRESULT result = device->CreateBuffer(&bufferDesc,
-												  baseDataPttr,
+												  safeBaseData[baseDataPttr != nullptr],
 												  buf.GetAddressOf());
 			assert(SUCCEEDED(result));
 
@@ -78,7 +88,7 @@ struct AthruBuffer
 			}
 		}
 		Microsoft::WRL::ComPtr<ID3D11Buffer> buf; // Internal DX11 buffer, never becomes invalid so safe to expose globally
-		auto view() // Indirect access function used to safely extract the resource view for non-constant, non-staging buffers
+		const auto& view() // Indirect access function used to safely extract the resource view for non-constant, non-staging buffers
 		{
 			static_assert(!(std::is_same<decltype(resrcView), std::nullptr_t>::value),
 						  "No defined views for constant/staging buffers!");
@@ -105,7 +115,8 @@ struct AthruBuffer
 			{
 				return D3D11_USAGE_DEFAULT;
 			}
-			else if constexpr (std::is_same<AthruBufType, GPGPUStuff::CBuffer>::value)
+			else if constexpr (std::is_same<AthruBufType, GPGPUStuff::CBuffer>::value ||
+							   std::is_same<AthruBufType, GPGPUStuff::StrmBuffer>::value)
 			{
 				return D3D11_USAGE_DYNAMIC;
 			}
@@ -143,7 +154,8 @@ struct AthruBuffer
 			{
 				return D3D11_CPU_ACCESS_READ;
 			}
-			else if constexpr (std::is_same<AthruBufType, GPGPUStuff::CBuffer>::value)
+			else if constexpr (std::is_same<AthruBufType, GPGPUStuff::CBuffer>::value ||
+							   std::is_same<AthruBufType, GPGPUStuff::StrmBuffer>::value)
 			{
 				return D3D11_CPU_ACCESS_WRITE;
 			}

@@ -46,82 +46,82 @@ float MISWeight(float samplesDistroA,
 // [dirs] carrys the path's outgoing direction (i.e. the direction
 // towards the previous vertex on [outVt]s subpath) in [0] and the lens
 // normal (the direction "faced" by the camera) in [1]
-float BidirMISPDF(float2x4 inVt,
-                  float2x4 outVt,
-                  float2x3 dirs,
-                  float2x3 normls,
-                  float3 ioInfo, // Input figure ID in [x], output figure ID in [y],
-                                 // mollification radius (for specular interactions)
-                                 // in [z]
-                                 // Kaplanyan and Dachsbacher discuss an extra weight for
-                                 // BDPT that only mollifies the most distant vertices in
-                                 // the shortest candidate paths, but I wanted to avoid
-                                 // the preprocessing cost to discover those paths ahead
-                                 // of time; Athru just uses the standard mollification
-                                 // bandwidth and allows bias to fall over time (as the
-                                 // the bandwidth shrinks) instead
-                  bool2 pathInfo) // Whether integration is occurring on the light path (x) +
-                                  // whether to mollify specular interactions (y)
-{
-    float pdf = 0;
-    bool cvtToArea = true;
-    switch(outVt[0].w)
-    {
-        // Camera in/out PDFs are defined over area by default, so no
-        // need to convert probabilities in that case
-        case DF_TYPE_LENS:
-            if (pathInfo.x)
-            {
-                pdf = CamAreaPDFOut();
-            }
-            else
-            {
-                pdf = CamAreaPDFIn(outVt[0].xyz - inVt[0].xyz,
-                                   dirs[1]);
-            }
-            cvtToArea = false;
-            break;
-        case DF_TYPE_STAR:
-            pdf = StellarPosPDF();
-            break;
-        default: // Assume non-star, non-lens interfaces are valid scene materials
-            float3 connVec = (inVt[0].xyz - outVt[0].xyz);
-            float ioDist = length(connVec);
-            float3x3 surfDirs = float3x3(connVec / ioDist,
-                                         dirs[0],
-                                         normls[0]);
-            pdf = MatPDF(surfDirs,
-                         float4(outVt[0].xyz,
-                                pathInfo.x),
-                         float4(outVt[1].w,
-                                float2(outVt[0].w,
-                                       ioInfo.y),
-                                false));
-            if (pathInfo.y)
-            {
-                if (outVt[1].w == BXDF_ID_MIRRO ||
-                    outVt[1].w == BXDF_ID_REFRA)
-                {
-                    // Mollify reflection at [outVt]
-                    pdf = PSRMollify(ioInfo.z,
-                                     float2x3(surfDirs[0],
-                                              surfDirs[1]),
-                                     ioDist);
-                }
-            }
-            break;
-    }
-
-    // Convert [pdf] to a probability over area if appropriate
-    if (cvtToArea)
-    {
-        return pdf * AngleToArea(inVt[0].xyz,
-                                 outVt[0].xyz,
-                                 outVt[1].xyz,
-                                 outVt[1].w == BXDF_ID_VOLUM);
-    }
-    else
-    {
-        return pdf;
-    }
-}
+//float BidirMISPDF(float2x4 inVt,
+//                  float2x4 outVt,
+//                  float2x3 dirs,
+//                  float2x3 normls,
+//                  float3 ioInfo, // Input figure ID in [x], output figure ID in [y],
+//                                 // mollification radius (for specular interactions)
+//                                 // in [z]
+//                                 // Kaplanyan and Dachsbacher discuss an extra weight for
+//                                 // BDPT that only mollifies the most distant vertices in
+//                                 // the shortest candidate paths, but I wanted to avoid
+//                                 // the preprocessing cost to discover those paths ahead
+//                                 // of time; Athru just uses the standard mollification
+//                                 // bandwidth and allows bias to fall over time (as the
+//                                 // the bandwidth shrinks) instead
+//                  bool2 pathInfo) // Whether integration is occurring on the light path (x) +
+//                                  // whether to mollify specular interactions (y)
+//{
+//    float pdf = 0;
+//    bool cvtToArea = true;
+//    switch(outVt[0].w)
+//    {
+//        // Camera in/out PDFs are defined over area by default, so no
+//        // need to convert probabilities in that case
+//        case DF_TYPE_LENS:
+//            if (pathInfo.x)
+//            {
+//                pdf = CamAreaPDFOut();
+//            }
+//            else
+//            {
+//                pdf = CamAreaPDFIn(outVt[0].xyz - inVt[0].xyz,
+//                                   dirs[1]);
+//            }
+//            cvtToArea = false;
+//            break;
+//        case DF_TYPE_STAR:
+//            pdf = StellarPosPDF();
+//            break;
+//        default: // Assume non-star, non-lens interfaces are valid scene materials
+//            float3 connVec = (inVt[0].xyz - outVt[0].xyz);
+//            float ioDist = length(connVec);
+//            float3x3 surfDirs = float3x3(connVec / ioDist,
+//                                         dirs[0],
+//                                         normls[0]);
+//            pdf = MatPDF(surfDirs,
+//                         float4(outVt[0].xyz,
+//                                pathInfo.x),
+//                         float4(outVt[1].w,
+//                                float2(outVt[0].w,
+//                                       ioInfo.y),
+//                                false));
+//            if (pathInfo.y)
+//            {
+//                if (outVt[1].w == BXDF_ID_MIRRO ||
+//                    outVt[1].w == BXDF_ID_REFRA)
+//                {
+//                    // Mollify reflection at [outVt]
+//                    pdf = PSRMollify(ioInfo.z,
+//                                     float2x3(surfDirs[0],
+//                                              surfDirs[1]),
+//                                     ioDist);
+//                }
+//            }
+//            break;
+//    }
+//
+//    // Convert [pdf] to a probability over area if appropriate
+//    if (cvtToArea)
+//    {
+//        return pdf * AngleToArea(inVt[0].xyz,
+//                                 outVt[0].xyz,
+//                                 outVt[1].xyz,
+//                                 outVt[1].w == BXDF_ID_VOLUM);
+//    }
+//    else
+//    {
+//        return pdf;
+//    }
+//}

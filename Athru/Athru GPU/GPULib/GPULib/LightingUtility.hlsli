@@ -18,7 +18,7 @@
 // connection strategies can be performed between
 // every scatter site in the camera sub-path +
 // every scatter site in the light sub-path)
-#define MAX_BOUNCES_PER_SUBPATH 5
+#define MAX_BOUNCES_PER_SUBPATH 7
 
 // Figure-ID associated with the local star in each system
 // Also where the local star is stored in the per-frame
@@ -49,23 +49,26 @@ struct PathVt
     float4 oDir; // Outgoing ray direction in [xyz], surface greenness in [w] (not implemented just yet)
     float4 pdfIO; // Forward/reverse probability densities; ([z] contains local planetary distance
                   // (used for atmospheric refraction), [w] carries surface blueness (not implemented just yet))
+    float4 refl; // Value carrying frequencies for each BXDF supported by Athru (diffuse/refractive/mirrorlike/volumetric)
 };
 
 PathVt BuildBidirVt(float4 posFigID,
-                       float3 figPos,
-                       float4 attenBXDFID,
-                       float4 normlDFType,
-                       float2x3 ioDirs,
-                       float3 pdfsPlanetDist)
+                    float3 figPos,
+                    float4 attenBXDFID,
+                    float4 normlDFType,
+                    float2x3 ioDirs,
+                    float2x4 material,
+                    float3 pdfsPlanetDist)
 {
     PathVt bdVt;
     bdVt.pos = posFigID;
-    bdVt.dfOri = float4(figPos, 0.0f);
+    bdVt.dfOri = float4(figPos, material[1].w);
     bdVt.atten = attenBXDFID;
     bdVt.norml = normlDFType;
-    bdVt.iDir = float4(ioDirs[0], 0.0f);
-    bdVt.oDir = float4(ioDirs[1], 0.0f);
-    bdVt.pdfIO = float4(pdfsPlanetDist, 0.0f);
+    bdVt.iDir = float4(ioDirs[0], material[1].r);
+    bdVt.oDir = float4(ioDirs[1], material[1].g);
+    bdVt.pdfIO = float4(pdfsPlanetDist, material[1].b);
+    bdVt.refl = material[0];
     return bdVt;
 }
 
@@ -164,6 +167,14 @@ float3 Emission(float3 srcRGB,
 // Only stellar light sources defined for now...
 #define LIGHT_ID_STELLAR 0
 
+// Probability of targeting any point on a unit sphere;
+// matched to the scene-selecting emission function
+// [StellarLiDir] (see below)
+float StellarLiPDF()
+{
+    return 1.0f / FOUR_PI;
+}
+
 // Probability of selecting any solid angle within the
 // unit hemisphere; equivalent to the constant probability
 // density for rays sampled uniformly over hemispheric
@@ -176,6 +187,21 @@ float3 Emission(float3 srcRGB,
 float DiffuseLiPDF()
 {
     return 1.0f / TWO_PI;
+}
+
+// Trace a ray from a given position on a stellar light
+// source towards a random area on the scene; much
+// greater convergence rate than [DiffuseLiDir], but
+// less physically accurate (light can be emitted
+// directly back into the source)
+float3 StellarLiDir(inout uint randVal,
+                    float3 srcPos)
+{
+    float4 figLinTransf = figures[1].linTransf;
+    float3 randSphPt = ((float3(iToFloat(xorshiftPermu1D(randVal)),
+                                iToFloat(xorshiftPermu1D(randVal)),
+                                iToFloat(xorshiftPermu1D(randVal))) - 0.5f.xxx) * 2.0f.xxx) * figLinTransf.w;
+    return normalize(srcPos - (figLinTransf.xyz + randSphPt));
 }
 
 // Diffuse emission profile; uses a full hemispheric distribution
@@ -217,7 +243,7 @@ float LightEmitPDF(uint lightID)
     switch (lightID)
     {
         case LIGHT_ID_STELLAR:
-            return DiffuseLiPDF();
+            return StellarLiPDF();
         default:
             return DiffuseLiPDF();
     }
@@ -227,12 +253,14 @@ float LightEmitPDF(uint lightID)
 // assumed for all lights atm (might consider more illumination
 // profiles later on...)
 float3 LightEmitDir(uint lightID,
+                    float3 liSurfPos,
                     uint randVal)
 {
     switch (lightID)
     {
         case LIGHT_ID_STELLAR:
-            return DiffuseLiDir(randVal); // Stellar light sources are hemispheric diffuse emitters
+            return StellarLiDir(randVal,
+                                liSurfPos); // Stellar light sources are pseudo-hemispheric diffuse emitters
         default:
             return DiffuseLiDir(randVal); // Assume hemispheric diffuse emission by default
     }
@@ -281,13 +309,13 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
     while (inSurf)
     {
         float3 rayVec = (offset * rayDir.xyz) + rayOri.xyz;
-        float dist = FigDF(rayVec,
-                           rayOri.xyz,
-                           false,
-                           figuresReadable[(int)rayOri.w])[0].x;
+        float dist = PlanetDF(rayVec,
+                              figures[(int)rayOri.w],
+                              (int)rayOri.w,
+                              rayDir.w)[0].x;
         inSurf = dist < rayDir.w;
         if (!inSurf) { break; }
-        offset += rayDir.w / 8.0f;
+        offset += rayDir.w * 250.0f;
     }
     return offset;
 }
@@ -305,35 +333,36 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
 // [w]
 // [rayOri] carries whether or not to occlude on refraction in [w] and the ray
 // origin in [xyz]
-// [rayDest] carries a specific ray destination in [xyz] (required for bi-directional
-// connection) and whether to validate against ray destinations instead of figure-IDs
-// in [w]
+// [rayDest] carries the occlusion ray's emission point
+// [surfInfo] carries [adaptEps] in [x] and the local figure-ID in [y]
+// Planetary surface variance is much too high for ordinary ray offsets to work, so
+// occlusion rays are traced backwards from the ray destination instead
 #define MAX_OCC_MARCHER_STEPS 256
 float3x4 OccTest(float4 rayOri,
                  float4 rayDir,
-                 float4 rayDest,
-                 float adaptEps,
+                 float3 rayDest,
+                 float2 surfInfo,
                  inout uint randVal)
 {
-    float currRayDist = RayOffset(float4(rayOri.xyz, rayDir.w),
-                                  float4(rayDir.xyz, adaptEps));
+    float currRayDist = 0.0f;
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;
     float refrLoss = 0.0f; // Total energy lost from refraction between [rayOri]
                            // and the target figure
+    // March occlusion rays
     for (int i = 0; i < MAX_OCC_MARCHER_STEPS; i += 1)
     {
-        float3 rayVec = float3((rayDir.xyz * currRayDist) + rayOri.xyz);
+        float3 rayVec = rayDest + ((rayDir.xyz * currRayDist) * -1.0f);
         float2x3 sceneField = SceneField(rayVec,
                                          rayOri.xyz,
                                          true,
-                                         FILLER_SCREEN_ID); // Filler filter ID
-        float destPtDist = length(rayDest.xyz - rayVec);
-        bool hitDest = (sceneField[0].y == rayDir.w); // Check if incident figures/points match the destination figure/point
-        if (rayDest.w) { hitDest = (destPtDist < adaptEps); } // Uncomfortable with this layout, considering revising
-        if (sceneField[0].x < adaptEps ||
-            destPtDist < adaptEps)
+                                         rayDir.w, // Ignore distance from the source figure
+                                         surfInfo.x);
+        float destPtDist = length(rayOri.xyz - rayVec);
+        bool hitDest = (destPtDist < (surfInfo.x * 10.0f)); // Check if [rayVec] is in the neighbourhood of [rayOri]
+        if (sceneField[0].x < surfInfo.x ||
+            hitDest)
         {
             if (hitDest)
             {
@@ -342,38 +371,37 @@ float3x4 OccTest(float4 rayOri,
                 occ = false;
                 // Clip the intersection point into [rayDest] if validating against ray destinations; otherwise
                 // set it to [rayVec]
-                if (rayDest.w) { endPos = rayDest.xyz; }
-                else { endPos = rayVec; }
+                endPos = rayDest.xyz;
             }
             else
             {
                 // Find the BXDF-ID at the intersection point
-                uint bxdfID = MatBXDFID(MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
-                                                         sceneField[0].zy,
-                                                         rayVec)),
-                                        randVal);
+                //uint bxdfID = MatBXDFID(MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
+                //                                         sceneField[0].zy,
+                //                                         rayVec)),
+                //                        randVal);
 
                 // Pass through refractive surfaces
                 // Invoke a transmittance check here (not all rays will have enough energy
                 // left to pass through the surface)
-                if ((bxdfID == BXDF_ID_REFRA ||
-                     bxdfID == BXDF_ID_VOLUM) &&
-                    !rayOri.w)
+                if (false)//(bxdfID == BXDF_ID_REFRA ||
+                    // bxdfID == BXDF_ID_VOLUM) &&
+                    //!rayOri.w)
                 {
-                    // Update refracted ray direction
-                    rayDir.xyz = MatDir(rayDir.xyz,
-                                        rayVec,
-                                        randVal,
-                                        uint3(bxdfID,
-                                              sceneField[0].zy));
-
-                    // Update refracted ray position
-                    rayVec = RefractPos(rayVec,
-                                        rayDir.xyz,
-                                        float3(bxdfID,
-                                               sceneField[0].zy),
-                                        adaptEps,
-                                        randVal);
+                    //// Update refracted ray direction
+                    //rayDir.xyz = MatDir(rayDir.xyz,
+                    //                    rayVec,
+                    //                    randVal,
+                    //                    uint3(bxdfID,
+                    //                          sceneField[0].zy));
+                    //
+                    //// Update refracted ray position
+                    //rayVec = RefractPos(rayVec,
+                    //                    rayDir.xyz,
+                    //                    float3(bxdfID,
+                    //                           sceneField[0].zy),
+                    //                    adaptEps,
+                    //                    randVal);
                 }
                 else
                 {
@@ -385,14 +413,13 @@ float3x4 OccTest(float4 rayOri,
             }
 
             // Cache the figure-ID associated with intersection point
-            nearID = (uint)sceneField[0].y;
+            nearID = (uint)sceneField[0].z;
             break;
         }
 
         // No intersections yet + [rayVec] hasn't passed within [adaptEps] units
         // of [rayDest]; continue marching through the scene
-        if (!rayDest.w) { currRayDist += sceneField[0].x; }
-        else { currRayDist += min(sceneField[0].x, destPtDist); }
+        currRayDist += min(sceneField[0].x, destPtDist);
     }
 
     // Return occlusion information for the given context

@@ -3,21 +3,13 @@
 #include <directxmath.h>
 #include "UtilityServiceCentre.h"
 
-enum class FIG_TYPES
-{
-	STAR,
-	PLANET,
-	PLANT,
-	CRITTER
-};
-
 class SceneFigure
 {
 	public:
 		SceneFigure();
 		SceneFigure(DirectX::XMFLOAT3 position,
 					DirectX::XMVECTOR qtnRotation, float scale,
-					fourByteUnsigned figType, DirectX::XMVECTOR* distCoeffs);
+					DirectX::XMVECTOR* distCoeffs);
 		~SceneFigure();
 
 		// GPU-friendly version of [this]; should only be accessed
@@ -27,16 +19,10 @@ class SceneFigure
 			Figure() {}
 			Figure(DirectX::XMFLOAT4 linTrans,
 				   DirectX::XMVECTOR qtnRotation,
-				   fourByteUnsigned funcType,
-				   DirectX::XMVECTOR* distParams,
-				   address originPttr) :
+				   DirectX::XMVECTOR* distParams) :
 				   linTransf(linTrans),
 				   rotationQtn(qtnRotation),
-				   distCoeffs{ distParams[0], distParams[1], distParams[2] },
-				   self{ funcType,
-					   	 (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrHIMask()) >> MemoryStuff::halfAddrLength()),
-						 (fourByteUnsigned)(((MemoryStuff::addrValType)originPttr & MemoryStuff::addrLOMask())), 0 } {}
-
+				   distCoeffs{ distParams[0], distParams[1], distParams[2] } {}
 			// The location of this figure at any particular time
 			// (xyz) and a uniform scale factor (w)
 			DirectX::XMFLOAT4 linTransf;
@@ -47,18 +33,7 @@ class SceneFigure
 
 			// Coefficients of the distance function used to render [this]
 			DirectX::XMVECTOR distCoeffs[3];
-
-			// Key marking which [SceneFigure] is associated with [this]
-			// (needed for tracing GPU-side [Figure]s back to CPU-side [SceneFigure]s
-			// after data is read back from the graphics card)
-			// Also carries the distanc function associated with [this]
-			// (DF in [x], pointer split across [xy], [w] is unused)
-			DirectX::XMUINT4 self;
 		};
-
-		// Retrieve the underlying distance function used
-		// to define the shape of [this]
-		FIG_TYPES GetDistFuncType();
 
 		// Rotate [this] by the given angle "around" the
 		// given vector

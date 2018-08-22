@@ -9,6 +9,28 @@
     #include "RasterCamera.hlsli"
 #endif
 
+// Per-vertex material synthesizer
+// Light materials are implict in [DirIllumRadiance]/[Emission]
+// so there's no reason to generate them here
+float2x4 MatGen(float3 coord,
+                float3 norml,
+                uint dfType,
+                inout uint randVal)
+{
+    // Just a basic generalized planetary/stellar function now, will create
+    // plant/critter variants when neccessary
+    switch (dfType)
+    {
+        case DF_TYPE_STAR:
+            return float2x4(float4(1.0f, 0.0f.xxx), // Stars are smooth bright-white diffuse surfaces
+                            STELLAR_BRIGHTNESS.xxx, 0.0f);
+        default:
+            return float2x4(float4(1.0f, 0.0f.xxx), // Only diffuse materials supported atm, will work on others
+                                                    // when possible
+                            abs(sin(norml)), iToFloat(randVal) * TWO_PI);
+    }
+}
+
 // Process + cache surface data for the interaction occurring at
 // [rayVec]
 // Also return a store-able [PathVt] so we can account for this
@@ -18,71 +40,84 @@
 // camera/light sub-paths without heavy code duplication in
 // [SceneVis.hlsl]'s core marching loop
 PathVt ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [w]
-								  // (used for basic atmospheric shading)
-                   float3 figPos, // Central position for the closest figure to [rayVec]
-                   inout float3 rayDir,
-                   float adaptEps,
-                   uint2 figIDDFType,
-                   bool lightPath,
-                   float3 lastVtPos,
-                   inout float3 atten,
-                   inout float3 rayOri,
-                   float2x3 prevFres, // Fresnel value for the volume traversed by [rayVec]
-                   out float rayDist,
-                   inout uint randVal)
+							  // (used for basic atmospheric shading)
+                float3 figPos, // Central position for the closest figure to [rayVec]
+                inout float3 rayDir,
+                float adaptEps,
+                uint2 figIDDFType,
+                bool lightPath,
+                float3 lastVtPos,
+                inout float3 atten,
+                inout float3 rayOri,
+                float2x3 prevFres, // Fresnel value for the volume traversed by [rayVec]
+                out float rayDist,
+                inout uint randVal)
 {
-    // Extract a shading BXDF for illumination at the current vertex
-    uint bxdfID = MatBXDFID(MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
-                                             figIDDFType.yx,
-                                             rayVec.xyz)).x,
-                            randVal);
-
     // Extract surface normal
-    float3 normal = tetGrad(rayVec.xyz,
-                            adaptEps,
-                            figuresReadable[figIDDFType.x]).xyz;
+    Figure nearFig = figures[figIDDFType.x];
+    float3 normal = PlanetGrad(PtToPlanet(rayVec.xyz,
+                                          nearFig.linTransf.w),
+                               nearFig);
+
+    // Cache the surface material at [coord]
+    float2x4 mat = MatGen(rayVec.xyz,
+                          normal,
+                          figIDDFType.y,
+                          randVal);
+
+    // Extract a shading BXDF for illumination at the current vertex
+    uint bxdfID = MatBXDFID(mat[0],
+                            randVal);
 
     // Generate an importance-sampled bounce direction
     float3x3 normSpace = NormalSpace(normal);
     float3 bounceDir = mul(MatDir(rayDir,
                                   rayVec.xyz,
                                   randVal,
-                                  float3(bxdfID,
-                                         figIDDFType.yx)),
+                                  float4(bxdfID,
+                                         figIDDFType.yx,
+                                         mat[1].w)),
                            normSpace);
 
     // Evaluate the current vertex's outgoing directions + PDF
     // (both needed for attenuation atm + path integration
     // later)
     float3x3 surfDirs = float3x3(bounceDir,
-                               rayDir,
-                               normal);
+                                 rayDir,
+                                 normal);
     float2 pdfIO = float2(MatPDF(surfDirs,
                                  float4(rayVec.xyz,
                                         lightPath),
                                  float4(bxdfID,
                                         figIDDFType.yx,
-                                        true)), // Probability of exiting along [bounceDir] after entering along [rayDir]
+                                        true),
+                                 mat[0],
+                                 mat[1].w), // Probability of exiting along [bounceDir] after entering along [rayDir]
                           MatPDF(surfDirs,
                                  float4(rayVec.xyz,
                                         lightPath),
                                  float4(bxdfID,
                                         figIDDFType.yx,
-                                        true))); // Probability of exiting along [rayDir] after entering along [bounceDir]
-
+                                        true),
+                                 mat[0],
+                                 mat[1].w)); // Probability of exiting along [rayDir] after entering along [bounceDir]
     // Update path attenuation
     atten *= MatBXDF(rayVec.xyz,
                      prevFres,
                      surfDirs,
-                     uint3(bxdfID, figIDDFType.yx)) * abs(dot(normal, bounceDir)) * pdfIO.x;
+                     float4(bxdfID,
+                            figIDDFType.yx,
+                            mat[1].w),
+                     mat[1].rgb) * abs(dot(normal, bounceDir)) * pdfIO.x;
 
     // Cache the bi-directional vertex representing the current interaction
     PathVt bdVt = BuildBidirVt(float4(rayVec.xyz, figIDDFType.x),
-                                  figPos,
-                                  float4(atten, bxdfID),
-                                  float4(normal, figIDDFType.y),
-                                  float2x3(bounceDir, rayDir),
-                                  float3(pdfIO, rayVec.w));
+                               figPos,
+                               float4(atten, bxdfID),
+                               float4(normal, figIDDFType.y),
+                               float2x3(bounceDir, rayDir),
+                               mat,
+                               float3(pdfIO, rayVec.w));
 
     // Update remaining [out] parameters
 
@@ -92,9 +127,8 @@ PathVt ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
     // Update light ray starting position
     // Shift the starting position just outside the surface so that rays avoid
     // immediately re-intersecting with the figure
-    float rayOffs = RayOffset(float4(rayVec.xyz, figIDDFType.x),
-                              float4(rayDir.xyz, adaptEps));
-    rayOri = rayVec.xyz + (normal * rayOffs);
+    float rayOffs = adaptEps * 0.1f;
+    rayOri = rayVec.xyz + (rayDir * rayOffs);
 
     // Re-set ray distance as appropriate
     rayDist = 0.0f;
@@ -119,8 +153,8 @@ float4 CamGather(PathVt liVt, // A surface light vertex
     // change that later to simplify path integration
     float3x4 occData = OccTest(float4(liVt.pos.xyz, true),
                                float4(normalize(cameraPos.xyz - liVt.pos.xyz), LENS_FIG_ID), // Placeholder figure-ID here (no default lens intersections rn)
-                               float4(cameraPos.xyz, true),
-                               adaptEps,
+                               cameraPos.xyz,
+                               float2(adaptEps, liVt.pos.w),
                                randVal);
 
     // Generate a pixel ID for the sampling ray direction, cache alongside default sample importance
@@ -141,9 +175,13 @@ float4 CamGather(PathVt liVt, // A surface light vertex
                                float3x3(liVt.iDir.xyz,
                                         occData[0].xyz,
                                         liVt.norml.xyz),
-                               uint3(liVt.atten.w,
-                                     liVt.norml.w,
-                                     liVt.pos.w)); // * // Attenuation by the source interaction's local BXDF
+                               float4(liVt.atten.w,
+                                      liVt.norml.w,
+                                      liVt.pos.w,
+                                      liVt.dfOri.w),
+                               float3(liVt.iDir.w,
+                                      liVt.oDir.w,
+                                      liVt.pdfIO.w)); // * // Attenuation by the source interaction's local BXDF
                        //RayImportance(occData[0].xyz,
                        //              camInfo,
                        //              pixWidth) / // Attenuation by the importance emitted from the camera towards [lightVt.pos.xyz]
@@ -167,6 +205,7 @@ float4 CamGather(PathVt liVt, // A surface light vertex
 
 // Light gathers for surface camera vertices
 float3 LiGather(PathVt camVt, // A surface camera vertex
+                //float3 prevCamVtAtten, // Attenuation at the camera vertex immediately before [camVt]
                 float4 liLinTransf, // Position/size for the given light (all lights are area lights in Athru)
                 float adaptEps, // The adaptive epsilon value chosen for the current frame
                 inout uint randVal) // The permutable random value used for the current shader instance
@@ -180,20 +219,22 @@ float3 LiGather(PathVt camVt, // A surface camera vertex
     float3x3 normSpace = NormalSpace(camVt.norml.xyz);
     float3x4 occData = OccTest(float4(rayOri, true),
                                float4(normalize(stellarSurfPos - rayOri), STELLAR_FIG_ID),
-                               float4(stellarSurfPos, false),
-                               adaptEps,
+                               stellarSurfPos,
+                               float2(adaptEps, camVt.pos.w),
                                randVal);
     // Deploy a MIS ray sampled from the surface's BXDF
-    float3x4 misOccData = OccTest(float4(camVt.pos.xyz, true),
-                                  float4(mul(MatDir(camVt.oDir.xyz,
-                                                    camVt.pos.xyz,
-                                                    randVal,
-                                                    uint3(camVt.atten.w,
-                                                          camVt.norml.w,
-                                                          camVt.pos.w)),
-                                             normSpace), STELLAR_FIG_ID),
-                                  float4(cameraPos.xyz, false),
-                                  adaptEps,
+    float3 misRayDir = mul(MatDir(camVt.oDir.xyz,
+                                  camVt.pos.xyz,
+                                  randVal,
+                                  float4(camVt.atten.w,
+                                         camVt.norml.w,
+                                         camVt.pos.w,
+                                         camVt.dfOri.w)),
+                           normSpace);
+    float3x4 misOccData = OccTest(float4(rayOri, true),
+                                  float4(misRayDir, STELLAR_FIG_ID),
+                                  rayOri + (misRayDir * StarDF(rayOri.xyz, rayOri.xyz, false)[0].x),
+                                  float2(adaptEps, camVt.pos.w),
                                   randVal);
     // Cache probability densities for each sample
     float stellarPosPDF = LightPosPDF(LIGHT_ID_STELLAR);
@@ -208,59 +249,35 @@ float3 LiGather(PathVt camVt, // A surface camera vertex
                               uint4(camVt.atten.w,
                                     camVt.norml.w,
                                     camVt.pos.w,
-                                    true));
+                                    true),
+                              camVt.refl,
+                              camVt.dfOri.w);
     // Accumulate MIS-weighted radiance along the stellar/BXDF rays (as appropriate)
     float3 gathRGB = 0.0f.xxx;
     if (!occData[1].w ||
         !misOccData[1].w)
     {
+        // Planetary normals change too quickly for ideal gather integration, so
+        // generate biased samples here instead
         if (!occData[1].w)
         {
-            gathRGB += DirIllumRadiance(occData[0].xyz,
-                                        camVt.norml.xyz,
-                                        STELLAR_RGB,
-                                        occData[0].w,
-                                        STELLAR_BRIGHTNESS * 100.0f) // Evaluate local radiance; many more factors here than in discrete-path emission, so scale power appropriately
-                                      * MatBXDF(camVt.pos.xyz,
-                                                AmbFres(camVt.pdfIO.z), // Not worrying about subsurface scattering just yet...
-                                                surfDirs[0],
-                                                uint3(camVt.atten.w,
-                                                      camVt.norml.w,
-                                                      camVt.pos.w)) // Apply the surface BRDF
-                                      * stellarPosPDF // Account for the probability of selecting
-                                                      // [stellarSurfPos] out of all possible
-                                                      // positions on the surface of the local
-                                                      // star
-                                      * MISWeight(1, stellarPosPDF,
-                                                  1, surfMatPDF); // Weight this sample relative to it's chances of reaching the star
-                                                                  // compared with the BXDF-sampled ray
-                                                                  // Only one sample from each of two separate distributions for light
-                                                                  // gathers
+            gathRGB += MISWeight(1, stellarPosPDF,
+                                 1, surfMatPDF).xxx; // Weight this sample relative to it's chances of reaching the star
+                                                     // compared with the BXDF-sampled ray
+                                                     // Only one sample from each of two separate distributions for light
+                                                     // gathers
         }
         if (!misOccData[1].w)
         {
-            gathRGB += DirIllumRadiance(misOccData[0].xyz,
-                                        camVt.norml.xyz,
-                                        STELLAR_RGB,
-                                        misOccData[0].w,
-                                        STELLAR_BRIGHTNESS * 100.0f) // Evaluate local radiance; many more factors here than in discrete-path emission, so scale power appropriately
-                                      * MatBXDF(camVt.pos.xyz,
-                                                AmbFres(camVt.pdfIO.z), // Not worrying about subsurface scattering just yet...
-                                                surfDirs[1],
-                                                uint3(camVt.atten.w,
-                                                      camVt.norml.w,
-                                                      camVt.pos.w)) // Apply the surface BRDF
-                                      * surfMatPDF // Account for the probability of selecting
-                                                   // the given BXDF direction out of all possible
-                                                   // directions for the surface
-                                      * MISWeight(1, surfMatPDF,
-                                                  1, stellarPosPDF); // Weight this sample relative to it's chances of reaching the star
-                                                                     // compared with the spatially-sampled ray
-                                                                     // Only one sample from each of two separate distributions for light
-                                                                     // gathers
+            gathRGB += MISWeight(1, surfMatPDF,
+                                   1, stellarPosPDF).xxx; // Weight this sample relative to it's chances of reaching the star
+                                                          // compared with the spatially-sampled ray
+                                                          // Only one sample from each of two separate distributions for light
+                                                          // gathers
         }
 
         // Return the MIS-weighted blend of the two light gathers
+        // Also apply surface color here (should really apply the local BXDF instead...)
         return gathRGB;
     }
     else
@@ -280,7 +297,7 @@ float3 ConnectBidirVts(PathVt camVt,
     // Evaluate visibility between [lightVt] and [camVt]
     float3x4 occData = OccTest(float4(lightVt.pos.xyz, true),
                                float4(normalize(camVt.pos.xyz - lightVt.pos.xyz), camVt.pos.w),
-                               float4(camVt.pos.xyz, true),
+                               camVt.pos.xyz,
                                adaptEps,
                                randVal);
 
@@ -312,15 +329,23 @@ float3 ConnectBidirVts(PathVt camVt,
     float3 camBXDF = MatBXDF(camVt.pos.xyz,
                              AmbFres(camVt.pdfIO.z), // Not worrying about subsurface scattering atm...
                              occDirs[0],
-                             uint3(camVt.atten.w,
-                                   lightVt.norml.w,
-                                   camVt.pos.w));
+                             float4(camVt.atten.w,
+                                    lightVt.norml.w,
+                                    camVt.pos.w,
+                                    camVt.dfOri.w),
+                             float3(camVt.iDir.w,
+                                    camVt.oDir.w,
+                                    camVt.pdfIO.w));
     float3 lightBXDF = MatBXDF(lightVt.pos.xyz,
                                AmbFres(lightVt.pdfIO.z), // Not worrying about subsurface scattering atm...
                                occDirs[1],
-                               uint3(lightVt.atten.w,
-                                     camVt.norml.w,
-                                     lightVt.pos.w));
+                               float4(lightVt.atten.w,
+                                      camVt.norml.w,
+                                      lightVt.pos.w,
+                                      lightVt.dfOri.w),
+                               float3(lightVt.iDir.w,
+                                      lightVt.oDir.w,
+                                      lightVt.pdfIO.w));
     return camVt.atten.rgb * camBXDF * // Evaluate + apply attenuated radiance on the camera subpath
            lightVt.atten.rgb * lightBXDF * // Evaluate + apply attenuated radiance on the light subpath;
            g; // Scale the integrated radiance by the relative visibility of [camVt] from

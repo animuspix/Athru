@@ -11,7 +11,7 @@
 
 // Maximum supported number of samples-per-pixel
 // for anti-aliasing
-#define NUM_AA_SAMPLES 4//8192
+#define NUM_AA_SAMPLES 8192 // Replace this with a CPU-defined sampling rate for release builds
 
 // Samples + counter variables for each pixel
 // (needed for temporal smoothing)
@@ -32,7 +32,7 @@ struct PixHistory
 // Buffer carrying anti-aliasing image samples
 // (Athru AA is performed over time rather than space to
 // reduce per-frame GPU loading)
-RWStructuredBuffer<PixHistory> aaBuffer : register(u3);
+RWStructuredBuffer<PixHistory> aaBuffer : register(u2);
 
 // Smooths frames by applying temporal anti-aliasing (sample accumulation occurs in
 // time and space simultaneously); filtering is supported by applying the generalized
@@ -111,7 +111,7 @@ float BlackmanHarrisPerAxis(float filtVal)
 {
     // Blackman-Harris alpha parameters
     // Parameter values taken from:
-    // https://en.wikipedia.org/wiki/Window_function#Blackman–Harris_window
+    // https://en.wikipedia.org/wiki/Window_function#Blackmanï¿½Harris_window
     const float alph0 = 0.35875f;
     const float alph1 = 0.48829f;
     const float alph2 = 0.14128f;

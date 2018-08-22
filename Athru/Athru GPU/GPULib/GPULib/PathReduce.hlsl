@@ -3,7 +3,7 @@
 // as the image source during core rendering (required because
 // there's no support for direct render-target access in
 // DirectX)
-RWTexture2D<float4> displayTex : register(u1);
+RWTexture2D<float4> displayTex : register(u0);
 
 // Buffer carrying known-intersecting pixels, primary-ray directions,
 // primary-ray filter values (all camera rays only), and camera
@@ -13,12 +13,12 @@ RWTexture2D<float4> displayTex : register(u1);
 // properly mapped to pixel IDs)
 // Ray directions are in [0][xyz], filter values are in [1][x],
 // pixel indices are in [1][y], z-scale is in [1][z]
-AppendStructuredBuffer<float2x3> traceables : register(u4);
+AppendStructuredBuffer<float2x3> traceables : register(u3);
 
 // Small counter buffer describing the maximum number of traceable elements
 // emitted by each frame (traceable element-count can be randomly reduced
 // by stochastic path reduction)
-RWBuffer<int> maxTraceables : register(u5);
+RWBuffer<int> maxTraceables : register(u4);
 
 #include "Lighting.hlsli"
 #ifndef RASTER_CAMERA_LINKED
@@ -38,7 +38,7 @@ void main(uint3 groupID : SV_GroupID,
     // Extract a pixel ID from the given thread/group IDs
     uint2 pixID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
                         (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
-    uint linPixID = pixID.x + (pixID.y * DISPLAY_WIDTH);
+    uint linPixID = pixID.x + (pixID.y * resInfo.x);
 
     // Assume pixels contain traceable rays and add [1] per-thread to [maxTraceables]
     //InterlockedAdd(maxTraceables[0], 1);
@@ -66,19 +66,18 @@ void main(uint3 groupID : SV_GroupID,
     // except the local star
     // Loops are inefficient as heck, but we can ask FXC to unroll them and
     // hold onto the code readability :)
-    bool isectPx = false;
+    bool isectPx = true;
     float3 camPos = cameraPos.xyz;
     float3 rayPt = rayDir.xyz + camPos;
-    [unroll]
-    for (int i = 1; i < MAX_NUM_FIGURES; i += 1)
-    {
-        // Pixels count as "intersecting the scene" if their camera rays
-        // intersect at least one surface that isn't the local star
-        isectPx = BoundingSurfTrace(figuresReadable[i].linTransf,
-                                    figuresReadable[i].self.x,
-                                    rayPt,
-                                    camPos) || isectPx;
-    }
+    // Planets/critters/plants are too dense for naive raymarching/ray-tracing
+    // visibility checks to work well; will eventually try to make convex hulls
+    // for each planet and trace those instead
+    float4 symRay = SysSymmet(rayPt);
+    isectPx = BoundingSurfTrace(float4(SYM_PLANET_ORI,
+                                       figures[planetNdx(symRay.w)].linTransf.w),
+                                DF_TYPE_PLANET,
+                                symRay.xyz,
+                                camPos);
 
     // Increment [maxTraceables] once for every intersecting pixel
     InterlockedAdd(maxTraceables[0], isectPx);
@@ -93,7 +92,7 @@ void main(uint3 groupID : SV_GroupID,
         #ifdef SWR_ENABLED
             // Difficult to validate [cullFreq] by hand, test with shadertoy...
             const float maxCullThresh = 0.8f; // Never cull more than 80% of traceable pixels
-            float cullFreq = prevNumTraceables.x / (float)DISPLAY_AREA; // Match per-frame culling frequency to relative screen density (number of traceable elements/pixel)
+            float cullFreq = prevNumTraceables.x / (float)resInfo.z; // Match per-frame culling frequency to relative screen density (number of traceable elements/pixel)
             if (iToFloat(xorshiftPermu1D(randVal)) > min(cullFreq, maxCullThresh))
             {
                 traceables.Append(float2x3(rayDir.xyz,
@@ -117,10 +116,9 @@ void main(uint3 groupID : SV_GroupID,
         // stellar/background color
         return;
     }
-    else if (BoundingSurfTrace(figuresReadable[STELLAR_FIG_ID].linTransf,
-                               figuresReadable[STELLAR_FIG_ID].self.x,
-                               rayPt,
-                               camPos))
+    else if (BoundingSphereTrace(rayPt,
+                                 camPos,
+                                 figures[STELLAR_FIG_ID].linTransf))
     {
         // Test pixels that didn't intersect planets/plants/animals
         // against the local star; shade any that *do* intersect
@@ -128,7 +126,7 @@ void main(uint3 groupID : SV_GroupID,
         // Lazy tonemapping to improve filtering here, will use smth more elegant
         // later...
         rgb = max(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS,
-                           length(figuresReadable[STELLAR_FIG_ID].linTransf.xyz - camPos) - figuresReadable[STELLAR_FIG_ID].linTransf.w), 8.0f.xxx);
+                           length(figures[STELLAR_FIG_ID].linTransf.xyz - camPos) - figures[STELLAR_FIG_ID].linTransf.w), 8.0f.xxx);
     }
     else
     {

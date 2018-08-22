@@ -32,7 +32,7 @@ float3 PRayDir(uint2 pixID,
                uint pixWidth,
                inout float zProj)
 {
-    float2 viewSizes = DISPLAY_SIZE_2D * pixWidth;
+    float2 viewSizes = resInfo.xy * pixWidth;
     zProj = viewSizes.y / tan(FOV_RADS / 2.0f);
     float4 dir = float4(normalize(float3(pixID - (viewSizes / 2.0f),
                                          zProj)), 1.0f);
@@ -46,7 +46,7 @@ float3 safePRayDir(uint2 pixID,
                    uint pixWidth,
                    float zProj)
 {
-    float2 viewSizes = DISPLAY_SIZE_2D * pixWidth;
+    float2 viewSizes = resInfo.xy * pixWidth;
     return mul(float4(normalize(float3(pixID - (viewSizes / 2.0f),
                                        zProj)), 1.0f), viewMat).xyz;
 }
@@ -74,14 +74,14 @@ uint3 PRayPix(float3 incidentDir,
     // focal plane) with the following definitions; apply those here
     // pixID.x: dir.x + width / 2.0f
     // pixID.y: dir.y + height / 2.0f
-    uint2 pixID = incidentDir.xy + (DISPLAY_SIZE_2D / 2.0f); // Ignore multi-sampling for pixel re-projection
+    uint2 pixID = incidentDir.xy + (resInfo.xy / 2.0f); // Ignore multi-sampling for pixel re-projection
 
     // Return the generated pixel ID in [xy] + a linearized version in [z]
     // Nothing stopping this from returning coordinates outside the actual
     // display size; should validate returned positions in [SceneVis.hlsl]
     // before sending radiance/importance values to the display texture
     return uint3(pixID,
-                 pixID.x + (pixID.y * DISPLAY_WIDTH));
+                 pixID.x + (pixID.y * resInfo.x));
 }
 
 // Initial ray direction + filter value
@@ -173,7 +173,7 @@ float SensArea(float2 sensInfo)
 {
     // Generate vectors passing through upper-right/lower-left corners
     // of the film plane
-    float2x3 boundVecs = float2x3(safePRayDir(DISPLAY_SIZE_2D - 1.0f.xx,
+    float2x3 boundVecs = float2x3(safePRayDir(resInfo.xy - 1.0f.xx,
                                               sensInfo.x, sensInfo.y),
                                   safePRayDir(0.0f.xx,
                                               sensInfo.x, sensInfo.y));

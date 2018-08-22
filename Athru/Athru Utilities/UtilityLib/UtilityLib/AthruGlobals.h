@@ -134,8 +134,8 @@ namespace GraphicsStuff
 	// Display properties
 	extern constexpr bool FULL_SCREEN = false;
 	extern constexpr bool VSYNC_ENABLED = false;
-	extern constexpr fourByteUnsigned DISPLAY_WIDTH = 1024;
-	extern constexpr fourByteUnsigned DISPLAY_HEIGHT = 768;
+	extern constexpr fourByteUnsigned DISPLAY_WIDTH = 1920;
+	extern constexpr fourByteUnsigned DISPLAY_HEIGHT = 1080;
 	extern constexpr fourByteUnsigned DISPLAY_AREA = DISPLAY_WIDTH * DISPLAY_HEIGHT;
 	extern constexpr float DISPLAY_ASPECT_RATIO = (float)GraphicsStuff::DISPLAY_WIDTH /
 												  (float)GraphicsStuff::DISPLAY_HEIGHT;
@@ -152,7 +152,7 @@ namespace GraphicsStuff
 	extern constexpr fourByteUnsigned GROUP_HEIGHT_PATH_REDUCTION = 16;
 	extern constexpr fourByteUnsigned GROUP_AREA_PATH_REDUCTION = 256;
 	extern constexpr fourByteUnsigned MAX_NUM_BOUNCES = 7;
-	extern constexpr fourByteUnsigned NUM_AA_SAMPLES = 256;
+	extern constexpr fourByteUnsigned NUM_AA_SAMPLES = 8192;
 }
 
 namespace SceneStuff
@@ -160,19 +160,6 @@ namespace SceneStuff
 	extern constexpr fourByteUnsigned SYSTEM_COUNT = 100;
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = 10;
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_ORGANISMS = 8;
-}
-
-namespace PlantStuff
-{
-	extern constexpr fourByteUnsigned MAX_PLANT_AGE = 200;
-	extern constexpr float MAX_PLANT_SIZE = 25.0f;
-	extern constexpr float MAX_TROPISM = 0.4f;
-	extern constexpr fourByteUnsigned MAX_BRANCH_COUNT_AT_FORK = 10;
-	extern constexpr fourByteUnsigned MAX_LEAF_LOBE_COUNT = 4;
-}
-
-namespace CritterStuff
-{
 }
 
 namespace GPGPUStuff
@@ -187,52 +174,9 @@ namespace GPGPUStuff
 									   // like a parallel stack instead of an array (insertion with [Append()], removal with
 									   // [Consume()])
 	struct GPURBuffer {};  // Generic SRV buffer, readable but not writable from the GPU, inaccessible from the CPU
+	struct StrmBuffer {}; // Streaming buffer with CPU-write permissions but not CPU-read; GPU read-only
 	struct StgBuffer {}; // Staging buffer, used to copy GPU-only information across to the CPU (useful for e.g.
 					     // extracting structure counts from append/consume buffers)
-
-	// Construct a GPGPU read/write buffer with the given complex
-	// (non-pointer, non-enum, non-array, non-reference) type
-	template<typename BufType>
-	static void BuildRWStructBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-									Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
-									const D3D11_SUBRESOURCE_DATA* baseDataPttr,
-									Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& rwView,
-									D3D11_BUFFER_UAV_FLAG uavFlags,
-									fourByteUnsigned bufLength)
-	{
-		// Describe the buffer we're creating and storing at
-		// [bufPttr]
-		D3D11_BUFFER_DESC bufferDesc;
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
-		bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		bufferDesc.StructureByteStride = sizeof(BufType);
-
-		// Construct a buffer at [bufPttr] with the description given above
-		HRESULT result = device->CreateBuffer(&bufferDesc,
-											  baseDataPttr,
-											  bufPttr.GetAddressOf());
-		assert(SUCCEEDED(result));
-
-		// Describe the the shader-friendly read/write resource view we'll
-		// use to access the buffer during general-purpose graphics
-		// processing
-		D3D11_BUFFER_UAV viewDescA;
-		viewDescA.FirstElement = 0;
-		viewDescA.Flags = uavFlags;
-		viewDescA.NumElements = bufLength;
-
-		D3D11_UNORDERED_ACCESS_VIEW_DESC viewDescB;
-		viewDescB.Format = DXGI_FORMAT_UNKNOWN;
-		viewDescB.Buffer = viewDescA;
-		viewDescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-
-		// Construct a DirectX11 "view" over the data at [bufPttr]
-		result = device->CreateUnorderedAccessView(bufPttr.Get(), &viewDescB, rwView.GetAddressOf());
-		assert(SUCCEEDED(result));
-	}
 
 	// Construct a GPGPU read-write buffer with the given primitive type
 	template<typename BufType>
@@ -276,54 +220,6 @@ namespace GPGPUStuff
 
 		// Construct a DirectX11 "view" over the data at [bufPttr]
 		result = device->CreateUnorderedAccessView(bufPttr.Get(), &viewDescB, rwView.GetAddressOf());
-		assert(SUCCEEDED(result));
-	}
-
-	// Construct a GPGPU staging buffer with the given primitive
-	// type
-	template<typename BufType>
-	static void BuildStagingBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-								   Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
-								   fourByteUnsigned bufLength)
-	{
-		// Describe the buffer we're creating and storing at
-		// [bufPttr]
-		D3D11_BUFFER_DESC bufferDesc;
-		bufferDesc.Usage = D3D11_USAGE_STAGING;
-		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
-		bufferDesc.BindFlags = 0;
-		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.StructureByteStride = 0;
-
-		// Construct a buffer at [bufPttr] with the description given above
-		HRESULT result = device->CreateBuffer(&bufferDesc,
-											  nullptr,
-											  bufPttr.GetAddressOf());
-		assert(SUCCEEDED(result));
-	}
-
-	// Construct a GPGPU staging buffer with the given complex
-	// (non-pointer, non-enum, non-array, non-reference) type
-	template<typename BufType>
-	static void BuildStagingStructBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-										 Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
-										 fourByteUnsigned bufLength)
-	{
-		// Describe the buffer we're creating and storing at
-		// [bufPttr]
-		D3D11_BUFFER_DESC bufferDesc;
-		bufferDesc.Usage = D3D11_USAGE_STAGING;
-		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
-		bufferDesc.BindFlags = 0;
-		bufferDesc.CPUAccessFlags = D3D11_CPU_ACCESS_READ;
-		bufferDesc.MiscFlags = D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
-		bufferDesc.StructureByteStride = sizeof(BufType);
-
-		// Construct a buffer at [bufPttr] with the description given above
-		HRESULT result = device->CreateBuffer(&bufferDesc,
-											  nullptr,
-											  bufPttr.GetAddressOf());
 		assert(SUCCEEDED(result));
 	}
 }
