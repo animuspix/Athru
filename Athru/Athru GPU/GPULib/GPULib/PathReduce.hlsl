@@ -40,9 +40,6 @@ void main(uint3 groupID : SV_GroupID,
                         (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
     uint linPixID = pixID.x + (pixID.y * resInfo.x);
 
-    // Assume pixels contain traceable rays and add [1] per-thread to [maxTraceables]
-    //InterlockedAdd(maxTraceables[0], 1);
-
     // Extract a permutable value from [randBuf]
     // (needed for ray jitter)
     // Same domain as [SceneVis] so no reason to use different
@@ -106,10 +103,6 @@ void main(uint3 groupID : SV_GroupID,
                                               linPixID,
                                               zProj)));
         #endif
-
-        // Update the upper-value ray-intersection counter (ignoring SWR)
-        //const uint marker = 0xFFFFFF;
-        //maxTraceables.Append(marker);
 
         // Either we're recycling older color values for these points (SWR elision) or we're waiting until path-tracing to
         // have valid tonemapped radiances; either way, we want to return immediately instead of outputting a processed

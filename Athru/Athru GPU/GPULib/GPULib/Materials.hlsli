@@ -14,10 +14,10 @@
 #define MATERIALS_LINKED
 
 // Probability density function (PDF) for directions sampled over diffuse surfaces
-float DiffusePDF(float3 oDir,
+float DiffusePDF(float3 iDir,
                  float3 norml)
 {
-    return abs(dot(norml, oDir)) / PI;
+    return abs(dot(norml, iDir)) / PI;
 }
 
 // Importance-sampled ray generator for diffuse surfaces
@@ -294,7 +294,7 @@ float MatPDF(float3x3 surfDirs,
     switch (surfInfo.x)
     {
         case BXDF_ID_DIFFU:
-            pdf = DiffusePDF(surfDirs[1],
+            pdf = DiffusePDF(surfDirs[0],
                              surfDirs[2]);
             break;
         case BXDF_ID_MIRRO:

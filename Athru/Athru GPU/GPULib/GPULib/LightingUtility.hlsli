@@ -42,13 +42,12 @@ struct PathVt
 {
     float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
     float4 dfOri; // Position of the figure associated with [this]; [w] carries local surface variance
-                  // (not implemented just yet)
     float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
     float4 norml; // Surface normal at [pos]; contains the local distance-function type/ID in [w]
-    float4 iDir; // Incoming ray direction in [xyz], surface redness in [w] (not implemented just yet)
-    float4 oDir; // Outgoing ray direction in [xyz], surface greenness in [w] (not implemented just yet)
+    float4 iDir; // Incoming ray direction in [xyz], surface redness in [w]
+    float4 oDir; // Outgoing ray direction in [xyz], surface greenness in [w]
     float4 pdfIO; // Forward/reverse probability densities; ([z] contains local planetary distance
-                  // (used for atmospheric refraction), [w] carries surface blueness (not implemented just yet))
+                  // (used for atmospheric refraction), [w] carries surface blueness)
     float4 refl; // Value carrying frequencies for each BXDF supported by Athru (diffuse/refractive/mirrorlike/volumetric)
 };
 
@@ -333,14 +332,15 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
 // [w]
 // [rayOri] carries whether or not to occlude on refraction in [w] and the ray
 // origin in [xyz]
-// [rayDest] carries the occlusion ray's emission point
+// [rayDest] carries the occlusion ray's emission point in [xyz] and whether or
+// not to check intersection positions as well as figure-ID's in [w]
 // [surfInfo] carries [adaptEps] in [x] and the local figure-ID in [y]
 // Planetary surface variance is much too high for ordinary ray offsets to work, so
 // occlusion rays are traced backwards from the ray destination instead
 #define MAX_OCC_MARCHER_STEPS 256
 float3x4 OccTest(float4 rayOri,
                  float4 rayDir,
-                 float3 rayDest,
+                 float4 rayDest,
                  float2 surfInfo,
                  inout uint randVal)
 {
@@ -353,16 +353,17 @@ float3x4 OccTest(float4 rayOri,
     // March occlusion rays
     for (int i = 0; i < MAX_OCC_MARCHER_STEPS; i += 1)
     {
-        float3 rayVec = rayDest + ((rayDir.xyz * currRayDist) * -1.0f);
+        float3 rayVec = rayOri.xyz + (rayDir.xyz * currRayDist);
         float2x3 sceneField = SceneField(rayVec,
                                          rayOri.xyz,
-                                         true,
-                                         rayDir.w, // Ignore distance from the source figure
+                                         false,
+                                         FILLER_SCREEN_ID,
                                          surfInfo.x);
-        float destPtDist = length(rayOri.xyz - rayVec);
-        bool hitDest = (destPtDist < (surfInfo.x * 10.0f)); // Check if [rayVec] is in the neighbourhood of [rayOri]
+        float destPtDist = length(rayDest.xyz - rayVec);
+        bool hitDest = (destPtDist < surfInfo.x && rayDest.w) ||
+                       (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target scene
         if (sceneField[0].x < surfInfo.x ||
-            hitDest)
+            (hitDest && sceneField[0].x < surfInfo.x))
         {
             if (hitDest)
             {
@@ -384,32 +385,32 @@ float3x4 OccTest(float4 rayOri,
                 // Pass through refractive surfaces
                 // Invoke a transmittance check here (not all rays will have enough energy
                 // left to pass through the surface)
-                if (false)//(bxdfID == BXDF_ID_REFRA ||
-                    // bxdfID == BXDF_ID_VOLUM) &&
-                    //!rayOri.w)
-                {
-                    //// Update refracted ray direction
-                    //rayDir.xyz = MatDir(rayDir.xyz,
-                    //                    rayVec,
-                    //                    randVal,
-                    //                    uint3(bxdfID,
-                    //                          sceneField[0].zy));
-                    //
-                    //// Update refracted ray position
-                    //rayVec = RefractPos(rayVec,
-                    //                    rayDir.xyz,
-                    //                    float3(bxdfID,
-                    //                           sceneField[0].zy),
-                    //                    adaptEps,
-                    //                    randVal);
-                }
-                else
-                {
+                //if (false)//(bxdfID == BXDF_ID_REFRA ||
+                //    // bxdfID == BXDF_ID_VOLUM) &&
+                //    //!rayOri.w)
+                //{
+                //    //// Update refracted ray direction
+                //    //rayDir.xyz = MatDir(rayDir.xyz,
+                //    //                    rayVec,
+                //    //                    randVal,
+                //    //                    uint3(bxdfID,
+                //    //                          sceneField[0].zy));
+                //    //
+                //    //// Update refracted ray position
+                //    //rayVec = RefractPos(rayVec,
+                //    //                    rayDir.xyz,
+                //    //                    float3(bxdfID,
+                //    //                           sceneField[0].zy),
+                //    //                    adaptEps,
+                //    //                    randVal);
+                //}
+                //else
+                //{
                     // The shadow ray was occluded by [sceneField[0].z], so return [true] and
                     // cache the world-space position of the intersection point
                     occ = true;
                     endPos = rayVec;
-                }
+                //}
             }
 
             // Cache the figure-ID associated with intersection point
@@ -419,7 +420,8 @@ float3x4 OccTest(float4 rayOri,
 
         // No intersections yet + [rayVec] hasn't passed within [adaptEps] units
         // of [rayDest]; continue marching through the scene
-        currRayDist += min(sceneField[0].x, destPtDist);
+        if (rayDest.w) { currRayDist += min(sceneField[0].x, destPtDist); }
+        else { currRayDist += sceneField[0].x; }
     }
 
     // Return occlusion information for the given context

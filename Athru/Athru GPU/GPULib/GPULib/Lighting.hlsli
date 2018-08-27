@@ -53,6 +53,9 @@ PathVt ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
                 out float rayDist,
                 inout uint randVal)
 {
+    // Shift [rayVec] outside the local figure
+    rayVec.xyz += ((rayDir * -1.0f) * adaptEps);
+
     // Extract surface normal
     Figure nearFig = figures[figIDDFType.x];
     float3 normal = PlanetGrad(PtToPlanet(rayVec.xyz,
@@ -121,14 +124,13 @@ PathVt ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
 
     // Update remaining [out] parameters
 
-    // Update light ray direction (if appropriate)
-    rayDir = bounceDir;
-
     // Update light ray starting position
     // Shift the starting position just outside the surface so that rays avoid
     // immediately re-intersecting with the figure
-    float rayOffs = adaptEps * 0.1f;
-    rayOri = rayVec.xyz + (rayDir * rayOffs);
+    rayOri = rayVec.xyz;
+
+    // Update light ray direction (if appropriate)
+    rayDir = bounceDir;
 
     // Re-set ray distance as appropriate
     rayDist = 0.0f;
@@ -153,7 +155,7 @@ float4 CamGather(PathVt liVt, // A surface light vertex
     // change that later to simplify path integration
     float3x4 occData = OccTest(float4(liVt.pos.xyz, true),
                                float4(normalize(cameraPos.xyz - liVt.pos.xyz), LENS_FIG_ID), // Placeholder figure-ID here (no default lens intersections rn)
-                               cameraPos.xyz,
+                               float4(cameraPos.xyz, true),
                                float2(adaptEps, liVt.pos.w),
                                randVal);
 
@@ -216,15 +218,15 @@ float3 LiGather(PathVt camVt, // A surface camera vertex
                                            randVal,
                                            camVt.dfOri.xyz);
     // Deploy an ordinary ray sampled from the star's distribution
-    float3x3 normSpace = NormalSpace(camVt.norml.xyz);
     float3x4 occData = OccTest(float4(rayOri, true),
                                float4(normalize(stellarSurfPos - rayOri), STELLAR_FIG_ID),
-                               stellarSurfPos,
+                               float4(stellarSurfPos, false),
                                float2(adaptEps, camVt.pos.w),
                                randVal);
     // Deploy a MIS ray sampled from the surface's BXDF
+    float3x3 normSpace = NormalSpace(camVt.norml.xyz);
     float3 misRayDir = mul(MatDir(camVt.oDir.xyz,
-                                  camVt.pos.xyz,
+                                  rayOri,
                                   randVal,
                                   float4(camVt.atten.w,
                                          camVt.norml.w,
@@ -233,7 +235,7 @@ float3 LiGather(PathVt camVt, // A surface camera vertex
                            normSpace);
     float3x4 misOccData = OccTest(float4(rayOri, true),
                                   float4(misRayDir, STELLAR_FIG_ID),
-                                  rayOri + (misRayDir * StarDF(rayOri.xyz, rayOri.xyz, false)[0].x),
+                                  float4(0.0f.xxx, false),
                                   float2(adaptEps, camVt.pos.w),
                                   randVal);
     // Cache probability densities for each sample
@@ -245,7 +247,7 @@ float3 LiGather(PathVt camVt, // A surface camera vertex
                                       camVt.oDir.xyz,
                                       camVt.norml.xyz) };
     float surfMatPDF = MatPDF(surfDirs[1],
-                              float4(camVt.pos.xyz, false),
+                              float4(rayOri, false),
                               uint4(camVt.atten.w,
                                     camVt.norml.w,
                                     camVt.pos.w,
@@ -261,7 +263,21 @@ float3 LiGather(PathVt camVt, // A surface camera vertex
         // generate biased samples here instead
         if (!occData[1].w)
         {
-            gathRGB += MISWeight(1, stellarPosPDF,
+            gathRGB += Emission(STELLAR_RGB,
+                                STELLAR_BRIGHTNESS,
+                                occData[0].w) *
+                       abs(dot(camVt.norml.xyz, occData[0].xyz)) *
+                       MatBXDF(rayOri,
+                               AmbFres(0.0f), // Only planetary intersections supported atm
+                               surfDirs[0],
+                               float4(camVt.atten.w,
+                                      camVt.norml.w,
+                                      camVt.pos.w,
+                                      camVt.dfOri.w),
+                               float3(camVt.iDir.w,
+                                      camVt.oDir.w,
+                                      camVt.pdfIO.w)) *
+                       MISWeight(1, stellarPosPDF,
                                  1, surfMatPDF).xxx; // Weight this sample relative to it's chances of reaching the star
                                                      // compared with the BXDF-sampled ray
                                                      // Only one sample from each of two separate distributions for light
@@ -269,11 +285,25 @@ float3 LiGather(PathVt camVt, // A surface camera vertex
         }
         if (!misOccData[1].w)
         {
-            gathRGB += MISWeight(1, surfMatPDF,
-                                   1, stellarPosPDF).xxx; // Weight this sample relative to it's chances of reaching the star
-                                                          // compared with the spatially-sampled ray
-                                                          // Only one sample from each of two separate distributions for light
-                                                          // gathers
+            gathRGB += Emission(STELLAR_RGB,
+                                STELLAR_BRIGHTNESS,
+                                misOccData[0].w) *
+                       abs(dot(camVt.norml.xyz, misOccData[0].xyz)) *
+                       MatBXDF(rayOri,
+                               AmbFres(0.0f), // Only planetary intersections supported atm
+                               surfDirs[1],
+                               float4(camVt.atten.w,
+                                      camVt.norml.w,
+                                      camVt.pos.w,
+                                      camVt.dfOri.w),
+                               float3(camVt.iDir.w,
+                                      camVt.oDir.w,
+                                      camVt.pdfIO.w)) *
+                       MISWeight(1, stellarPosPDF,
+                                 1, surfMatPDF).xxx * 100.0f; // Weight this sample relative to it's chances of reaching the star
+                                                                 // compared with the spatially-sampled ray
+                                                                 // Only one sample from each of two separate distributions for light
+                                                                 // gathers
         }
 
         // Return the MIS-weighted blend of the two light gathers
@@ -297,7 +327,7 @@ float3 ConnectBidirVts(PathVt camVt,
     // Evaluate visibility between [lightVt] and [camVt]
     float3x4 occData = OccTest(float4(lightVt.pos.xyz, true),
                                float4(normalize(camVt.pos.xyz - lightVt.pos.xyz), camVt.pos.w),
-                               camVt.pos.xyz,
+                               float4(camVt.pos.xyz, true),
                                adaptEps,
                                randVal);
 

@@ -388,11 +388,10 @@ void main(uint3 groupID : SV_GroupID,
             #else
                 if (!subpathEnded.x)
                 {
-                    pathRGB += LiGather(bidirVts[min(numBounces.x + 1, (maxNumBounces.x - 1))].camVt,
+                    pathRGB += LiGather(bidirVts[numBounces.x].camVt,
                                         star.linTransf, // Only stellar light sources atm
                                         adaptEps,
-                                        randVal) * bidirVts[numBounces.x].camVt.atten.rgb; // Should technically scale this by the previous vertex's attenuation, buuuuuuut it looks worse so
-                                                  // I'm sticking to my biased alternative for now :)
+                                        randVal) * bidirVts[numBounces.x - 1].camVt.atten.rgb;
                 }
             #endif
         #endif
