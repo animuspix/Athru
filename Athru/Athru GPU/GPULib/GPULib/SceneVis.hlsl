@@ -25,19 +25,6 @@ ConsumeStructuredBuffer<float2x3> traceables : register(u3);
 // from within [PathReduce.hlsl]
 RWBuffer<int> maxTraceables : register(u4);
 
-// Tracing modes to use for scene visualization
-#define TRACE_MODE_REVERSE 0 // Trace single paths out from the camera towards the light source
-//#define TRACE_MODE_FORWARD 1 // Trace single paths out from the light source towards the lens
-
-// Trace radiance/importance probes from the lens + the light source and integrate appropriately at each
-// vertex
-// Automatically defined if forward/reverse path-tracing are enabled at the same time
-#ifdef TRACE_MODE_REVERSE
-    #ifdef TRACE_MODE_FORWARD
-        #define TRACE_MODE_BIDIREC 2
-    #endif
-#endif
-
 // The maximum number of steps allowed for the primary
 // ray-marcher
 #define MAX_VIS_MARCHER_STEPS 256
@@ -364,89 +351,24 @@ void main(uint3 groupID : SV_GroupID,
 
         // Evaluate the camera-only path through the scene (only if the camera-subpath intersects with
         // the local star)
-        #ifdef TRACE_MODE_REVERSE
-            if (subpathEnded.x)
-            {
-                // Camera path radiance is taken as the illumination at the second-last camera vertex in the scene adjusted for attenuation
-                // at the final vertex
-                PathVt lastCamVt = bidirVts[numBounces.x + 1].camVt;
-                PathVt secndLastCamVt = bidirVts[numBounces.x].camVt;
-                pathRGB += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastCamVt.pos.xyz - lastCamVt.pos.xyz)) * lastCamVt.atten.rgb;
-            }
-        #endif
-        #ifdef TRACE_MODE_REVERSE
-            // Evaluate MIS-weighted light gathers for every surface vertex in the camera subpath (for bi-directional integration) or just
-            // for final vertices in paths that failed to reach a light source (for uni-directional integration)
-            #ifdef TRACE_MODE_BIDIREC
-                for (int i = 1; i <= numBounces.x; i += 1) // Zeroth vertices lie on the lens/the light
-                {
-                    pathRGB += LiGather(bidirVts[i].camVt,
-                                        star.linTransf, // Only stellar light sources atm
-                                        adaptEps,
-                                        randVal);
-                }
-            #else
-                if (!subpathEnded.x)
-                {
-                    pathRGB += LiGather(bidirVts[numBounces.x].camVt,
-                                        star.linTransf, // Only stellar light sources atm
-                                        adaptEps,
-                                        randVal) * bidirVts[numBounces.x - 1].camVt.atten.rgb;
-                }
-            #endif
-        #endif
-
-        // Evaluate the light-only path through the scene (only if the light-subpath intersects with the lens)
-        #ifdef TRACE_MODE_FORWARD
-            if (subpathEnded.y)
-            {
-                // Camera path radiance is taken as the illumination at the second-last camera vertex in the scene adjusted for attenuation
-                // at the final vertex
-                PathVt lastLiVt = bidirVts[numBounces.y + 1].lightVt;
-                PathVt secndLastLiVt = bidirVts[numBounces.y].lightVt;
-                pathRGB = float3(1.0f, 0.0f.xx);
-                //aaBuffer[(int)PRayPix(normalize(cameraPos.xyz - lastLiVt.pos.xyz),
-                //                                camInfo.w).z].incidentLight.rgb += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastLiVt.pos.xyz - lastLiVt.pos.xyz)) * lastLiVt.atten.rgb;
-            }
-        #endif
-        #ifdef TRACE_MODE_FORWARD
-            // Evaluate MIS-weighted camera gathers for every surface vertex in the light subpath (for bi-directional integration) or just
-            // for final vertices in paths that failed to reach the lens (for uni-directional integration)
-            #ifdef TRACE_MODE_BIDIREC
-                for (int j = 1; j <= numBounces.y; j += 1) // Zeroth vertices lie on the lens/the light
-                {
-                    float4 gathInfo = CamGather(bidirVts[j].lightVt,
-                                                camInfo,
-                                                adaptEps,
-                                                randVal);
-                    aaBuffer[(int)gathInfo.w].incidentLight.rgb = /*gathInfo.rgb */float3(1.0f, 0.0f.xx);
-                }
-            #else
-                if (/*!subpathEnded.y && */numBounces.y > 0)
-                {
-                    float4 gathInfo = CamGather(bidirVts[numBounces.y].lightVt,
-                                                camInfo,
-                                                adaptEps,
-                                                randVal);
-                    aaBuffer[/*(int)gathInfo.w*/linPixID].incidentLight.rgb = 1.0f.xxx;//gathInfo.rgb;
-                }
-            #endif
-        #endif
-        #ifdef TRACE_MODE_BIDIREC
-            // Attempt connections between every surface vertex in either subpath
-            for (int k = 1; k <= numBounces.x; k += 1) // Zeroth vertices lie on the lens/the light
-            {
-                for (int l = 1; l <= numBounces.y; l += 1)
-                {
-                    // Subpath connections are always assumed to contribute towards the pixel
-                    // associated with the camera subpath
-                    pathRGB += ConnectBidirVts(bidirVts[k].camVt,
-                                               bidirVts[k].lightVt,
-                                               adaptEps,
-                                               randVal);
-                }
-            }
-        #endif
+        if (subpathEnded.x)
+        {
+            // Camera path radiance is taken as the illumination at the second-last camera vertex in the scene adjusted for attenuation
+            // at the final vertex
+            PathVt lastCamVt = bidirVts[numBounces.x + 1].camVt;
+            PathVt secndLastCamVt = bidirVts[numBounces.x].camVt;
+            pathRGB += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastCamVt.pos.xyz - lastCamVt.pos.xyz)) * lastCamVt.atten.rgb;
+        }
+        
+        // Evaluate MIS-weighted light gathers for every surface vertex in the camera subpath (for bi-directional integration) or just
+        // for final vertices in paths that failed to reach a light source (for uni-directional integration)
+        if (!subpathEnded.x)
+        {
+            pathRGB += LiGather(bidirVts[numBounces.x].camVt,
+                                star.linTransf, // Only stellar light sources atm
+                                adaptEps,
+                                randVal) * bidirVts[numBounces.x - 1].camVt.atten.rgb;
+        }
     }
     else
     {

@@ -37,18 +37,16 @@
 // (easiest to perform that separately to
 // core ray propagation/bouncing)
 // [figID] and [bxdfID] are ignored for
-// vertices on the camera lens/pinhole
-struct PathVt
+// paths terminating at the lens/pinhole
+struct Path
 {
-    float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
-    float4 dfOri; // Position of the figure associated with [this]; [w] carries local surface variance
-    float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
-    float4 norml; // Surface normal at [pos]; contains the local distance-function type/ID in [w]
-    float4 iDir; // Incoming ray direction in [xyz], surface redness in [w]
-    float4 oDir; // Outgoing ray direction in [xyz], surface greenness in [w]
-    float4 pdfIO; // Forward/reverse probability densities; ([z] contains local planetary distance
-                  // (used for atmospheric refraction), [w] carries surface blueness)
-    float4 refl; // Value carrying frequencies for each BXDF supported by Athru (diffuse/refractive/mirrorlike/volumetric)
+    float4 pos; // Position of [this] in global space ([xyz]); contains the local figure-ID in [w]
+    float4 surf; // Local surface color ([xyz]); [w] carries local surface variance
+    float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID 
+                  // (low bits) and chance of selecting that ID (high bits) in [w]
+    float4 norml; // Surface normal at [pos]; ambient refractive index in [w]
+    float2x4 wiwo; // Incoming/outgoing ray directions in [0].xyz and [1].xyz, serial products of 
+                   // forward/reverse PDFs in [0].w and [1].w
 };
 
 PathVt BuildBidirVt(float4 posFigID,
