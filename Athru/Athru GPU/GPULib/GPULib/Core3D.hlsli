@@ -270,6 +270,10 @@ float3 PtToPlanet(float3 pt,
     return pt / planetScale;
 }
 
+// Small debug switch, replaces all scene surfaces with a sphere
+// near the middle of the default view
+//#define PLANET_DEBUG
+
 // Return distance + surface information for the nearest planet
 float2x3 PlanetDF(float3 pt,
                   Figure planet,
@@ -277,14 +281,24 @@ float2x3 PlanetDF(float3 pt,
                   float adaptEps)
 {
     // Pass [pt] into the given planet's local space
-    pt = PtToPlanet(pt,
-                    planet.linTransf.w);
+    #ifndef PLANET_DEBUG
+        pt = PtToPlanet(pt,
+                        planet.linTransf.w);
+    #endif
 
     // Read out the appropriate distance value
     float jDist = Julia(planet.distCoeffs[0],
                         pt,
                         ITERATIONS_JULIA,
                         adaptEps);
+
+    // Return sphere distance for debugging
+    #ifdef PLANET_DEBUG
+        return float2x3(max(SphereDF(pt, float4(700.0f, 0.0f, 400.0f, 100.0f)), adaptEps * 0.9f), // Surface distance; thresholded to [adaptEps * 0.9f] for near-surface intersections
+                        DF_TYPE_PLANET, // Figure distance-field type
+                        figID, // Figure ID
+                        float3(700.0f, 0.0f, 400.0f)); // Fixed figure origin
+    #endif
 
     // Return the approximate distance to the Julia fractal's surface
     // Ray scaling causes a proportional amount of error buildup in the
@@ -331,38 +345,13 @@ float2x3 StarDF(float3 pt,
 float3 PlanetGrad(float3 samplePoint,
                   Figure fig)
 {
+    #ifdef PLANET_DEBUG
+        return normalize(samplePoint - float3(700.0f, 0.0f, 400.0f));
+    #endif
     return JuliaGrad(fig.distCoeffs[0],
                      samplePoint,
                      ITERATIONS_JULIA);
 }
-
-// Extract the tetrahedral gradient for a given
-// subfield; marginally faster than the six-point
-// approximation used by the main [grad] function,
-// but also less accurate
-// Sourced from shadertoy user nimitz: https://www.shadertoy.com/view/Xts3WM
-// (see five-tap normal/curvature function)
-// Need to adjust this to operate on plant/critter DFs, not just planets...
-// Analytical normals can be computed for planets + vegetation, so this
-// may just be used for critters in the future...
-//float4 tetGrad(float3 samplePoint,
-//               float adaptEps,
-//               Figure fig)
-//{
-//    float2 e = float2(-1.0f, 1.0f) * adaptEps;
-//    float t1 = PlanetDF(samplePoint + e.yxx, 0.0f.xxx, fig, 0x0, adaptEps)[0].x; // Figure ID is discarded for normals, so pass a placeholder here instead of
-//    float t2 = PlanetDF(samplePoint + e.xxy, 0.0f.xxx, fig, 0x0, adaptEps)[0].x; // calculating an actual value
-//    float t3 = PlanetDF(samplePoint + e.xyx, 0.0f.xxx, fig, 0x0, adaptEps)[0].x;
-//    float t4 = PlanetDF(samplePoint + e.yyy, 0.0f.xxx, fig, 0x0, adaptEps)[0].x;
-//
-//    float3 gradVec = t1 * e.yxx +
-//                     t2 * e.xxy +
-//                     t3 * e.xyx +
-//                     t4 * e.yyy;
-//
-//    float gradMag = length(gradVec);
-//    return float4(gradVec / gradMag, gradMag);
-//}
 
 // Heterogeneity-preserving figure union function
 // Returns the smaller of each distance ([[0].x]), along with

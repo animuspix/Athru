@@ -20,6 +20,18 @@
 // Standard compute-shader group width (2D) for path-tracing shaders
 #define TRACING_GROUP_WIDTH 16
 
+// Unit axes; useful when local directions line up with the larger spaces around them
+// (e.g. normals aligned to Y in intersection space, or symmetric sampling spaces coplanar
+// with [XZ] during distance estimation)
+#define UNIT_X float3(1.0f, 0.0f, 0.0f)
+#define UNIT_Y float3(0.0f, 1.0f, 0.0f)
+#define UNIT_Z float3(0.0f, 0.0f, 1.0f)
+
+// Identity matrix; useful for conditionally eliding transformations between spaces
+#define ID_MATRIX float3x3(1, 0, 0, \
+                           0, 1, 0, \
+                           0, 0, 1)
+
 // Linearly scales the rotational part of the given quaternion
 // while preserving the axis of rotation
 float4 QtnRotationalScale(float scaleBy, float4 qtn)

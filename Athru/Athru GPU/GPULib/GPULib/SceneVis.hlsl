@@ -25,22 +25,9 @@ ConsumeStructuredBuffer<float2x3> traceables : register(u3);
 // from within [PathReduce.hlsl]
 RWBuffer<int> maxTraceables : register(u4);
 
-// Tracing modes to use for scene visualization
-#define TRACE_MODE_REVERSE 0 // Trace single paths out from the camera towards the light source
-//#define TRACE_MODE_FORWARD 1 // Trace single paths out from the light source towards the lens
-
-// Trace radiance/importance probes from the lens + the light source and integrate appropriately at each
-// vertex
-// Automatically defined if forward/reverse path-tracing are enabled at the same time
-#ifdef TRACE_MODE_REVERSE
-    #ifdef TRACE_MODE_FORWARD
-        #define TRACE_MODE_BIDIREC 2
-    #endif
-#endif
-
 // The maximum number of steps allowed for the primary
 // ray-marcher
-#define MAX_VIS_MARCHER_STEPS 256
+#define MAX_VIS_MARCHER_STEPS 512
 
 // Scale epsilon values to match the camera's distance from the system
 // planets + star
@@ -109,60 +96,38 @@ void main(uint3 groupID : SV_GroupID,
     uint randNdx = xorshiftNdx(pixID.x + (pixID.y * resInfo.x));
     uint randVal = randBuf[randNdx];
 
-    // Cache/generate initial origin + direction for the light/camera subpaths
+    // Cache/generate initial path information
+    Path path;
+    path.distToPrev = 0.0f;
+    path.attens[0] = 1.0f.xxx;
+    path.attens[1] = 1.0f.xxx;
+    path.mat = float4x4(0.0f.xxxx,
+                        0.0f.xxxx,
+                        0.0f.xxxx,
+                        0.0f.xxxx); // Placeholder material
+    path.rd = float4(traceable[0], 0); // Placeholder figure-ID for starting paths
+    path.ro = cameraPos.xyz;
+    path.norml = mul(float4(UNIT_Z, 1.0f), viewMat).xyz; // Placeholder BXDF-ID for starting paths
+    path.p = path.ro;
+    path.srfP = path.ro;
+    path.ambFrs = IOR_VACUU; // Feel I'll drive this from local surfaces later (i.e. initialise to atmosphere in
+                             // atmosphere, water underwater, etc.)
+                             // Will like to push in IOR_ATMOS and use atmospheric scattering sometime, but am avoiding
+                             // that to keep things simple rn
 
-    // Cache initial origin for the light/camera subpaths
-    // Importance-sampled rays are emitted for random planets
-    Figure star = figures[STELLAR_FIG_ID];
-    float2x3 subpathOris = float2x3(cameraPos.xyz,
-                                    LightSurfPos(LIGHT_ID_STELLAR,
-                                                 star.linTransf,
-                                                 PlanetDF(0.0f.xxx, // We only care about planet position here, so input an arbitrary ray location + origin and ignore figure boundaries
-                                                          figures[1],
-                                                          0x1,
-                                                          EPSILON_MAX)[1].xyz,
-                                                 randVal));
-
-    // Transform [traceable]'s camera ray direction to match the view matrix, also generate + cache a separate
-    // light ray direction
-    float3 initLiNorml = normalize(subpathOris[1] - star.linTransf.xyz);
-    float3 liDir = LightEmitDir(LIGHT_ID_STELLAR,
-                                subpathOris[1],
-                                randVal);
-    float2x3 rayDirs = float2x3(traceable[0],
-                                liDir);
-
-    // Matrix defining the light/camera-relative position of rays during light/camera-subpath construction
-    float2x3 subpathVecs = float2x3(0.001f.xxx,
-                                    0.001f.xxx);
+    // Small vector for raymarching offsets between bounces
+    float3 rayVec = EPSILON_MIN.xxx;
 
     // Define an adaptive epsilon (marching cutoff) for optimal
     // marching performance (no reason to march to within a hundred-thousandth of
     // a surface when the camera is 150 units away anyways)
-    float adaptEps = AdaptEps(subpathOris[0]);
-
-    // Baseline ray distances
-    // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
-    float2 rayDistVec = (adaptEps * 2.0f).xx;
+    float adaptEps = AdaptEps(path.ro);
 
     // March the scene
 
-    // Rays might reach their target light source before the maximum number of bounces; this switch checks
-    // for that and allows the bounce-loop to end as soon as possible
-    bool2 subpathEnded = false.xx;
-
-    // Some rays pass harmlessly through the scene because they were never emitted in the first place; check
-    // for that case here so we can color those rays appropriately
-    bool2 subpathEscaped = false.xx;
-
-    // Spectral sub-path attenuation over multiple bounces and materials, initialized to one (for the camera)
-    // and local radiance scaled by the probability of selecting the chosen light sample (for the light source)
-    float2x3 atten = float2x3(1.0f.xxx,
-                              Emission(STELLAR_RGB, STELLAR_BRIGHTNESS.xxx, 0.0f) * LightPosPDF(LIGHT_ID_STELLAR));
-
-    // Paired array of camera/light sub-path vertices within the scene; needed for flexible path generation in BDPT
-    BidirVtPair bidirVts[MAX_BOUNCES_PER_SUBPATH + 1]; // One extra vertex pair to store the camera's pinhole + the sampled position
-                                                       // on the light source
+    // Baseline ray distance
+    // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
+    float rayDist = (adaptEps * 2.0f);
 
     // Pre-fill the first vertex on the camera sub-path with the baseline camera sample
     // No figures or surfaces at the camera pinhole/lens, so fill those with placeholder values
@@ -171,173 +136,80 @@ void main(uint3 groupID : SV_GroupID,
     float4 camInfo = float4(lensNormal, traceable[1].x);
     float pixWidth = sqrt(NUM_AA_SAMPLES);
 
-    // In/out ray directions model importance emission as transmission from the camera position through the lens/pinhole
-    //float2 initCamAngles = VecToAngles(rayDirs[0].xyz);
-    bidirVts[0].camVt = BuildBidirVt(float4(subpathOris[0], LENS_FIG_ID), // Cache world-space sample position + camera figure-ID
-                                     cameraPos.xyz, // Cache camera position
-                                     float4(atten[0], BXDF_ID_NOMAT), // Cache baseline attenuations + null BXDF ID (no material properties
-                                                                      // for lenses atm)
-                                     float4(lensNormal, DF_TYPE_LENS), // Cache lens normal + lens distance-function type
-                                     float2x3(rayDirs[0],
-                                              rayDirs[0]), // Assume equivalent input/output directions for subpath endpoints
-                                     float2x4(0.0f.xxxx,
-                                              0.0f.xxxx), // Null material since light never explicitly interacts with the lens atm
-                                     float3(CamAreaPDFOut(), // Output probability, i.e. chance of emitting a ray through [pixID]
-                                            1.0f, // Filler input probability; depends on a defined importance/radiance source within the scene
-                                                  // so left undefined for now
-                                            SceneField(subpathOris[0],
-                                                       0.0f.xxx,
-                                                       false,
-                                                       STELLAR_FIG_ID,
-                                                       adaptEps)[0].x)); // Planetary distance for the lens/pinhole position
-
-    // Pre-fill the first vertex on the light sub-path with the baseline light sample
-    // BXDF ID assumes that stars are 100% diffuse emitters
-    // In/out ray directions model radiance emission as transmission from the light position through the lens/pinhole
-    bidirVts[0].lightVt = BuildBidirVt(float4(subpathOris[1], STELLAR_FIG_ID),
-                                       star.linTransf.xyz,
-                                       float4(atten[1], BXDF_ID_DIFFU),
-                                       float4(initLiNorml, DF_TYPE_STAR),
-                                       float2x3(liDir,
-                                                liDir), // Assume equivalent input/output directions for subpath endpoints
-                                       MatGen(subpathOris[1],
-                                              initLiNorml,
-                                              DF_TYPE_STAR,
-                                              randVal),
-                                       float3(StellarPosPDF(),
-                                              StellarPosPDF(),
-                                              EPSILON_MAX * 2.0f)); // No way points on the star would ever be less than [EPSILON_MAX] from a
-                                                                    // planetary surface, so set this to a reasonably-high filler value
-                                                                    // instead of calculating it directly from [SceneField(...)]
-    // Bounces + core ray-marching loop
-    // Generate camera/light sub-paths here
-    uint2 numBounces = 0u.xx; // While-loop so we can get correct averages across the local number of bounces in each path
-    while (any(numBounces < maxNumBounces.xx &&
-               !subpathEnded &&
-               !subpathEscaped))
+    // Bounces + ray-marching loop
+    uint numBounces = 0u;
+    bool pathEnded = false;
+    Figure star = figures[STELLAR_FIG_ID];
+    while (numBounces < maxNumBounces.x &&
+           !pathEnded)
     {
-        // Small flag to record whether or not intersections from a camera/light ray should be processed during
-        // ray-marching; marching ends when neither ray should be processed (i.e. both have intersected with the scene/escaped)
-        bool2 rayActiVec = numBounces < maxNumBounces.xx;
-        while (any(rayActiVec))
+        for (uint i = 0u; i < MAX_VIS_MARCHER_STEPS; i += 1u)
         {
-            // Scale rays into the scene, add source position (star/camera origin)
-            subpathVecs = float2x3((rayDistVec.x * rayDirs[0]) + subpathOris[0],
-                                   (rayDistVec.y * rayDirs[1]) + subpathOris[1]);
-
-            // Extract distance to the scene + ID value (in the range [0...9])
-            // for the closest figure
-            // Result for the camera sub-path go in [xy], results for the light
-            // sub-path go in [zw]
-            float4x3 sceneField = float4x3(SceneField(subpathVecs[0],
-                                                      subpathOris[0],
-                                                      true,
-                                                      FILLER_SCREEN_ID,
-                                                      adaptEps), // Filler filter ID
-                                           SceneField(subpathVecs[1],
-                                                      subpathOris[1],
-                                                      true,
-                                                      STELLAR_FIG_ID,
-                                                      adaptEps)); // We want to avoid light rays re-intersecting with the local star
-
-            // Process camera-ray intersections if appropriate
-            if (sceneField[0].x < adaptEps &&
-                rayActiVec.x)
+            // Scale rays through the scene, add bounce/emission origin
+            rayVec = float3(rayDist * path.rd.xyz) + path.ro;
+            // Evaluate the scene SDF
+            float2x3 sceneField = SceneField(rayVec,
+                                             path.ro,
+                                             true,
+                                             FILLER_SCREEN_ID,
+                                             adaptEps);
+            // Process intersections if appropriate
+            if (sceneField[0].x < adaptEps)
             {
-                // Process the current intersection, then return + store a BDPT-friendly surface interaction
-                // Storage at [k + 1] because the zeroth index in either sub-path is reserved for the initial
-                // light/camera sample in the path
-                bidirVts[numBounces.x + 1].camVt = ProcVert(float4(subpathVecs[0],
-                                                                   sceneField[0].x),
-                                                            sceneField[1],
-                                                            rayDirs[0],
-                                                            adaptEps,
-                                                            sceneField[0].yz,
-                                                            false,
-                                                            bidirVts[numBounces.x].camVt.pos.xyz,
-                                                            atten[0],
-                                                            subpathOris[0],
-                                                            AmbFres(sceneField[0].x), // Not worrying about subsurface scattering atm
-                                                            rayDistVec.x,
-                                                            randVal);
+                // Update previous attenuation
+                path.attens[1] = path.attens[0];
 
-                // End camera-subpaths if they intersect with the local star
-                subpathEnded.x = (sceneField[0].y == STELLAR_FIG_ID);
+                // Update previous ray distance
+                path.distToPrev = rayDist;
 
-                // Ignore the current intersection while the light-ray marches through the scene
-                rayActiVec.x = false;
+                // Update the local surface origin
+                path.srfP = sceneField[1];
+
+                // Process light-source intersections
+                if (sceneField[0].y == STELLAR_FIG_ID) // Only stellar light sources supported for now
+                {
+                    // Immediately break out on light-source intersections
+                    path.attens[0] *= Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, rayDist);
+                    pathEnded = true;
+                    break;
+                }
+
+                // Process surface intersections
+                path.attens[0] *= ProcVert(float4(rayVec,
+                                                  sceneField[0].x),
+                                            sceneField[1],
+                                            path.rd.xyz,
+                                            path.norml,
+                                            adaptEps,
+                                            sceneField[0].yz,
+                                            path.ro,
+                                            path.ambFrs,
+                                            path.mat,
+                                            rayDist,
+                                            randVal);
+
+                // Exit the intersection loop
+                break;
             }
-
-            // Process light-ray intersections if appropriate
-            // (+ test for lens intersection)
-            float lensDist = LensDF(subpathVecs[1], adaptEps);
-            bool lightIsect = (sceneField[2].x < adaptEps ||
-                               lensDist < adaptEps);
-            if (lightIsect &&
-                rayActiVec.y)
+            // Ignore rays that travel too far into the scene
+            if (rayDist >= MAX_RAY_DIST)
             {
-                // We intersected a surface (either in the scene or the lens), so store a BDPT-friendly
-                // vertex entity with the relevant position + attenuation
-                // Vertices are stored at n + 1 because the zeroth index in either sub-path is reserved for the
-                // initial sample in that subpath (i.e. a light surface position for light rays, a lens
-                // position for camera rays)
-                if (lensDist > adaptEps)
-                {
-                    // We intersected a scene surface, so process the local vertex and return + store a
-                    // BDPT-friendly surface interaction
-                    bidirVts[numBounces.y + 1].lightVt = ProcVert(float4(subpathVecs[1],
-                                                                         sceneField[2].x),
-                                                                  sceneField[3],
-                                                                  rayDirs[1],
-                                                                  adaptEps,
-                                                                  sceneField[2].yz,
-                                                                  true,
-                                                                  bidirVts[numBounces.y].lightVt.pos.xyz,
-                                                                  atten[1],
-                                                                  subpathOris[1],
-                                                                  AmbFres(sceneField[2].x), // Not worrying about subsurface scattering just yet..
-                                                                  rayDistVec.y,
-                                                                  randVal);
-                }
-                else
-                {
-                    // We intersected the lens, so cache the intersection position and flag the end of the light-subpath
-                    // (since we aren't expecting light to bounce back out of the camera)
-                    //float2 incidAngles = VecToAngles(rayDirs[1].xyz);
-                    bidirVts[numBounces.y + 1].lightVt = BuildBidirVt(float4(subpathVecs[1], LENS_FIG_ID),
-                                                                      sceneField[3],
-                                                                      float4(atten[1], BXDF_ID_NOMAT), // Assume no attenuation/material interactions at the lens
-                                                                      float4(lensNormal, DF_TYPE_LENS), // Lens normal + lens distance-function type
-                                                                      float2x3(rayDirs[1],
-                                                                               rayDirs[1]), // Assume equivalent input/output directions for subpath endpoints
-                                                                      float2x4(0.0f.xxxx,
-                                                                               0.0f.xxxx), // Null material for lens interactions
-                                                                      float3(CamAreaPDFIn(bidirVts[numBounces.y].lightVt.pos.xyz,
-                                                                                          lensNormal), // Probability of the light-subpath reaching the camera
-                                                                                                       // from its previous bounce
-                                                                             CamAreaPDFOut(), // Probability of a ray leaving the camera passing through [rayDirs[1]]
-                                                                             sceneField[2].x)); // Scene distance at the lens
-                    subpathEnded.y = true;
-                }
-                // Ignore the current intersection while the camera-ray marches through the scene
-                rayActiVec.y = false;
+                path.attens[0] = AMB_RGB; // Assume deep rays failed to intersect the scene, shade with ambient background color
+                pathEnded = true;
+                break;
             }
-
-            // Increase ray distances by per-path field distance (take the largest steps possible
-            // without passing through a surface boundary)
-            rayDistVec += float2(sceneField[0].x,
-								 sceneField[2].x);
-
-            // Break out if the current ray distance passes the threshold defined by [maxRayDist]
-            // Subtraction by epsilon is unneccessary and just provides consistency with the limiting
-            // epsilon value used for intersection checks
-            subpathEscaped = (rayDistVec > (MAX_RAY_DIST - adaptEps).xx);
-
-            // Ignore escaped rays while contained rays march through the scene
-            rayActiVec = rayActiVec && !subpathEscaped;
+            rayDist += sceneField[0].x;
         }
-        // Step into the next bounce for each sub-path (if appropriate)
-        numBounces += (!subpathEscaped && !subpathEnded && (numBounces < maxNumBounces.xx));
+        numBounces += 1u;
+    }
+
+    // Perform explicit sampling on paths missing light sources
+    if (!pathEnded && numBounces > 0)
+    {
+        path.attens[0] *= LiGather(path,
+                                   star.linTransf, // Only stellar light sources atm
+                                   adaptEps,
+                                   randVal);
     }
 
     // Estimated path color associated with the current pixel
@@ -346,121 +218,14 @@ void main(uint3 groupID : SV_GroupID,
     // color if appropriate
     // Cache a linearized version of the local pixel ID for later reference
     uint linPixID = traceable[1].y;
-    float3 pathRGB = aaBuffer[linPixID].incidentLight.rgb;
-
-    // We want to avoid accumulating incidental radiance separately to per-pixel samples, so zero
-    // [aaBuffer[linPixID].incidentLight.rgb] after caching its value in [incidentIllum]
-    aaBuffer[linPixID].incidentLight.rgb = 0.0f.xxx;
-
-    // We've collected + reset incident light for the current sensor/pixel, so now we can begin
-    // integrating through the camera/light subpaths (if appropriate)
-    // Avoid connecting the camera/light subpaths if the initial camera ray never intersects the scene
-    if (numBounces.x != 0)
-    {
-        // We use path-space regularization (PSR) to blur delta-distributed BRDFs in the light/camera subpaths;
-        // PSR's operating bandwidth (=> blur radius) is dependant on per-pixel sample count and can't be
-        // known ahead of time, so evaluate it here instead
-        float pxPSRRadius = basePSRRadius * pow(aaBuffer[traceable[1].x].sampleCount.x, psrLam);
-
-        // Evaluate the camera-only path through the scene (only if the camera-subpath intersects with
-        // the local star)
-        #ifdef TRACE_MODE_REVERSE
-            if (subpathEnded.x)
-            {
-                // Camera path radiance is taken as the illumination at the second-last camera vertex in the scene adjusted for attenuation
-                // at the final vertex
-                PathVt lastCamVt = bidirVts[numBounces.x + 1].camVt;
-                PathVt secndLastCamVt = bidirVts[numBounces.x].camVt;
-                pathRGB += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastCamVt.pos.xyz - lastCamVt.pos.xyz)) * lastCamVt.atten.rgb;
-            }
-        #endif
-        #ifdef TRACE_MODE_REVERSE
-            // Evaluate MIS-weighted light gathers for every surface vertex in the camera subpath (for bi-directional integration) or just
-            // for final vertices in paths that failed to reach a light source (for uni-directional integration)
-            #ifdef TRACE_MODE_BIDIREC
-                for (int i = 1; i <= numBounces.x; i += 1) // Zeroth vertices lie on the lens/the light
-                {
-                    pathRGB += LiGather(bidirVts[i].camVt,
-                                        star.linTransf, // Only stellar light sources atm
-                                        adaptEps,
-                                        randVal);
-                }
-            #else
-                if (!subpathEnded.x)
-                {
-                    pathRGB += LiGather(bidirVts[numBounces.x].camVt,
-                                        star.linTransf, // Only stellar light sources atm
-                                        adaptEps,
-                                        randVal) * bidirVts[numBounces.x - 1].camVt.atten.rgb;
-                }
-            #endif
-        #endif
-
-        // Evaluate the light-only path through the scene (only if the light-subpath intersects with the lens)
-        #ifdef TRACE_MODE_FORWARD
-            if (subpathEnded.y)
-            {
-                // Camera path radiance is taken as the illumination at the second-last camera vertex in the scene adjusted for attenuation
-                // at the final vertex
-                PathVt lastLiVt = bidirVts[numBounces.y + 1].lightVt;
-                PathVt secndLastLiVt = bidirVts[numBounces.y].lightVt;
-                pathRGB = float3(1.0f, 0.0f.xx);
-                //aaBuffer[(int)PRayPix(normalize(cameraPos.xyz - lastLiVt.pos.xyz),
-                //                                camInfo.w).z].incidentLight.rgb += Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, length(secndLastLiVt.pos.xyz - lastLiVt.pos.xyz)) * lastLiVt.atten.rgb;
-            }
-        #endif
-        #ifdef TRACE_MODE_FORWARD
-            // Evaluate MIS-weighted camera gathers for every surface vertex in the light subpath (for bi-directional integration) or just
-            // for final vertices in paths that failed to reach the lens (for uni-directional integration)
-            #ifdef TRACE_MODE_BIDIREC
-                for (int j = 1; j <= numBounces.y; j += 1) // Zeroth vertices lie on the lens/the light
-                {
-                    float4 gathInfo = CamGather(bidirVts[j].lightVt,
-                                                camInfo,
-                                                adaptEps,
-                                                randVal);
-                    aaBuffer[(int)gathInfo.w].incidentLight.rgb = /*gathInfo.rgb */float3(1.0f, 0.0f.xx);
-                }
-            #else
-                if (/*!subpathEnded.y && */numBounces.y > 0)
-                {
-                    float4 gathInfo = CamGather(bidirVts[numBounces.y].lightVt,
-                                                camInfo,
-                                                adaptEps,
-                                                randVal);
-                    aaBuffer[/*(int)gathInfo.w*/linPixID].incidentLight.rgb = 1.0f.xxx;//gathInfo.rgb;
-                }
-            #endif
-        #endif
-        #ifdef TRACE_MODE_BIDIREC
-            // Attempt connections between every surface vertex in either subpath
-            for (int k = 1; k <= numBounces.x; k += 1) // Zeroth vertices lie on the lens/the light
-            {
-                for (int l = 1; l <= numBounces.y; l += 1)
-                {
-                    // Subpath connections are always assumed to contribute towards the pixel
-                    // associated with the camera subpath
-                    pathRGB += ConnectBidirVts(bidirVts[k].camVt,
-                                               bidirVts[k].lightVt,
-                                               adaptEps,
-                                               randVal);
-                }
-            }
-        #endif
-    }
-    else
-    {
-        // Shade empty pixels with the ambient background color
-        pathRGB = AMB_RGB;
-    }
 
     // Apply frame-smoothing + convert to HDR
-    pathRGB = PathPost(pathRGB,
-                       traceable[1].x,
-                       linPixID);
+    path.attens[0] = PathPost(path.attens[0],
+                              traceable[1].x,
+                              linPixID);
 
     // Write the final ray color to the display texture
-    displayTex[pixID] = float4(pathRGB, 1.0f);
+    displayTex[pixID] = float4(path.attens[0], 1.0f);
 
     // No more random permutations at this point, so commit [randVal] back into
     // the GPU random-number buffer ([randBuf])

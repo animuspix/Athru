@@ -25,71 +25,27 @@
 // scene-array
 #define STELLAR_FIG_ID 0
 
-// Figure-ID associated with the lens/pinhole during BDPT, unrelated
-// to any defined elements in the actual scene
-// Chosen because even super-complex ecologies shouldn't generate [(2^32)-1] different figures
-// in each system
-#define LENS_FIG_ID 0xFFFFFFFF
-
-// Structure carrying data cached by BDPT during
-// subpath construction; needed for accurate
-// light transport during path integration
-// (easiest to perform that separately to
-// core ray propagation/bouncing)
-// [figID] and [bxdfID] are ignored for
-// vertices on the camera lens/pinhole
-struct PathVt
-{
-    float4 pos; // Position of [this] in eye-space ([xyz]); contains the local figure-ID in [w]
-    float4 dfOri; // Position of the figure associated with [this]; [w] carries local surface variance
-    float4 atten; // Light throughput/attenuation at [pos] ([xyz]); contains the local BXDF-ID in [w]
-    float4 norml; // Surface normal at [pos]; contains the local distance-function type/ID in [w]
-    float4 iDir; // Incoming ray direction in [xyz], surface redness in [w]
-    float4 oDir; // Outgoing ray direction in [xyz], surface greenness in [w]
-    float4 pdfIO; // Forward/reverse probability densities; ([z] contains local planetary distance
-                  // (used for atmospheric refraction), [w] carries surface blueness)
-    float4 refl; // Value carrying frequencies for each BXDF supported by Athru (diffuse/refractive/mirrorlike/volumetric)
-};
-
-PathVt BuildBidirVt(float4 posFigID,
-                    float3 figPos,
-                    float4 attenBXDFID,
-                    float4 normlDFType,
-                    float2x3 ioDirs,
-                    float2x4 material,
-                    float3 pdfsPlanetDist)
-{
-    PathVt bdVt;
-    bdVt.pos = posFigID;
-    bdVt.dfOri = float4(figPos, material[1].w);
-    bdVt.atten = attenBXDFID;
-    bdVt.norml = normlDFType;
-    bdVt.iDir = float4(ioDirs[0], material[1].r);
-    bdVt.oDir = float4(ioDirs[1], material[1].g);
-    bdVt.pdfIO = float4(pdfsPlanetDist, material[1].b);
-    bdVt.refl = material[0];
-    return bdVt;
-}
-
-// Bundle representing a pair of bi-directional vertices; helps to simplify
-// path-space representation during scene discovery by allowing [SceneVis.hlsl]
-// to read/write from/to the same array of vertex pairs regardless of whether
-// it's tracing the light or the camera sub-path
-// Also makes debugging easier; only need to think about one set of vertices
-// describing a symmetric path rather two halves of the path in two separate
-// arrays
-struct BidirVtPair
-{
-    PathVt lightVt;
-    PathVt camVt;
-};
-
 // A generic background color; used for contrast against dark surfaces in
 // space environments with no ambient environmental light sources besides
 // the local star
 // Development only, release builds should use a constant [0.0f.xxx] background color
 // (no human-visible light in space beyond emittance from the local star)
 #define AMB_RGB 0.0f.xxx
+
+// Small object to represent path state during/after ray integration
+struct Path
+{
+    float distToPrev; // Distance between the current path-tracing vertex and the most recent
+                      // vertex in the scene
+    float2x3 attens; // Attenuation at the foremost vertex + the previous vertex
+    float4x4 mat; // Local material properties
+    float4 rd; // Outgoing ray direction (xyz) and figure-ID (w)
+    float3 ro; // Ray origin
+    float3 norml; // Local surface normal
+    float3 p; // Position for the latest vertex in the path
+    float3 srfP; // Origin for the surface incident with the ray at [p]
+    float2 ambFrs; // Ambient Fresnel value during path-tracing
+};
 
 // PDF associated with [StellarSurfPos(...), represents the probability of
 // selecting any position within the (hemispheric) distribution described
@@ -100,8 +56,7 @@ float StellarPosPDF()
 }
 
 // A function to generate unpredictable emission/sample positions on
-// the local star; positions are importance-sampled by limiting sampling
-// to positions in the same hemisphere as the target figure
+// the local star
 float3 StellarSurfPos(float4 starInfo, // Position in [xyz], size in [w]
                       uint randVal,
                       float3 targFigPos)
@@ -319,6 +274,37 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
     return offset;
 }
 
+// Helper function for refractive/volumetric light transport
+// Allows raymarching for interior LT to occur separately from exterior
+// intersection checks
+// Returns exit position in [0], exit normal in [1]
+float2x3 SubsurfMarch(float3 rd,
+                      float3 ro,
+                      uint figID,
+                      float adaptEps,
+                      inout uint randVal)
+{
+    float stepSize = adaptEps * 100.0f;
+    float srfDist = stepSize * 0.5f;
+    float3 rv = ro;
+    bool inSurf = true;
+    while (inSurf)
+    {
+        rv += (rd * max(stepSize, srfDist));
+        float2x3 sceneField = SceneField(rv,
+                                         ro,
+                                         true,
+                                         FILLER_SCREEN_ID,
+                                         adaptEps);
+        srfDist = abs(sceneField[0].x);
+        inSurf = sceneField[0].x > 0.0f; // Stop marching subsurface rays as soon
+    }
+    rv -= rd * stepSize * 0.99f; // Keep transmitted positions within ~adaptEps of the bounding surface
+    return float2x3(rv,
+                    PlanetGrad(rv,
+                               figures[figID]));
+}
+
 // Simple occlusion function, traces a shadow ray between two points to test
 // for visiblity (needed to validate generic sub-path connections in BDPT)
 // [0].xyz contains the tracing direction, [0].w clontains the distance
@@ -342,14 +328,16 @@ float3x4 OccTest(float4 rayOri,
                  float4 rayDir,
                  float4 rayDest,
                  float2 surfInfo,
+                 float2 ambFres,
                  inout uint randVal)
 {
     float currRayDist = 0.0f;
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;
-    float refrLoss = 0.0f; // Total energy lost from refraction between [rayOri]
-                           // and the target figure
+    float3 trAtten = 1.0f.xxx;
+    const uint MAX_TR = 1u;
+    uint trCtr = 0u; // Only [MAX_TR] transmittant bounces allowed for light gathers (might become adjustable in settings later)
     // March occlusion rays
     for (int i = 0; i < MAX_OCC_MARCHER_STEPS; i += 1)
     {
@@ -376,41 +364,75 @@ float3x4 OccTest(float4 rayOri,
             }
             else
             {
+                // Find material properties at the transmission point
+                Figure nearFig = figures[sceneField[0].z];
+                float3 norml = PlanetGrad(rayVec, nearFig);
+                float4x4 mat = MatGen(rayVec,
+                                      rayDir.xyz,
+                                      norml,
+                                      ambFres,
+                                      sceneField[0].z,
+                                      nearFig.linTransf.xyz,
+                                      nearFig.linTransf.w,
+                                      randVal);
+
                 // Find the BXDF-ID at the intersection point
-                //uint bxdfID = MatBXDFID(MatInfo(float2x3(MAT_PROP_BXDF_FREQS,
-                //                                         sceneField[0].zy,
-                //                                         rayVec)),
-                //                        randVal);
+                uint bxdfID = MatBXDFID(mat[0],
+                                        randVal);
 
                 // Pass through refractive surfaces
                 // Invoke a transmittance check here (not all rays will have enough energy
                 // left to pass through the surface)
-                //if (false)//(bxdfID == BXDF_ID_REFRA ||
-                //    // bxdfID == BXDF_ID_VOLUM) &&
-                //    //!rayOri.w)
-                //{
-                //    //// Update refracted ray direction
-                //    //rayDir.xyz = MatDir(rayDir.xyz,
-                //    //                    rayVec,
-                //    //                    randVal,
-                //    //                    uint3(bxdfID,
-                //    //                          sceneField[0].zy));
-                //    //
-                //    //// Update refracted ray position
-                //    //rayVec = RefractPos(rayVec,
-                //    //                    rayDir.xyz,
-                //    //                    float3(bxdfID,
-                //    //                           sceneField[0].zy),
-                //    //                    adaptEps,
-                //    //                    randVal);
-                //}
-                //else
-                //{
-                    // The shadow ray was occluded by [sceneField[0].z], so return [true] and
-                    // cache the world-space position of the intersection point
-                    occ = true;
-                    endPos = rayVec;
-                //}
+                if ((bxdfID != BXDF_ID_MIRRO &&
+                     bxdfID != BXDF_ID_DIFFU) &&
+                    !rayOri.w &&
+                    trCtr < MAX_TR)
+                {
+                    // Evaluate shading, transmission direction, probability
+                    float2x4 srf = MatSrf(rayDir.xyz,
+                                          norml,
+                                          mat[3].xyz,
+                                          mat[0],
+                                          mat[2].xyz,
+                                          float4(bxdfID, mat[2].xy, mat[1].w),
+                                          randVal);
+
+                    // Pass through the surface, cache the exiting position + normal
+                    float2x3 tr = SubsurfMarch(srf[0].xyz,
+                                               rayOri.xyz,
+                                               surfInfo.y,
+                                               surfInfo.x,
+                                               randVal);
+
+                    // Update ray origin
+                    rayOri.xyz = tr[0];
+
+                    // Sample the surface at the exit position
+                    float2x4 oSrf = MatSrf(srf[0].xyz,
+                                           tr[1],
+                                           mat[3].xyz,
+                                           mat[0],
+                                           mat[2].xyz,
+                                           float4(bxdfID, mat[2].xy, mat[1].w),
+                                           randVal);
+
+                    // Update ray direction
+                    rayDir.xyz = oSrf[0].xyz;
+
+                    // Update transmittant attenuation
+                    trAtten *= (srf[1].rgb / ZERO_PDF_REMAP(srf[1].a)) *
+                               (oSrf[1].rgb / ZERO_PDF_REMAP(oSrf[1].a));
+
+                    // Update transmission counter
+                    trCtr += 1u;
+                }
+                else
+                {
+                  // The shadow ray was occluded by [sceneField[0].z], so return [true] and
+                  // cache the world-space position of the intersection point
+                  occ = true;
+                  endPos = rayVec;
+                }
             }
 
             // Cache the figure-ID associated with intersection point
@@ -429,5 +451,6 @@ float3x4 OccTest(float4 rayOri,
                     currRayDist,
                     endPos,
                     occ,
-                    nearID.xxxx);
+                    nearID.x,
+                    trAtten);
 }

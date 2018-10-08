@@ -10,94 +10,214 @@
 // Enum flags for different types of
 // reflectance/scattering/transmittance function; one of
 // these is semi-randomly selected for each ray based
-// on weights given by [FigMat]
+// on weights in surface materials
 #define BXDF_ID_DIFFU 0
 #define BXDF_ID_MIRRO 1
 #define BXDF_ID_REFRA 2
-#define BXDF_ID_VOLUM 3
-#define BXDF_ID_NOMAT 4
+#define BXDF_ID_CLOUD 3
+#define BXDF_ID_SSURF 4
+#define BXDF_ID_FURRY 5
+#define BXDF_ID_NOMAT 6
 
 // Fixed vector indices-of-refraction + extinction
 // coefficients for atmosphere/vacuum
 // Will likely make atmospheric refraction planet-dependant
 // at some point (>> different gasses with different colors/densities)
 // but not until I have a solid baseline renderer
-// Current scattering properties for atmosphere are based on earthen
-// air at sea-level; I found the refraction coefficient here:
+// Atmospheric refraction based on earthen air at sea level, measured
+// value at 0.8 micrometers found here:
 // https://refractiveindex.info/?shelf=other&book=air&page=Ciddor
-// and the (zero) absorption coefficient here:
-// https://www.cfd-online.com/Forums/main/5757-absorption-scattering-co-efficients-radiation.html
-// (first post from user [nuray kayakol])
-#define SCATTER_THRU_ATMOS float2x3(float3(1.00027632, 1.00027784, 1.00028091), \
-                                    0.0f.xxx) // Air absorbs essentially zero energy across all visible
-                                              // wavelengths
+#define IOR_ATMOS float2(1.00027505f, 0.0f)
 
-// Vacuum has no reflective effect on light at any visible
-// wavelength, and absorbs no energy across all visible
-// wavelengths
-#define SCATTER_THRU_VACUUM float2x3(1.0f.xxx,\
-                                     0.0f.xxx)
-
-// Returns ambient fresnel coefficients (refraction/extinction) for the given planetary distance;
-// points within [EPSILON_MAX] of a planet will begin experiencing atmospheric refraction
-// (but not scattering, need a mie/rayleigh system for that :P)
-float2x3 AmbFres(float planetDist)
-{
-    if (planetDist < EPSILON_MAX)
-    {
-        return SCATTER_THRU_ATMOS;
-    }
-    else
-    {
-        return SCATTER_THRU_VACUUM;
-    }
-}
-
-// Convenience function to convert RGB color to fresnel properties
-float2x3 rgbToFres(float3 rgb)
-{
-    // Not necessary now, but should vary between dielectric and conducting fresnels
-    // depending on the material's BXDF ID (i.e. dielectric fresnels for subsurface-scattering
-    // materials and conductors for specular surfaces)
-
-    // Spectral refraction/extinction tinted from titanium; should generate baseline
-    // refraction/extinction procedurally when possible
-    // Procedural generation will need to generate uniform white reflectors
-    // with variance limited to wetness/lustre/shininess; that would let
-    // us apply material colors with simple tints instead of directly
-    // generating fresnel values to match each component in [rgb]
-    // Refraction/extinction values from
-    // https://refractiveindex.info/?shelf=3d&book=metals&page=titanium
-    // after following the Fresnel tutorial in
-    // https://shanesimmsart.wordpress.com/2018/03/29/fresnel-reflection/
-    return float2x3(float3(2.7407, 2.5418, 2.2370) * rgb,
-                    float3(3.8143, 3.4345, 3.0235) * rgb);
-}
-
-// x is diffuse weighting, y is specular weighting
-// z is subsurface scattering, w is the frequency
-// that a given material behaves like the isovolume
-// of a participating medium
-#define MAT_PROP_BXDF_FREQS 0
-
-// Baseline material colour
-#define MAT_PROP_RGB 1
-
-// Material roughness (used for microfacet diffuse/specular
-// reflection)
-// Described in terms of standard deviation (=> variance) in
-// the average reflective angle from the surface's normal
-// vector (measured in radians)
-#define MAT_PROP_VARI 2
+// Vacuum has no reflective/refractive effect on incident light
+#define IOR_VACUU float2(1.0f, 0.0f)
 
 // Constant stellar brightness; might make this a [cbuffer] value
 // so I can vary it between systems
-#define STELLAR_BRIGHTNESS 80000.0f
+//#define STELLAR_BRIGHTNESS 800000.0f
+#define STELLAR_BRIGHTNESS 8000000.0f
 
 // Stellar radiance at unit brightness; mostly just defined for
 // readability since any star bright enough to illuminate the
 // system will wash out to white for human observers
 #define STELLAR_RGB 1.0f.xxx
+
+// Evaluate the Fresnel coefficient for the given incoming/outgoing spectral refraction/extinction
+// indices + outgoing angle-of-incidence
+// Would like to use the direct maths implementation from PBR, but it's very expensive and
+// easy to fluff up; this approximation was found in
+// http://www.codinglabs.net/article_physically_based_rendering_cook_torrance.aspx
+float FresMirr(float2 etaKap, // Surface indices of refraction (x) and extinction (y)
+               float2x3 dirs) // Output direction in [0], local normal in [1]
+{
+    float cTheta = dot(dirs[1], dirs[0]);
+    float etaMin1 = etaKap.x - 1.0f;
+    etaMin1 *= etaMin1;
+    float etaPlu1 = etaKap.x + 1.0f;
+    etaPlu1 *= etaPlu1;
+    etaKap *= float2(1.0f, etaKap.y);
+    return (etaMin1 + ((4.0f * etaKap.x) * pow(1.0f - cTheta, 5.0f)) + etaKap.y) / (etaPlu1 + etaKap.y);
+}
+
+// Evaluate the Fresnel coefficient for the given incoming/outgoing spectral IORs
+// + incoming angle-of-incidence
+// Uses the dielectric Fresnel function from
+// Physically Based Rendering (Pharr, Jakob, Humphreys), page 518
+// Spectral Fresnel coefficient returned in [rgb], incoming/outgoing [eta] ratio
+// returned in [a]
+float2 FresDiel(float2 etaIO, // Incoming/outgoing indices of refraction
+               			      // Vectorized indices are possible, but cause significant
+               			      // dispersion that I'd rather avoid here
+                float2x3 dirs) // Output direction in [0], local normal in [1]
+{
+    // Evaluate cosines of the incoming/outgoing ray directions
+    // Incoming cosine is derivable from Snell's law,
+    // https://en.wikipedia.org/wiki/Snell's_law
+    float cosI = abs(dot(dirs[0], dirs[1])); // Outgoing cosine is a trivial dot-product
+    float sinI = sqrt(max(1.0f - (cosI * cosI), 0.0f));
+    float etaRatio = etaIO.x / etaIO.y; // Ratio of sines is equivalent to ratios of [eta] (Snell's Law)
+    float sinT = etaRatio * sinI;
+    float cosT = sqrt(max(1.0f - (sinT * sinT), 0.0f));
+
+    // Compute reflectance for parallel polarized light
+    float rhoPar = ((etaIO.y * cosI) - (etaIO.x * cosT)) /
+        		   ((etaIO.y * cosI) + (etaIO.x * cosT));
+
+    // Compute reflectance for orthogonal polarized light
+    float rhoOrt = ((etaIO.x * cosI) - (etaIO.y * cosT)) /
+        		   ((etaIO.x * cosI) + (etaIO.y * cosT));
+    return float2(((rhoPar * rhoPar) +
+            	  (rhoOrt * rhoOrt)) * 0.5f,
+                  etaRatio);
+}
+
+// GGX sampling function from
+// https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
+// + minor optimizations
+float3 GGXMicroNorml(float vari,
+                     inout uint randVal)
+{
+    float2 uv = float2(iToFloat(xorshiftPermu1D(randVal)),
+                       iToFloat(xorshiftPermu1D(randVal)) * TWO_PI); // [phi] can be sampled uniformly
+    uv.x = sqrt((1.0f - uv.x) /
+                (uv.x * (vari - 1.0f) + 1.0f)); // Avoid [acos] here since we'll need the cosine when we change coordinates
+    // Change to Cartesian coordinates, then return
+    float sTheta = sqrt(1.0f - (uv.x * uv.x));
+    float cPhi = cos(uv.y);
+    float sPhi = sin(uv.y);
+    return normalize(float3(sTheta * cPhi,
+                		    uv.x,
+                		    sTheta * sPhi));
+}
+
+// Small function to generate BXDF ID's for a figure given a figure ID,
+// a figure-space position, and a vector of BXDF weights
+// Selection function from the accepted answer at:
+// https://stackoverflow.com/questions/1761626/weighted-random-numbers
+uint MatBXDFID(float4 bxdfFreqs,
+               inout uint randVal)
+{
+    // Generate selection value
+    float bxdfSel = iToFloat(xorshiftPermu1D(randVal));
+
+    // Scan through available material weights and perform a weighted
+    // random selection on each pass
+    // Sadly no way (...that I know of...) to cleanly spread arbitrary
+    // probabilities through a set without using a loop :(
+    for (uint i = 0; i < 4; i += 1)
+    {
+        // Test the selection value against the current material weight;
+        // return the current index to the callsite if the selection
+        // passes
+        if (bxdfSel < bxdfFreqs[i])
+        {
+            return i;
+        }
+
+        // If we think of each weight as a discrete probability "bin", this
+        // step exists to move the selection value between bins whenever
+        // it falls outside the probability range given by one of the weights
+        // in the set
+        bxdfSel -= bxdfFreqs[i];
+    }
+    return 0u; // Default to diffuse surfaces
+}
+
+// Per-vertex material synthesizer
+// Light materials are implict in [DirIllumRadiance]/[Emission]
+// so there's no reason to generate them here
+float4x4 MatGen(float3 coord,
+                float3 wo,
+                float3 norml,
+                float2 ambFres,
+                uint dfType,
+                float3 srfOri,
+                float srfWidth,
+                inout uint randVal)
+{
+    // Just a basic generalized planetary/stellar function now, will create
+    // plant/critter variants when neccessary
+    switch (dfType)
+    {
+        case DF_TYPE_STAR:
+            return float4x4(float4(1.0f, 0.0f.xxx), // Stars are smooth bright-white diffuse surfaces
+                            STELLAR_BRIGHTNESS.xxx, 0.0f,
+                            0.0f.xxxx, // Stars are diffuse emitters without meaningful Fresnel values (afaik)
+                            0.0f.xxxx); // No reason to calculate microsurface normals for constant diffuse surfaces
+        default:
+            // Cache material probabilities
+            // Will eventually update [matStats] for volumetric materials (fur, subsurface-scattering volumes, cloudy media)
+            float4 matStats = float4(1.0f, 0.0f, 0.0f.xx);
+
+            // Cache the current surface/volume type
+            uint bxdfID = MatBXDFID(matStats,
+                                    randVal);
+
+            // Cache surface roughness
+            // Prefer rough values for diffuse surfaces and smooth values for specular
+            float alpha = (bxdfID == BXDF_ID_DIFFU) ? 1.0f : 0.4f;
+
+            // Generate a GGX microsurface normal for specular reflection/refraction
+            float3 muNorml = GGXMicroNorml(alpha,
+                                           randVal);
+
+            // Generate conductor/dielectric probabilities
+            float fresP1 = abs(sin(coord.y));
+            float fresP2 = (1.0f - fresP1);
+
+            // Cache (fixed atm) indices of refraction/absorption
+            float2 etaKap = float2(1.33f, 1.1f);
+
+            // Evaluate + cache Fresnel values appropriately
+            bool metal = true; //iToFloat(xorshiftPermu1D(randVal)) > fresP1;
+            float2 fres = 1.0f.xx;
+            if (metal)
+            {
+                fres.x = FresMirr(etaKap,
+                                  float2x3(wo,
+                                           muNorml));
+                // Metals won't refract light at the macroscale, so merge refractive probability
+                // into the chance for mirror reflection (matStats.y) before zeroing the original
+                // value (matStats.z)
+                matStats.y += matStats.z;
+                matStats.z = 0.0f;
+            }
+            else
+            {
+                fres = FresDiel(float2(etaKap.x, ambFres.x),
+                                float2x3(wo,
+                                         muNorml));
+                matStats.y *= fres.x; // Scale mirror probability for dielectrics
+                matStats.z *= (1.0f - fres.x); // Scale refractive probability for dielectrics
+            }
+            float3 rgb = abs(sin(norml));
+            return float4x4(matStats,
+                            rgb, alpha, // Procedural color, fixed surface roughness
+                            fres, bxdfID, 0.0f, // Fresnel values in [xy], surface/volume type in [z], [w] is unused
+                            muNorml, 0.0f.x); // Microsurface normal in [xyz], [w] is unused
+
+    }
+}
 
 // Return whether or not the given BXDF-ID describes a delta distribution
 // Only valid for reflective/refractive specular materials atm; I'll update for
@@ -108,32 +228,79 @@ bool isDeltaBXDF(uint bxdfID)
     return bxdfID == BXDF_ID_MIRRO || bxdfID == BXDF_ID_REFRA;
 }
 
-// Compute visible microfacet area for GGX interactions
-// with the given half-angles
-float GGX(float2 thetaPhiH,
-          float variSqr)
+// Evaluate the GGX microfacet distribution function for
+// the given half-vector + roughness + input direction
+// Assumes strictly isotropic roughness
+float GGX(float2x3 dirs, // half-vector is in [0], local normal is in [1]
+          float vari)
 {
-    // Vector carrying trigonometric values needed by GGX (tangent/cosine of [theta])
-    // Would love to optimize [cos(h.x)] into a dot-product, but can't easily do that
-    // in spherical coordinates (+ I feel passing normalized directions as well as solid angles would
-    // add too much complexity to material definitions atm)
-    float cosTheta = cos(thetaPhiH.x);
-    float2 distroTrig = float2(sqrt(1.0f - cosTheta * cosTheta) / cosTheta,
-                               cosTheta);
-    if (isinf(distroTrig.x))
-    {
-        return 0.0f;
-    } // Tangent values can easily generate singularities; escape here before those lead to NaNs (!!)
-    distroTrig *= distroTrig; // Every trig value for GGX is (at least) squared, so handle that here
+    float cTheta = dot(dirs[0], dirs[1]);
+    cTheta *= cTheta;
+    float denom = ((vari - 1.0f) * cTheta) + 1.0f;
+    if (vari == 0.0f) { return 1.0f; } // Return a unit distribution (zero occlusion) for
+    								   // perfectly smooth surfaces
+    return vari / (PI * (denom * denom));
+}
 
-    // GGX is essentially normalized Beckmann-Spizzichino and re-uses the Beckmann-Spizzichino exponent
-    // as a factor inside the denominator; cache the GGX version here for convenience before we
-    // evaluate the complete distribution function
-    float ggxBeckmannExp = 1.0f + distroTrig.x / (variSqr + EPSILON_MIN);
-    ggxBeckmannExp *= ggxBeckmannExp;
+// Evaluate the Smith masking/shadowing function for the
+// given directions + surface roughness
+// Assumes strictly isotropic roughness
+float Smith(float3x3 dirs, // Input vector in [0], half-vector
+            	    	   // in [1], output vector in [2]
+            float vari)
+{
+    float2 cThetaIO = float2(dot(dirs[1], dirs[0]),
+                             dot(dirs[1], dirs[2]));
+    float2 sThetaIO = sqrt(1.0f.xx - (cThetaIO * cThetaIO));
+    float2 tThetaIO = abs(sThetaIO / cThetaIO);
+    float2 phiIO = float2(atan(dirs[0].y / (dirs[0].x + EPSILON_MIN)),
+                          atan(dirs[2].y / (dirs[2].x + EPSILON_MIN)));
+    float2 cPhiIO = cos(phiIO);
+    cPhiIO *= cPhiIO; // We only use squared cos(phi), no reason to preserve the non-squared version
+    float2 sPhiIO = (1.0f.xx - cPhiIO); // No reason to take the root here since we square again later anyway...
+    if (isinf(tThetaIO.x) || isinf(tThetaIO.y)) { return 0.0f; } // Try to avoid infinities; assume very shallow microfacet
+    									  						 // angles (given by the half-vector) are occluded
+    float2 tThetaIOSqr = tThetaIO * tThetaIO;
+    float2 lamAlph = sqrt((cPhiIO * vari) +
+                          (sPhiIO * vari)); // Valid for isotropic distributions, but probably overcomplicated; would
+    									    // like to find/derive a cleaner strictly-isotropic alternative if possible
+    lamAlph *= lamAlph * tThetaIOSqr;
+    float2 lamIO = (sqrt(1.0f.xx + lamAlph) - 1.0f.xx) * 0.5f;
+    // Avert [NaN]s and infinities here
+    if (isinf(lamIO.x) || isinf(lamIO.y) ||
+        isnan(lamIO.x) || isnan(lamIO.y)) { return 1.0f; }
+    else { return 1.0f / (1.0f + lamIO.x + lamIO.y); }
+}
 
-    // Evaluate + return microfacet distribution with GGX
-    return 1.0f / ((PI * variSqr * (distroTrig.y * distroTrig.y) * ggxBeckmannExp) + EPSILON_MIN);
+// PDF for normals sampled from GGX with Smith masking/shadowing
+// Taken from
+// Physically Based Rendering - From Theory to Implementation
+// (Pharr, Jakob, Humphreys)
+// Works because GGX, Smith, and angles between normals and
+// intersection directions contribute significantly to reflection
+float GGXSmithPDF(float4x3 dirs, // Input direction in [0], half-vector in [1],
+    						     // output direction in [2], macrosurface normal
+    						     // in [3]
+                  float vari)
+{
+    float2 cThetas = abs(float2(dot(dirs[1], dirs[2]),
+                        	    dot(dirs[3], dirs[2])));
+    return GGX(float2x3(dirs[1],
+                   	    dirs[3]),
+               vari) *
+           Smith(float3x3(dirs[0],
+                	  	  dirs[1],
+                 	      dirs[2]),
+                 vari) *
+           cThetas.x /
+           cThetas.y;
+}
+
+// Small utility function returning whether two rays lie in the same hemisphere
+bool SameHemi(float3x3 dirs) // Input direction in [0], normal in [1], output direction
+                             // in [2]
+{
+    return (sign(dot(dirs[1], dirs[0])) == sign(dot(dirs[1], dirs[2])));
 }
 
 // PSR mollification function
@@ -152,240 +319,10 @@ float PSRMollify(float radius,
     float mollifAngle = atan(radius); // Evaluate the mollfication angle for the given radius
     float cosIOAngle = dot(ioDirs[0], ioDirs[1]); // Evaluate cosine of the angle between the incoming/outgoing directions for
                                                   // the mollified vertex
-    if (acos(cosIOAngle) < mollifAngle)
-    {
+    if (acos(cosIOAngle) < mollifAngle) {
         return (1.0f / (TWO_PI * (1.0f - cos(mollifAngle)))) / cosIOAngle; // Return the mollified PDF :D
     }
-    else
-    {
+    else {
         return 0.0f; // Zero probabilities for bounces passing outside the mollification cone
     }
 }
-
-// Small function to generate microfacet normals matching the GGX
-// normal-distribution-function
-// Implemented from the exact hemisphere sampling strategy described
-// by Heitz in
-// Eric Heitz.
-// A Simpler and Exact Sampling Routine for the GGX Distribution of Visible Normals.
-// [Research Report] Unity Technologies. 2017
-// Research found on the HAL INRIA open-archives repository at:
-// https://hal.archives-ouvertes.fr/hal-01509746
-float3 GGXMicroNorml(float3 oDir,
-                     float ggxVari,
-                     inout uint randVal)
-{
-    // Heitz' updated method assumes unit roughness (where GGX forms a uniform hemisphere);
-	// maintaining microfacet visibility under that assumption means applying the actual
-	// surface roughness to displace the outgoing direction within [XZ] (the plane incident
-	// with the hemisphere's disc in local space) before renormalizing; this can be seen as
-    // rotating the given direction through the GGX distribution until the visible
-    // microfacet area is the same in the [alpha = 1] case as when the [alpha = ggxVari]
-    // case is seen from the un-rotated output direction
-    // Microfacet normals naturally fall back into the [y] axis (equivalent to the local
-    // macrosurface normal) for totally smooth surfaces, so we don't need any specific
-    // handling for perfect mirrors here ^_^
-    float3 ggxDir = normalize(float3(oDir.x * ggxVari,
-                                     oDir.y,
-                                     oDir.z * ggxVari) + EPSILON_MIN.xxx);
-
-    // Generate GGX-specific UV values
-    float2 ggxUV = float2(iToFloat(xorshiftPermu1D(randVal)),
-						  iToFloat(xorshiftPermu1D(randVal)));
-
-    // Heitz' method splits the GGX sampling space into two half-disc regions projected
-    // through the shading hemisphere; one within a plane orthogonal to the outgoing
-    // direction and one incident with the base of the hemisphere itself
-    // This is intuitive; visible microfacets at any roughness will mostly lie in
-    // the plane normal to the viewing (outgoing) direction
-    // Heitz samples from the full disc composed from the projections of either
-    // half-disc, and represents sample positions in polar coordinates [([r], [theta])];
-    // the [theta] component is scaled to match the probability of selecting either
-    // half-disc ([pTangent = 1.0f / (1.0f + ggxDir.z)] for the half-disc within the
-    // tangent plane, [1.0f - pTangent] for the half-disc within the base of the shading
-    // hemisphere)
-    float pTangPlane = 1.0f / (1.0f + ggxDir.y);
-    bool tangPlanePt = !(ggxUV.y < pTangPlane);
-    ggxUV.x = sqrt(ggxUV.x); // This might be removable given uniform UV values; maybe test
-                             // when I have working specular shading...
-    // Could be worth trying to implement these in Cartesian coordinates straight away
-    // instead of starting in polar and converting afterwards...
-    if (tangPlanePt)
-    {
-        ggxUV.y = (ggxUV.y / pTangPlane) * PI;
-    }
-    else
-    {
-        ggxUV.y = (((ggxUV.y - pTangPlane) / (1.0f - pTangPlane)) * PI) + PI;
-    }
-
-    // Convert samples to 2D Cartesian coordinates
-    float2 sinCosPhi;
-    sincos(ggxUV.y, sinCosPhi.x, sinCosPhi.y);
-    ggxUV *= sinCosPhi.yx;
-    if (tangPlanePt)
-    {
-        ggxUV.y *= ggxDir.z;
-    }
-
-    // Construct basis vectors for the space about [oDir]
-    float3 oSpaceX = normalize(cross(oDir, float3(0.0f, 1.0f, 0.0f)) + EPSILON_MIN.xxx);
-    float3 oSpaceZ = cross(oSpaceX, oDir);
-
-    // Combine the previous values to project [ggxUV] onto the view-orthogonal
-    // plane (=> the region with the most visible area relative to [oDir])
-    float3 inPt = (ggxUV.x * oSpaceX) +
-                   ((ggxUV.y * oSpaceZ) * ((oDir.y * tangPlanePt) + !tangPlanePt));
-
-    // Generate a hemisphere position
-    float3 microNorml = inPt + // Use positions on the view-orthogonal disc as a local offset
-                        (sqrt(1.0f - dot(inPt, inPt)) * oDir); // Scale the known disc positions
-                                                               // out to the hemisphere; perform
-                                                               // scaling along the direction
-                                                               // described by [oDir]
-
-    // Transform the generated position to the unit-alpha GGX distribution (this is the same
-    // transformation we applied to the outgoing ray direction before; see above for how/why
-    // we did that) and normalize (giving a roughened GGX-style direction through the
-    // hemisphere), then return
-    return normalize(float3(microNorml.x * ggxVari,
-                            microNorml.y,
-                            microNorml.z * ggxVari));
-}
-
-// Short convenience function for vectorized complex division
-// Sourced from:
-// http://mathworld.wolfram.com/ComplexDivision.html
-float2x3 cplxDiv(float2x3 a,
-                 float2x3 b)
-{
-    float3 denom = b[0] * b[0] + b[1] * b[1];
-    return float2x3(a[0] * b[0] + a[0] * b[1] / denom,
-                    a[1] * b[0] - a[1] * b[1] / denom);
-}
-
-// Short convenience function for vectorized complex multiplication
-float2x3 cplxMul(float2x3 a,
-                 float2x3 b)
-{
-    // Given a complex product (a + bi)(c + di),
-    // the product's expression should evaluate as
-    // ac + adi + bic + bidi
-    // e.g. (1 + i)^2 >> (1 + i)(1 + i)
-    //      1^2 + i + i + i^2
-    //      1 + 2i - 1
-    //      0 + 2i
-    return float2x3(a[0] * b[0], 0.0f.xxx) +
-           float2x3(0.0f.xxx, a[0] * b[1]) +
-           float2x3(0.0f.xxx, a[1] * b[0]) -
-           float2x3(a[1] * b[1], 0.0f.xxx); // Hardcoded real subtraction since the product of two imaginaries is negative (i^2 >> -1)
-}
-
-// Function to evaluate complex square roots for real-valued
-// numbers (positive or negative)
-float2x3 cplxReRt(float3 a)
-{
-    float2x3 rt = float2x3(0.0f.xxx, 0.0f.xxx); // Avert singularities at [sqrt(0)] here
-    if (a.x > 0.0f) { rt[0].x = sqrt(abs(a.x)); } // Evaluate sqrt(a.x) for the real case
-    else if (a.x < 0.0f) { rt[1].x = sqrt(abs(a.x)); } // Evaluate sqrt(a.x) for the imaginary case
-    if (a.y > 0.0f) { rt[0].y = sqrt(abs(a.x)); } // Evaluate sqrt(a.y) for the real case
-    else if (a.y < 0.0f) { rt[1].y = sqrt(abs(a.x)); } // Evaluate sqrt(a.y) for the imaginary case
-    if (a.x > 0.0f) { rt[0].z = sqrt(abs(a.x)); } // Evaluate sqrt(a.z) for the real case
-    else if (a.x < 0.0f) { rt[1].z = sqrt(abs(a.x)); } // Evaluate sqrt(a.z) for the imaginary case
-    return rt; // Return the generated complex vector for [sqrt(a)]
-}
-
-// Evaluate the Fresnel coefficient for the given spectral refraction +
-// extinction coefficients + solid-angle ray directions
-float3 SurfFres(float4x3 fresInfoIO, // Incoming/outgoing fresnel values (refraction in [0] and [2],
-                                     // extinction/absorption in [1] and [3])
-                float2 sinCosThetaI)
-{
-    // Compute the relative index of refraction [[fresInfoO]/[fresInfoI]]
-    // Each [fresInfo] element is a complex number pretending to be a real matrix,
-    // so we'll need to perform complex division here instead of computing an
-    // ordinary real-number ratio
-    float2x3 relFres = cplxDiv(float2x3(fresInfoIO[2],
-                                        fresInfoIO[3]),
-                               float2x3(fresInfoIO[0],
-                                        fresInfoIO[1]));
-
-    // Per-component square over [relFres]
-    // Different to a scalar complex square like [cplxMul(z,z)]
-    float2x3 relFresSqr = float2x3(relFres[0] * relFres[0],
-								   relFres[1] * relFres[1]);
-
-    // The generalized Fresnel equation often uses the complex value
-    // [a^2 + b^2], so cache that here
-
-    // Generate [(a^2 + b^2)^2] first so we can easily handle imaginary values of
-    // [a^2 + b^2] later
-    float2 sinCosThetaISqr = sinCosThetaI * sinCosThetaI;
-    float3 aSqrBSqrReRt = relFresSqr[0] + relFresSqr[1] - sinCosThetaISqr.x; // Plus because [k] is imaginary, so k^2 is negative real (and
-                                                                             // x - -y is equivalent to x + y over the reals)
-    float3 aSqrBSqrSqr = float3(aSqrBSqrReRt * aSqrBSqrReRt - // Minus because k^2 (and 4n^2k^2 by extension) will be negative
-                                4.0f * relFresSqr[0] * relFresSqr[1]);
-
-    // Ugly forky code to cleanly generate [float2x3]-style complex vectors from unpredictably
-    // real/imaginary roots
-    float2x3 aSqrBSqr = cplxReRt(aSqrBSqrSqr);
-
-    // Evaluate perpendicular/orthogonal reflectance
-    float3 twoACosTheta = 2.0f * sqrt(aSqrBSqr[0]) * sinCosThetaI.y;
-    float2x3 reflOrthoReal = float2x3(twoACosTheta + sinCosThetaISqr.y, 0.0f.xxx);
-    float2x3 reflOrtho = cplxDiv(aSqrBSqr - reflOrthoReal,
-                                 aSqrBSqr + reflOrthoReal);
-
-    // Evaluate parallel reflectance
-    float2x3 reflParallReal = float2x3(twoACosTheta * sinCosThetaISqr.x + (sinCosThetaISqr.x * sinCosThetaISqr.x), 0.0f.xxx);
-    float2x3 cosThetaSqrASqrBSqr = float2x3(aSqrBSqr[0] * sinCosThetaISqr.y, // Not sure why scalar/matrix multiplication fails here...
-										    aSqrBSqr[1] * sinCosThetaISqr.y);
-    float2x3 reflParall = cplxMul(reflOrtho,
-                                  cplxDiv((cosThetaSqrASqrBSqr - reflParallReal),
-                                          (cosThetaSqrASqrBSqr + reflParallReal)));
-
-    // Combine the generated values into an overall Fresnel reflectance, then return the
-    // result
-    // 0.5f * (a + bi)^2 + (c + di)^2
-    // (4 + 2i)(4 + 2i)
-    // 16 + 8i + 8i + 4i^2
-    // 16 + 16i - 16
-    // 16i
-    return 0.5f * cplxMul(reflOrtho, reflOrtho)[1] + cplxMul(reflParall, reflParall)[1];
-}
-
-// Find the exit position for refracted rays
-// [startInfo] has an initial position in [xyz]
-// and a figure-ID in [w]
-// [surfInfo] has a BXDF-ID in [x], a figure-ID
-// in [y], and a distance-function type in [z]
-//float3 RefractPos(float3 startPos,
-//                  float3 refrDir,
-//                  float3 surfInfo,
-//                  float adaptEps,
-//                  inout uint randVal)
-//{
-//    float currRayDist = adaptEps * 2.0f;
-//    float3 rayVec = startPos;
-//    if (surfInfo.x == BXDF_ID_REFRA)
-//    {
-//        while (currRayDist > adaptEps)
-//        {
-//            rayVec = startPos + (refrDir * currRayDist);
-//            currRayDist += FigDF(rayVec,
-//                                 startPos,
-//                                 false,
-//                                 figures[surfInfo.y])[0].x * -1.0f; // We're moving *inside* scene figures, so make sure to
-//                                                                       // trace inverse PDFs here
-//        }
-//        return rayVec + refrDir * (adaptEps * 2.0f); // Translate the generated position just outside the SDF of the
-//                                                     // refracted figure (to prevent immediate occlusion during ray
-//                                                     // propagation through the scene)
-//    }
-//    else // Volumetric scattering implied here, refraction through non-transmissive/volumetric materials is invalid
-//    {
-//        // Return the input position for now, will implement for multiple
-//        // scattering events later on...
-//        return startPos;
-//    }
-//}

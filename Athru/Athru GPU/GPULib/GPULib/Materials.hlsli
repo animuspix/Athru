@@ -13,21 +13,20 @@
 // included somewhere in the build process
 #define MATERIALS_LINKED
 
-// Probability density function (PDF) for directions sampled over diffuse surfaces
-float DiffusePDF(float3 iDir,
-                 float3 norml)
-{
-    return abs(dot(norml, iDir)) / PI;
-}
+// Short macro to swap zero-valued PDFs with very large numbers
+// (effectively minimizing very unlikely contributions)
+#define ZERO_PDF_REMAP(x) ((x == 0.0f) ? (1.0f / EPSILON_MIN) : x)
 
 // Importance-sampled ray generator for diffuse surfaces
 // Implemented from the cosine-weighted hemisphere sampling
 // strategy shown in
 // Physically Based Rendering: From Theory to Implementation
 // (Pharr, Jakob, Humphreys)
-// Not completely sure how the disc-mapping algorithm in here
-// works, should ask CGSE about that...
-float3 DiffuseDir(inout uint randVal)
+// Diffuse PDF returned in [w] (assumes Oren-Nayar PBR shading)
+float DiffusePDF(float3 wi, float3 norml) { return dot(norml, wi) / PI; }
+float4 DiffuseDir(float3 wo,
+                  float3 norml,
+                  inout uint randVal)
 {
     // Generate random sample values
     float2 uv = float2(iToFloat(xorshiftPermu1D(randVal)),
@@ -83,12 +82,14 @@ float3 DiffuseDir(inout uint randVal)
     // direction to the vertical distance from each initial disc
     // sample to the surface of the unit hemisphere
     float2 uvSqr = uv * uv;
-    return normalize(float3(uv.x,
-                            sqrt(1.0f - (uvSqr.x + uvSqr.y)),
-                            uv.y));
+    float3 wi = normalize(float3(uv.x,
+                                 sqrt(1.0f - (uvSqr.x + uvSqr.y)),
+                                 uv.y));
+    return float4(wi,
+                  DiffusePDF(wi, UNIT_Y)); // [wi] is in sampling space and sees the normal parallel to y-up
 }
 
-// RGB diffuse reflectance away from any given surface; uses the Oren-Nayar BRDF
+// Diffuse reflectance away from any given surface; uses the Oren-Nayar BRDF
 // Surface carries color in [rgb], RMS microfacet roughness/variance in [a]
 float3 DiffuseBRDF(float4 surf,
                    float3x3 surfDirs)
@@ -96,20 +97,23 @@ float3 DiffuseBRDF(float4 surf,
     // Generate the basis Lambert BRDF
     float3 lambert = surf.rgb / PI;
 
+    // Scale [0...1] roughness out to the range defined for Oren-Nayar
+    surf.a *= HALF_PI;
+
     // Calculate the squared variance (will be needed later)
     float variSqr = surf.a * surf.a;
 
     // Generate Oren-Nayar parameter values
     float a = 1.0f - (variSqr / (2.0f * (variSqr + 0.33f)));
     float b = (0.45 * variSqr) / (variSqr + 0.09f);
-    float2 cThetaIO = float2(dot(surfDirs[2], surfDirs[0]), // Cosines are equal to [n . [l | v]]
-                             dot(surfDirs[2], surfDirs[1]));
-    float2 sThetaIO = sqrt(1.0f.xx - (cThetaIO * cThetaIO)); // Sines are derivable from cosines
+    float2 cThetaIO = float2(dot(surfDirs[1], surfDirs[0]), // Cosines are equal to [n . [l | v]]
+                             dot(surfDirs[1], surfDirs[2]));
+    float2 sThetaIO = sqrt(max(1.0f.xx - (cThetaIO * cThetaIO), 0.0f.xx)); // Sines are derivable from cosines
 
     // Sneaky implementation of [cosPhiSection] borrowed from iq:
     // https://www.shadertoy.com/view/ldBGz3
-    float cosPhiSection = dot(surfDirs[1] - surfDirs[2] * cThetaIO.y,
-                              surfDirs[0] - surfDirs[2] * cThetaIO.x);
+    float cosPhiSection = dot(surfDirs[2] - surfDirs[1] * cThetaIO.y,
+                              surfDirs[1] - surfDirs[1] * cThetaIO.x);
 
     // Evaluate microfacet attenuation for the Oren-Nayar BRDF
     float orenNayar = a + (b * max(0, cosPhiSection)) * // Straight copy from the standard Oren-Nayar definition here...
@@ -122,319 +126,289 @@ float3 DiffuseBRDF(float4 surf,
     return lambert * orenNayar;
 }
 
-// Probability density function (PDF) for directions sampled over specular surfaces; assumes
-// directions importance-sample the GGX microfacet distribution
-float SpecularPDF(float4 surfGeo, // Angular microfacet normal in [xyz], surface roughness
-                                  // in [w]
-                  float4 iDirInfo) // The local incoming light direction (xyz) +
-                                   // whether or not it was importance sampled (w)
+// Accept a GGX microfacet normal + a roughness + an outgoing direction, then synthesize a matching
+// reflective direction (xyz) and an appropriate PDF (w)
+// Directions have input in [0], half vector in [1], output in [2], and macrosurface normal in [3]
+float MirroPDF(float4x3 dirs,
+               float vari)
 {
-    // Perfectly smooth surfaces are only sampleable with directions on equal
-    // sides of the surface normal; we're assuming that those directions will
-    // only ever appear from importance sampling, so immediately return zero
-    // here for perfectly smooth bi-directional connections (+ return [1.0f]
-    // for perfectly-smooth importance-sampled surfaces; if there's only one
-    // valid outgoing direction for every incoming direction, then that
-    // direction must have 100% probability at each interaction)
-    if (!iDirInfo.z && (surfGeo.z == 0.0f)) { return 0.0f; }
-    else if (iDirInfo.z) { return 1.0f; }
-
-    // Return visible microfacet area (mirrorlike reflection will always have
-    // the half-vector equal to the local normal, so we can safely propagate
-    // the sampled microfacet normal here); our samples come directly from GGX,
-    // so visible microfacet area through the given normal will naturally
-    // describe the chance of reflecting around that direction (since
-    // "large" regions with lots of visible area would be expected to reflect
-    // more light towards the viewing direction than "small" regions with heavy
-    // occlusion and much less microsurface exposure)
-    // Also attenuate the generated GGX value with [cos([theta])] since incoming
-    // rays are unlikely to meet microfacets close to parallel with the
-    // macrosurface normal
-    // Unsure about this explanation, should maebs check with CGSE
-    float2 microNormlSrs = VecToAngles(surfGeo.xyz);
-    float ggxPDF = GGX(microNormlSrs,
-                       surfGeo.w * 2.0f) * cos(microNormlSrs.x);
-
-    // The GGX distribution is defined for the half-angle vector, but our PDFs are
-    // expected to return results defined over incoming/outgoing directions; we can
-    // convert betweeen those with the half-angle/incoming-angle sampling ratio
-    // derived by PBR, so apply that here before returning to the callsite
-    // ("PBR" means
-    // Physically Based Rendering: From
-    // Theory to Implementation (Pharr, Jakob, Humphreys),
-    // and the derivation is available around page ~812)
-    return ggxPDF / (4.0f * dot(iDirInfo.xyz,
-                                surfGeo.xyz));
+    return GGXSmithPDF(dirs,
+                       vari) /
+           (4.0f * dot(dirs[2], dirs[1]));
+}
+float4 MirroDir(float3 wo,
+                float3 microNorml,
+                float3 norml,
+                float vari,
+                out float3 hV,
+                inout uint randVal)
+{
+    // Reflect the outgoing direction about the given microfacet normal
+    float3 wi = reflect(wo, microNorml);
+    // Compute the half-vector for specular reflection
+    float3 h = normalize(wo + wi);
+    // Export the generated half-vector
+    hV = h;
+    // Reflective rays cannot refract through the surface; return zero probability for those here
+    if (!SameHemi(float3x3(wi,
+                           wo * -1.0f,
+                           norml)))
+    { return float4(wi, 0.0f); }
+    // Input/output rays lie in the same hemisphere, so this is a valid reflection; return GGX/Smith
+    // weighted probability here + the generated input direction
+    return float4(wi,
+                  MirroPDF(float4x3(wi,
+                                    h,
+                                    wo,
+                                    norml),
+                           vari));
 }
 
-// Importance-sampled ray generator for Torrance-Sparrow specular surfaces
-float3 SpecularDir(float3 oDir,
-                   float3 microNorml,
-                   inout uint randVal)
+// Evaluate GGX/Smith PBR reflection for the given surface
+float3 MirroBXDF(float4x3 dirs, // Input direction in [0], half-vector in [1],
+               			        // output direction in [2], macrosurface normal in [3]
+                 float4 surf, // Reflective surface color in [rgb], squared roughness in [a]
+                 float fres) // Fresnel coefficient for the surface (scalar, spectral Fresnel is too messy and prone to dispersion)
 {
-    // Will update for refraction sooooooon
-    // Spectral reflection is extraordinarily expensive (at least 3x more rays/scene), so
-    // just take the average real indices of refraction here instead of tracing separate
-    // rays per-wavelength
+    // Evaluate cosine terms
+    float cosTerm = dot(dirs[3], dirs[0]);
+    cosTerm *= dot(dirs[3], dirs[2]);
+    if (cosTerm == 0.0f)
+    { return 0.0f.xxx; } // Avert divisions by zero
 
-    // Reflect the outgoing direction about the given microfacet normal, then
-    // return
-    // Was *sure* I'd need to do all sorts of fancy processing here, but after re-reading
-    // it looks like I was wrong about that ^_^
-    return reflect(oDir, microNorml);
+    // Compute the PBR specular BRDF
+    return ((GGX(float2x3(dirs[1],
+                          dirs[3]),
+                 surf.a) * // Distribution term [D]
+             Smith(float3x3(dirs[0],
+                            dirs[1],
+                            dirs[2]),
+                   surf.a) * // Masking/shadowing term [G]
+             fres) / // Fresnel term [F]
+            abs(4.0f * cosTerm)) * // Reflection attenuation
+        	surf.rgb; // Surface tint
 }
 
-// RGB specular reflectance away from any given surface; uses the Torrance-Sparrow BRDF
-// described in Physically Based Rendering: From Theory to Implementation
-// (Pharr, Jakob, Humphreys)
-// [surf] carries a spectral Fresnel value in [rgb] and GGX microfacet roughness/variance in [a]
-// Torrance-Sparrow uses the D/F/G definition for physically-based surfaces, where
-// D -> Differential area of microfacets with a given facet-normal (evaluated with GGX here)
-// F -> Fresnel attenuation, describes ratio of reflected/absorbed (or transmitted) light
-//      for different surfaces
-// G -> Geometric attenuation, describes occlusion from nearby microfacets at each
-//      sampling location; I'm evaluating this with Smith's masking-shadowing function
-//      (see below)
-// Unsure about the derivations for Smith and GGX, should read the original papers
-// when possible
-float3 SpecularBRDF(float4 surf,
-                    float4 thetaPhiIO)
+// Accept a GGX/Smith microfacet normal, then synthesize a matching refractive direction (xyz)
+// and an appropriate PDF (w)
+// Directions have input in [0], half vector in [1], output in [2], and macrosurface normal in [3]
+float RefrPDF(float4x3 dirs,
+              float etaRatio,
+              float vari)
 {
-    // Extract Torrance-Sparrow roughness values from [surf.a] (materials use Oren-Nayar roughness by default)
-    float variSqr = surf.a * 2.0f;
-
-    // Zeroed rougness means the surface is a perfect mirror; perfect mirrors are
-    // described by specialized BRDFs missed by Torrance-Sparrow, so handle those
-    // here and return early instead
-    if (variSqr == 0.0f)
-    {
-        // We're using wavelength-dependant indices of refraction + extinction coefficients
-        // already, so no reason to scale our fresnel value against [mat.rgb]
-        return surf.rgb / cos(thetaPhiIO.x);
-    }
-
-    // Evaluate the GGX microfacet distribution function for the given input/output
-    // angles (the "D" term in the PBR D/F/G definition)
-    float2 h = (thetaPhiIO.xy + thetaPhiIO.zw) * 0.5f.xx; // We want to simulate highly specular surfaces where
-                                                          // ideal reflection lies along the half-angle between [i]
-                                                          // and [o], so it makes sense to only evaluate the
-                                                          // differential area of microsurfaces that face the same
-                                                          // direction (i.e. have normals parallel to [h])
-                                                          // Might be using bad values for [h] here, should validate later...
-    // Can optimize this by recycling values from the specula BRDF,
-    // but that would be kinda messy...strongly leaning towards a
-    // generic material evaluator nows instead
-    // (solves + returns the BRDF and PDF for arbitrary materials, chooses
-    // between generated and provided bounce directions depending on
-    // context)
-    // Would allow for less code, faster exits, etc.
-    // Less argument passing, so possibly simpler code as well...
-    // Definitely a plausible refactor after implementing PSR
-    // (want to finish specular, do that, debug + validate everything,
-    // *then* implement transmittance before starting any major
-    // refactors/releasing demo videos/looking for work)
-    float d = GGX(h,
-                  variSqr);
-
-    // Evaluate Smith masking/shadowing (the "G" term in D/F/G) for the incoming/outgoing directions
-    float2 absTanThetas = abs(tan(thetaPhiIO.xz)); // Evaluate the absolute tangent of each direction's angle
-                                                   // around [theta]
-
-    // Evaluate ratio of hidden/visible microfacet area (>> "lambda") for GGX along the incoming/outgoing
-    // directions
-    float2 lam = (sqrt(1.0f + (variSqr.xx * (absTanThetas * absTanThetas))) - 1.0f.xx) * 0.5f.xx;
-
-    // Avert tangent singularities here
-    if (isinf(absTanThetas.x)) { lam.x = 0.0f; }
-    if (isinf(absTanThetas.y)) { lam.y = 0.0f; }
-
-    // Compute the Smith masking/shadowing function
-    float g = 1.0f / (1.0f + lam.x + lam.y);
-
-    // Division-by-zero produces singularities in IEEE 754; escape here before those singularities
-    // lead to NaNs
-    if (!any(thetaPhiIO.xz == HALF_PI.xx)) { return 0.0f.xxx; }
-
-    // Use the generated D/F/G values to compute + return the Torrance/Sparrow BRDF
-    // We're using wavelength-dependant indices of refraction + extinction coefficients
-    // already, so no reason to scale our reflectance against [mat.rgb]
-    return d * surf.rgb * g / (4.0f * cos(thetaPhiIO.z) * cos(thetaPhiIO.x));
+    float wiDH = dot(dirs[0], dirs[1]);
+    float pdfDenom = dot(dirs[2], dirs[1]) + (etaRatio * wiDH);
+    pdfDenom *= pdfDenom;
+    etaRatio *= etaRatio;
+    return GGXSmithPDF(dirs,
+                       vari) * // Evaluate generalized probability density for GGX/Smith microfacet incidence
+           abs(etaRatio * dot(dirs[0], dirs[1]) / pdfDenom); // Scale appropriately for microfacet transmission
+}
+float4 RefrDir(float3 wo,
+               float3 microNorml,
+               float3 norml,
+               float etaRatio,
+               float vari,
+               out float3 hV)
+{
+    float3 wi = refract(wo, microNorml, etaRatio);
+    float3 h = normalize(wo + (wi * etaRatio));
+    hV = h; // Export the generated half-vector (needed for BXDF evaluation)
+    if (SameHemi(float3x3(wi,
+                          wo * -1.0f,
+                          norml)))
+    { return float4(wi, 0.0f); } // Refractive rays cannot reflect from the surface; return zero probability for those here
+    float pdfDenom = dot(wo, h) + (etaRatio * dot(wi, h));
+    pdfDenom *= pdfDenom;
+    etaRatio *= etaRatio;
+    return float4(wi, RefrPDF(float4x3(wi,
+                                   	   h,
+                                   	   wo,
+                                   	   norml),
+                              etaRatio,
+                              vari));
 }
 
-// Volumetric PDF/Dir/BRDF here (stochastic raymaching (i.e. random walks) + phase functions)
+// Evaluate GGX/Smith PBR transmission for the given surface
+// Follows Walter et al., at:
+// https://www.cs.cornell.edu/~srm/publications/EGSR07-btdf.pdf
+float3 RefrBXDF(float4x3 dirs, // Input direction in [0], half-vector in [1],
+                 		       // output direction in [2], macrosurface normal in [3]
+                float4 surf, // Surface color in [rgb], roughness in [a]
+                float fres, // Fresnel coefficient for the local surface
+                float etaRatio) // Ratio of of incident/transmittant indices-of-refraction
+{
+    // Walter et al.'s method expects [h] above the surface, conditionally invert it here
+    if (dirs[1].y < 0.0f) { dirs[1] *= -1.0f; }
+
+    // Cache cosines relative to [h]
+    float2 hCosines = float2(dot(dirs[0],
+                                 dirs[1]),
+                             dot(dirs[2],
+                                 dirs[1]));
+    // Avert divisions by zero
+    if (hCosines.x == 0.0f || hCosines.y == 0.0f) { return 0.0f.xxx; }
+
+    // Evaluate the denominator for the LHS of the transmission function
+    float invEtaRatio = 1.0f / etaRatio;
+    float denom = ((invEtaRatio * hCosines.y) + (etaRatio * hCosines.x));
+    denom *= denom;
+
+    // Compute the LHS
+    float lhs = (GGX(float2x3(dirs[1],
+                    	      dirs[3]),
+                     surf.a) * // Distribution term [D]
+        	     Smith(float3x3(dirs[0],
+                                dirs[1],
+                                dirs[2]),
+                       surf.a) * // Masking/shadowing term [G]
+                 (1.0f - fres) * // Fresnel term [F]
+        	     (etaRatio * etaRatio)) /
+        	     denom;
+
+    // Cache cosines relative to the macrosurface normal
+    float2 nCosines = float2(dot(dirs[0],
+                                 dirs[3]),
+                             dot(dirs[2],
+                                 dirs[3]));
+
+    // Avert divisions by zero (for macrosurface normals this time)
+    if (nCosines.x == 0.0f || nCosines.y == 0.0f) { return 0.0f.xxx; }
+
+    // Compute the RHS
+    hCosines = abs(hCosines);
+    nCosines = abs(nCosines);
+    float rhs = (hCosines.x * hCosines.y) / (nCosines.x * nCosines.y);
+
+    // Evaluate + return the full BTDF
+    return abs(lhs * rhs) * // Microfacet attenuation
+           surf.rgb; // Transmissive color (T)
+}
+
+// Volumetric Dir/PDF/BRDF here (stochastic raymaching (i.e. random walks) + phase functions)
 // Atmospheric effects (dust, Rayleigh scattering, Mie scattering) are handled discretely inside
 // the main lighting functions (i.e. in [Lighting.hlsli])
 
-// PDF finder for arbitrary reflectance/scattering/transmittance functions
-// [surfInfo] gives the reflectance/scattering/transmittance function selected
-// by the given material for the current ray in [x], the surface's distance-field
-// type + figure-ID in [yz], and whether or not the incoming light direction was
-// importance-sampled for the local BXDF in [w]
-// [surfDirs] carries input/output directions in ([0],[1]) and the local surface
-// normal in [2]
-// [coord] carries global surface position in [xyz] and whether the surface lies on
-// the light subpath in [w]
-float MatPDF(float3x3 surfDirs,
-             float4 coord,
-             uint4 surfInfo,
-             float4 bxdfFreqs,
-             float surfVari)
-{
-    if (coord.w)
-    {
-        // Swap in/out directions on the light path
-        float3 iDir = surfDirs[0];
-        surfDirs[0] = surfDirs[1];
-        surfDirs[1] = iDir;
-    }
-
-    // Evaluate probabilities for the given material + input/ouput
-    // directions
-    float pdf = 0.0f;
-    switch (surfInfo.x)
-    {
-        case BXDF_ID_DIFFU:
-            pdf = DiffusePDF(surfDirs[0],
-                             surfDirs[2]);
-            break;
-        case BXDF_ID_MIRRO:
-            pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
-                                                                           // reconstructed from the given input/output
-                                                                           // directions
-                                     surfVari),
-                              float4(surfDirs[0],
-                                     surfInfo.w));
-            break;
-        case BXDF_ID_REFRA:
-            // Remap refractions to perfect specular interactions for now...
-            pdf = SpecularPDF(float4(normalize(surfDirs[0] + surfDirs[1]), // Half-angle vector (i.e. microfacet normal)
-                                                                           // reconstructed from the given input/output
-                                                                           // directions
-                                     surfVari),
-                              float4(surfDirs[0],
-                                     surfInfo.w));;
-            break;
-        case BXDF_ID_VOLUM:
-            pdf = 0.0f;
-            break;
-        default:
-            pdf = DiffusePDF(surfDirs[1],
-                             surfDirs[2]); // Assume diffuse surfaces for undefined [BXDFs]
-            break;
-    }
-    return pdf * bxdfFreqs[surfInfo.x];
-}
-
-// [surfInfo] gives the reflectance/scattering/transmittance function selected
-// by the given material for the current ray in [x], the distance-field type +
-// figure-ID at [coord] in [yz], and the local surface variance in [w]
-float3 MatDir(float3 oDir,
-              float3 coord,
-              inout uint randVal,
-              float4 surfInfo)
-{
-    switch (surfInfo.x)
-    {
-        case BXDF_ID_DIFFU:
-            return DiffuseDir(randVal);
-        case BXDF_ID_MIRRO:
-            // Generate a microfacet normal matching the GGX normal-distribution-function
-            return SpecularDir(oDir,
-                               GGXMicroNorml(oDir,
-                                             sqrt(surfInfo.w) * 2.0f, // Convert to GGX variance here
-                                             randVal),
-                               randVal);
-        case BXDF_ID_REFRA:
-            // Remap refractions to perfect specular interactions for now...
-            return SpecularDir(oDir,
-                               GGXMicroNorml(oDir,
-                                             sqrt(surfInfo.w) * 2.0f, // Convert to GGX variance here
-                                             randVal),
-                               randVal);
-        case BXDF_ID_VOLUM:
-            return 0.0f.xxx;
-        default:
-            return DiffuseDir(randVal); // Assume diffuse surfaces for undefined [BXDFs]
-    }
-}
-
-// BXDF finder for arbitrary materials
-float3 MatBXDF(float3 coord,
-               float2x3 prevFres, // Refraction/extinction coefficients for the volume
-                                  // entered by the previous vertex in the relevant
-                                  // subpath
-               float3x3 surfDirs, // Light direction in [0], camera direction in [1], normal vector in [2]
-               float4 surfInfo, // BXDF-ID in [x], distance-field type in [y], figure-ID in [z], surface variance in [w]
-               float3 rgb)
-{
-    surfDirs[1] *= -1.0f; // BXDFs assume camera rays point towards the lens
-    float4 thetaPhiIO = RaysToAngles(surfDirs[0],
-                                             surfDirs[1],
-                                             false); // Temporary remapping so I can avoid rewriting specular reflection with vector math...
-    switch (surfInfo.x)
-    {
-        case BXDF_ID_DIFFU:
-            return DiffuseBRDF(float4(rgb,
-                                      surfInfo.w),
-                               surfDirs);
-        case BXDF_ID_MIRRO:
-            float2 sinCosThetaI;
-            sincos(thetaPhiIO.x, sinCosThetaI.x, sinCosThetaI.y);
-            return SpecularBRDF(float4(SurfFres(float4x3(prevFres,
-														 rgbToFres(rgb)),
-												sinCosThetaI),
-                                       surfInfo.w),
-                                thetaPhiIO);
-        case BXDF_ID_REFRA:
-            float2 sinCosThetaIRefr;
-            sincos(thetaPhiIO.x, sinCosThetaIRefr.x, sinCosThetaIRefr.y);
-            return SpecularBRDF(float4(SurfFres(float4x3(prevFres,
-														 rgbToFres(rgb)),
-												sinCosThetaIRefr),
-                                       surfInfo.w),
-                                thetaPhiIO);
-        case BXDF_ID_VOLUM:
-            return 0.0f.xxx; // No defined BXDF for participating media yet
-        default:
-            return (1.0f.xxx / PI); // Assume white Lambert surfaces for undefined [BXDFs]
-    }
-}
-
-// Small function to generate BXDF ID's for a figure given a figure ID,
-// a figure-space position, and a vector of BXDF weights
-// Selection function from the accepted answer at:
-// https://stackoverflow.com/questions/1761626/weighted-random-numbers
-uint MatBXDFID(float4 bxdfFreqs,
+// Spatial sampler for surfaces; accepts an arbitrary input direction and returns appropriate
+// surface radiance
+float4 MatSpat(float3x3 dirs, // Input direction in [0], macrosurface normal in [1],
+                              // output direction in [2]
+               float4 matStats,
+               float3 rgb,
+               float4 surfInfo,
                inout uint randVal)
 {
-    // Generate selection value
-    float bxdfSel = iToFloat(xorshiftPermu1D(randVal));
-
-    // Scan through available material weights and perform a weighted
-    // random selection on each pass
-    // Sadly no way (...that I know of...) to cleanly spread arbitrary
-    // probabilities through a set without using a loop :(
-    uint selID = 0;
-    for (int i = 0; i < 4; i += 1)
+    switch ((uint) surfInfo.x)
     {
-        // Test the selection value against the current material weight;
-        // if the selection passes, set [selID] to the loop's counter
-        // value (known to be equal to the weight index since we're
-        // testing each weight exactly once) and break out of the
-        // selection process
-        if (bxdfSel < bxdfFreqs[i])
-        {
-            selID = i;
-            break;
-        }
-
-        // If we think of each weight as a discrete probability "bin", this
-        // step exists to move the selection value between bins whenever
-        // it falls outside the probability range given by one of the weights
-        // in the set
-        bxdfSel -= bxdfFreqs[i];
+        case BXDF_ID_DIFFU:
+            return float4(DiffuseBRDF(float4(rgb,
+                                             surfInfo.a),
+                                      dirs),
+                          DiffusePDF(dirs[0],
+                                     dirs[1]) / ZERO_PDF_REMAP(matStats.x));
+        case BXDF_ID_MIRRO:
+            float3 hm = normalize(dirs[0] + dirs[2]);
+            return float4(MirroBXDF(float4x3(dirs[0],
+                                             hm,
+                                             dirs[2],
+                                             dirs[1]),
+                                    float4(rgb, surfInfo.a),
+                                    surfInfo.y),
+                          MirroPDF(float4x3(dirs[0],
+                                            hm,
+                                            dirs[2],
+                                            dirs[1]),
+                                   surfInfo.w) / ZERO_PDF_REMAP(matStats.y));
+        case BXDF_ID_REFRA:
+            // Evaluate local radiance given [wi], also apply PDF
+            float3 hr = normalize(dirs[2] + (dirs[0] * surfInfo.z));
+            return float4(RefrBXDF(float4x3(dirs[0],
+                                            hr,
+                                            dirs[2],
+                                            dirs[1]),
+                                 float4(rgb, surfInfo.a),
+                                 surfInfo.y,
+                                 surfInfo.z),
+                          RefrPDF(float4x3(dirs[0],
+                                   	       hr,
+                                   	       dirs[2],
+                                   	       dirs[1]),
+                                  surfInfo.z,
+                                  surfInfo.a) / ZERO_PDF_REMAP(matStats.z));
+        // Add other material types here...
+        default:
+            return 0.0f.xxxx;
     }
+}
 
-    // Return the selected BXDF ID value
-    return selID;
+// Generic surface sampler; branches once/material instead of once/BXDF + once/PDF + once/direction
+// [surfInfo] gives the reflectance/scattering/transmittance function selected
+// by the given material for the current ray in [x], the surface's Fresnel coefficient + eta-ratio in [yz],
+// and the local surface variance in [w]
+float2x4 MatSrf(float3 wo,
+                float3 norml,
+                float3 muNorml,
+                float4 matStats, // BXDF probabilities for the current material
+                float3 rgb, // Diffuse surface color
+                float4 surfInfo,
+                inout uint randVal)
+{
+    switch ((uint)surfInfo.x)
+    {
+        case BXDF_ID_DIFFU:
+            // Generate diffuse direction + evaluate weighted local radiance
+            float4 wid = DiffuseDir(wo,
+                                    norml,
+                                    randVal);
+            float3 ld = DiffuseBRDF(float4(rgb, surfInfo.a),
+                                    float3x3(wid.xyz,
+                                             norml,
+                                             wo));
+            // Return radiance + the generated ray direction + PDF to the callsite
+            return float2x4(wid.xyz, 0.0f.x,
+                            ld, (wid.a / ZERO_PDF_REMAP(matStats.x)));
+        case BXDF_ID_MIRRO:
+            // Generate mirror-reflective direction + matching PDF
+            float3 hm = 1.0f.xxx;
+            float4 wim = MirroDir(wo,
+                                  muNorml,
+                                  norml,
+                                  surfInfo.w,
+                                  hm,
+                                  randVal);
+            // Evaluate local radiance given [wi], also apply PDF
+            float3 lm = MirroBXDF(float4x3(wim.xyz,
+                                           hm,
+                                           wo,
+                                           norml),
+                                  float4(rgb, surfInfo.a),
+                                  surfInfo.y);
+            // Return radiance + ray direction + PDF
+            return float2x4(wim.xyz, 0.0f,
+                            lm, (wim.a / ZERO_PDF_REMAP(matStats.y)));
+        case BXDF_ID_REFRA:
+            // Generate refractive direction + matching PDF
+            float3 hr = 1.0f.xxx;
+            float4 wir = RefrDir(wo,
+                                 muNorml,
+                                 norml,
+                                 surfInfo.z,
+                                 surfInfo.a,
+                                 hr);
+            // Evaluate local radiance given [wi], also apply PDF
+            float3 lr = RefrBXDF(float4x3(wir.xyz,
+                                          hr,
+                                          wo,
+                                          norml),
+                                 float4(rgb, surfInfo.a),
+                                 surfInfo.y,
+                                 surfInfo.z);
+            // Return radiance + ray direction
+            return float2x4(wir.xyz, 0.0f,
+                            lr, (wir.a / ZERO_PDF_REMAP(matStats.z)));
+        // Add other material types here...
+        default:
+            return float2x4(0.0f.xxxx,
+                            0.0f.xxxx);
+    }
 }
