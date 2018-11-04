@@ -64,7 +64,6 @@ System* Galaxy::GetCurrentSystem(DirectX::XMVECTOR& cameraPos)
 			systemIndex = i;
 		}
 	}
-
 	return systems[systemIndex];
 }
 

@@ -16,14 +16,14 @@ float4 QtnProduct2(float4 qtnA, float4 qtnB)
 // Maximum iteration count + bailout distance
 // for the quaternionic Julia distance estimator
 #define ITERATIONS_JULIA 8
-#define BAILOUT_JULIA 16.0
+#define BAILOUT_JULIA_DE 256.0f
+#define BAILOUT_JULIA_ESCAPE 4.0f
 
 // Analytical Julia normal generator; original from:
 // https://www.shadertoy.com/view/MsfGRr
 // by [iq]. Thanks! :D
 float3 JuliaGrad(float4 juliaCoeffs,
-                 float3 coord,
-                 int maxIter)
+                 float3 coord)
 {
     // Initialise iteration point (z) and Julia constant (c)
     float4 z = float4(coord, juliaCoeffs.w);
@@ -43,8 +43,8 @@ float3 JuliaGrad(float4 juliaCoeffs,
                           0.0f, 0.0f, 0.0f, 1.0f);
     // Iterate the fractal
     int i = 0;
-    float sqrBailout = (BAILOUT_JULIA * BAILOUT_JULIA);
-    while (i < maxIter &&
+    float sqrBailout = BAILOUT_JULIA_DE;
+    while (i < ITERATIONS_JULIA &&
            dot(z, z) < sqrBailout)
     {
         // Update the Jacobian term [j]
@@ -68,9 +68,7 @@ float3 JuliaGrad(float4 juliaCoeffs,
 
 // Quaternionic Julia iteration function (designed for distance estimation)
 float Julia(float4 juliaCoeffs,
-            float3 coord,
-            int maxIter,
-            float adaptEps)
+            float3 coord)
 {
     // Initialise iteration point (z), escape-time derivative (dz),
     // and Julia constant (c)
@@ -78,24 +76,14 @@ float Julia(float4 juliaCoeffs,
     float4 dz = float4(1.0f, 0.0f, 0.0f, 0.0f);
     float4 c = juliaCoeffs;
 
-    // Dynamically calculated scalar factor for the
-    // Julia derivative [dz]
-    // Distance-dependant variance brings the fractal
-    // rate-of-change (represented by [dz]) closer to
-    // the rate of change in the image signal between
-    // separate rays
-    // [2.0f] is the base case (applies when the camera
-    // is positioned near the fractal surface)
-    float dzScalar = 2.0f + (length(coord) / 10.0f);
-
     // Iterate the fractal
     int i = 0;
-    float sqrBailout = (BAILOUT_JULIA * BAILOUT_JULIA);
-    while (i < maxIter &&
+    float sqrBailout = BAILOUT_JULIA_DE;
+    while (i < ITERATIONS_JULIA &&
            dot(z, z) < sqrBailout)
     {
         // Update the Julia differential [dz]
-        dz = dzScalar * QtnProduct2(z, dz);
+        dz = 2.0f * QtnProduct2(z, dz);
 
         // Displace the Julia coordinate [z]
         z = QtnProduct2(z, z) + c;

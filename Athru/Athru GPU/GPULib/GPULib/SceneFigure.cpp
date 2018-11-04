@@ -7,38 +7,17 @@ SceneFigure::SceneFigure()
 											_mm_set_ps(0, 0, 0, 0) };
 
 	coreFigure = Figure(DirectX::XMFLOAT4(0, 0, 0, 1.0f),
-						_mm_set_ps(1, 0, 0, 0),
 						baseDistCoeffs);
 }
 
-SceneFigure::SceneFigure(DirectX::XMFLOAT3 position,
-						 DirectX::XMVECTOR qtnRotation, float scale,
+SceneFigure::SceneFigure(DirectX::XMFLOAT3 position, float scale,
 						 DirectX::XMVECTOR* distCoeffs)
 {
 	coreFigure = Figure(DirectX::XMFLOAT4(position.x, position.y, position.z, scale),
-						DirectX::XMQuaternionInverse(qtnRotation),
 						distCoeffs);
 }
 
 SceneFigure::~SceneFigure() {}
-
-void SceneFigure::SetRotation(DirectX::XMVECTOR axis,
-							  float angle)
-{
-	// Convert the given rotation into the internal [Figure]'s
-	// quaternion representation; also invert it beforehand since
-	// rotating rays is much easier than rotating abstract
-	// distance functions
-	DirectX::XMVECTOR invAxisAngle = DirectX::XMQuaternionRotationAxis(axis,
-																	   angle);
-
-	coreFigure.rotationQtn = DirectX::XMQuaternionInverse(invAxisAngle);
-}
-
-DirectX::XMVECTOR SceneFigure::GetQtnRotation()
-{
-	return coreFigure.rotationQtn;
-}
 
 SceneFigure::Figure SceneFigure::GetCoreFigure()
 {

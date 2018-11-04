@@ -11,13 +11,18 @@
 // reflectance/scattering/transmittance function; one of
 // these is semi-randomly selected for each ray based
 // on weights in surface materials
+// Atmospheric scattering is computed in-line with ordinary
+// ray-marching; all other scattering models are computed
+// in specialty sampling functions at intersection
 #define BXDF_ID_DIFFU 0
 #define BXDF_ID_MIRRO 1
 #define BXDF_ID_REFRA 2
 #define BXDF_ID_CLOUD 3
-#define BXDF_ID_SSURF 4
-#define BXDF_ID_FURRY 5
-#define BXDF_ID_NOMAT 6
+#define BXDF_ID_ATMOS 4
+#define BXDF_ID_SNOWW 5
+#define BXDF_ID_SSURF 6
+#define BXDF_ID_FURRY 7
+#define BXDF_ID_NOMAT 8
 
 // Fixed vector indices-of-refraction + extinction
 // coefficients for atmosphere/vacuum
@@ -95,10 +100,9 @@ float2 FresDiel(float2 etaIO, // Incoming/outgoing indices of refraction
 // https://agraphicsguy.wordpress.com/2015/11/01/sampling-microfacet-brdf/
 // + minor optimizations
 float3 GGXMicroNorml(float vari,
-                     inout uint randVal)
+                     float2 uv01)
 {
-    float2 uv = float2(iToFloat(xorshiftPermu1D(randVal)),
-                       iToFloat(xorshiftPermu1D(randVal)) * TWO_PI); // [phi] can be sampled uniformly
+    float2 uv = uv01 * TWO_PI; // [phi] can be sampled uniformly
     uv.x = sqrt((1.0f - uv.x) /
                 (uv.x * (vari - 1.0f) + 1.0f)); // Avoid [acos] here since we'll need the cosine when we change coordinates
     // Change to Cartesian coordinates, then return
@@ -115,11 +119,8 @@ float3 GGXMicroNorml(float vari,
 // Selection function from the accepted answer at:
 // https://stackoverflow.com/questions/1761626/weighted-random-numbers
 uint MatBXDFID(float4 bxdfFreqs,
-               inout uint randVal)
+               float u01)
 {
-    // Generate selection value
-    float bxdfSel = iToFloat(xorshiftPermu1D(randVal));
-
     // Scan through available material weights and perform a weighted
     // random selection on each pass
     // Sadly no way (...that I know of...) to cleanly spread arbitrary
@@ -129,7 +130,7 @@ uint MatBXDFID(float4 bxdfFreqs,
         // Test the selection value against the current material weight;
         // return the current index to the callsite if the selection
         // passes
-        if (bxdfSel < bxdfFreqs[i])
+        if (u01 < bxdfFreqs[i])
         {
             return i;
         }
@@ -138,7 +139,7 @@ uint MatBXDFID(float4 bxdfFreqs,
         // step exists to move the selection value between bins whenever
         // it falls outside the probability range given by one of the weights
         // in the set
-        bxdfSel -= bxdfFreqs[i];
+        u01 -= bxdfFreqs[i];
     }
     return 0u; // Default to diffuse surfaces
 }
@@ -153,7 +154,7 @@ float4x4 MatGen(float3 coord,
                 uint dfType,
                 float3 srfOri,
                 float srfWidth,
-                inout uint randVal)
+                inout PhiloStrm randStrm)
 {
     // Just a basic generalized planetary/stellar function now, will create
     // plant/critter variants when neccessary
@@ -167,11 +168,12 @@ float4x4 MatGen(float3 coord,
         default:
             // Cache material probabilities
             // Will eventually update [matStats] for volumetric materials (fur, subsurface-scattering volumes, cloudy media)
-            float4 matStats = float4(1.0f, 0.0f, 0.0f.xx);
+            float4 matStats = float4(0.98f, 0.02f, 0.0f.xx);
 
             // Cache the current surface/volume type
+            float4 rand = philoxPermu(randStrm);
             uint bxdfID = MatBXDFID(matStats,
-                                    randVal);
+                                    rand.x);
 
             // Cache surface roughness
             // Prefer rough values for diffuse surfaces and smooth values for specular
@@ -179,7 +181,7 @@ float4x4 MatGen(float3 coord,
 
             // Generate a GGX microsurface normal for specular reflection/refraction
             float3 muNorml = GGXMicroNorml(alpha,
-                                           randVal);
+                                           rand.yz);
 
             // Generate conductor/dielectric probabilities
             float fresP1 = abs(sin(coord.y));
@@ -189,7 +191,7 @@ float4x4 MatGen(float3 coord,
             float2 etaKap = float2(1.33f, 1.1f);
 
             // Evaluate + cache Fresnel values appropriately
-            bool metal = true; //iToFloat(xorshiftPermu1D(randVal)) > fresP1;
+            bool metal = true; //rand.w > fresP1;
             float2 fres = 1.0f.xx;
             if (metal)
             {
@@ -215,7 +217,6 @@ float4x4 MatGen(float3 coord,
                             rgb, alpha, // Procedural color, fixed surface roughness
                             fres, bxdfID, 0.0f, // Fresnel values in [xy], surface/volume type in [z], [w] is unused
                             muNorml, 0.0f.x); // Microsurface normal in [xyz], [w] is unused
-
     }
 }
 

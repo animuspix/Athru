@@ -5,8 +5,7 @@
 Planet::Planet(float givenScale,
 			   DirectX::XMFLOAT3 position, DirectX::XMVECTOR qtnRotation,
 			   DirectX::XMVECTOR* distCoeffs) :
-		SceneFigure(position,
-					_mm_set_ps(1, 0, 0, 0), givenScale,
+		SceneFigure(position, givenScale,
 					distCoeffs)
 {
 	// Initialise plants

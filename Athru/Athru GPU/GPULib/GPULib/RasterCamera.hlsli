@@ -10,18 +10,6 @@
 // in the build process
 #define RASTER_CAMERA_LINKED
 
-// Simple function to generate clean, non-correlated, well-distributed
-// primary ray jitter
-float2 rayJitter(uint2 aaPixID,
-                 float jitterRange,
-                 inout uint randVal)
-{
-    // Each pixel is assigned one of [jitterRange] nearby samples
-    // (in a [sqrt(jitterRange) * sqrt(jitterRange)] box)
-    return float2(iToFloat(xorshiftPermu1D(randVal)) * jitterRange,
-                  iToFloat(xorshiftPermu1D(randVal)) * jitterRange);
-}
-
 // Ray direction for a pinhole camera (simple tangent-driven
 // pixel projection), given a pixel ID + a two-dimensional
 // resolution vector + a super-sampling scaling factor
@@ -91,7 +79,7 @@ uint3 PRayPix(float3 incidentDir,
 float4 PixToRay(uint2 pixID,
                 uint pixSampleNdx,
                 out float zProj,
-                inout uint randVal)
+                float2 uv01)
 {
     // Ordinary pixel projection (direction calculated as the
     // path taken by a ray leaving a point and approaching the
@@ -109,9 +97,7 @@ float4 PixToRay(uint2 pixID,
 
     // Jitter the selected coordinate
     float jitterRange = pixWidth;
-    sampleXY += rayJitter(baseSSPixID + sampleXY,
-                          jitterRange,
-                          randVal) - (jitterRange / 2.0f).xx;
+    sampleXY += (uv01 * jitterRange) - (jitterRange / 2.0f).xx;
 
     // Restrict samples to the domain of the current pixel
     sampleXY %= pixWidth.xx;

@@ -44,8 +44,10 @@ void main(uint3 groupID : SV_GroupID,
     // (needed for ray jitter)
     // Same domain as [SceneVis] so no reason to use different
     // indices
-    uint randNdx = xorshiftNdx(linPixID);
-    uint randVal = randBuf[randNdx];
+    uint randNdx = linPixID;
+    PhiloStrm randStrm = philoxVal(randNdx,
+                                   timeDispInfo.z);
+    float4 rand = iToFloatV(philoxPermu(randStrm));
 
     // Generate an outgoing ray-direction for the current pixel
     // Also cache the current ray's filter value + z-scale
@@ -53,11 +55,11 @@ void main(uint3 groupID : SV_GroupID,
     float4 rayDir = PixToRay(pixID,
                              aaBuffer[linPixID].sampleCount.x + 1,
                              zProj,
-                             randVal);
+                             rand.xy);
 
     // We're only using random values for jitter here, so write
-    // [randVal] back into [randBuf]
-    randBuf[randNdx] = randVal;
+    // [randStrm] back into [randBuf]
+    randBuf[randNdx] = randStrm;
 
     // Test intersections for [rayDir] against every figure in the scene
     // except the local star
@@ -70,11 +72,11 @@ void main(uint3 groupID : SV_GroupID,
     // visibility checks to work well; will eventually try to make convex hulls
     // for each planet and trace those instead
     float4 symRay = SysSymmet(rayPt);
-    isectPx = BoundingSurfTrace(float4(SYM_PLANET_ORI,
-                                       figures[planetNdx(symRay.w)].linTransf.w),
-                                DF_TYPE_PLANET,
-                                symRay.xyz,
-                                camPos);
+    isectPx = true;//BoundingSurfTrace(float4(SYM_PLANET_ORI,
+              //                         figures[planetNdx(symRay.w)].linTransf.w),
+              //                  DF_TYPE_PLANET,
+              //                  symRay.xyz,
+              //                  camPos);
 
     // Increment [maxTraceables] once for every intersecting pixel
     InterlockedAdd(maxTraceables[0], isectPx);
@@ -89,8 +91,8 @@ void main(uint3 groupID : SV_GroupID,
         #ifdef SWR_ENABLED
             // Difficult to validate [cullFreq] by hand, test with shadertoy...
             const float maxCullThresh = 0.8f; // Never cull more than 80% of traceable pixels
-            float cullFreq = prevNumTraceables.x / (float)resInfo.z; // Match per-frame culling frequency to relative screen density (number of traceable elements/pixel)
-            if (iToFloat(xorshiftPermu1D(randVal)) > min(cullFreq, maxCullThresh))
+            float cullFreq = numTraceables.y / (float)resInfo.w; // Match per-frame culling frequency to relative screen density (number of traceable elements/pixel)
+            if (true)//rand.z > min(cullFreq, maxCullThresh))
             {
                 traceables.Append(float2x3(rayDir.xyz,
                                            float3(rayDir.w,
@@ -111,7 +113,7 @@ void main(uint3 groupID : SV_GroupID,
     }
     else if (BoundingSphereTrace(rayPt,
                                  camPos,
-                                 figures[STELLAR_FIG_ID].linTransf))
+                                 figures[STELLAR_FIG_ID].linTransf).z)
     {
         // Test pixels that didn't intersect planets/plants/animals
         // against the local star; shade any that *do* intersect

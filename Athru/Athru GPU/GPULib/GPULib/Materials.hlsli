@@ -26,12 +26,8 @@
 float DiffusePDF(float3 wi, float3 norml) { return dot(norml, wi) / PI; }
 float4 DiffuseDir(float3 wo,
                   float3 norml,
-                  inout uint randVal)
+                  float2 uv01)
 {
-    // Generate random sample values
-    float2 uv = float2(iToFloat(xorshiftPermu1D(randVal)),
-                       iToFloat(xorshiftPermu1D(randVal)));
-
     // Malley's method requires us to send points onto
     // a disc and then offset them along the up-vector,
     // so place [uv] on the unit disc before we do
@@ -40,7 +36,7 @@ float4 DiffuseDir(float3 wo,
     // Map generated random values onto a unit square
     // centered at the origin (occupying the domain
     // [-1.0f...1.0f]^2)
-    uv = (uv * 2.0f) - 1.0f.xx;
+    float2 uv = (uv01 * 2.0f) - 1.0f.xx;
 
     // This is a mapping between incompatible spaces
     // (specifically, a square fold over a disc), so
@@ -140,8 +136,7 @@ float4 MirroDir(float3 wo,
                 float3 microNorml,
                 float3 norml,
                 float vari,
-                out float3 hV,
-                inout uint randVal)
+                out float3 hV)
 {
     // Reflect the outgoing direction about the given microfacet normal
     float3 wi = reflect(wo, microNorml);
@@ -295,8 +290,7 @@ float4 MatSpat(float3x3 dirs, // Input direction in [0], macrosurface normal in 
                               // output direction in [2]
                float4 matStats,
                float3 rgb,
-               float4 surfInfo,
-               inout uint randVal)
+               float4 surfInfo)
 {
     switch ((uint) surfInfo.x)
     {
@@ -351,7 +345,7 @@ float2x4 MatSrf(float3 wo,
                 float4 matStats, // BXDF probabilities for the current material
                 float3 rgb, // Diffuse surface color
                 float4 surfInfo,
-                inout uint randVal)
+                float2 uv01)
 {
     switch ((uint)surfInfo.x)
     {
@@ -359,7 +353,7 @@ float2x4 MatSrf(float3 wo,
             // Generate diffuse direction + evaluate weighted local radiance
             float4 wid = DiffuseDir(wo,
                                     norml,
-                                    randVal);
+                                    uv01);
             float3 ld = DiffuseBRDF(float4(rgb, surfInfo.a),
                                     float3x3(wid.xyz,
                                              norml,
@@ -374,8 +368,7 @@ float2x4 MatSrf(float3 wo,
                                   muNorml,
                                   norml,
                                   surfInfo.w,
-                                  hm,
-                                  randVal);
+                                  hm);
             // Evaluate local radiance given [wi], also apply PDF
             float3 lm = MirroBXDF(float4x3(wim.xyz,
                                            hm,

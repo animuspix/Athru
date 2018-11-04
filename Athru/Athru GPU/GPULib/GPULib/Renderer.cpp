@@ -138,20 +138,19 @@ void Renderer::PreProcess(DirectX::XMVECTOR& cameraPosition,
 	fourByteUnsigned tSecs = std::chrono::duration_cast<std::chrono::duration<fourByteUnsigned>>(currTimeNanoSecs).count();
 	shaderInputPtr->timeDispInfo = DirectX::XMFLOAT4(dt, // Change-in-time in seconds
 													 (float)tSecs, // Current time in seconds
-													 0.0f, // Number of traceables remaining from the previous frame
+													 (float)TimeStuff::frameCtr, // Current frame counter
 													 GraphicsStuff::DISPLAY_AREA / GraphicsStuff::GROUP_AREA_PATH_REDUCTION); // Total group count (preprocessing)
 
 	// Update the GPU-side version of [prevNumTraceables]
-	shaderInputPtr->prevNumTraceables = DirectX::XMFLOAT4((float)prevNumTraceables,
-														  (float)prevNumTraceables,
-														  (float)prevNumTraceables,
-													      (float)prevNumTraceables);
+	shaderInputPtr->numTraceables = DirectX::XMFLOAT4(0.0f, // Current traceable-element count is undefined until after pre-processing
+													 (float)prevNumTraceables,
+													 0.0f, 0.0f);
 
 	// Update the GPU-side version of [resInfo]
 	shaderInputPtr->resInfo = DirectX::XMUINT4(GraphicsStuff::DISPLAY_WIDTH,
 											   GraphicsStuff::DISPLAY_HEIGHT,
-											   GraphicsStuff::DISPLAY_AREA,
-											   GraphicsStuff::NUM_AA_SAMPLES);
+											   GraphicsStuff::NUM_AA_SAMPLES,
+											   GraphicsStuff::DISPLAY_AREA);
 
 	// Break the write-allowed connection to the shader input buffer
 	context->Unmap(renderInputBuffer.buf.Get(), 0);
@@ -204,14 +203,14 @@ void Renderer::Trace(DirectX::XMVECTOR& cameraPosition,
 	// Update the GPU-side version of [timeDispInfo]
 	shaderInputPtr->timeDispInfo = DirectX::XMFLOAT4(TimeStuff::deltaTime(),
 													 (float)currTime,
-													 (float)traceableCounter,
+													 (float)TimeStuff::frameCtr,
 													 (float)dispWidth);
 
-	// Pass filler values into [prevNumTraceables]
-	shaderInputPtr->prevNumTraceables = DirectX::XMFLOAT4(0.0f,
-														  0.0f,
-														  0.0f,
-													      0.0f);
+	// Update the GPU-side version of [numTraceables]
+	shaderInputPtr->numTraceables = DirectX::XMFLOAT4((float)traceableCounter, // Captured above
+													  0.0f, // Undefined until the next frame
+													  GPGPUStuff::RASTER_CELL_DEPTH,
+												      0.0f);
 
 	// Data outside [timeDispInfo] and [prevNumTraceables] will have been destroyed by
 	// [MAP_WRITE_DISCARD]; replenish those over here
@@ -229,8 +228,8 @@ void Renderer::Trace(DirectX::XMVECTOR& cameraPosition,
 	// Re-fill the GPU-side version of [resInfo]
 	shaderInputPtr->resInfo = DirectX::XMUINT4(GraphicsStuff::DISPLAY_WIDTH,
 											   GraphicsStuff::DISPLAY_HEIGHT,
-											   GraphicsStuff::DISPLAY_AREA,
-											   GraphicsStuff::NUM_AA_SAMPLES);
+											   GraphicsStuff::NUM_AA_SAMPLES,
+											   GraphicsStuff::DISPLAY_AREA);
 
 	// Break the write-allowed connection to [shaderInputBuffer]
 	context->Unmap(renderInputBuffer.buf.Get(), 0);

@@ -167,7 +167,7 @@ struct AthruBuffer
 		fourByteUnsigned bufMiscFlags() // Small function returning appropriate miscellaneous flags for different buffer types
 		{
 			if constexpr ((std::is_class<ContentType>::value || std::is_same<AthruBufType, GPGPUStuff::AppBuffer>::value) &&
-						  (!(std::is_same<decltype(resrcView), std::nullptr_t>::value)))
+						  (!std::is_same<AthruBufType, GPGPUStuff::CBuffer>::value))
 			{
 				return D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 			}

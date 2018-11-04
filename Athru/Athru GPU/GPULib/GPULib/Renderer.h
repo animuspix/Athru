@@ -49,11 +49,11 @@ class Renderer
 			DirectX::XMMATRIX iViewMat; // Inverse view matrix
 			DirectX::XMFLOAT4 timeDispInfo; // Time/dispatch info for each frame;
 											// delta-time in [x], current total time (seconds) in [y],
-											// number of traceable elements after each pre-processing
-											// pass in [z], number of patches (groups) per-axis
+											// frame count in [z], number of patches (groups) per-axis
 											// deployed for path tracing in [w]
-			DirectX::XMFLOAT4 prevNumTraceables; // Maximum number of traceable elements in the previous frame in [x]
-												 // ([yzw] are empty)
+			DirectX::XMFLOAT4 numTraceables; // Current traceable-element count in [x], maximum number
+											 // of traceable elements in the previous frame in [y]
+											 // ([zw] are empty)
 			DirectX::XMUINT4 maxNumBounces; // Number of bounces for each ray
 			DirectX::XMUINT4 resInfo; // Resolution info carrier; contains app resolution in [xy],
 									  // AA sampling rate in [z], and display area in [w]

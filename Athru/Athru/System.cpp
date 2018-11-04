@@ -22,7 +22,7 @@ System::System(DirectX::XMFLOAT3 sysPos)
 					starDistCoeffs);
 
 	// Create local planets
-	for (int i = 0; i < (SceneStuff::MAX_NUM_SCENE_FIGURES - 1); i += 1)
+	for (int i = 0; i < (SceneStuff::PLANETS_PER_SYSTEM - 1); i += 1)
 	{
 		// Temp distance coefficients (planets) + color properties
 		// Most interesting Julias seem to have negative [xyz] parameters, so stick to those here

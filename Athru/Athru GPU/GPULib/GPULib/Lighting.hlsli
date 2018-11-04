@@ -28,7 +28,7 @@ float3 ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
                 float2 prevFres, // Fresnel values for the volume traversed by [rayVec]
                 out float4x4 pathMat,
                 out float rayDist,
-                inout uint randVal)
+                inout PhiloStrm randStrm)
 {
     // Shift [rayVec] outside the local figure
     rayVec.xyz += ((rayDir * -1.0f) * adaptEps);
@@ -47,9 +47,10 @@ float3 ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
                           figIDDFType.y,
                           nearFig.linTransf.xyz,
                           nearFig.linTransf.w,
-                          randVal);
+                          randStrm);
 
     // Sample the local surface
+    float4 rand = iToFloatV(philoxPermu(randStrm));
     float3x3 normSpace = NormalSpace(normal);
     float2x4 srf = MatSrf(rayDir,
                           normal,
@@ -59,7 +60,7 @@ float3 ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
                           float4(mat[2].z,
                                  mat[2].xy,
                                  mat[1].w),
-                          randVal);
+                          rand.xy);
     bool refl = (mat[2].z == BXDF_ID_DIFFU);
     srf[0].xyz = mul(srf[0].xyz,
                      refl ? normSpace : ID_MATRIX);
@@ -75,8 +76,7 @@ float3 ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
         float2x3 tr = SubsurfMarch(srf[0].xyz,
                                    rayVec.xyz + (rayDir * adaptEps * 2.0f), // Make sure transmitting rays start inside transmittant surfaces
                                    figIDDFType.x,
-                                   adaptEps,
-                                   randVal);
+                                   adaptEps);
 
         // Sample the surface at the exit position
         float2x4 oSrf = MatSrf(srf[0].xyz,
@@ -87,7 +87,7 @@ float3 ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
                                float4(mat[2].z,
                                       mat[2].xy,
                                       mat[1].w),
-                               randVal);
+                               rand.zw);
         // Update ray origin
         rayVec.xyz = tr[0] + oSrf[0].xyz * adaptEps * 2.0f;
 
@@ -121,11 +121,12 @@ float3 ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
 float3 LiGather(Path path,
                 float4 liLinTransf, // Position/size for the given light (all lights are area lights in Athru)
                 float adaptEps, // The adaptive epsilon value chosen for the current frame
-                inout uint randVal) // The permutable random value used for the current shader instance
+                inout PhiloStrm randStrm) // The permutable random value used for the current shader instance
 {
     // Initialise ray-marching values; all light sources are assumed stellar atm
+    float4 rand = iToFloatV(philoxPermu(randStrm));
     float3 stellarSurfPos = StellarSurfPos(liLinTransf,
-                                           randVal,
+                                           rand.xy,
                                            path.srfP.xyz);
     // Deploy an ordinary ray sampled from the star's distribution
     float3x4 occData = OccTest(float4(path.ro, true),
@@ -133,14 +134,13 @@ float3 LiGather(Path path,
                                float4(stellarSurfPos, false),
                                float2(adaptEps, path.rd.w),
                                float2(1.0f.xx),
-                               randVal);
+                               randStrm);
     float4 srfLi = MatSpat(float3x3(occData[0].xyz,
                                             path.norml.xyz,
                                             path.rd.xyz),
                                    path.mat[0],
                                    path.mat[1].rgb,
-                                   float4(path.mat[2].z, path.mat[2].xy, path.mat[1].w),
-                                   randVal);
+                                   float4(path.mat[2].z, path.mat[2].xy, path.mat[1].w));
     // Deploy a MIS ray sampled from the surface's BXDF
     float2x4 srf = MatSrf(path.rd.xyz,
                           path.norml.xyz,
@@ -148,7 +148,7 @@ float3 LiGather(Path path,
                           path.mat[0],
                           path.mat[1].rgb,
                           float4(path.mat[2].z, path.mat[2].xy, path.mat[1].w),
-                          randVal);
+                          rand.zw);
     bool refl = (path.mat[2].z == BXDF_ID_DIFFU);
     float3x3 normSpace = NormalSpace(path.norml.xyz);
     float3x4 misOccData = OccTest(float4(path.ro, true),
@@ -156,7 +156,7 @@ float3 LiGather(Path path,
                                   float4(0.0f.xxx, false),
                                   float2(adaptEps, path.rd.w),
                                   path.ambFrs,
-                                  randVal);
+                                  randStrm);
     // Cache probability densities for light samples
     float stellarPosPDF = LightPosPDF(LIGHT_ID_STELLAR) * path.mat[0][(uint)path.mat[2].z];
 

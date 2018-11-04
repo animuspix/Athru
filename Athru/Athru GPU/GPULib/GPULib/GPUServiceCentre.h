@@ -4,6 +4,7 @@
 #include "Renderer.h"
 #include "GPUUpdateManager.h"
 #include "GPUMessenger.h"
+#include "FigureRaster.h"
 #include "GPURand.h"
 #include "PlanarUnwrapper.h"
 #include "UtilityServiceCentre.h"
@@ -26,7 +27,6 @@ namespace AthruGPU
 				AthruUtilities::UtilityServiceCentre::Init(STARTING_HEAP);
 				internalInit = true;
 			}
-
 			else
 			{
 				internalInit = false;
@@ -38,8 +38,12 @@ namespace AthruGPU
 			gpuMessengerPttr = new GPUMessenger(d3DPttr->GetDevice());
 			gpuRand = new GPURand(d3DPttr->GetDevice());
 
+			// Initialize the SDF rasterizer
+			HWND winHandle = AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND();
+			rasterPttr = new FigureRaster(d3DPttr->GetDevice(), winHandle);
+
 			// Initialise the rendering manager + the GPU update manager
-			rendererPttr = new Renderer(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND(),
+			rendererPttr = new Renderer(winHandle,
 										d3DPttr->GetDevice(),
 										d3DPttr->GetDeviceContext());
 
@@ -58,8 +62,10 @@ namespace AthruGPU
 
 			// Clean-up data associated with the GPU
 			// random-number generator
-			gpuRand->gpuRandState = nullptr;
-			gpuRand->gpuRandStateView = nullptr;
+			gpuRand->~GPURand();
+
+			// Clean-up data associated with the SDF rasterizer
+			rasterPttr->~FigureRaster();
 
 			// Clean-up data associated with the GPU messenger
 			gpuMessengerPttr->~GPUMessenger();
@@ -89,6 +95,11 @@ namespace AthruGPU
 			return gpuMessengerPttr;
 		}
 
+		static FigureRaster* AccessRasterizer()
+		{
+			return rasterPttr;
+		}
+
 		static Renderer* AccessRenderer()
 		{
 			return rendererPttr;
@@ -101,7 +112,7 @@ namespace AthruGPU
 
 		static const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& AccessGPURandView()
 		{
-			return gpuRand->gpuRandStateView;
+			return gpuRand->gpuRandState.view();
 		}
 
 	private:
@@ -111,6 +122,10 @@ namespace AthruGPU
 		// GPU figure sync, maintains equivalence between
 		// CPU and GPU figure data
 		static GPUMessenger* gpuMessengerPttr;
+
+		// Volume rasterization object, used for preparing SDF textures when players travel between systems
+		// (planet rasterization) or planets (animal/plant rasterization)
+		static FigureRaster* rasterPttr;
 
 		// Visibility/lighting calculations, also
 		// post-production and presentation

@@ -10,10 +10,10 @@ cbuffer InputStuffs
     float4 cameraPos;
     matrix viewMat;
     matrix iViewMat;
-    float4 timeDispInfo; // Delta-time in [x], current time (seconds) in [y], number of
-                         // traceables for the current frame in [z], and number of patches
-                         // (groups) along each dispatch axis during path-tracing (w)
-    float4 prevNumTraceables; // Previous traceable-element count in [x], [yzw] are empty
+    float4 timeDispInfo; // Delta-time in [x], current time (seconds) in [y], frame count in [z],
+                         // and number of patches (groups) along each dispatch axis during path-tracing (w)
+    float4 numTraceables; // Current traceable-element count in [x], previous traceable-element
+                          // count in [y], raster-atlas cell width in [z], [w] is empty
     uint4 maxNumBounces;
     uint4 resInfo; // Resolution info carrier; contains app resolution in [xy],
 	               // AA sampling rate in [z], and display area in [w]
@@ -28,25 +28,11 @@ cbuffer InputStuffs
 #define DF_TYPE_LENS 4
 #define DF_TYPE_NULL 5
 
-// Struct representing basic data associated with
-// Athru figures
-struct Figure
-{
-    // The location + uniform scale (in [w]) of this figure at
-    // any particular time
-    float4 linTransf;
+// [Figure] struct + figure-buffer, modularized for sharing between volume rasterization + rendering
+#include "FigureBuffer.hlsli"
 
-    // The quaternion rotation applied to this figure at
-    // any particular time
-    float4 rotationQtn;
-
-    // Coefficients of the distance function used to render [this]
-    float4 distCoeffs[3];
-};
-
-// A one-dimensional buffer holding the objects to render
-// in each frame + their properties
-StructuredBuffer<Figure> figures : register(t0);
+// Rasterized volume atlas for the current system + plants/animals on the local planet
+RWBuffer<float> rasterAtlas : register(u5);
 
 // The maximum possible number of discrete figures within the
 // scene
@@ -71,72 +57,118 @@ StructuredBuffer<Figure> figures : register(t0);
 
 #include "GenericUtility.hlsli"
 
+// Voxel interface functions, useful for sampling/smoothing volumetric information
+// (like e.g. planet/plant/animal distances)
+
+// Convert an local position to a voxel UVW value, given a position + scale
+// for the nearest volume
+float3 voxUVW(float3 p,
+              float4 linTransf)
+{
+    p -= linTransf.xyz * 2.0f; // First subtraction is view->global, second subtraction is global->local
+    p += linTransf.www * 0.5f; // Convert to corner-relative positions
+    return p / linTransf.w; // Scale into [0...1]
+}
+
+// Find offset for a given position within the nearest voxel
+float3 pOffs(float3 p,
+             float4 linTransf)
+{
+    float3 uvw = voxUVW(p, linTransf) * numTraceables.z; // Generate UVW, scale out to sample width
+    return uvw - floor(uvw); // Return difference between the voxel origin [floor(uvw)] and the sample position [uvw]
+}
+
+// Convert a 3D vector + figure index + figure type + figure transformation to an index within the raster-atlas
+uint vecToNdx(float3 p,
+               uint ndx,
+               uint figType,
+               float4 linTransf)
+{
+    float cellWidth = numTraceables.z;
+    p = floor(voxUVW(p, linTransf) * cellWidth); // Scale out to the rasterization width
+    return (p.x + (p.y * figType) * cellWidth) + (p.z * (ndx + 1u)) * (cellWidth * cellWidth); // Encode/return
+}
+
 // Primitive bounding surfaces
 // These are defined by ray-tracing functions rather than distance fields
 // They mostly exist to accelerate ray-marching (since we can (almost) freely discard
 // bounded fields that were never going to intersect with the ray anyway)
 
 // A traceable bounding sphere; essentially only used to accelerate ray/star queries
-// (since stars are the only spherical/elliptical figures in Athru atm)
-// Also used for planets until I find a fast way to construct bounding n-gons
-// (and/or feel awake enough to implement the point-rasterization approach I wrote
-// before)
 // [sphGeo] carries sphere position in [xyz], sphere radius in [w]
-bool BoundingSphereTrace(float3 pt,
-                         float3 rayOri,
-                         float4 sphGeo)
+// Returns minimal distance in [x], maximal distance in [y], intersection status in [z]
+// Uses Scratchapixel's intersection function, see:
+// https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
+float3 BoundingSphereTrace(float3 pt,
+                           float3 ro,
+                           float4 sphGeo)
 {
     // Extract ray direction from [pt]
     // Spheres are the same from every angle, so no need to rotate incoming rays
-    float3 rayDir = normalize((pt - rayOri) +
-                              EPSILON_MIN.xxx);
+    float3 rd = normalize((pt - ro) +
+                          EPSILON_MIN.xxx);
 
     // Position the given ray relative to the bounding sphere
-    rayOri -= sphGeo.xyz;
+    ro -= sphGeo.xyz;
 
-    // First term in the discriminant
-    float quadrB = 2.0f * dot(rayDir, rayOri);
+    // Evaluate the discriminant
+    float b = 2.0f * dot(rd, ro);
+    float c = dot(ro, ro) - (sphGeo.w * sphGeo.w);
+    float dsc = (b * b) -
+        		(4.0f * c); // Assumes normalized ray direction
 
-    // Second term in the discriminant
-    float quadrA = 1.0f; // Squared length (=> sum of component squares) of a unit vector will always be [1.0f]
+    // Evaluate [t] for the given discriminant, then return
+    float invB = -1.0f * b;
+    float2 tt = (invB / 2.0f).xx; // Assume [dsc] is zero by default
+    if (dsc > 0.0f)
+    {
+        float dscRt = sqrt(dsc);
+        float q = -0.5f * (b + sign(b) * dscRt);
+        tt = float2(q, c / q);
+    }
 
-    // Third term in the discriminant
-    float quadrC = dot(rayOri, rayOri) - (sphGeo.w * sphGeo.w);
+    // Order [tt] so minimal distances are in [x] and maximal distances are
+    // in [y]
+    tt = float2(min(tt.x, tt.y),
+                max(tt.x, tt.y));
 
-    // Calculate discriminant
-    float quadrD = (quadrB * quadrB) -
-                   (4.0f * quadrA * quadrC);
-
-    // Intersections run with positive discriminants, so just return the polarity
-    // of the output value
-    // We'd take the actual roots if this were a serious ray-tracer, but we just want
-    // a nice heuristic value for ray acceleration, and the discriminant is easily
-    // powerful enough for that
-    return (quadrD > 0.0f);
+    // Return min/max distances + intersection status
+    return float3(tt, tt.x >= 0.0f && dsc >= 0.0f);
 }
 
-// A traceable plane; not useful by itself, but helpful for constructing n-gonal bounding
-// surfaces
-bool BoundingPlaneTrace()
+// A traceable bounding box, accelerates ray/planet, ray/animal, and ray/plant intersections
+// Returns minimal distance in [x], maximal distance in [y], intersection status in [z]
+float3 BoundingBoxTrace(float3 pt,
+                        float3 ro,
+                        float3 scale,
+                        float3 boxOri)
 {
-    return false;
-}
+    // Synthesize ray direction
+    // Am using hybrid ray-tracing more heavily now, so might look at using [pt] as the
+    // ray origin directly
+    float3 rd = normalize(pt - ro);
 
-// An OBB; used to efficiently enclose non-spherical forms (trees, Athru-style planets, animals)
-// Not ideal, but the generalized alternative (n-gons) is _probably_ too inefficient to justify
-// Likely to avoid researching these until I have to; want to complete path tracing, take a break,
-// then get back to them when they start becoming more significant (i.e. once I have to quickly
-// render plants or animals as well as planets)
-bool BoundingBoxTrace()
-{
-    // Nothing for now...want to stay focussed on path tracing until I have diffuse + refractive surfaces
-    // together
-    // Eventual algorithm will:
-    // - Drape point lattices over the implicit from each Cartesian direction (x+/x-, y+/y-, z+/z-)
-    // - Take the most distant points from the figure origin in each direction
-    // - Treat the normals at these points as normals of a bounding volume
-    // - Store the generated data within [distCoeffs] (might need to expand it a bit for this...)
-    return BoundingPlaneTrace();
+    // Position [ro] relative to the bounding-box origin
+    ro -= boxOri;
+
+    // Synthesize box boundaries from the given origin + scale
+    scale *= 0.5f;
+    float2x3 bounds = float2x3(boxOri - scale,
+                               boxOri + scale);
+    // Evaluate per-axis distances to each plane in the box
+    float2x3 vecT = float2x3((bounds[0] - ro) / rd,
+                      	     (bounds[1] - ro) / rd); // Maybe possible to optimize this down to matrix division...
+    // Keep near distances in [0], far distances in [1]
+	vecT = float2x3(min(vecT[0], vecT[1]),
+                    max(vecT[0], vecT[1]));
+    // Evaluate scalar min/max distances for the given ray
+    float2 sT = float2(max(max(vecT[0].x, vecT[0].y), vecT[0].z),
+                       min(min(vecT[1].x, vecT[1].y), vecT[1].z));
+    sT = float2(min(sT.x, sT.y), max(sT.x, sT.y)); // Keep near distance in [x], far distance in [y]
+    // Return minimum/maximum distance + intersection status
+    bool isect = (vecT[0].x < vecT[1].y && vecT[0].y < vecT[1].x &&
+                  vecT[0].z < sT.y && sT.x < vecT[1].z);
+    return float3(sT.x, sT.y, isect);
 }
 
 // Ray intersection for an arbitrary figure
@@ -146,19 +178,20 @@ float BoundingSurfTrace(float4 linTransf,
                         float3 pt,
                         float3 rayOri)
 {
-    if (dfType.x == DF_TYPE_PLANET ||
-        dfType.x == DF_TYPE_STAR)
+    if (dfType.x == DF_TYPE_STAR)
     {
-        float fitting = 1.0f;
-        if (dfType == DF_TYPE_PLANET) { fitting = 1.5f; }
         return BoundingSphereTrace(pt,
                                    rayOri,
                                    float4(linTransf.xyz,
-										  linTransf.w * fitting));
+										  linTransf.w)).z;
     }
     else
     {
-        return BoundingBoxTrace();
+        // Lots of empty space in these, but need measured distances for anything more precise
+        return BoundingBoxTrace(pt,
+                                rayOri,
+                                linTransf.www * 2.0f,
+                                linTransf.xyz).z;
     }
 }
 
@@ -259,11 +292,8 @@ float3 PtToPlanet(float3 pt,
     //float currAngle = (sin(timeDispInfo.y) * spinSpeed) * 2.0f;
     //float4 spinQtn = Qtn(planet.distCoeffs[1].xyz, currAngle);
     //
-    //// Concatenate the synthesized spin into the figure's in-built offset (if any)
-    //float4 rotation = QtnProduct(spinQtn, planet.rotationQtn);
-    //
     //// Orient rays to match the figure rotation
-    //pt = QtnRotate(pt, planet.rotationQtn); // Working spin, disabled until I get a more powerful testing computer
+    //pt = QtnRotate(pt, spinQtn); // Working spin, disabled until I get a more powerful testing computer
 
     // Scale [pt] inversely to the given planetary scale,
     // then return
@@ -288,9 +318,7 @@ float2x3 PlanetDF(float3 pt,
 
     // Read out the appropriate distance value
     float jDist = Julia(planet.distCoeffs[0],
-                        pt,
-                        ITERATIONS_JULIA,
-                        adaptEps);
+                        pt);
 
     // Return sphere distance for debugging
     #ifdef PLANET_DEBUG
@@ -320,20 +348,21 @@ float2x3 StarDF(float3 pt,
                 bool useFigBounds)
 {
     Figure fig = figures[0];
-    if (useFigBounds &&
-        !BoundingSphereTrace(pt,
-                             rayOri,
-                             fig.linTransf))
+    float3 isect = BoundingSphereTrace(pt,
+                                       rayOri,
+                                       fig.linTransf);
+    float sphereDF = SphereDF(pt,
+                              fig.linTransf);
+    if (!useFigBounds)
     {
-        return float2x3(MAX_RAY_DIST,
+        return float2x3(sphereDF,
                         DF_TYPE_STAR,
                         0.0f,
-                        pt);
+                        fig.linTransf.xyz); // Stars never leave the system origin
     }
     else
     {
-        return float2x3(SphereDF(pt,
-                                 fig.linTransf),
+        return float2x3(sphereDF + (!isect.z * MAX_RAY_DIST),
                         DF_TYPE_STAR,
                         0.0f,
                         fig.linTransf.xyz); // Stars never leave the system origin
@@ -349,8 +378,7 @@ float3 PlanetGrad(float3 samplePoint,
         return normalize(samplePoint - float3(700.0f, 0.0f, 400.0f));
     #endif
     return JuliaGrad(fig.distCoeffs[0],
-                     samplePoint,
-                     ITERATIONS_JULIA);
+                     samplePoint);
 }
 
 // Heterogeneity-preserving figure union function

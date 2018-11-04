@@ -1,5 +1,10 @@
 #include "HiLevelServiceCentre.h"
 
+#include <DXGItype.h>
+#include <dxgi1_2.h>
+#include <dxgi1_3.h>
+#include <DXProgrammableCapture.h>
+
 void GameLoop()
 {
 	// Cache local references to utility services
@@ -8,6 +13,9 @@ void GameLoop()
 
 	// Cache a local reference to the GPU messenger object
 	GPUMessenger* athruGPUMessenger = AthruGPU::GPUServiceCentre::AccessGPUMessenger();
+
+	// Cache a local reference to the SDF rasterizer
+	FigureRaster* athruSDFRaster = AthruGPU::GPUServiceCentre::AccessRasterizer();
 
 	// Cache a local reference to the render-manager
 	Renderer* athruRendering = AthruGPU::GPUServiceCentre::AccessRenderer();
@@ -18,6 +26,12 @@ void GameLoop()
 	// Cache a local reference to the high-level scene representation
 	Scene* athruScene = HiLevelServiceCentre::AccessScene();
 
+	// Declare DX11 capture interface
+	//#define DEBUG_FIRST_FRAME
+	#ifdef DEBUG_FIRST_FRAME
+		IDXGraphicsAnalysis* analysis;
+		HRESULT valid = DXGIGetDebugInterface1(0, __uuidof(analysis), (void**)&analysis);
+	#endif
 	bool gameExiting = false;
 	while (!gameExiting)
 	{
@@ -32,16 +46,35 @@ void GameLoop()
 			break;
 		}
 
-		// Log CPU-side FPS
-		//AthruUtilities::UtilityServiceCentre::AccessLogger()->Log("Logging CPU-side FPS", Logger::DESTINATIONS::CONSOLE);
-		//AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::FPS(), Logger::DESTINATIONS::CONSOLE);
+		// Update engine clock (needed to evaluate delta-time/FPS)
+		TimeStuff::timeAtLastFrame = std::chrono::steady_clock::now();
 
-		// Update the game, push current scene to the GPU
+		// Log frame count
+		//AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::frameCtr);
+
+		// Update the game
 		athruScene->Update();
+
+		// Optionally begin debug capture
+		#ifdef DEBUG_FIRST_FRAME
+			if (TimeStuff::frameCtr == 0)
+			{
+				analysis->BeginCapture();
+			}
+		#endif
 
 		// Pass scene data to the GPU for updates/rendering
 		athruGPUMessenger->SceneToGPU(AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext(),
 									  athruScene->CollectLocalFigures());
+
+		// Pass the SDF raster-atlas along to the GPU each frame
+		athruSDFRaster->RasterToGPU(AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext());
+
+		// Rasterize planets on the zeroth frame + whenever the player hits a new system
+		if (athruScene->CheckFreshSys() || TimeStuff::frameCtr == 0)
+		{
+			athruSDFRaster->RasterPlanets(AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext());
+		}
 
 		// Perform GPU updates here
 		// GPU updates are used for highly-parallel stuffs like:
@@ -52,9 +85,17 @@ void GameLoop()
 		// Render the area around the player
 		athruRendering->Render(athruScene->GetMainCamera());
 
-		// Record the time at this frame so we can calculate
-		// [deltaTime]
-		TimeStuff::timeAtLastFrame = std::chrono::steady_clock::now();
+		// End the debug capture started above
+		#ifdef DEBUG_FIRST_FRAME
+			if (TimeStuff::frameCtr == 0)
+			{
+				analysis->EndCapture();
+				analysis->Release();
+			}
+		#endif
+
+		// Update the frame counter
+		TimeStuff::frameCtr += 1;
 	}
 }
 

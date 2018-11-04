@@ -84,6 +84,12 @@
     <ClInclude Include="AthruRect.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="FigureRaster.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="PhiloStrm.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -128,12 +134,16 @@
     <ClCompile Include="ViewFinder.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="FigureRaster.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="SceneVis.hlsl" />
     <FxCompile Include="PresentationColors.hlsl" />
     <FxCompile Include="PresentationVerts.hlsl" />
     <FxCompile Include="PathReduce.hlsl" />
+    <FxCompile Include="PlanetRaster.hlsl" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Lighting.hlsli" />
@@ -148,5 +158,6 @@
     <None Include="MIS.hlsli" />
     <None Include="GeometricUtility.hlsli" />
     <None Include="MaterialUtility.hlsli" />
+    <None Include="FigureBuffer.hlsli" />
   </ItemGroup>
 </Project>

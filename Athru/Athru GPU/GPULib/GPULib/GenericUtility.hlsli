@@ -85,43 +85,70 @@ float3 QtnRotate(float3 vec, float4 qtn)
     return QtnProduct(qv, QtnInverse(qtn)).xyz;
 }
 
-// State buffer for the random number generator (see [irand1D], below)
-RWBuffer<uint> randBuf : register(u1);
+// A Philox stream representation
+// Allows us to carry counters/keys together in each element of the
+// random state buffer, and avoid passing empty axes along to
+// [philoxPermu]
+struct PhiloStrm
+{
+    uint4 ctr;
+    uint2 key;
+};
+
+// State buffer for the random number generator (see [philoxPermu], below)
+RWStructuredBuffer<PhiloStrm> randBuf : register(u1);
 
 // Length of the PRNG state buffer (see above)
-// Every call to the PRNG repeats the same pattern, and after enough
-// samples the pattern starts to become visible; using the largest
-// numbers we can get away with reduces the time spent on any one
-// part of the state and increases the time until a pattern emerges
-// from the "noise" of our PRNG
-#define RAND_BUF_LENGTH 88917504
+// 32M entries is huge (790MB :O) but it should guarantee
+// discrete state/keys for every possible use
+#define RAND_BUF_LENGTH 32917504
 
-// Hashes the given index into [randBuf] to reduce correlation between
-// random values generated with closely spaced raw indices (like values
-// in the sequence [0,1,2...])
-// Index remixing implemented with the Wang hash found over here:
-// http://www.reedbeta.com/blog/quick-and-easy-gpu-random-numbers-in-d3d11/
-uint xorshiftNdx(uint rawNdx)
+// Four-wide vector hash, modified from Nimitz's WebGL2 Quality Hashes Collection
+// (https://www.shadertoy.com/view/Xt3cDn)
+// Named as a mix between the basis hash (XXHash32-derived, https://github.com/Cyan4973/xxHash)
+// and the output transformation (MINSTD, http://random.mat.sbg.ac.at/results/karl/server/node4.html)
+uint4 xxminstd32(uint i)
 {
-    // Remix/hash the given index
-    rawNdx = (rawNdx ^ 61) ^ (rawNdx >> 16);
-    rawNdx *= 9;
-    rawNdx = rawNdx ^ rawNdx >> 4;
-    rawNdx *= 0x27d4eb2d;
-    rawNdx = rawNdx ^ (rawNdx >> 15);
+    const uint PRIME32_2 = 2246822519U, PRIME32_3 = 3266489917U;
+	const uint PRIME32_4 = 668265263U, PRIME32_5 = 374761393U;
+	uint h32 = i + PRIME32_5;
+	h32 = PRIME32_4 * ((h32 << 17) | (h32 >> (32 - 17))); //Initial testing suggests this line could be omitted for extra perf
+    h32 = PRIME32_2 * (h32 ^ (h32 >> 15));
+    h32 = PRIME32_3 * (h32 ^ (h32 >> 13));
+    h32 ^= (h32 >> 16);
+    return uint4(h32, h32 * 16807U, h32 * 48271U, h32 * 69621U); //see: http://random.mat.sbg.ac.at/results/karl/server/node4.html
+}
 
-    // Thresholding since we have a finite
-    // state buffer :P
-    rawNdx %= RAND_BUF_LENGTH;
+// Lightly modified integer hash from Thomas Mueller, found here:
+// https://stackoverflow.com/questions/664014/what-integer-hash-function-are-good-that-accepts-an-integer-hash-key/12996028#12996028
+uint tmhash(uint x)
+{
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    x = ((x >> 16) ^ x) * 0x45d9f3b;
+    return (x >> 16) ^ x;
+}
 
-    // Return the transformed buffer index
-    return rawNdx;
+// Modified integer hash from iq, found in Nimitz's WebGL2 Quality Hashes Collection
+// (https://www.shadertoy.com/view/Xt3cDn)
+// Original from:
+// https://www.shadertoy.com/view/4tXyWN
+uint ihashIII(uint i)
+{
+    i = 1103515245U * ((i >> 1U) ^ i);
+    i = 1103515245U * (i ^ (i >> 3U));
+    return i ^ (i >> 16);
 }
 
 // Small utility function to convert given integers to
 // floating-point values in the range (0...1)
 #define UINT_MAX 4294967296.0f
 float iToFloat(uint i)
+{
+    return i * (1.0f / UINT_MAX);
+}
+
+// [iToFloat] expanded for vector integers
+float4 iToFloatV(uint4 i)
 {
     return i * (1.0f / UINT_MAX);
 }
@@ -133,29 +160,101 @@ uint fToInt(float f)
     return f * UINT_MAX;
 }
 
-// A one-dimensional implementation of the Xorshift random
-// number generator
-// Permutes the given value through one Xorshift cycle, but
+// 32-bit unsigned multiplication, returns 64-bit result
+// No intrinsic support in HLSL SM5, so implemented in software instead
+// Modified from the implementation shown in:
+// https://www.shadertoy.com/view/XslBR4
+// originally from the _mulhilo_c99_tpl macro function (philox.h) within
+// the Random123 source code (see below)
+uint2 mulhilo(uint a, uint b)
+{
+    // Naively compute low multiply
+    uint2 lohi = uint2(a * b, 0u);
+
+    // Cache bitfields for high multiply
+    const uint WHALF = 16u;
+    const uint LOMASK = 0xFFFF;
+    uint ahi = a >> WHALF;
+    uint alo = a & LOMASK;
+    uint bhi = b >> WHALF;
+    uint blo = b & LOMASK;
+    uint ahbl = ahi * blo;
+    uint albh = alo * bhi;
+
+    // Evaluate high-32 bits for result, perform carries from lower bits, return
+    uint ahbl_albh = ((ahbl & LOMASK) + (albh & LOMASK));
+    lohi.y = ahi * bhi + (ahbl >> WHALF) + (albh >> WHALF);
+    lohi.y += ahbl_albh >> WHALF; /* carry from the sum of lo(ahbl) + lo(albh) ) */
+    /* carry from the sum with alo*blo */
+    lohi.y += ((lohi.x >> WHALF) < (ahbl_albh & LOMASK)) ? 1u : 0u;
+    return lohi;
+}
+
+// A modified (8-round, not 7 or 10) implementation of the Philox CBPRNG,
+// from the description in:
+// Parallel Random Numbers: As Easy as 1, 2, 3
+// available here:
+// http://www.thesalmons.org/john/random123/papers/random123sc11.pdf
+// and the provided source, available here:
+// http://www.deshawresearch.com/downloads/download_random123.cgi/
+// A useful reference implementation is available on Shadertoy at:
+// https://www.shadertoy.com/view/XslBR4
+// Permutes the given value through one Philox cycle, but
 // avoids storing the result in [randBuf]; shaders are
-// expected to process extra Xorshift cycles over a single
+// expected to process extra cycles over a single
 // permutation value every time they need more pseudo-random
-// numbers, and to only commit the value back to [randBuf]
-// when it definitely isn't going to permute any further
-// (i.e. in the very last line before [main(...)] ends and
-// shader execution stops for the current thread)
-// This improves variation (since Xorshift is a "deep" LCG
+// numbers, and to only commit values back to [randBuf] when
+// they definitely aren't going to permute any further (i.e. in
+// the very last line before [main(...)] ends and shader
+// execution stops for the current thread)
+// This improves variation (since Philox is a "deep" RNG
 // that works best over multiple cycles) and slightly
 // improves performance (only two texture/buffer accesses per
 // thread rather than [n], where [n] is the number of
 // random numbers needed by any given shader)
-// Side-effects are kinda painful, but heavily simplify
-// state management for [permuVal] (would need lots of temp
-// variables and nested assignments otherwise...)
-uint xorshiftPermu1D(inout uint permuVal)
+uint4 philoxPermu(inout PhiloStrm strm)
 {
-    // Xorshift processing
-    permuVal ^= (permuVal << 7); // Trying to avoid bad luck here...
-    permuVal ^= (permuVal >> 17);
-    permuVal ^= (permuVal << 5);
-    return permuVal;
+    // Iterate the stream
+    uint4 ctr = strm.ctr;
+    uint2 key = strm.key;
+    const uint m0 = 0xCD9E8D57; // Multiplier from the Random123 paper, page 7
+    const uint m1 = 0xD2511F53; // Multiplier from the Random123 paper, page 7
+    for (uint i = 0; i < 8; i += 1)
+    {
+        // Update state
+        uint2 mul0 = mulhilo(m0, ctr.x);
+        uint2 mul1 = mulhilo(m1, ctr.z);
+        ctr = uint4(mul1.y ^ ctr.y ^ key.x, mul1.x,
+                    mul0.y ^ ctr.z ^ key.y, mul0.x);
+
+        // Update key
+        key += uint2(0x9E3779B9, // LO-bit bump, truncated to 32 bits
+                     0xBB67AE85); // HI-bit bump, truncated to 32 bits
+    }
+    strm.ctr = ctr;
+    strm.key = key;
+    // Return iterated state to the callsite
+    return ctr;
+}
+
+// Short initializer for Philox streams
+PhiloStrm strmBuilder(uint ndx)
+{
+    PhiloStrm strm;
+    strm.ctr = xxminstd32(ndx); // Seed state by hashing indices with xxminstd32 (see above)
+    strm.key = uint2(ihashIII(ndx), tmhash(ndx)); // Partially seed keys with a different hash (not Wang or xxminstd32)
+    return strm;
+}
+
+// Per-thread RNG reference; hashes the given v alue once
+// for uniformly-distributed buffer indices, and again
+// to generate global seed values in the zeroth frame
+// (since we've stopped seeding from the CPU)
+// Returns instantaneous RNG values to the callsite, outputs
+// singly-hashed indices through [ndx]
+PhiloStrm philoxVal(uint ndx,
+                    uint frameCtr)
+{
+    if (frameCtr > 0u) { return randBuf[ndx % RAND_BUF_LENGTH]; } // Compilation errors using a ternary operator here, compact if instead
+    else { return strmBuilder(ndx); }
 }

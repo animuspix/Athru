@@ -82,7 +82,7 @@ void main(uint3 groupID : SV_GroupID,
     uint linGroupID = (groupID.x + groupID.y * dispWidth) +
                       (groupID.z * (dispWidth * dispWidth));
     uint linDispID = (linGroupID * 128) + (threadID + 1);
-    if (linDispID > (uint)timeDispInfo.z) { return; }
+    if (linDispID > (uint)numTraceables.x) { return; }
 
     // [Consume()] a pixel from the end of [traceables]
     float2x3 traceable = traceables.Consume();
@@ -91,10 +91,19 @@ void main(uint3 groupID : SV_GroupID,
     uint2 pixID = uint2(traceable[1].y % resInfo.x,
                         traceable[1].y / resInfo.x);
 
-    // Extract a Xorshift-permutable value from [randBuf]
+    // Extract a Philox-permutable value from [randBuf]
     // Also cache the accessor value used to retrieve that value in the first place
-    uint randNdx = xorshiftNdx(pixID.x + (pixID.y * resInfo.x));
-    uint randVal = randBuf[randNdx];
+    // Initialize [randBuf] with hashed start times in the first frame
+    uint randNdx = traceable[1].y;
+    PhiloStrm randStrm = philoxVal(randNdx,
+                                   timeDispInfo.z);
+    //#define RNG_TEST
+    #ifdef RNG_TEST
+        float4 rand = iToFloatV(philoxPermu(randStrm));
+        displayTex[pixID] = rand;
+        randBuf[randNdx] = randStrm;
+        return;
+    #endif
 
     // Cache/generate initial path information
     Path path;
@@ -121,9 +130,80 @@ void main(uint3 groupID : SV_GroupID,
     // Define an adaptive epsilon (marching cutoff) for optimal
     // marching performance (no reason to march to within a hundred-thousandth of
     // a surface when the camera is 150 units away anyways)
-    float adaptEps = AdaptEps(path.ro);
+    float adaptEps = 0.1f;//AdaptEps(path.ro);
 
     // March the scene
+    //#define DEMO_VOXELS
+    #ifdef DEMO_VOXELS
+        // Raytrace the zeroth planet's bounding-box
+        float3 isect = BoundingBoxTrace(path.ro + path.rd.xyz * EPSILON_MIN,
+                                        path.ro,
+                                        100,
+                                        float3(350.0f, 0.0f, 80.0f));
+        if (isect.z)
+        {
+            // Checking/debugging rasterized SDF distances here
+            float3 v = path.ro + path.rd.xyz * (isect.x + adaptEps);//(sin(timeDispInfo.z * 0.125) * 128.0f);
+            float4 linTransf = float4(float3(350.0f, 0.0f, 80.0f),
+                                      100.0f);
+            float t = EPSILON_MIN;
+            float step = 1.0f / numTraceables.z;
+            uint i = 0;
+            while (i < 256 &&
+                   t < abs(isect.y - isect.x))
+            {
+                // Lazily interpolate box distances
+                // Would like to use trilinear interpolation here instead...
+                float3 vT = v + path.rd.xyz * t;
+                float3 pludXYZ = float3(rasterAtlas[vecToNdx(vT + float3(step, 0.0f, 0.0f),
+                                                             0,
+                                                             DF_TYPE_PLANET,
+                                                             linTransf)],
+                                        rasterAtlas[vecToNdx(vT + float3(0.0f, step, 0.0f),
+                                                             0,
+                                                             DF_TYPE_PLANET,
+                                                             linTransf)],
+                                        rasterAtlas[vecToNdx(vT + float3(0.0f, 0.0f, step),
+                                                             0,
+                                                             DF_TYPE_PLANET,
+                                                             linTransf)]);
+                float3 mindXYZ = float3(rasterAtlas[vecToNdx(vT - float3(step, 0.0f, 0.0f),
+                                                    0,
+                                                    DF_TYPE_PLANET,
+                                                    linTransf)],
+                                        rasterAtlas[vecToNdx(vT - float3(0.0f, step, 0.0f),
+                                                             0,
+                                                             DF_TYPE_PLANET,
+                                                             linTransf)],
+                                        rasterAtlas[vecToNdx(vT - float3(0.0f, 0.0f, step),
+                                                             0,
+                                                             DF_TYPE_PLANET,
+                                                             linTransf)]);
+                float3 vS = pOffs(vT, linTransf);
+                float2x3 dt = float2x3(pludXYZ,
+                                       mindXYZ);
+                float dist = lerp(lerp(dt._11_21[!sign(vT.x)].x,
+                                       dt._12_22[!sign(vT.y)].x, vS.x),
+                                  dt._13_23[!sign(vT.z)].x, vS.z);
+                if (dist < 0.1f)
+                {
+                    displayTex[pixID] = (float(i) / 256).xxxx;
+                    return;
+                }
+                else
+                {
+                    t += max(dist, step);
+                    i += 1;
+                }
+            }
+            displayTex[pixID] = 0.0f.xxxx;
+        }
+        else
+        {
+            displayTex[pixID] = 0.0f.xxxx;
+        }
+        return;
+    #endif
 
     // Baseline ray distance
     // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
@@ -177,17 +257,16 @@ void main(uint3 groupID : SV_GroupID,
                 // Process surface intersections
                 path.attens[0] *= ProcVert(float4(rayVec,
                                                   sceneField[0].x),
-                                            sceneField[1],
-                                            path.rd.xyz,
-                                            path.norml,
-                                            adaptEps,
-                                            sceneField[0].yz,
-                                            path.ro,
-                                            path.ambFrs,
-                                            path.mat,
-                                            rayDist,
-                                            randVal);
-
+                                           sceneField[1],
+                                           path.rd.xyz,
+                                           path.norml,
+                                           adaptEps,
+                                           sceneField[0].yz,
+                                           path.ro,
+                                           path.ambFrs,
+                                           path.mat,
+                                           rayDist,
+                                           randStrm);
                 // Exit the intersection loop
                 break;
             }
@@ -209,7 +288,7 @@ void main(uint3 groupID : SV_GroupID,
         path.attens[0] *= LiGather(path,
                                    star.linTransf, // Only stellar light sources atm
                                    adaptEps,
-                                   randVal);
+                                   randStrm);
     }
 
     // Estimated path color associated with the current pixel
@@ -227,7 +306,7 @@ void main(uint3 groupID : SV_GroupID,
     // Write the final ray color to the display texture
     displayTex[pixID] = float4(path.attens[0], 1.0f);
 
-    // No more random permutations at this point, so commit [randVal] back into
+    // No more random permutations at this point, so commit [randStrm] back into
     // the GPU random-number buffer ([randBuf])
-    randBuf[randNdx] = randVal;
+    randBuf[randNdx] = randStrm;
 }

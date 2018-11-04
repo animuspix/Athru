@@ -58,35 +58,36 @@ void Camera::Update()
 	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
 
 	// Translate the view in-game with WASD
-	float speed = 2500.0f;
+	float dt = (float)TimeStuff::deltaTime();
+	float speed = 250000.0f;
 	if (localInput->IsKeyDown(87))
 	{
-		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * TimeStuff::deltaTime(), 0, 0), coreRotationQuaternion));
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * dt, 0, 0), coreRotationQuaternion));
 	}
 
 	if (localInput->IsKeyDown(65))
 	{
-		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, (speed * TimeStuff::deltaTime()) * -1), coreRotationQuaternion));
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, (speed * dt) * -1), coreRotationQuaternion));
 	}
 
 	if (localInput->IsKeyDown(83))
 	{
-		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, (speed * TimeStuff::deltaTime()) * -1, 0, 0), coreRotationQuaternion));
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, (speed * dt) * -1, 0, 0), coreRotationQuaternion));
 	}
 
 	if (localInput->IsKeyDown(68))
 	{
-		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, speed * TimeStuff::deltaTime()), coreRotationQuaternion));
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, speed * dt), coreRotationQuaternion));
 	}
 
 	if (localInput->IsKeyDown(32))
 	{
-		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, speed * TimeStuff::deltaTime(), 0), coreRotationQuaternion));
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, speed * dt, 0), coreRotationQuaternion));
 	}
 
 	if (localInput->IsKeyDown(17))
 	{
-		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, (speed * TimeStuff::deltaTime()) * -1, 0), coreRotationQuaternion));
+		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, (speed * dt) * -1, 0), coreRotationQuaternion));
 	}
 
 	// Rotate the view with mouse input
@@ -142,8 +143,9 @@ void Camera::MouseLook(Input* inputPttr)
 	float mouseDeltaY = (currMousePos.y - (GraphicsStuff::DISPLAY_HEIGHT / 2));
 
 	// Map the changes in mouse position onto changes in camera rotationQtn
-	float xRotationDelta = spinSpeed * mouseDeltaY * TimeStuff::deltaTime();
-	float yRotationDelta = spinSpeed * mouseDeltaX * TimeStuff::deltaTime();
+	float dt = (float)TimeStuff::deltaTime();
+	float xRotationDelta = spinSpeed * mouseDeltaY * dt;
+	float yRotationDelta = spinSpeed * mouseDeltaX * dt;
 
 	// Apply the changes in camera rotationQtn to the camera by incrementing the
 	// current X/Y euler angles and passing the results into [SetRotation()]

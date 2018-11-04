@@ -18,7 +18,7 @@ void GPUMessenger::SceneToGPU(const Microsoft::WRL::ComPtr<ID3D11DeviceContext> 
 	D3D11_MAPPED_SUBRESOURCE mappedResource;
 	HRESULT result = context->Map(sceneBuf.buf.Get(), 0, D3D11_MAP_WRITE_DISCARD, 0, &mappedResource);
 	assert(SUCCEEDED(result));
-	for (fourByteUnsigned i = 0; i < SceneStuff::MAX_NUM_SCENE_FIGURES; i += 1)
+	for (fourByteUnsigned i = 0; i < SceneStuff::PLANETS_PER_SYSTEM; i += 1) // No plant/animal definitions atm
 	{
 		// Get a pointer to the data referenced by [mappedResource]
 		SceneFigure::Figure* dataPttr;

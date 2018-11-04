@@ -9,22 +9,21 @@
 
 namespace TimeStuff
 {
-	// Initialise the "previous" time to zero (since the
-	// game starts with no previous frame and has to work
-	// from there)
-	extern std::chrono::steady_clock::time_point timeAtLastFrame;
+	// Non-constant globals initialized in [AthruGlobals.cpp]
+	extern std::chrono::high_resolution_clock::time_point timeAtLastFrame;
+	extern fourByteUnsigned frameCtr;
 
 	// [inline] instead of a macro so we get type-safety :)
-	inline float deltaTime()
+	inline double deltaTime()
 	{
-		std::chrono::steady_clock::time_point current = std::chrono::steady_clock::now();
-		std::chrono::duration<float> deltaTimeValue = std::chrono::duration_cast<std::chrono::duration<float>>(current - timeAtLastFrame);
+		std::chrono::high_resolution_clock::time_point current = std::chrono::steady_clock::now();
+		std::chrono::duration<double, std::milli> deltaTimeValue = (current - timeAtLastFrame);
 		return deltaTimeValue.count();
 	}
 
-	inline float FPS()
+	inline double FPS()
 	{
-		return std::roundf(1.0f / deltaTime());
+		return std::round(1.0f / deltaTime());
 	}
 }
 
@@ -158,14 +157,28 @@ namespace GraphicsStuff
 namespace SceneStuff
 {
 	extern constexpr fourByteUnsigned SYSTEM_COUNT = 100;
-	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = 10;
+	extern constexpr fourByteUnsigned PLANETS_PER_SYSTEM = 10;
+	extern constexpr fourByteUnsigned PLANTS_PER_PLANET = 10;
+	extern constexpr fourByteUnsigned ANIMALS_PER_PLANET = 10;
+	extern constexpr fourByteUnsigned MAX_NUM_SCENE_FIGURES = PLANETS_PER_SYSTEM +
+															  PLANTS_PER_PLANET +
+															  ANIMALS_PER_PLANET;
 	extern constexpr fourByteUnsigned MAX_NUM_SCENE_ORGANISMS = 8;
 }
 
 namespace GPGPUStuff
 {
 	// Number of random seeds to expose to the GPU random number generator
-	extern constexpr fourByteUnsigned NUM_RAND_SEEDS = 88917504;
+	extern constexpr fourByteUnsigned NUM_RAND_SEEDS = 32917504;
+
+	// SDF atlas information
+	extern constexpr fourByteUnsigned RASTER_ATLAS_WIDTH = 128;
+	extern constexpr fourByteUnsigned RASTER_ATLAS_HEIGHT = 384; // One row for planets, one row for animals, one row for plants
+	extern constexpr fourByteUnsigned RASTER_CELL_DEPTH = 128;
+	extern constexpr fourByteUnsigned RASTER_CELL_VOLUM = RASTER_CELL_DEPTH * RASTER_ATLAS_WIDTH * RASTER_ATLAS_WIDTH;
+	extern constexpr fourByteUnsigned RASTER_THREADS_PER_CELL = 512;
+	extern constexpr fourByteUnsigned RASTER_ATLAS_DEPTH = RASTER_CELL_DEPTH * SceneStuff::PLANETS_PER_SYSTEM; // Less than ten plant/animal types per system seems reasonable...
+	extern constexpr fourByteUnsigned RASTER_ATLAS_VOLUM = RASTER_ATLAS_WIDTH * RASTER_ATLAS_HEIGHT * RASTER_ATLAS_DEPTH;
 
 	// Supported buffer types in Athru
 	struct CBuffer {}; // Constant buffer, read/writable from the CPU/GPU
@@ -177,49 +190,4 @@ namespace GPGPUStuff
 	struct StrmBuffer {}; // Streaming buffer with CPU-write permissions but not CPU-read; GPU read-only
 	struct StgBuffer {}; // Staging buffer, used to copy GPU-only information across to the CPU (useful for e.g.
 					     // extracting structure counts from append/consume buffers)
-
-	// Construct a GPGPU read-write buffer with the given primitive type
-	template<typename BufType>
-	static void BuildRWBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-							  Microsoft::WRL::ComPtr<ID3D11Buffer>& bufPttr,
-							  const D3D11_SUBRESOURCE_DATA* baseDataPttr,
-							  Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& rwView,
-							  DXGI_FORMAT& viewFormat,
-					 		  D3D11_BUFFER_UAV_FLAG uavFlags,
-							  fourByteUnsigned& bufLength)
-	{
-		// Describe the buffer we're creating and storing at
-		// [bufPttr]
-		D3D11_BUFFER_DESC bufferDesc;
-		bufferDesc.Usage = D3D11_USAGE_DEFAULT;
-		bufferDesc.ByteWidth = sizeof(BufType) * bufLength;
-		bufferDesc.BindFlags = D3D11_BIND_UNORDERED_ACCESS;
-		bufferDesc.CPUAccessFlags = 0;
-		bufferDesc.MiscFlags = 0;
-		bufferDesc.StructureByteStride = 0;
-
-		// Construct the state buffer using the seeds + description
-		// defined above
-		HRESULT result = device->CreateBuffer(&bufferDesc,
-											  baseDataPttr,
-											  bufPttr.GetAddressOf());
-		assert(SUCCEEDED(result));
-
-		// Describe the the shader-friendly read/write resource view we'll
-		// use to access the buffer during general-purpose graphics
-		// processing
-		D3D11_BUFFER_UAV viewDescA;
-		viewDescA.FirstElement = 0;
-		viewDescA.Flags = uavFlags;
-		viewDescA.NumElements = bufLength;
-
-		D3D11_UNORDERED_ACCESS_VIEW_DESC viewDescB;
-		viewDescB.Format = viewFormat;
-		viewDescB.Buffer = viewDescA;
-		viewDescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-
-		// Construct a DirectX11 "view" over the data at [bufPttr]
-		result = device->CreateUnorderedAccessView(bufPttr.Get(), &viewDescB, rwView.GetAddressOf());
-		assert(SUCCEEDED(result));
-	}
 }

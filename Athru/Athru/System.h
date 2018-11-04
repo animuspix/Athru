@@ -33,7 +33,7 @@ class System
 
 	private:
 		Star* star;
-		Planet* planets[SceneStuff::MAX_NUM_SCENE_FIGURES - 1];
+		Planet* planets[SceneStuff::PLANETS_PER_SYSTEM - 1];
 		DirectX::XMFLOAT3 position;
 };
 

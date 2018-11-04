@@ -58,15 +58,14 @@ float StellarPosPDF()
 // A function to generate unpredictable emission/sample positions on
 // the local star
 float3 StellarSurfPos(float4 starInfo, // Position in [xyz], size in [w]
-                      uint randVal,
+                      float2 uv01,
                       float3 targFigPos)
 {
     // Generate initial direction (this chooses our sampling hemisphere)
     float3 targVec = (starInfo.xyz - targFigPos);
 
     // Generate random planar samples in the range [-starInfo.w...starInfo.w]
-    float2 randUV = ((float2(iToFloat(xorshiftPermu1D(randVal)),
-                             iToFloat(xorshiftPermu1D(randVal))) * 2.0f.xx) - 1.0f.xx) * starInfo.w;
+    float2 randUV = ((uv01 * 2.0f.xx) - 1.0f.xx) * starInfo.w;
 
     // System figures will always be coplanar with [XZ], so the sampling hemisphere
     // must be coplanar with [y]; cache appropriate jitter here
@@ -148,13 +147,11 @@ float DiffuseLiPDF()
 // greater convergence rate than [DiffuseLiDir], but
 // less physically accurate (light can be emitted
 // directly back into the source)
-float3 StellarLiDir(inout uint randVal,
+float3 StellarLiDir(float3 uvw01,
                     float3 srcPos)
 {
     float4 figLinTransf = figures[1].linTransf;
-    float3 randSphPt = ((float3(iToFloat(xorshiftPermu1D(randVal)),
-                                iToFloat(xorshiftPermu1D(randVal)),
-                                iToFloat(xorshiftPermu1D(randVal))) - 0.5f.xxx) * 2.0f.xxx) * figLinTransf.w;
+    float3 randSphPt = ((uvw01 - 0.5f.xxx) * 2.0f.xxx) * figLinTransf.w;
     return normalize(srcPos - (figLinTransf.xyz + randSphPt));
 }
 
@@ -163,15 +160,12 @@ float3 StellarLiDir(inout uint randVal,
 // diffuse reflection
 // Algorithm taken from page 775 of Physically Based Rendering: From
 // Theory to Implementation, Third Edition (Pharr, Jakob, Humphreys)
-float3 DiffuseLiDir(inout uint randVal)
+float3 DiffuseLiDir(float2 uv01)
 {
-    // Generate random sample values
-    float2 uv = float2(iToFloat(xorshiftPermu1D(randVal)),
-                       iToFloat(xorshiftPermu1D(randVal)));
-
     // Generate a scaling factor to keep [x,z] parameters at the hemisphere
     // surface regardless of the value generated for [uv.x] (taken as the
     // y-position/sample altitude later on)
+    float2 uv = (uv01 * 2.0f.xx) + 1.0f;
     float r = sqrt(1.0f - (uv.x * uv.x));
 
     // Generate [x,z] directions from the azimuthal angle ([phi]) + the
@@ -208,15 +202,15 @@ float LightEmitPDF(uint lightID)
 // profiles later on...)
 float3 LightEmitDir(uint lightID,
                     float3 liSurfPos,
-                    uint randVal)
+                    uint randStrm)
 {
     switch (lightID)
     {
         case LIGHT_ID_STELLAR:
-            return StellarLiDir(randVal,
+            return StellarLiDir(randStrm,
                                 liSurfPos); // Stellar light sources are pseudo-hemispheric diffuse emitters
         default:
-            return DiffuseLiDir(randVal); // Assume hemispheric diffuse emission by default
+            return DiffuseLiDir(randStrm); // Assume hemispheric diffuse emission by default
     }
 }
 
@@ -238,17 +232,17 @@ float LightPosPDF(uint lightID)
 float3 LightSurfPos(uint lightID,
                     float4 lightInfo, // Light position (in [xyz]) and size (in [w])
                     float3 targFigPos,
-                    uint randVal)
+                    uint randStrm)
 {
     switch (lightID)
     {
         case LIGHT_ID_STELLAR:
             return StellarSurfPos(lightInfo,
-                                  randVal,
+                                  randStrm,
                                   targFigPos);
         default:
             return StellarSurfPos(lightInfo,
-                                  randVal,
+                                  randStrm,
                                   targFigPos); // Assume stellar light sources by default
     }
 }
@@ -281,8 +275,7 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
 float2x3 SubsurfMarch(float3 rd,
                       float3 ro,
                       uint figID,
-                      float adaptEps,
-                      inout uint randVal)
+                      float adaptEps)
 {
     float stepSize = adaptEps * 100.0f;
     float srfDist = stepSize * 0.5f;
@@ -329,7 +322,7 @@ float3x4 OccTest(float4 rayOri,
                  float4 rayDest,
                  float2 surfInfo,
                  float2 ambFres,
-                 inout uint randVal)
+                 inout PhiloStrm randStrm) // Full RNG access needed for material handling on intersection
 {
     float currRayDist = 0.0f;
     bool occ = true;
@@ -374,11 +367,10 @@ float3x4 OccTest(float4 rayOri,
                                       sceneField[0].z,
                                       nearFig.linTransf.xyz,
                                       nearFig.linTransf.w,
-                                      randVal);
+                                      randStrm);
 
-                // Find the BXDF-ID at the intersection point
-                uint bxdfID = MatBXDFID(mat[0],
-                                        randVal);
+                // Cache the BXDF-ID at the intersection point
+                uint bxdfID = mat[2].z;
 
                 // Pass through refractive surfaces
                 // Invoke a transmittance check here (not all rays will have enough energy
@@ -388,6 +380,9 @@ float3x4 OccTest(float4 rayOri,
                     !rayOri.w &&
                     trCtr < MAX_TR)
                 {
+                    // Generate a Philox instance
+                    float4 rand = iToFloatV(philoxPermu(randStrm));
+
                     // Evaluate shading, transmission direction, probability
                     float2x4 srf = MatSrf(rayDir.xyz,
                                           norml,
@@ -395,14 +390,13 @@ float3x4 OccTest(float4 rayOri,
                                           mat[0],
                                           mat[2].xyz,
                                           float4(bxdfID, mat[2].xy, mat[1].w),
-                                          randVal);
+                                          rand.xy);
 
                     // Pass through the surface, cache the exiting position + normal
                     float2x3 tr = SubsurfMarch(srf[0].xyz,
                                                rayOri.xyz,
                                                surfInfo.y,
-                                               surfInfo.x,
-                                               randVal);
+                                               surfInfo.x);
 
                     // Update ray origin
                     rayOri.xyz = tr[0];
@@ -414,7 +408,7 @@ float3x4 OccTest(float4 rayOri,
                                            mat[0],
                                            mat[2].xyz,
                                            float4(bxdfID, mat[2].xy, mat[1].w),
-                                           randVal);
+                                           rand.zw);
 
                     // Update ray direction
                     rayDir.xyz = oSrf[0].xyz;

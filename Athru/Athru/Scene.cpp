@@ -24,6 +24,10 @@ void Scene::Update()
 	// Update the camera
 	mainCamera->Update();
 
+	// Update the previous/current sytems
+	lastSys = currSys;
+	currSys = galaxy->GetCurrentSystem(mainCamera->GetTranslation());
+
 	// Non-GPU updates here (networking, player stats, UI stuffs, etc.)
 }
 
@@ -31,10 +35,8 @@ SceneFigure::Figure* Scene::CollectLocalFigures()
 {
 	// Pass the player's local environment into an array of
 	// generic [SceneFigure]s
-	System* currSys = galaxy->GetCurrentSystem(mainCamera->GetTranslation());
-	Star* star = currSys->GetStar();
 	Planet** planets = currSys->GetPlanets();
-	currFigures[0] = star->GetCoreFigure();
+	currFigures[0] = currSys->GetStar()->GetCoreFigure();
 	currFigures[1] = planets[0]->GetCoreFigure();
 	currFigures[2] = planets[1]->GetCoreFigure();
 	currFigures[3] = planets[2]->GetCoreFigure();
@@ -55,6 +57,11 @@ Camera* Scene::GetMainCamera()
 Galaxy* Scene::GetGalaxy()
 {
 	return galaxy;
+}
+
+bool Scene::CheckFreshSys()
+{
+	return (currSys = lastSys);
 }
 
 // Push constructions for this class through Athru's custom allocator
