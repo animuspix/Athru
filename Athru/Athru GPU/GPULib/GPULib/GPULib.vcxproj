@@ -153,6 +153,7 @@
     <ClInclude Include="GPURand.h" />
     <ClInclude Include="GPUServiceCentre.h" />
     <ClInclude Include="GPUUpdateManager.h" />
+    <ClInclude Include="LiPath.h" />
     <ClInclude Include="PhiloStrm.h" />
     <ClInclude Include="PixHistory.h" />
     <ClInclude Include="AthruRect.h" />
