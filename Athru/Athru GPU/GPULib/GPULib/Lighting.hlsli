@@ -63,7 +63,7 @@ float3 ProcVert(float4 rayVec, // Ray position in [xyz], planetary distance in [
                           rand.xy);
     bool refl = (mat[2].z == BXDF_ID_DIFFU);
     srf[0].xyz = mul(srf[0].xyz,
-                     refl ? normSpace : ID_MATRIX);
+                     refl ? normSpace : ID_MATRIX_3D);
 
     // Apply PDF appropriately, also apply generic bounce attenuation
     srf[1].rgb /= ZERO_PDF_REMAP(srf[1].a) / dot(normal, srf[0].xyz);
@@ -152,7 +152,7 @@ float3 LiGather(Path path,
     bool refl = (path.mat[2].z == BXDF_ID_DIFFU);
     float3x3 normSpace = NormalSpace(path.norml.xyz);
     float3x4 misOccData = OccTest(float4(path.ro, true),
-                                  float4(mul(srf[0].xyz, refl ? normSpace : ID_MATRIX), STELLAR_FIG_ID),
+                                  float4(mul(srf[0].xyz, refl ? normSpace : ID_MATRIX_3D), STELLAR_FIG_ID),
                                   float4(0.0f.xxx, false),
                                   float2(adaptEps, path.rd.w),
                                   path.ambFrs,

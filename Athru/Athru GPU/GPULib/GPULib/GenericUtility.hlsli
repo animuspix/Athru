@@ -27,10 +27,10 @@
 #define UNIT_Y float3(0.0f, 1.0f, 0.0f)
 #define UNIT_Z float3(0.0f, 0.0f, 1.0f)
 
-// Identity matrix; useful for conditionally eliding transformations between spaces
-#define ID_MATRIX float3x3(1, 0, 0, \
-                           0, 1, 0, \
-                           0, 0, 1)
+// 3D identity matrix; useful for conditionally eliding transformations between spaces
+#define ID_MATRIX_3D float3x3(1, 0, 0, \
+							  0, 1, 0, \
+							  0, 0, 1)
 
 // Linearly scales the rotational part of the given quaternion
 // while preserving the axis of rotation
