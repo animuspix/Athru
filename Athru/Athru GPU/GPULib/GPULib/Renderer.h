@@ -23,8 +23,7 @@ class Renderer
 	private:
 		// Private utility function to pre-process the scene for path-tracing
 		void PreProcess(DirectX::XMVECTOR& cameraPosition,
-						DirectX::XMMATRIX& viewMatrix,
-						Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexWritable);
+						DirectX::XMMATRIX& viewMatrix);
 
 		// Private utility function to initiate path-tracing
 		void Trace(DirectX::XMVECTOR& cameraPosition,

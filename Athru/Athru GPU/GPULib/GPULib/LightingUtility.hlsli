@@ -268,36 +268,6 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
     return offset;
 }
 
-// Helper function for refractive/volumetric light transport
-// Allows raymarching for interior LT to occur separately from exterior
-// intersection checks
-// Returns exit position in [0], exit normal in [1]
-float2x3 SubsurfMarch(float3 rd,
-                      float3 ro,
-                      uint figID,
-                      float adaptEps)
-{
-    float stepSize = adaptEps * 100.0f;
-    float srfDist = stepSize * 0.5f;
-    float3 rv = ro;
-    bool inSurf = true;
-    while (inSurf)
-    {
-        rv += (rd * max(stepSize, srfDist));
-        float2x3 sceneField = SceneField(rv,
-                                         ro,
-                                         true,
-                                         FILLER_SCREEN_ID,
-                                         adaptEps);
-        srfDist = abs(sceneField[0].x);
-        inSurf = sceneField[0].x > 0.0f; // Stop marching subsurface rays as soon
-    }
-    rv -= rd * stepSize * 0.99f; // Keep transmitted positions within ~adaptEps of the bounding surface
-    return float2x3(rv,
-                    PlanetGrad(rv,
-                               figures[figID]));
-}
-
 // Simple occlusion function, traces a shadow ray between two points to test
 // for visiblity (needed to validate generic sub-path connections in BDPT)
 // [0].xyz contains the tracing direction, [0].w clontains the distance
@@ -309,8 +279,8 @@ float2x3 SubsurfMarch(float3 rd,
 // point (if any)
 // [rayDir] carries a ray direction in [xyz] and the target figure-ID in
 // [w]
-// [rayOri] carries whether or not to occlude on refraction in [w] and the ray
-// origin in [xyz]
+// [rayOri] carries the ray origin in [xyz] and the adaptive-epsilon used in 
+// the current frame in [w]
 // [rayDest] carries the occlusion ray's emission point in [xyz] and whether or
 // not to check intersection positions as well as figure-ID's in [w]
 // [surfInfo] carries [adaptEps] in [x] and the local figure-ID in [y]
@@ -319,18 +289,12 @@ float2x3 SubsurfMarch(float3 rd,
 #define MAX_OCC_MARCHER_STEPS 256
 float3x4 OccTest(float4 rayOri,
                  float4 rayDir,
-                 float4 rayDest,
-                 float2 surfInfo,
-                 float2 ambFres,
                  inout PhiloStrm randStrm) // Full RNG access needed for material handling on intersection
 {
     float currRayDist = 0.0f;
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;
-    float3 trAtten = 1.0f.xxx;
-    const uint MAX_TR = 1u;
-    uint trCtr = 0u; // Only [MAX_TR] transmittant bounces allowed for light gathers (might become adjustable in settings later)
     // March occlusion rays
     for (int i = 0; i < MAX_OCC_MARCHER_STEPS; i += 1)
     {
@@ -339,10 +303,8 @@ float3x4 OccTest(float4 rayOri,
                                          rayOri.xyz,
                                          false,
                                          FILLER_SCREEN_ID,
-                                         surfInfo.x);
-        float destPtDist = length(rayDest.xyz - rayVec);
-        bool hitDest = (destPtDist < surfInfo.x && rayDest.w) ||
-                       (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target scene
+                                         rayOri.w);
+        bool hitDest = (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target scene
         if (sceneField[0].x < surfInfo.x ||
             (hitDest && sceneField[0].x < surfInfo.x))
         {
@@ -351,84 +313,16 @@ float3x4 OccTest(float4 rayOri,
                 // Assume rays that reach the target figure-ID are un-occluded and return
                 // [false]
                 occ = false;
-                // Clip the intersection point into [rayDest] if validating against ray destinations; otherwise
-                // set it to [rayVec]
-                endPos = rayDest.xyz;
+                // Record the intersection point
+                endPos = rayVec;
             }
             else
             {
-                // Find material properties at the transmission point
-                Figure nearFig = figures[sceneField[0].z];
-                float3 norml = PlanetGrad(rayVec, nearFig);
-                float4x4 mat = MatGen(rayVec,
-                                      rayDir.xyz,
-                                      norml,
-                                      ambFres,
-                                      sceneField[0].z,
-                                      nearFig.linTransf.xyz,
-                                      nearFig.linTransf.w,
-                                      randStrm);
-
-                // Cache the BXDF-ID at the intersection point
-                uint bxdfID = mat[2].z;
-
-                // Pass through refractive surfaces
-                // Invoke a transmittance check here (not all rays will have enough energy
-                // left to pass through the surface)
-                if ((bxdfID != BXDF_ID_MIRRO &&
-                     bxdfID != BXDF_ID_DIFFU) &&
-                    !rayOri.w &&
-                    trCtr < MAX_TR)
-                {
-                    // Generate a Philox instance
-                    float4 rand = iToFloatV(philoxPermu(randStrm));
-
-                    // Evaluate shading, transmission direction, probability
-                    float2x4 srf = MatSrf(rayDir.xyz,
-                                          norml,
-                                          mat[3].xyz,
-                                          mat[0],
-                                          mat[2].xyz,
-                                          float4(bxdfID, mat[2].xy, mat[1].w),
-                                          rand.xy);
-
-                    // Pass through the surface, cache the exiting position + normal
-                    float2x3 tr = SubsurfMarch(srf[0].xyz,
-                                               rayOri.xyz,
-                                               surfInfo.y,
-                                               surfInfo.x);
-
-                    // Update ray origin
-                    rayOri.xyz = tr[0];
-
-                    // Sample the surface at the exit position
-                    float2x4 oSrf = MatSrf(srf[0].xyz,
-                                           tr[1],
-                                           mat[3].xyz,
-                                           mat[0],
-                                           mat[2].xyz,
-                                           float4(bxdfID, mat[2].xy, mat[1].w),
-                                           rand.zw);
-
-                    // Update ray direction
-                    rayDir.xyz = oSrf[0].xyz;
-
-                    // Update transmittant attenuation
-                    trAtten *= (srf[1].rgb / ZERO_PDF_REMAP(srf[1].a)) *
-                               (oSrf[1].rgb / ZERO_PDF_REMAP(oSrf[1].a));
-
-                    // Update transmission counter
-                    trCtr += 1u;
-                }
-                else
-                {
-                  // The shadow ray was occluded by [sceneField[0].z], so return [true] and
-                  // cache the world-space position of the intersection point
-                  occ = true;
-                  endPos = rayVec;
-                }
+                // The shadow ray was occluded by [sceneField[0].z], so return [true] and
+                // cache the world-space position of the intersection point
+                occ = true;
+                endPos = rayVec;
             }
-
             // Cache the figure-ID associated with intersection point
             nearID = (uint)sceneField[0].z;
             break;
@@ -439,12 +333,10 @@ float3x4 OccTest(float4 rayOri,
         if (rayDest.w) { currRayDist += min(sceneField[0].x, destPtDist); }
         else { currRayDist += sceneField[0].x; }
     }
-
     // Return occlusion information for the given context
     return float3x4(rayDir.xyz,
                     currRayDist,
                     endPos,
                     occ,
-                    nearID.x,
-                    trAtten);
+                    nearID.xxxx);
 }

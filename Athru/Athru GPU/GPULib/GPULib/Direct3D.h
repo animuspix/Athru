@@ -16,11 +16,8 @@ class Direct3D
 		Direct3D(HWND hwnd);
 		~Direct3D();
 
-		// Begin a draw session (flush the render texture and clear the depth buffer)
-		void BeginScene();
-
-		// End a draw session (publish to the screen and close the draw buffer)
-		void EndScene();
+		// Commit draw/dispatch calls to the GPU
+		void SubmitGPUWork();
 
 		// Retrieve the device/device context without incrementing their reference
 		// counts
@@ -34,9 +31,6 @@ class Direct3D
 		const DXGI_ADAPTER_DESC& GetAdapterInfo();
 
 	private:
-		// Stores whether or not vsync is enabled
-		bool vsyncEnabled;
-
 		// Stores information about the video adapter
 		DXGI_ADAPTER_DESC adapterInfo;
 

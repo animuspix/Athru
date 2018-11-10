@@ -150,7 +150,8 @@ namespace GraphicsStuff
 	extern constexpr fourByteUnsigned GROUP_WIDTH_PATH_REDUCTION = 16;
 	extern constexpr fourByteUnsigned GROUP_HEIGHT_PATH_REDUCTION = 16;
 	extern constexpr fourByteUnsigned GROUP_AREA_PATH_REDUCTION = 256;
-	extern constexpr fourByteUnsigned MAX_NUM_BOUNCES = 7;
+	extern constexpr fourByteUnsigned MAX_NUM_BOUNCES = 16;
+	extern constexpr fourByteUnsigned MAX_NUM_SSURF_BOUNCES = 512;
 	extern constexpr fourByteUnsigned NUM_AA_SAMPLES = 8192;
 }
 

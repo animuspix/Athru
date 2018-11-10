@@ -70,23 +70,64 @@ Renderer::~Renderer(){}
 
 void Renderer::Render(Camera* camera)
 {
-	// Initialize the current frame through the Direct3D interface
-	AthruGPU::GPUServiceCentre::AccessD3D()->BeginScene();
-
-	// Pre-process the scene
+	// Load PRNG states, generate camera directions + filter values,
+	// initialize the intersection buffer
 	this->PreProcess(camera->GetTranslation(),
 					 camera->GetViewMatrix(),
 					 camera->GetViewFinder()->GetDisplayTex().asWritableShaderResource);
 
 	// Perform path-tracing
-	this->Trace(camera->GetTranslation(),
-				camera->GetViewMatrix());
+	// One extra bounce to account for primary ray emission
+	fourByteUnsigned bounceCtr = 0;
+	while (pathCount() > 0
+		   && bounceCtr < GraphicsStuff::MAX_NUM_BOUNCES) // Only propagate rays if at least one path is still intersecting
+														  // geometry, and enforce a hard limit of MAX_NUM_BOUNCES bounces/ray
+														  // (since we still have to store bounces somewhere between ray
+														  // propagation and shading)
+	{
+		// Propagate rays out to intersection, consume from the intersection buffer,
+		// write to the shading buffer, increment material counters, increment scattering
+		// counters
+		this->Trace(camera->GetTranslation(),
+					camera->GetViewMatrix());
 
-	// Publish traced results to the display
+		// Compute materials at intersection, perform next-event-estimation, apply russian
+		// roulette ray cancellation (with bias for "dense" scenes with many deep paths),
+		// decrement scattering counters as appropriate
+		// Should additionally bias Russian Roulette by path type; incrementally greater
+		// chance for cancellation after 7 bounces for every diffuse/specular material in
+		// the path (90% chance for totally diffuse/specular paths)
+		this->BounceProcessing();
+ 
+		// Sample ray directions for the next bounce on each path, append to the intersection
+		// buffer
+		// Non-atmospheric/cloudy refractors (snow/fur/generic-subsurface/generic-refractors) 
+		// update ray position as well as direction (atmospheric + cloudy scattering is 
+		// computed in-line with ordinary ray-marching)
+		this->SampleDiffu();
+		this->SampleMirro();
+		this->SampleRefra();
+		this->SampleSnoww();
+		this->SampleSSurf();
+		this->SampleFurry();
+
+		// Increment the bounce counter
+		bounceCtr += 1;
+	}
+
+	// Compute shading at each bounce
+	this->ShadeDiffu();
+	this->ShadeMirro();
+	this->ShadeRefra();
+	this->ShadeSnoww();
+	this->ShadeSSurf();
+	this->ShadeFurry();
+
+	// Integrate, publish traced results to the display
 	this->Present(camera->GetViewFinder());
 
 	// Ask the GPU to start processing committed rendering work
-	AthruGPU::GPUServiceCentre::AccessD3D()->EndScene();
+	AthruGPU::GPUServiceCentre::AccessD3D()->Output();
 }
 
 void Renderer::PreProcess(DirectX::XMVECTOR& cameraPosition,

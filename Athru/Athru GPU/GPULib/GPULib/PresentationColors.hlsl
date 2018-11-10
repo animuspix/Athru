@@ -4,6 +4,7 @@
 // A small CPU-updatable block of display constants
 cbuffer DisplayInfo
 {
+    uint4 maxBounces; // Carries maximum number of bounces in [x]; [yzw] are unused 
     float4 display; // Carries width in [x], height in [y], area in [z], AA sampling rate in [w]
 };
 

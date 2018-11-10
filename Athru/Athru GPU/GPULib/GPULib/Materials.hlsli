@@ -160,10 +160,10 @@ float4 MirroDir(float3 wo,
 }
 
 // Evaluate GGX/Smith PBR reflection for the given surface
-float3 MirroBXDF(float4x3 dirs, // Input direction in [0], half-vector in [1],
+float3 MirroBRDF(float4x3 dirs, // Input direction in [0], half-vector in [1],
                			        // output direction in [2], macrosurface normal in [3]
                  float4 surf, // Reflective surface color in [rgb], squared roughness in [a]
-                 float fres) // Fresnel coefficient for the surface (scalar, spectral Fresnel is too messy and prone to dispersion)
+                 float fres) // Fresnel coefficient for the surface (scalar, spectral Fresnel feels too messy for real-time)
 {
     // Evaluate cosine terms
     float cosTerm = dot(dirs[3], dirs[0]);

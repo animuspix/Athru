@@ -142,18 +142,9 @@ Direct3D::Direct3D(HWND hwnd)
 
 Direct3D::~Direct3D() {}
 
-void Direct3D::BeginScene()
+void Direct3D::SubmitGPUWork()
 {
-	// The color to display before anything is drawn to the scene
-	float color[4] = { 0.0f, 0.0f, 0.0f, 1.0f };
-
-	// Clear the back buffer and flush the view with [color]
-	deviceContext->ClearRenderTargetView(defaultRenderTarget.Get(), color);
-}
-
-void Direct3D::EndScene()
-{
-	// Finish the rendering pass by displaying the buffered draw data
+	// Submit buffered dispatch/draw data to the GPU
 	// If vsync is enabled (read: equal to [true] or [1]), present the data
 	// in sync with the screen refresh rate
 	//

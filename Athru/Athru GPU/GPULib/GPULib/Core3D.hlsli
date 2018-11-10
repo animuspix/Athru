@@ -7,16 +7,9 @@
 // Considering removing figure position and passing system origin here...
 cbuffer InputStuffs
 {
-    float4 cameraPos;
-    matrix viewMat;
-    matrix iViewMat;
     float4 timeDispInfo; // Delta-time in [x], current time (seconds) in [y], frame count in [z],
-                         // and number of patches (groups) along each dispatch axis during path-tracing (w)
-    float4 numTraceables; // Current traceable-element count in [x], previous traceable-element
-                          // count in [y], raster-atlas cell width in [z], [w] is empty
-    uint4 maxNumBounces;
-    uint4 resInfo; // Resolution info carrier; contains app resolution in [xy],
-	               // AA sampling rate in [z], and display area in [w]
+                         // compute dispatches per-axis in [w]
+    float4 rasterEpsInfo; // Raster-atlas cell width in [x], epsilon size in [y], [zw] are empty
 };
 
 // Enum flags for different sorts of distance
