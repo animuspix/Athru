@@ -5,17 +5,17 @@
 #include "Logger.h"
 #include "Input.h"
 #include "Application.h"
-#include "AthruGlobals.h"
+#include "AppGlobals.h"
 
-namespace AthruUtilities
+namespace AthruCore
 {
-	class UtilityServiceCentre
+	class Utility
 	{
 		public:
-			UtilityServiceCentre() = delete;
-			~UtilityServiceCentre() = delete;
+			Utility() = delete;
+			~Utility() = delete;
 
-			static void Init(const eightByteUnsigned& expectedMemoryUsage)
+			static void Init(const u8Byte& expectedMemoryUsage)
 			{
 				// Attempt to create and register the memory-management
 				// service

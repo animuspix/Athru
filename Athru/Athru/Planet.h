@@ -13,10 +13,10 @@ class Planet : public SceneFigure
 		~Planet();
 
 		// Retrieve a write-allowed reference to the specified critter
-		SceneFigure& FetchCritter(fourByteUnsigned ndx);
+		SceneFigure& FetchCritter(u4Byte ndx);
 
 		// Retrieve a write-allowed reference to the specified vegetation
-		SceneFigure& FetchPlant(fourByteUnsigned ndx);
+		SceneFigure& FetchPlant(u4Byte ndx);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);

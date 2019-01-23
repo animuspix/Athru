@@ -2,7 +2,7 @@
 
 #include <directxmath.h>
 #include "PlanarUnwrapper.h"
-#include "AthruGlobals.h"
+#include "GPUGlobals.h"
 
 template <typename VtType>
 struct AthruRect
@@ -47,5 +47,5 @@ struct AthruRect
 	VtType vts[4];
 
 	// Integer indices
-	fourByteUnsigned indices[GraphicsStuff::SCREEN_RECT_INDEX_COUNT];
+	u4Byte indices[GraphicsStuff::SCREEN_RECT_INDEX_COUNT];
 };

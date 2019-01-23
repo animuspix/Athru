@@ -8,8 +8,8 @@ class UpdateShader : public ComputeShader
 		UpdateShader(LPCWSTR shaderFilePath);
 		~UpdateShader();
 		void Dispatch(Microsoft::WRL::ComPtr<ID3D11DeviceContext> context,
-					  fourByteUnsigned threadsX,
-					  fourByteUnsigned threadsY,
-					  fourByteUnsigned threadsZ);
+					  u4Byte threadsX,
+					  u4Byte threadsY,
+					  u4Byte threadsZ);
 };
 

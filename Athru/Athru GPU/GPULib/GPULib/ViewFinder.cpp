@@ -1,5 +1,5 @@
 #include "UtilityServiceCentre.h"
-#include "AthruGlobals.h"
+#include "GPUGlobals.h"
 #include "PostVertex.h"
 #include "ViewFinder.h"
 #include "AthruRect.h"
@@ -33,9 +33,9 @@ ViewFinder::ViewFinder(const Microsoft::WRL::ComPtr<ID3D11Device>& device)
 	// Create the display texture
 	HRESULT result = device->CreateTexture2D(&screenTextureDesc, nullptr, &(displayTex.raw));
 	assert(SUCCEEDED(result));
-	result = device->CreateShaderResourceView(displayTex.raw.Get(), nullptr, &(displayTex.asReadOnlyShaderResource));
+	result = device->CreateShaderResourceView(displayTex.raw.Get(), nullptr, &(displayTex.readOnlyView));
 	assert(SUCCEEDED(result));
-	result = device->CreateUnorderedAccessView(displayTex.raw.Get(), nullptr, &(displayTex.asWritableShaderResource));
+	result = device->CreateUnorderedAccessView(displayTex.raw.Get(), nullptr, &(displayTex.readWriteView));
 	assert(SUCCEEDED(result));
 }
 
@@ -54,8 +54,8 @@ AthruTexture2D& ViewFinder::GetDisplayTex()
 // Push constructions for this class through Athru's custom allocator
 void* ViewFinder::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<ViewFinder>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<ViewFinder>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing

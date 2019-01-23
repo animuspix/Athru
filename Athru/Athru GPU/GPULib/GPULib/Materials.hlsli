@@ -129,8 +129,7 @@ float MirroPDF(float4x3 dirs,
                float vari)
 {
     return GGXSmithPDF(dirs,
-                       vari) /
-           (4.0f * dot(dirs[2], dirs[1]));
+                       vari) / (4.0f * dot(dirs[2], dirs[1]));
 }
 float4 MirroDir(float3 wo,
                 float3 microNorml,
@@ -302,7 +301,7 @@ float4 MatSpat(float3x3 dirs, // Input direction in [0], macrosurface normal in 
                                      dirs[1]) / ZERO_PDF_REMAP(matStats.x));
         case BXDF_ID_MIRRO:
             float3 hm = normalize(dirs[0] + dirs[2]);
-            return float4(MirroBXDF(float4x3(dirs[0],
+            return float4(MirroBRDF(float4x3(dirs[0],
                                              hm,
                                              dirs[2],
                                              dirs[1]),
@@ -370,7 +369,7 @@ float2x4 MatSrf(float3 wo,
                                   surfInfo.w,
                                   hm);
             // Evaluate local radiance given [wi], also apply PDF
-            float3 lm = MirroBXDF(float4x3(wim.xyz,
+            float3 lm = MirroBRDF(float4x3(wim.xyz,
                                            hm,
                                            wo,
                                            norml),

@@ -9,26 +9,26 @@ Planet::Planet(float givenScale,
 					distCoeffs)
 {
 	// Initialise plants
-	plants = new SceneFigure[SceneStuff::MAX_NUM_SCENE_ORGANISMS];
+	plants = new SceneFigure[SceneStuff::PLANTS_PER_PLANET];
 
 	// Generation logic undefined for now...
 
 	// Initialise critters
 	// Seven days to create and validate procedural animals isn't really enough time...restrict them to spheres/cubes
 	// for now
-	critters = new SceneFigure[SceneStuff::MAX_NUM_SCENE_ORGANISMS];
+	critters = new SceneFigure[SceneStuff::ANIMALS_PER_PLANET];
 
 	// Generation logic undefined for now...
 }
 
 Planet::~Planet() {}
 
-SceneFigure& Planet::FetchCritter(fourByteUnsigned ndx)
+SceneFigure& Planet::FetchCritter(u4Byte ndx)
 {
 	return critters[ndx];
 }
 
-SceneFigure& Planet::FetchPlant(fourByteUnsigned ndx)
+SceneFigure& Planet::FetchPlant(u4Byte ndx)
 {
 	return plants[ndx];
 }
@@ -36,8 +36,8 @@ SceneFigure& Planet::FetchPlant(fourByteUnsigned ndx)
 // Push constructions for this class through Athru's custom allocator
 void* Planet::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Planet>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<Planet>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing

@@ -2,7 +2,7 @@
 
 #include <d3d11.h>
 #include <wrl/client.h>
-#include "AthruGlobals.h"
+#include "GPUGlobals.h"
 #include "SceneVertex.h"
 
 template <typename VtType> // Restrict this to vertices defined by Athru
@@ -18,9 +18,9 @@ class Mesh
 			indexBuffer = nullptr;
 		}
 		Mesh(VtType* vtSet,
-			 fourByteUnsigned* ndxSet,
-			 fourByteUnsigned numVts,
-			 fourByteUnsigned numIndices,
+			 u4Byte* ndxSet,
+			 u4Byte numVts,
+			 u4Byte numIndices,
 			 const Microsoft::WRL::ComPtr<ID3D11Device>& device)
 		{
 			// Set up the description of the static vertex buffer
@@ -45,7 +45,7 @@ class Mesh
 			// Set up the description of the static index buffer
 			D3D11_BUFFER_DESC indexBufferDesc;
 			indexBufferDesc.Usage = D3D11_USAGE_DEFAULT;
-			indexBufferDesc.ByteWidth = sizeof(fourByteUnsigned) * numIndices;
+			indexBufferDesc.ByteWidth = sizeof(u4Byte) * numIndices;
 			indexBufferDesc.BindFlags = D3D11_BIND_INDEX_BUFFER;
 			indexBufferDesc.CPUAccessFlags = 0;
 			indexBufferDesc.MiscFlags = 0;
@@ -93,8 +93,8 @@ class Mesh
 		// Push constructions for this class through Athru's custom allocator
 		void* operator new(size_t size)
 		{
-			StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-			return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Mesh>(), false);
+			StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+			return allocator->AlignedAlloc(size, (uByte)std::alignment_of<Mesh>(), false);
 		}
 
 		// We aren't expecting to use [delete], so overload it to do nothing

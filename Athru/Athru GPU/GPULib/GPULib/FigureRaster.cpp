@@ -7,10 +7,10 @@ FigureRaster::FigureRaster(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 			  planetRaster(device,
 						   windowHandle,
 						   L"PlanetRaster.cso"),
-			  rasterAtlas(AthruBuffer<float, GPGPUStuff::GPURWBuffer>(device,
-																	  nullptr,
-																	  GPGPUStuff::RASTER_ATLAS_VOLUM,
-																	  DXGI_FORMAT_R32_FLOAT)),
+			  rasterAtlas(AthruBuffer<float, GPGPUStuff::WLimitedBuffer>(device,
+																		 nullptr,
+																		 GPGPUStuff::RASTER_ATLAS_VOLUM,
+																		 DXGI_FORMAT_R32_FLOAT)),
 			  rasterInput(AthruBuffer<RasterInput, GPGPUStuff::CBuffer>(device,
 																		nullptr))
 {}
@@ -19,13 +19,14 @@ FigureRaster::~FigureRaster(){}
 
 void FigureRaster::RasterToGPU(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context)
 {
-	context->CSSetUnorderedAccessViews(5, 1, rasterAtlas.view().GetAddressOf(), nullptr);
+	context->CSSetShaderResources(1, 1, rasterAtlas.rView().GetAddressOf());
 }
 
 void FigureRaster::RasterPlanets(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context)
 {
 	// Pass the rasterization shader onto the pipeline for the current frame
 	context->CSSetShader(planetRaster.shader.Get(), nullptr, 0);
+	context->CSSetUnorderedAccessViews(5, 1, rasterAtlas.rwView().GetAddressOf(), nullptr);
 
 	// Prepare constant input + dispatch raster shader for each planet
 	for (int i = 0; i < SceneStuff::PLANETS_PER_SYSTEM; i += 1)
@@ -44,16 +45,21 @@ void FigureRaster::RasterPlanets(const Microsoft::WRL::ComPtr<ID3D11DeviceContex
 		context->CSSetConstantBuffers(0, 1, rasterInput.buf.GetAddressOf());
 
 		// Rasterize the current planet
-		fourByteUnsigned axisSize = (fourByteUnsigned)std::ceil(std::cbrt(GPGPUStuff::RASTER_CELL_VOLUM / (float)GPGPUStuff::RASTER_THREADS_PER_CELL));
+		u4Byte axisSize = (u4Byte)std::ceil(std::cbrt(GPGPUStuff::RASTER_CELL_VOLUM / (float)GPGPUStuff::RASTER_THREADS_PER_CELL));
 		context->Dispatch(axisSize, axisSize, axisSize);
 	}
+
+	// The raster-atlas won't be passed as read/write-allowed again until we visit another system, so un-bind its unordered-access-view
+	// here
+	ID3D11UnorderedAccessView* nullUAV = nullptr;
+	context->CSSetUnorderedAccessViews(5, 1, &nullUAV, 0);
 }
 
 // Push constructions for this class through Athru's custom allocator
 void* FigureRaster::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<FigureRaster>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<FigureRaster>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing

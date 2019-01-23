@@ -15,7 +15,10 @@ class SceneFigure
 		// indirectly through the interfaces described below
 		struct Figure
 		{
-			Figure() {}
+			Figure() : linTransf(DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f)),
+					   distCoeffs{ DirectX::XMVectorSet(0,0,0,0),
+					   			   DirectX::XMVectorSet(0,0,0,0),
+					   			   DirectX::XMVectorSet(0,0,0,0) } {}
 			Figure(DirectX::XMFLOAT4 linTrans,
 				   DirectX::XMVECTOR* distParams) :
 				   linTransf(linTrans),

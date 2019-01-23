@@ -13,7 +13,7 @@ SceneFigure::SceneFigure()
 SceneFigure::SceneFigure(DirectX::XMFLOAT3 position, float scale,
 						 DirectX::XMVECTOR* distCoeffs)
 {
-	coreFigure = Figure(DirectX::XMFLOAT4(position.x, position.y, position.z, scale),
+	coreFigure = Figure(DirectX::XMFLOAT4(scale, scale, scale, scale),
 						distCoeffs);
 }
 
@@ -33,14 +33,14 @@ void SceneFigure::SetCoreFigure(Figure& fig)
 // Push constructions for this class through Athru's custom allocator
 void* SceneFigure::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<SceneFigure>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<SceneFigure>(), false);
 }
 
 void* SceneFigure::operator new[](size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<SceneFigure>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<SceneFigure>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

@@ -8,17 +8,17 @@
 void GameLoop()
 {
 	// Cache local references to utility services
-	Application* athruApp = AthruUtilities::UtilityServiceCentre::AccessApp();
-	Input* athruInput = AthruUtilities::UtilityServiceCentre::AccessInput();
+	Application* athruApp = AthruCore::Utility::AccessApp();
+	Input* athruInput = AthruCore::Utility::AccessInput();
 
 	// Cache a local reference to the GPU messenger object
-	GPUMessenger* athruGPUMessenger = AthruGPU::GPUServiceCentre::AccessGPUMessenger();
+	GPUMessenger* athruGPUMessenger = AthruGPU::GPU::AccessGPUMessenger();
 
 	// Cache a local reference to the SDF rasterizer
-	FigureRaster* athruSDFRaster = AthruGPU::GPUServiceCentre::AccessRasterizer();
+	FigureRaster* athruSDFRaster = AthruGPU::GPU::AccessRasterizer();
 
 	// Cache a local reference to the render-manager
-	Renderer* athruRendering = AthruGPU::GPUServiceCentre::AccessRenderer();
+	Renderer* athruRendering = AthruGPU::GPU::AccessRenderer();
 
 	// Cache a local reference to the GPU update manager
 	//GPUUpdateManager* athruGPUUpdates = AthruGPU::GPUServiceCentre::AccessGPUUpdateManager();
@@ -47,7 +47,7 @@ void GameLoop()
 		}
 
 		// Update engine clock (needed to evaluate delta-time/FPS)
-		TimeStuff::timeAtLastFrame = std::chrono::steady_clock::now();
+		TimeStuff::lastFrameTime = std::chrono::steady_clock::now();
 
 		// Log frame count
 		//AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::frameCtr);
@@ -64,26 +64,43 @@ void GameLoop()
 		#endif
 
 		// Pass scene data to the GPU for updates/rendering
-		athruGPUMessenger->SceneToGPU(AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext(),
+		athruGPUMessenger->SceneToGPU(AthruGPU::GPU::AccessD3D()->GetDeviceContext(),
 									  athruScene->CollectLocalFigures());
 
-		// Pass the SDF raster-atlas along to the GPU each frame
-		athruSDFRaster->RasterToGPU(AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext());
-
 		// Rasterize planets on the zeroth frame + whenever the player hits a new system
-		if (athruScene->CheckFreshSys() || TimeStuff::frameCtr == 0)
+		bool planetsRastered = false;
+		if (/*athruScene->CheckFreshSys() || */TimeStuff::frameCtr == 0)
 		{
-			athruSDFRaster->RasterPlanets(AthruGPU::GPUServiceCentre::AccessD3D()->GetDeviceContext());
+			athruSDFRaster->RasterPlanets(AthruGPU::GPU::AccessD3D()->GetDeviceContext());
+			planetsRastered = true;
 		}
 
-		// Perform GPU updates here
-		// GPU updates are used for highly-parallel stuffs like:
-		// - Physics processing (with fluid packets, rays, densely-sampled signal processing, etc.)
-		// - Planet-scale predator-prey relationships between plant/critter and critter/critter species
-		//athruGPUUpdates->Update();
+		// whenever planets aren't being rasterized
+		if (!planetsRastered)
+		{
+			// Pass the read-only SDF raster-atlas along to the GPU every frame
+			athruSDFRaster->RasterToGPU(AthruGPU::GPU::AccessD3D()->GetDeviceContext());
 
-		// Render the area around the player
-		athruRendering->Render(athruScene->GetMainCamera());
+			// Pass generic input data along to the GPU
+			//DirectX::XMVECTOR v = athruScene->GetGalaxy()->GetCurrentSystem(athruScene->GetMainCamera()->GetTranslation())->GetPos();
+			//DirectX::XMFLOAT4 p =;
+			//DirectX::XMStoreFloat4(p, v);
+			athruGPUMessenger->CoreInputToGPU(AthruGPU::GPU::AccessD3D()->GetDeviceContext(),
+											  DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f)); // Focussing on renderering for now, avoiding directly
+																						  // working with system positions until I need to
+
+			// Perform GPU updates here
+			// GPU updates are used for highly-parallel stuffs like:
+			// - Physics processing (with fluid packets, rays, densely-sampled signal processing, etc.)
+			// - Planet-scale predator-prey relationships between plant/critter and critter/critter species
+			//athruGPUUpdates->Update();
+
+			// Render the area around the player
+			athruRendering->Render(athruScene->GetMainCamera());
+		}
+
+		// Ask the GPU to start processing committed work
+		AthruGPU::GPU::AccessD3D()->Output();
 
 		// End the debug capture started above
 		#ifdef DEBUG_FIRST_FRAME
@@ -93,6 +110,11 @@ void GameLoop()
 				analysis->Release();
 			}
 		#endif
+
+		// FPS reading/logging
+		// Small penalty from output, but useful for performance measurement when graphics debugging isn't available
+		// (like e.g. on school/work PCs without admin privileges)
+		//AthruCore::Utility::AccessLogger()->Log(TimeStuff::deltaTime());
 
 		// Update the frame counter
 		TimeStuff::frameCtr += 1;

@@ -9,8 +9,8 @@ struct AthruTexture2D
 	Microsoft::WRL::ComPtr<ID3D11Texture2D> raw;
 
 	// A read-only shader-friendly resource view
-	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> asReadOnlyShaderResource;
+	Microsoft::WRL::ComPtr<ID3D11ShaderResourceView> readOnlyView;
 
 	// A write-allowed shader-friendly resource view
-	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> asWritableShaderResource;
+	Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView> readWriteView;
 };

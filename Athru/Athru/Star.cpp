@@ -15,8 +15,8 @@ Star::~Star()
 // Push constructions for this class through Athru's custom allocator
 void* Star::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Star>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<Star>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing

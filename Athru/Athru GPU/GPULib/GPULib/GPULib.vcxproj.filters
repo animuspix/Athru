@@ -16,6 +16,12 @@
     <Filter Include="Third Party">
       <UniqueIdentifier>{1b5367a1-6d76-407d-9fbd-5df1a2a431e4}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Filtering, post-processing, presentation">
+      <UniqueIdentifier>{1f7f1d81-be44-4b49-8ef3-ce5981192a21}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Materials &amp; Sampling">
+      <UniqueIdentifier>{b7f833cd-19ed-4ebc-832a-fcc44ce684f4}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -90,7 +96,10 @@
     <ClInclude Include="PhiloStrm.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LiPath.h">
+    <ClInclude Include="GPUGlobals.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="LiBounce.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>
@@ -142,25 +151,70 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="SceneVis.hlsl" />
-    <FxCompile Include="PresentationColors.hlsl" />
-    <FxCompile Include="PresentationVerts.hlsl" />
-    <FxCompile Include="PathReduce.hlsl" />
     <FxCompile Include="PlanetRaster.hlsl" />
+    <FxCompile Include="RayMarch.hlsl" />
+    <FxCompile Include="BouncePrep.hlsl" />
+    <FxCompile Include="dispScale128.hlsl" />
+    <FxCompile Include="dispScale256.hlsl" />
+    <FxCompile Include="dispScale512.hlsl" />
+    <FxCompile Include="PresentationColors.hlsl">
+      <Filter>Filtering, post-processing, presentation</Filter>
+    </FxCompile>
+    <FxCompile Include="PresentationVerts.hlsl">
+      <Filter>Filtering, post-processing, presentation</Filter>
+    </FxCompile>
+    <FxCompile Include="RasterPrep.hlsl">
+      <Filter>Filtering, post-processing, presentation</Filter>
+    </FxCompile>
+    <FxCompile Include="DiffuSampler.hlsl">
+      <Filter>Materials &amp; Sampling</Filter>
+    </FxCompile>
+    <FxCompile Include="FurrySampler.hlsl">
+      <Filter>Materials &amp; Sampling</Filter>
+    </FxCompile>
+    <FxCompile Include="RefraSampler.hlsl">
+      <Filter>Materials &amp; Sampling</Filter>
+    </FxCompile>
+    <FxCompile Include="SnowwSampler.hlsl">
+      <Filter>Materials &amp; Sampling</Filter>
+    </FxCompile>
+    <FxCompile Include="SsurfSampler.hlsl">
+      <Filter>Materials &amp; Sampling</Filter>
+    </FxCompile>
+    <FxCompile Include="MirroSampler.hlsl">
+      <Filter>Materials &amp; Sampling</Filter>
+    </FxCompile>
+    <FxCompile Include="LensSampler.hlsl">
+      <Filter>Materials &amp; Sampling</Filter>
+    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="Lighting.hlsli" />
     <None Include="Core3D.hlsli" />
     <None Include="Fractals.hlsli" />
-    <None Include="AA.hlsli" />
     <None Include="LightingUtility.hlsli" />
     <None Include="GenericUtility.hlsli" />
-    <None Include="Materials.hlsli" />
-    <None Include="RasterCamera.hlsli" />
-    <None Include="ScenePost.hlsli" />
-    <None Include="MIS.hlsli" />
     <None Include="GeometricUtility.hlsli" />
-    <None Include="MaterialUtility.hlsli" />
     <None Include="FigureBuffer.hlsli" />
+    <None Include="PhiloBuf.hlsli" />
+    <None Include="RenderUtilityCore.hlsli" />
+    <None Include="AA.hlsli">
+      <Filter>Filtering, post-processing, presentation</Filter>
+    </None>
+    <None Include="ScenePost.hlsli">
+      <Filter>Filtering, post-processing, presentation</Filter>
+    </None>
+    <None Include="Materials.hlsli">
+      <Filter>Materials &amp; Sampling</Filter>
+    </None>
+    <None Include="MaterialUtility.hlsli">
+      <Filter>Materials &amp; Sampling</Filter>
+    </None>
+    <None Include="MatSynth.hlsli">
+      <Filter>Materials &amp; Sampling</Filter>
+    </None>
+    <None Include="MIS.hlsli">
+      <Filter>Materials &amp; Sampling</Filter>
+    </None>
   </ItemGroup>
 </Project>

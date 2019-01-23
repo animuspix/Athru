@@ -6,7 +6,7 @@
 Direct3D::Direct3D(HWND hwnd)
 {
 	// Value used to store success/failure for different DirectX operations
-	fourByteUnsigned result;
+	u4Byte result;
 
 	// Struct containing a description of the swap chain
 	DXGI_SWAP_CHAIN_DESC swapChainDesc;
@@ -142,7 +142,7 @@ Direct3D::Direct3D(HWND hwnd)
 
 Direct3D::~Direct3D() {}
 
-void Direct3D::SubmitGPUWork()
+void Direct3D::Output()
 {
 	// Submit buffered dispatch/draw data to the GPU
 	// If vsync is enabled (read: equal to [true] or [1]), present the data

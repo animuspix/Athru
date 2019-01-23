@@ -1,7 +1,7 @@
 #pragma once
 
 #include <cstdlib>
-#include "AthruGlobals.h"
+#include "AppGlobals.h"
 
 class ServiceCentre;
 
@@ -11,16 +11,16 @@ class StackAllocator
 {
 	struct Marker
 	{
-		eightByteUnsigned distanceFromTop;
+		u8Byte distanceFromTop;
 	};
 
 	public:
-		StackAllocator(const eightByteUnsigned& expectedMemoryUsage);
+		StackAllocator(const u8Byte& expectedMemoryUsage);
 		~StackAllocator();
 
 		// Allocate [bytes] from the available heap memory
-		address AlignedAlloc(eightByteUnsigned bytes,
-							 byteUnsigned alignment,
+		address AlignedAlloc(u8Byte bytes,
+							 uByte alignment,
 							 bool setMarker);
 
 		// Allocate a single non-aligned byte from the available heap memory
@@ -36,18 +36,18 @@ class StackAllocator
 		address GetTop();
 
 		// Retrieve the number of active markers
-		twoByteUnsigned GetActiveMarkerCount();
+		u2Byte GetActiveMarkerCount();
 
 	private:
 		// Variables
 		address stackTop;
 		address stackStart;
 		Marker markers[MemoryStuff::MAX_MARKER_COUNT];
-		twoByteUnsigned activeMarkerCount;
-		eightByteUnsigned availMem;
+		u2Byte activeMarkerCount;
+		u8Byte availMem;
 
 		// Helper functions
 		// Shift pointers to a given alignment
 		address PtrAdjuster(address srcPtr,
-							byteUnsigned alignment);
+							uByte alignment);
 };

@@ -15,7 +15,7 @@ struct GPURand
 		// No initial data! :O
 		// Too finicky to pass starting seeds along to Athru's buffer interface, so we'll
 		// just seed with GPU hashes instead :P
-		fourByteUnsigned numSeeds = GPGPUStuff::NUM_RAND_SEEDS;
+		u4Byte numSeeds = GPGPUStuff::NUM_RAND_SEEDS;
 		gpuRandState = AthruBuffer<PhiloStrm, GPGPUStuff::GPURWBuffer>(device,
 																	   nullptr,
 																	   GPGPUStuff::NUM_RAND_SEEDS);

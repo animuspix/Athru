@@ -4,7 +4,7 @@
 
 struct SceneVertex
 {
-	SceneVertex() {};
+	SceneVertex() : position(DirectX::XMFLOAT4(0.0f, 0.0f, 0.0f, 0.0f)) {};
 	SceneVertex(DirectX::XMFLOAT4 pos) :
 				position{ pos.x, pos.y, pos.z, 1 } {}
 

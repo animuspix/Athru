@@ -8,23 +8,24 @@
 #include "GPURand.h"
 #include "PlanarUnwrapper.h"
 #include "UtilityServiceCentre.h"
+#include "GPUGlobals.h"
 
 namespace AthruGPU
 {
-	class GPUServiceCentre
+	class GPU
 	{
 	public:
-		GPUServiceCentre() = delete;
-		~GPUServiceCentre() = delete;
+		GPU() = delete;
+		~GPU() = delete;
 
 		static void Init()
 		{
 			// Initialise utilities (if neccessary)
-			if (AthruUtilities::UtilityServiceCentre::AccessMemory() == nullptr)
+			if (AthruCore::Utility::AccessMemory() == nullptr)
 			{
 				// Allocation assumes Athru will use 255 megabytes at most
-				const eightByteUnsigned STARTING_HEAP = 255000000;
-				AthruUtilities::UtilityServiceCentre::Init(STARTING_HEAP);
+				const u8Byte STARTING_HEAP = 255000000;
+				AthruCore::Utility::Init(STARTING_HEAP);
 				internalInit = true;
 			}
 			else
@@ -32,14 +33,14 @@ namespace AthruGPU
 				internalInit = false;
 			}
 
-			// Initialise the Direct3D handler class, the GPU messenger, the texture manager,
-			// and the GPU-side random number generator
-			d3DPttr = DEBUG_NEW Direct3D(AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND());
+			// Initialise the Direct3D handler class, the GPU messenger, the GPU-side random number generator,
+			// and the dispatch argument trimmers
+			d3DPttr = DEBUG_NEW Direct3D(AthruCore::Utility::AccessApp()->GetHWND());
 			gpuMessengerPttr = new GPUMessenger(d3DPttr->GetDevice());
 			gpuRand = new GPURand(d3DPttr->GetDevice());
 
 			// Initialize the SDF rasterizer
-			HWND winHandle = AthruUtilities::UtilityServiceCentre::AccessApp()->GetHWND();
+			HWND winHandle = AthruCore::Utility::AccessApp()->GetHWND();
 			rasterPttr = new FigureRaster(d3DPttr->GetDevice(), winHandle);
 
 			// Initialise the rendering manager + the GPU update manager
@@ -79,9 +80,9 @@ namespace AthruGPU
 			{
 				// Free any un-managed memory allocated to utility services;
 				// also send the references stored for each utility to [nullptr]
-				AthruUtilities::UtilityServiceCentre::DeInitApp();
-				AthruUtilities::UtilityServiceCentre::DeInitInput();
-				AthruUtilities::UtilityServiceCentre::DeInitLogger();
+				AthruCore::Utility::DeInitApp();
+				AthruCore::Utility::DeInitInput();
+				AthruCore::Utility::DeInitLogger();
 			}
 		}
 

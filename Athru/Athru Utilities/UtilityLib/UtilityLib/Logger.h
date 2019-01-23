@@ -210,7 +210,7 @@ class Logger
 			{
 				if (destination == DESTINATIONS::CONSOLE)
 				{
-					*printStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (eightByteUnsigned)dataLogging << '\n';
+					*printStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (u8Byte)dataLogging << '\n';
 					*printStreamPttr << "logging enumeration stack-address " << &dataLogging << '\n';
 					*printStreamPttr << "no further details available" << '\n' << '\n';
 				}
@@ -317,7 +317,7 @@ class Logger
 									   !memFuncPttrData &&
 									    enumData)
 					{
-						*printStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (eightByteUnsigned)*dataLogging << " at " << dataLogging << '\n';
+						*printStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (u8Byte)*dataLogging << " at " << dataLogging << '\n';
 						*printStreamPttr << "no further details available" << '\n' << '\n';
 					}
 
@@ -399,7 +399,7 @@ class Logger
 									   !memFuncPttrData &&
 									    enumData)
 					{
-						*logFileStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (eightByteUnsigned)*dataLogging << " at " << dataLogging << '\n';
+						*logFileStreamPttr << "\nlogging enumeration with type-id " << typeid(loggableType).name() << " and numeric value " << (u8Byte)*dataLogging << " at " << dataLogging << '\n';
 						*logFileStreamPttr << "no further details available" << '\n' << '\n';
 					}
 
@@ -436,7 +436,7 @@ class Logger
 			std::string msg = std::string("Logging array of type ");
 			msg.append(typeid(loggableType).name());
 			Log(msg.c_str(), destination);
-			for (twoByteUnsigned i = 0; i < arrayLength; i += 1)
+			for (u2Byte i = 0; i < arrayLength; i += 1)
 			{
 				Log(dataLogging[i], destination);
 			}
@@ -448,7 +448,7 @@ class Logger
 			std::string msg = std::string("Logging array of type ");
 			msg.append(typeid(loggableType).name());
 			Log(msg.c_str(), destination);
-			for (twoByteUnsigned i = 0; i < arrayLength; i += 1)
+			for (u2Byte i = 0; i < arrayLength; i += 1)
 			{
 				Log(dataLogging[i], destination);
 			}

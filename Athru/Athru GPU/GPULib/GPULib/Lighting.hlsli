@@ -1,5 +1,7 @@
 
-#include "Core3D.hlsli"
+#ifndef CORE_3D_LINKED
+    #include "Core3D.hlsli"
+#endif
 #include "LightingUtility.hlsli"
 #include "MIS.hlsli"
 #ifndef MATERIALS_LINKED
@@ -12,7 +14,7 @@
 // Light gathers for surface camera vertices
 float3 LiGather(Path path,
                 float4 liLinTransf, // Position/size for the given light (all lights are area lights in Athru)
-                float adaptEps, // The adaptive epsilon value chosen for the current frame
+                float eps, // The adaptive epsilon value chosen for the current frame
                 inout PhiloStrm randStrm) // The permutable random value used for the current shader instance
 {
     // Initialise ray-marching values; all light sources are assumed stellar atm
@@ -24,7 +26,7 @@ float3 LiGather(Path path,
     float3x4 occData = OccTest(float4(path.ro, true),
                                float4(normalize(stellarSurfPos - path.ro), STELLAR_FIG_ID),
                                float4(stellarSurfPos, false),
-                               float2(adaptEps, path.rd.w),
+                               float2(eps, path.rd.w),
                                float2(1.0f.xx),
                                randStrm);
     float4 srfLi = MatSpat(float3x3(occData[0].xyz,
@@ -46,7 +48,7 @@ float3 LiGather(Path path,
     float3x4 misOccData = OccTest(float4(path.ro, true),
                                   float4(mul(srf[0].xyz, refl ? normSpace : ID_MATRIX_3D), STELLAR_FIG_ID),
                                   float4(0.0f.xxx, false),
-                                  float2(adaptEps, path.rd.w),
+                                  float2(eps, path.rd.w),
                                   randStrm);
     // Cache probability densities for light samples
     float stellarPosPDF = LightPosPDF(LIGHT_ID_STELLAR) * path.mat[0][(uint)path.mat[2].z];

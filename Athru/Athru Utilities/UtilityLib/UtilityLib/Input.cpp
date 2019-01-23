@@ -4,7 +4,7 @@
 Input::Input()
 {
 	// Un-press every key in on the keyboard
-	for (twoByteUnsigned keySetter = 0; keySetter < 256; keySetter += 1)
+	for (u2Byte keySetter = 0; keySetter < 256; keySetter += 1)
 	{
 		keys[keySetter] = false;
 	}
@@ -24,21 +24,21 @@ Input::~Input()
 {
 }
 
-void Input::KeyDown(fourByteUnsigned input)
+void Input::KeyDown(u4Byte input)
 {
 	// If a key is pressed then save that state in the key array.
 	keys[input] = true;
 	return;
 }
 
-void Input::KeyUp(fourByteUnsigned input)
+void Input::KeyUp(u4Byte input)
 {
 	// If a key is released then clear that state in the key array.
 	keys[input] = false;
 	return;
 }
 
-bool Input::IsKeyDown(fourByteUnsigned key)
+bool Input::IsKeyDown(u4Byte key)
 {
 	// Return what state the key is in (pressed/not pressed).
 	return keys[key];
@@ -84,8 +84,8 @@ DirectX::XMFLOAT2 Input::GetMousePos()
 // Push constructions for this class through Athru's custom allocator
 void* Input::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Input>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<Input>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

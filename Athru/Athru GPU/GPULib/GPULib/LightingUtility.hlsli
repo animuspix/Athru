@@ -20,11 +20,6 @@
 // every scatter site in the light sub-path)
 #define MAX_BOUNCES_PER_SUBPATH 7
 
-// Figure-ID associated with the local star in each system
-// Also where the local star is stored in the per-frame
-// scene-array
-#define STELLAR_FIG_ID 0
-
 // A generic background color; used for contrast against dark surfaces in
 // space environments with no ambient environmental light sources besides
 // the local star
@@ -147,13 +142,13 @@ float DiffuseLiPDF()
 // greater convergence rate than [DiffuseLiDir], but
 // less physically accurate (light can be emitted
 // directly back into the source)
-float3 StellarLiDir(float3 uvw01,
-                    float3 srcPos)
-{
-    float4 figLinTransf = figures[1].linTransf;
-    float3 randSphPt = ((uvw01 - 0.5f.xxx) * 2.0f.xxx) * figLinTransf.w;
-    return normalize(srcPos - (figLinTransf.xyz + randSphPt));
-}
+//float3 StellarLiDir(float3 uvw01,
+//                    float3 srcPos)
+//{
+//    float4 figLinTransf = figures[1].linTransf;
+//    float3 randSphPt = ((uvw01 - 0.5f.xxx) * 2.0f.xxx) * figLinTransf.w;
+//    return normalize(srcPos - (figLinTransf.xyz + randSphPt));
+//}
 
 // Diffuse emission profile; uses a full hemispheric distribution
 // instead of the cosine-weighted distribution chosen for sampling
@@ -200,19 +195,19 @@ float LightEmitPDF(uint lightID)
 // Direction generator for light emissions; diffuse directions are
 // assumed for all lights atm (might consider more illumination
 // profiles later on...)
-float3 LightEmitDir(uint lightID,
-                    float3 liSurfPos,
-                    uint randStrm)
-{
-    switch (lightID)
-    {
-        case LIGHT_ID_STELLAR:
-            return StellarLiDir(randStrm,
-                                liSurfPos); // Stellar light sources are pseudo-hemispheric diffuse emitters
-        default:
-            return DiffuseLiDir(randStrm); // Assume hemispheric diffuse emission by default
-    }
-}
+//float3 LightEmitDir(uint lightID,
+//                    float3 liSurfPos,
+//                    uint randStrm)
+//{
+//    switch (lightID)
+//    {
+//        case LIGHT_ID_STELLAR:
+//            return StellarLiDir(randStrm,
+//                                liSurfPos); // Stellar light sources are pseudo-hemispheric diffuse emitters
+//        default:
+//            return DiffuseLiDir(randStrm); // Assume hemispheric diffuse emission by default
+//    }
+//}
 
 // Probabilities for each light sampler accessed by [LightSurfPos]; only defined for
 // stellar light sources atm
@@ -270,7 +265,7 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
 
 // Simple occlusion function, traces a shadow ray between two points to test
 // for visiblity (needed to validate generic sub-path connections in BDPT)
-// [0].xyz contains the tracing direction, [0].w clontains the distance
+// [0].xyz contains the tracing direction, [0].w contains the distance
 // travelled by the shadow ray, [1].xyz the final position at the head of
 // the shadow ray, [1].w contains the shadow ray's occlusion status
 // (false => reached [rayDest] without intersecting any earlier geometry;
@@ -279,17 +274,14 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
 // point (if any)
 // [rayDir] carries a ray direction in [xyz] and the target figure-ID in
 // [w]
-// [rayOri] carries the ray origin in [xyz] and the adaptive-epsilon used in 
+// [rayOri] carries the ray origin in [xyz] and the SDF epsilon value for
 // the current frame in [w]
-// [rayDest] carries the occlusion ray's emission point in [xyz] and whether or
-// not to check intersection positions as well as figure-ID's in [w]
-// [surfInfo] carries [adaptEps] in [x] and the local figure-ID in [y]
 // Planetary surface variance is much too high for ordinary ray offsets to work, so
 // occlusion rays are traced backwards from the ray destination instead
 #define MAX_OCC_MARCHER_STEPS 256
 float3x4 OccTest(float4 rayOri,
                  float4 rayDir,
-                 inout PhiloStrm randStrm) // Full RNG access needed for material handling on intersection
+                 float eps)
 {
     float currRayDist = 0.0f;
     bool occ = true;
@@ -304,9 +296,9 @@ float3x4 OccTest(float4 rayOri,
                                          false,
                                          FILLER_SCREEN_ID,
                                          rayOri.w);
-        bool hitDest = (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target scene
-        if (sceneField[0].x < surfInfo.x ||
-            (hitDest && sceneField[0].x < surfInfo.x))
+        bool hitDest = (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target figure
+        if (sceneField[0].x < eps ||
+            (hitDest && sceneField[0].x < eps))
         {
             if (hitDest)
             {
@@ -328,10 +320,8 @@ float3x4 OccTest(float4 rayOri,
             break;
         }
 
-        // No intersections yet + [rayVec] hasn't passed within [adaptEps] units
-        // of [rayDest]; continue marching through the scene
-        if (rayDest.w) { currRayDist += min(sceneField[0].x, destPtDist); }
-        else { currRayDist += sceneField[0].x; }
+        // Continue marching through the scene
+        currRayDist += sceneField[0].x;
     }
     // Return occlusion information for the given context
     return float3x4(rayDir.xyz,

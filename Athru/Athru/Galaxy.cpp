@@ -14,7 +14,7 @@ Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 		systems[0] = new System(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f));
 
 		// Generate remaining systems
-		for (fourByteUnsigned i = 1; i < SceneStuff::SYSTEM_COUNT; i += 1)
+		for (u4Byte i = 1; i < SceneStuff::SYSTEM_COUNT; i += 1)
 		{
 			systems[i] = new System(DirectX::XMFLOAT3((float)(rand()), (float)(rand()), (float)(rand())));
 		}
@@ -28,7 +28,7 @@ Galaxy::Galaxy(AVAILABLE_GALACTIC_LAYOUTS galacticLayout)
 		// Unit circle-involute (not /really/ a spiral, but close enough
 		// for now): x = t * sin(t) + cos(t), y = sin(t) - cos(t)
 
-		for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
+		for (u4Byte i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 		{
 			systems[i] = new System(DirectX::XMFLOAT3((float)rand(), (float)(sin(i) - cos(i)), (float)((i * sin(i)) + cos(i))));
 		}
@@ -47,9 +47,9 @@ System** Galaxy::GetSystems()
 
 System* Galaxy::GetCurrentSystem(DirectX::XMVECTOR& cameraPos)
 {
-	fourByteUnsigned systemIndex = 0;
+	u4Byte systemIndex = 0;
 	float lastDistToSystemCentre = FLT_MAX;
-	for (fourByteUnsigned i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
+	for (u4Byte i = 0; i < SceneStuff::SYSTEM_COUNT; i += 1)
 	{
 		DirectX::XMFLOAT3 currSysPos = systems[systemIndex]->GetPos();
 		DirectX::XMVECTOR cameraToSystemDiff = _mm_sub_ps(_mm_set_ps(0.0f,
@@ -70,8 +70,8 @@ System* Galaxy::GetCurrentSystem(DirectX::XMVECTOR& cameraPos)
 // Push constructions for this class through Athru's custom allocator
 void* Galaxy::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Galaxy>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<Galaxy>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing

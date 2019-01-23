@@ -1,18 +1,18 @@
 #pragma once
 
-#include "UtilityServiceCentre.h"
+#include "GPUGlobals.h"
+#include <functional>
+#include <tuple>
 
 template <typename ContentType,
 		  typename AthruBufType> // Restrict to defined Athru buffer types when possible... (see Concepts in C++20)
 struct AthruBuffer
 {
 	public:
-		AthruBuffer() {}; // Default constructor, literally just here to work around MSVC fiddliness;
-						  // generated values are invalid and a call to the expanded constructor (see below)
-						  // will be needed to create a useful buffer/resource-view
+		AthruBuffer() {}; // Empty default constructor, allows uninitialized buffers
 		AthruBuffer(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 					const void* baseDataPttr,
-					fourByteUnsigned bufLength = 1,
+					u4Byte bufLength = 1,
 					DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN) // Allow optional view-format definition for GPU-viewable,
 															   // non-structured buffers; default assumes unknown structured data
 		{
@@ -50,9 +50,7 @@ struct AthruBuffer
 				// Choose between unordered-access-view and shader-resource-view construction as appropriate
 				if constexpr (std::is_base_of<GPGPUStuff::GPURWBuffer, AthruBufType>::value)
 				{
-					// Describe the the shader-friendly read/write resource view we'll
-					// use to access the buffer during general-purpose graphics
-					// processing
+					// Generate UAV descriptions, construct UAV
 					D3D11_BUFFER_UAV viewDescA;
 					viewDescA.FirstElement = 0;
 					viewDescA.Flags = bufUAVFlags();
@@ -62,40 +60,58 @@ struct AthruBuffer
 					viewDescB.Format = viewFmt;
 					viewDescB.Buffer = viewDescA;
 					viewDescB.ViewDimension = D3D11_UAV_DIMENSION_BUFFER;
-
-					// Construct a DirectX11 "view" over the data at [bufPttr]
 					result = device->CreateUnorderedAccessView(buf.Get(), &viewDescB, resrcView.GetAddressOf());
 					assert(SUCCEEDED(result));
+
+					// Generate read-only resource view for write-limited buffers
+					if constexpr (std::is_same<AthruBufType, GPGPUStuff::WLimitedBuffer>::value) { CreateCastingSRV(device, bufLength,
+																													viewFmt, result); }
 				}
 				else
 				{
-					// Describe the the shader-friendly readable resource view we'll
-					// use to access the buffer during general-purpose graphics
-					// processing
-					D3D11_BUFFER_SRV viewDescA;
-					viewDescA.FirstElement = 0;
-					viewDescA.NumElements = bufLength;
-
-					D3D11_SHADER_RESOURCE_VIEW_DESC viewDescB;
-					viewDescB.Format = viewFmt;
-					viewDescB.Buffer = viewDescA;
-					viewDescB.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
-
-					// Construct a DirectX11 "view" over the data at [bufPttr]
-					result = device->CreateShaderResourceView(buf.Get(), &viewDescB, resrcView.GetAddressOf());
-					assert(SUCCEEDED(result));
+					CreateCoreSRV(device, bufLength, viewFmt, result);
 				}
 			}
 		}
 		Microsoft::WRL::ComPtr<ID3D11Buffer> buf; // Internal DX11 buffer, never becomes invalid so safe to expose globally
-		const auto& view() // Indirect access function used to safely extract the resource view for non-constant, non-staging buffers
+
+		// Indirect access function used to safely extract the resource view for non-constant, non-staging buffers
+		const auto& view()
 		{
 			static_assert(!(std::is_same<decltype(resrcView), std::nullptr_t>::value),
-						  "No defined views for constant/staging buffers!");
+						  "No defined views for constant/staging buffers");
+			static_assert(!(std::is_same<AthruBufType, GPGPUStuff::WLimitedBuffer>::value),
+						  "Write-limited buffers must specify view read/write view type by calling [asReadOnly] or [asRW]");
 			return resrcView;
 		}
-		bool hasView() { return !(std::is_same<decltype(resrcView), std::nullptr_t>::value); } // Return whether or not [this] has a defined
-																							   // resource view
+
+		// Altenative to [view] specialized for write-limited buffers
+		// Would prefer to only make this available when [AthruBufType] is write-limited, but [std::enable_if] is unavailable
+		// on MSVC and template hacks cause lots of side-effects; am expecting to maybe be able to do that with [std::function<...>]
+		// (having concepted return types) after C++20 is released
+		const auto& rwView()
+		{
+			static_assert(std::is_same<AthruBufType, GPGPUStuff::WLimitedBuffer>::value,
+						  "[rwView] is intended to specifically return a read/write-allowed view for write-limited buffers;\
+						   other buffer types should prefer [view()]");
+			return resrcView;
+		}
+
+		// Alternative to [view] specialized for write-limited buffers
+		// Would prefer to only make this available when [AthruBufType] is write-limited, but  template hacks cause too many side-effects for a stable implementation;
+		// am expecting to maybe be able to do that with [std::function<...>] after C++20 is released
+		const auto& rView()
+		{
+			static_assert(std::is_same<AthruBufType, GPGPUStuff::WLimitedBuffer>::value,
+						  "Only write-limited buffers can be optionally read as read-only;\ndefault read-only \
+						   types (such as constant-buffers and [GPURBuffer]s should be accessed through [view])");
+			return castResrcView;
+		}
+
+		// Return whether or not [this] has a defined
+		// resource view
+		bool hasView() { return !(std::is_same<decltype(resrcView), std::nullptr_t>::value); }
+
 	private:
 		typedef typename std::conditional<std::is_base_of<GPGPUStuff::GPURWBuffer,
 							     						  AthruBufType>::value,
@@ -109,6 +125,12 @@ struct AthruBuffer
 								 // resource views) so restrict access to an indirect
 								 // helper function instead of using a public member
 								 // value
+		typedef typename std::conditional<std::is_same<AthruBufType, GPGPUStuff::WLimitedBuffer>::value,
+										  Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>,
+										  std::nullptr_t>::type castingOuterType;
+		castingOuterType castResrcView; // Secondary resource view, returned from [view(...)] (instead of [resrcView])
+										// when [asReadOnly] is [true]
+
 		D3D11_USAGE bufUsage() // Small function returning appropriate usage for different buffer types
 		{
 			if constexpr (std::is_base_of<GPGPUStuff::GPURWBuffer, AthruBufType>::value)
@@ -129,11 +151,13 @@ struct AthruBuffer
 				return D3D11_USAGE_STAGING;
 			}
 		}
-		fourByteUnsigned bufBindFlags() // Small function returning appropriate binding flags for different buffer types
+		u4Byte bufBindFlags() // Small function returning appropriate binding flags for different buffer types
 		{
 			if constexpr (std::is_base_of<GPGPUStuff::GPURWBuffer, AthruBufType>::value)
 			{
-				return D3D11_BIND_UNORDERED_ACCESS;
+				if constexpr (std::is_same<AthruBufType, GPGPUStuff::WLimitedBuffer>::value) { return D3D11_BIND_UNORDERED_ACCESS |
+																									  D3D11_BIND_SHADER_RESOURCE; }
+				else { return D3D11_BIND_UNORDERED_ACCESS; }
 			}
 			else if constexpr (std::is_same<AthruBufType, GPGPUStuff::StgBuffer>::value)
 			{
@@ -148,7 +172,7 @@ struct AthruBuffer
 				return D3D11_BIND_SHADER_RESOURCE;
 			}
 		}
-		fourByteUnsigned bufCPUAccess() // Small function returning appropriate CPU access for different buffer types
+		u4Byte bufCPUAccess() // Small function returning appropriate CPU access for different buffer types
 		{
 			if constexpr ((std::is_same<AthruBufType, GPGPUStuff::StgBuffer>::value))
 			{
@@ -164,26 +188,30 @@ struct AthruBuffer
 				return 0;
 			}
 		}
-		fourByteUnsigned bufMiscFlags() // Small function returning appropriate miscellaneous flags for different buffer types
+		u4Byte bufMiscFlags() // Small function returning appropriate miscellaneous flags for different buffer types
 		{
 			if constexpr ((std::is_class<ContentType>::value || std::is_same<AthruBufType, GPGPUStuff::AppBuffer>::value) &&
 						  (!std::is_same<AthruBufType, GPGPUStuff::CBuffer>::value))
 			{
 				return D3D11_RESOURCE_MISC_BUFFER_STRUCTURED;
 			}
+			else if constexpr (std::is_same<AthruBufType, GPGPUStuff::CtrBuffer>::value)
+			{
+				return D3D11_RESOURCE_MISC_DRAWINDIRECT_ARGS;
+			}
 			else
 			{
 				return 0;
 			}
 		}
-		fourByteUnsigned bufByteStride() // Small function returning structure byte stride (when appropriate)
+		u4Byte bufByteStride() // Small function returning structure byte stride (when appropriate)
 		{
 			return sizeof(ContentType) * ((std::is_class<ContentType>::value || std::is_same<AthruBufType, GPGPUStuff::AppBuffer>::value) &&
 										  !(std::is_same<AthruBufType, GPGPUStuff::CBuffer>::value)); // Structure-byte-stride is zeroed
 																									  // for unstructured and constant
 																									  // buffers
 		}
-		fourByteUnsigned bufUAVFlags()
+		u4Byte bufUAVFlags()
 		{
 			if constexpr (std::is_same<AthruBufType, GPGPUStuff::AppBuffer>::value)
 			{
@@ -193,5 +221,35 @@ struct AthruBuffer
 			{
 				return 0;
 			}
+		}
+
+		void CreateCoreSRV(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+						   const u4Byte& bufLength, const DXGI_FORMAT& viewFmt, HRESULT& result)
+		{
+			// Generate SRV descriptions, construct SRV
+			D3D11_BUFFER_SRV viewDescA;
+			viewDescA.FirstElement = 0;
+			viewDescA.NumElements = bufLength;
+			D3D11_SHADER_RESOURCE_VIEW_DESC viewDescB;
+			viewDescB.Format = viewFmt;
+			viewDescB.Buffer = viewDescA;
+			viewDescB.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+			result = device->CreateShaderResourceView(buf.Get(), &viewDescB, resrcView.GetAddressOf());
+			assert(SUCCEEDED(result));
+		}
+
+		void CreateCastingSRV(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+							  const u4Byte& bufLength, const DXGI_FORMAT& viewFmt, HRESULT& result)
+		{
+			// Generate SRV descriptions, construct SRV
+			D3D11_BUFFER_SRV viewDescA;
+			viewDescA.FirstElement = 0;
+			viewDescA.NumElements = bufLength;
+			D3D11_SHADER_RESOURCE_VIEW_DESC viewDescB;
+			viewDescB.Format = viewFmt;
+			viewDescB.Buffer = viewDescA;
+			viewDescB.ViewDimension = D3D11_SRV_DIMENSION_BUFFEREX;
+			result = device->CreateShaderResourceView(buf.Get(), &viewDescB, castResrcView.GetAddressOf());
+			assert(SUCCEEDED(result));
 		}
 };

@@ -15,12 +15,14 @@ float3 HDR(float3 traceColor,
 
 float3 PathPost(float3 pathRGB,
                 float filtVal,
-                uint linPixID)
+                uint linPixID,
+                uint numAASamples)
 {
     // Apply temporal anti-aliasing, also filter the sample appropriately + apply motion blur
     pathRGB = FrameSmoothing(pathRGB,
                              filtVal,
-                             linPixID);
+                             linPixID,
+                             numAASamples);
 
     // Transform colors to low-dynamic-range with the Hejl and Burgess-Dawson operator
     // Exposure will (eventually) be controlled by varying aperture size in a physically-based

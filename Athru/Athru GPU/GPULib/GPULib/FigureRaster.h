@@ -1,6 +1,6 @@
 #pragma once
 
-#include "AthruGlobals.h"
+#include "GPUGlobals.h"
 
 class FigureRaster
 {
@@ -45,6 +45,6 @@ class FigureRaster
 
 		// Atlas containing rasterized planet SDFs for the current system +
 		// rasterized plants/animals for the nearest planet
-		AthruBuffer<float, GPGPUStuff::GPURWBuffer> rasterAtlas;
+		AthruBuffer<float, GPGPUStuff::WLimitedBuffer> rasterAtlas;
 };
 

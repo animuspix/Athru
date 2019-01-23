@@ -1,6 +1,6 @@
 #include "UtilityServiceCentre.h"
 
-StackAllocator* AthruUtilities::UtilityServiceCentre::stackAllocatorPttr = nullptr;
-Logger* AthruUtilities::UtilityServiceCentre::loggerPttr = nullptr;
-Input* AthruUtilities::UtilityServiceCentre::inputPttr = nullptr;
-Application* AthruUtilities::UtilityServiceCentre::appPttr = nullptr;
+StackAllocator* AthruCore::Utility::stackAllocatorPttr = nullptr;
+Logger* AthruCore::Utility::loggerPttr = nullptr;
+Input* AthruCore::Utility::inputPttr = nullptr;
+Application* AthruCore::Utility::appPttr = nullptr;

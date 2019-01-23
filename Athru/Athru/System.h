@@ -6,7 +6,9 @@
 class System
 {
 	public:
-		System() {};
+		System() : star(nullptr),
+				   planets { nullptr},
+				   position(DirectX::XMFLOAT3(0.0f, 0.0f, 0.0f)) {};
 		System(DirectX::XMFLOAT3 sysPos);
 		~System();
 

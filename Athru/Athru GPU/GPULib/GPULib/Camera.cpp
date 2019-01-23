@@ -37,7 +37,7 @@ Camera::Camera()
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
 	// Create the camera's viewfinder (screen rect)
-	viewfinder = new ViewFinder(AthruGPU::GPUServiceCentre::AccessD3D()->GetDevice());
+	viewfinder = new ViewFinder(AthruGPU::GPU::AccessD3D()->GetDevice());
 
 	// Initialise the spin-speed modifier for mouse-look
 	spinSpeed = 0.5f;
@@ -55,7 +55,7 @@ Camera::~Camera()
 void Camera::Update()
 {
 	// Cache a local reference to the Input service
-	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
+	Input* localInput = AthruCore::Utility::AccessInput();
 
 	// Translate the view in-game with WASD
 	float dt = (float)TimeStuff::deltaTime();
@@ -204,8 +204,8 @@ ViewFinder* Camera::GetViewFinder()
 // Push constructions for this class through Athru's custom allocator
 void* Camera::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Camera>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<Camera>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing

@@ -9,10 +9,6 @@
 // included somewhere in the build process
 #define ANTI_ALIASING_LINKED
 
-// Maximum supported number of samples-per-pixel
-// for anti-aliasing
-#define NUM_AA_SAMPLES 8192 // Replace this with a CPU-defined sampling rate for release builds
-
 // Samples + counter variables for each pixel
 // (needed for temporal smoothing)
 struct PixHistory
@@ -52,14 +48,15 @@ RWStructuredBuffer<PixHistory> aaBuffer : register(u2);
 // generated and stored at the start of every frame
 float3 FrameSmoothing(float3 rgb,
                       float filtCoeff,
-                      uint linPixID)
+                      uint linPixID,
+                      uint numAASamples)
 {
     // Cache a local copy of the given pixel's smoothing history
     PixHistory pixHistory = aaBuffer[linPixID];
 
     // Update the given pixel's sample count
     uint sampleCount = pixHistory.sampleCount.x + 1;
-    uint sampleNdx = pixHistory.sampleCount.x % NUM_AA_SAMPLES;
+    uint sampleNdx = pixHistory.sampleCount.x % numAASamples;
 
     // Update accumulated filter values for the current sample-set
     // Also filter [rgb] with the given filter-coefficient, then
@@ -67,19 +64,19 @@ float3 FrameSmoothing(float3 rgb,
     float4 currAccum = float4(pixHistory.currSampleAccum.rgb + (rgb * filtCoeff),
                               pixHistory.currSampleAccum.w + filtCoeff);
 
-    // Check if the (un-updated) sample-count is exactly modulo-[NUM_AA_SAMPLES] and update
+    // Check if the (un-updated) sample-count is exactly modulo-[numAASamples] and update
     // [prevSampleAccum] (+ reset [currSampleAccum]) if appropriate
     float4 prevAccum = pixHistory.prevSampleAccum;
-    if (sampleCount % NUM_AA_SAMPLES == 0 &&
+    if (sampleCount % numAASamples == 0 &&
         sampleCount != 0)
     {
         currAccum -= pixHistory.currSampleAccum;
         prevAccum = pixHistory.currSampleAccum;
     }
-    else if (sampleCount < NUM_AA_SAMPLES)
+    else if (sampleCount < numAASamples)
     {
         // Prevent current/previous sample blending until the previous sample is well-defined
-        // (i.e. until at least one full set of [NUM_AA_SAMPLES]-samples have been computed,
+        // (i.e. until at least one full set of [numAASamples]-samples have been computed,
         // elided from [currSampleAccum], and passed into [prevSampleAccum])
         prevAccum = pixHistory.currSampleAccum;
     }
@@ -87,7 +84,7 @@ float3 FrameSmoothing(float3 rgb,
     // Interpolate between the most-recent/current sample-sets/filter-coefficients
     // Only apply interpolation to the displayed color, not the sample actually cached
     // in [aaBuffer]
-    float4 retRGBW = lerp(prevAccum, currAccum, ((float)sampleCount / (float)NUM_AA_SAMPLES) % 1.0f);
+    float4 retRGBW = lerp(prevAccum, currAccum, ((float)sampleCount / (float)numAASamples) % 1.0f);
 
     // Pass the updated pixel history back into the AA buffer
     // (also update the pixel's sample-set to include the current sample)
@@ -107,7 +104,8 @@ float3 FrameSmoothing(float3 rgb,
 // than naive filtering (=> applying a box filter), allowing for more
 // effective anti-aliasing at lower sampling rates
 // Core Blackman-Harris filter
-float BlackmanHarrisPerAxis(float filtVal)
+float BlackmanHarrisPerAxis(float filtVal,
+                            uint numAASamples)
 {
     // Blackman-Harris alpha parameters
     // Parameter values taken from:
@@ -118,18 +116,19 @@ float BlackmanHarrisPerAxis(float filtVal)
     const float alph3 = 0.01168f;
 
     // Core Blackman-Harris filter function
-    const float constFract = (PI * filtVal) / (NUM_AA_SAMPLES - 1);
-    return alph0 - (alph1 * cos(2 * constFract)) +
-                   (alph2 * cos(4 * constFract)) -
-                   (alph3 * cos(6 * constFract));
+    const float constFract = (PI * filtVal) / (numAASamples - 1);
+    return alph0 - (alph1 * cos(2.0f * constFract)) +
+                   (alph2 * cos(4.0f * constFract)) -
+                   (alph3 * cos(6.0f * constFract));
 }
 
 // Wrapper function applying Blackman-Harris to the given sampling point within the
 // given sampling radius
 float BlackmanHarris(float2 sampleXY,
-                     float sampleRad)
+                     float sampleRad,
+                     uint numAASamples)
 {
     float2 filtAxes = abs(sampleXY);
-    return (BlackmanHarrisPerAxis(filtAxes.x) *
-            BlackmanHarrisPerAxis(filtAxes.y));
+    return (BlackmanHarrisPerAxis(filtAxes.x, numAASamples) *
+            BlackmanHarrisPerAxis(filtAxes.y, numAASamples));
 }

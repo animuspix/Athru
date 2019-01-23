@@ -12,9 +12,9 @@ class Input
 
 		// Set/check key states (where "true" represents "down"
 		// and "false" represents "up")
-		void KeyDown(fourByteUnsigned);
-		void KeyUp(fourByteUnsigned);
-		bool IsKeyDown(fourByteUnsigned);
+		void KeyDown(u4Byte);
+		void KeyUp(u4Byte);
+		bool IsKeyDown(u4Byte);
 
 		// Set/check the closing flag (tells the system to end the
 		// game-loop and begin shutting down the application)

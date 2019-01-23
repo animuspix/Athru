@@ -17,15 +17,12 @@ class Direct3D
 		~Direct3D();
 
 		// Commit draw/dispatch calls to the GPU
-		void SubmitGPUWork();
+		void Output();
 
 		// Retrieve the device/device context without incrementing their reference
 		// counts
 		const Microsoft::WRL::ComPtr<ID3D11Device>& GetDevice();
 		const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& GetDeviceContext();
-
-		// Retrieve a reference to the render viewport used with [this]
-		//D3D11_VIEWPORT& GetViewport();
 
 		// Retrieve a constant reference to information about the video adapter
 		const DXGI_ADAPTER_DESC& GetAdapterInfo();

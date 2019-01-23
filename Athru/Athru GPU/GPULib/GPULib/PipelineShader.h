@@ -18,9 +18,8 @@ class PipelineShader
 	protected:
 		void BuildShader(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 						 HWND windowHandle,
-						 D3D11_INPUT_ELEMENT_DESC* inputElementInfo, fourByteUnsigned numInputElements,
+						 D3D11_INPUT_ELEMENT_DESC* inputElementInfo, u4Byte numInputElements,
 						 LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath);
-
 		Microsoft::WRL::ComPtr<ID3D11VertexShader> vertShader;
 		Microsoft::WRL::ComPtr<ID3D11PixelShader> pixelShader;
 		Microsoft::WRL::ComPtr<ID3D11InputLayout> inputLayout;

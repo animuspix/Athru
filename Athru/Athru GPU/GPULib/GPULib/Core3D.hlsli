@@ -3,15 +3,6 @@
 // included somewhere in the build process
 #define CORE_3D_LINKED
 
-// Useful shader input data
-// Considering removing figure position and passing system origin here...
-cbuffer InputStuffs
-{
-    float4 timeDispInfo; // Delta-time in [x], current time (seconds) in [y], frame count in [z],
-                         // compute dispatches per-axis in [w]
-    float4 rasterEpsInfo; // Raster-atlas cell width in [x], epsilon size in [y], [zw] are empty
-};
-
 // Enum flags for different sorts of distance
 // function
 #define DF_TYPE_STAR 0
@@ -25,7 +16,7 @@ cbuffer InputStuffs
 #include "FigureBuffer.hlsli"
 
 // Rasterized volume atlas for the current system + plants/animals on the local planet
-RWBuffer<float> rasterAtlas : register(u5);
+Buffer<float> rasterAtlas : register(t1);
 
 // The maximum possible number of discrete figures within the
 // scene
@@ -48,39 +39,43 @@ RWBuffer<float> rasterAtlas : register(u5);
 // around the system disc)
 #define SYM_PLANET_ORI float3(PLANETARY_RING_RADIUS, 0.0f.xx)
 
-#include "GenericUtility.hlsli"
+#ifndef UTILITIES_LINKED
+    #include "GenericUtility.hlsli"
+#endif
 
 // Voxel interface functions, useful for sampling/smoothing volumetric information
 // (like e.g. planet/plant/animal distances)
+// Commented out for now because I'm not expecting to use voxel surfaces until I start working with animal
+// rendering (depends on path-tracing readiness, also sculpting tools + better-defined figure inputs)
 
 // Convert an local position to a voxel UVW value, given a position + scale
 // for the nearest volume
-float3 voxUVW(float3 p,
-              float4 linTransf)
-{
-    p -= linTransf.xyz * 2.0f; // First subtraction is view->global, second subtraction is global->local
-    p += linTransf.www * 0.5f; // Convert to corner-relative positions
-    return p / linTransf.w; // Scale into [0...1]
-}
-
-// Find offset for a given position within the nearest voxel
-float3 pOffs(float3 p,
-             float4 linTransf)
-{
-    float3 uvw = voxUVW(p, linTransf) * numTraceables.z; // Generate UVW, scale out to sample width
-    return uvw - floor(uvw); // Return difference between the voxel origin [floor(uvw)] and the sample position [uvw]
-}
-
-// Convert a 3D vector + figure index + figure type + figure transformation to an index within the raster-atlas
-uint vecToNdx(float3 p,
-               uint ndx,
-               uint figType,
-               float4 linTransf)
-{
-    float cellWidth = numTraceables.z;
-    p = floor(voxUVW(p, linTransf) * cellWidth); // Scale out to the rasterization width
-    return (p.x + (p.y * figType) * cellWidth) + (p.z * (ndx + 1u)) * (cellWidth * cellWidth); // Encode/return
-}
+//float3 voxUVW(float3 p,
+//              float4 linTransf)
+//{
+//    p -= linTransf.xyz * 2.0f; // First subtraction is view->global, second subtraction is global->local
+//    p += linTransf.w * 0.5f; // Convert to corner-relative positions
+//    return p / linTransf.w; // Scale into [0...1]
+//}
+//
+//// Find offset for a given position within the nearest voxel
+//float3 pOffs(float3 p,
+//             float4 linTransf)
+//{
+//    float3 uvw = voxUVW(p, linTransf) * numTraceables.z; // Generate UVW, scale out to sample width
+//    return uvw - floor(uvw); // Return difference between the voxel origin [floor(uvw)] and the sample position [uvw]
+//}
+//
+//// Convert a 3D vector + figure index + figure type + figure transformation to an index within the raster-atlas
+//uint vecToNdx(float3 p,
+//               uint ndx,
+//               uint figType,
+//               float4 linTransf)
+//{
+//    float cellWidth = numTraceables.z;
+//    p = floor(voxUVW(p, linTransf) * cellWidth); // Scale out to the rasterization width
+//    return (p.x + (p.y * figType) * cellWidth) + (p.z * (ndx + 1u)) * (cellWidth * cellWidth); // Encode/return
+//}
 
 // Primitive bounding surfaces
 // These are defined by ray-tracing functions rather than distance fields
@@ -175,15 +170,14 @@ float BoundingSurfTrace(float4 linTransf,
     {
         return BoundingSphereTrace(pt,
                                    rayOri,
-                                   float4(linTransf.xyz,
-										  linTransf.w)).z;
+                                   linTransf).z;
     }
     else
     {
         // Lots of empty space in these, but need measured distances for anything more precise
         return BoundingBoxTrace(pt,
                                 rayOri,
-                                linTransf.www * 2.0f,
+                                linTransf.w * 2.0f,
                                 linTransf.xyz).z;
     }
 }
@@ -217,7 +211,8 @@ float CylinderDF(float3 pt,
 // Just used for light/camera intersection tests at the moment; might be re-used when
 // (if?) I set-up realistic camera-ray emission
 float LensDF(float3 pt,
-             float adaptEps)
+             float eps,
+             float4x4 iViewMat)
 {
     // Place the incoming ray relative to the camera position/rotation
     pt = mul(float4(pt, 1.0f), iViewMat).xyz;
@@ -301,12 +296,12 @@ float3 PtToPlanet(float3 pt,
 float2x3 PlanetDF(float3 pt,
                   Figure planet,
                   uint figID,
-                  float adaptEps)
+                  float eps)
 {
     // Pass [pt] into the given planet's local space
     #ifndef PLANET_DEBUG
         pt = PtToPlanet(pt,
-                        planet.linTransf.w);
+                        planet.scale.x);
     #endif
 
     // Read out the appropriate distance value
@@ -315,7 +310,7 @@ float2x3 PlanetDF(float3 pt,
 
     // Return sphere distance for debugging
     #ifdef PLANET_DEBUG
-        return float2x3(max(SphereDF(pt, float4(700.0f, 0.0f, 400.0f, 100.0f)), adaptEps * 0.9f), // Surface distance; thresholded to [adaptEps * 0.9f] for near-surface intersections
+        return float2x3(max(SphereDF(pt, float4(700.0f, 0.0f, 400.0f, 100.0f)), eps * 0.9f), // Surface distance; thresholded to [eps * 0.9f] for near-surface intersections
                         DF_TYPE_PLANET, // Figure distance-field type
                         figID, // Figure ID
                         float3(700.0f, 0.0f, 400.0f)); // Fixed figure origin
@@ -327,12 +322,12 @@ float2x3 PlanetDF(float3 pt,
     // same actual value) our scaling after evaluating the distance
     // estimator; this ensures that initial distances will be scaled (since
     // we applied the division /before/ sampling the field)
-    return float2x3(max(jDist * planet.linTransf.w, adaptEps * 0.9f), // Scaled surface distance; thresholded to [adaptEps * 0.9f] for near-surface intersections
+    return float2x3(max(jDist * planet.scale.x, eps * 0.9f), // Scaled surface distance; thresholded to [eps * 0.9f] for near-surface intersections
                     DF_TYPE_PLANET, // Figure distance-field type
                     figID, // Figure ID
-                    float3(cos((float)figID * (RADS_PER_PLANET * 2.0f)),
-                           0.0f,
-                           sin((float)figID * (RADS_PER_PLANET * 2.0f))) * PLANETARY_RING_RADIUS); // Symmetric figure origin
+                    (float3(cos((float)figID * (RADS_PER_PLANET * 2.0f)),
+                            0.0f,
+                            sin((float)figID * (RADS_PER_PLANET * 2.0f))) * PLANETARY_RING_RADIUS) + systemOri.xyz) ; // Symmetric figure origin
 }
 
 // Return distance + surface information for the local star
@@ -341,24 +336,25 @@ float2x3 StarDF(float3 pt,
                 bool useFigBounds)
 {
     Figure fig = figures[0];
+    float4 linTransf = float4(systemOri.xyz, fig.scale.x);
     float3 isect = BoundingSphereTrace(pt,
                                        rayOri,
-                                       fig.linTransf);
+                                       linTransf);
     float sphereDF = SphereDF(pt,
-                              fig.linTransf);
+                              linTransf);
     if (!useFigBounds)
     {
         return float2x3(sphereDF,
                         DF_TYPE_STAR,
                         0.0f,
-                        fig.linTransf.xyz); // Stars never leave the system origin
+                        linTransf.xyz); // Stars never leave the system origin
     }
     else
     {
         return float2x3(sphereDF + (!isect.z * MAX_RAY_DIST),
                         DF_TYPE_STAR,
                         0.0f,
-                        fig.linTransf.xyz); // Stars never leave the system origin
+                        linTransf.xyz); // Stars never leave the system origin
     }
 }
 
@@ -401,7 +397,7 @@ float2x3 SceneField(float3 pt,
                     float3 rayOri,
                     bool useFigBounds,
                     uint screenedFig,
-                    float adaptEps)
+                    float eps)
 {
     // Return the complete union carrying every figure in the scene; also
     // filter out the given figure if appropriate
@@ -409,7 +405,7 @@ float2x3 SceneField(float3 pt,
                                            // (planetary figures are placed with a per-ray symmetric
                                            // transformation)
     uint figID = planetNdx(theta);
-    float2x3 sceneDist = PlanetDF(pt, figures[0x1], 0x1, adaptEps);
+    float2x3 sceneDist = PlanetDF(pt, figures[0x1], 0x1, eps);
     float2x3 starDist = StarDF(pt, rayOri, useFigBounds);
     return trackedFigUnion(float4x3(float2x3(sceneDist[0].x + ((screenedFig == 0x1) * MAX_RAY_DIST),
                                              sceneDist[0].yz,

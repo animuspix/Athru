@@ -38,7 +38,7 @@ void Application::RelayOSMessages()
 LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM messageParamA, LPARAM messageParamB)
 {
 	// Cache a local reference to the input handler
-	Input* localInput = AthruUtilities::UtilityServiceCentre::AccessInput();
+	Input* localInput = AthruCore::Utility::AccessInput();
 
 	switch (message)
 	{
@@ -68,7 +68,7 @@ LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM me
 		case WM_KEYDOWN:
 		{
 			// If a key is pressed, send it to the input object so it can record that state
-			localInput->KeyDown((fourByteUnsigned)messageParamA);
+			localInput->KeyDown((u4Byte)messageParamA);
 			return 0;
 		}
 
@@ -76,7 +76,7 @@ LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM me
 		case WM_KEYUP:
 		{
 			// If a key is released, send it to the input object so it can unset the state for that key
-			localInput->KeyUp((fourByteUnsigned)messageParamA);
+			localInput->KeyUp((u4Byte)messageParamA);
 			return 0;
 		}
 
@@ -221,8 +221,8 @@ HWND Application::GetHWND()
 // Push constructions for this class through Athru's custom allocator
 void* Application::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<Application>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<Application>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;

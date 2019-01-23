@@ -2,9 +2,8 @@
 // Athru figures
 struct Figure
 {
-    // The location + uniform scale (in [w]) of this figure at
-    // any particular time
-    float4 linTransf;
+    // The uniform scale (in [x]) of this figure; [yzw] are unused
+    float4 scale;
 
     // Coefficients of the distance function used to render [this]
     float4 distCoeffs[3];

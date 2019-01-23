@@ -13,11 +13,11 @@ PipelineShader::~PipelineShader() {}
 
 void PipelineShader::BuildShader(const Microsoft::WRL::ComPtr<ID3D11Device>& device,
 								 HWND windowHandle,
-								 D3D11_INPUT_ELEMENT_DESC* inputElementInfo, fourByteUnsigned numInputElements,
+								 D3D11_INPUT_ELEMENT_DESC* inputElementInfo, u4Byte numInputElements,
 			   					 LPCWSTR vertexShaderFilePath, LPCWSTR pixelShaderFilePath)
 {
 	// Value used to store success/failure for different DirectX operations
-	fourByteUnsigned result;
+	u4Byte result;
 
 	// Read the vertex shader into a buffer on the GPU
 	Microsoft::WRL::ComPtr<ID3DBlob> vertShaderBuffer;
@@ -41,8 +41,8 @@ void PipelineShader::BuildShader(const Microsoft::WRL::ComPtr<ID3D11Device>& dev
 // Push constructions for this class through Athru's custom allocator
 void* PipelineShader::operator new(size_t size)
 {
-	StackAllocator* allocator = AthruUtilities::UtilityServiceCentre::AccessMemory();
-	return allocator->AlignedAlloc(size, (byteUnsigned)std::alignment_of<PipelineShader>(), false);
+	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
+	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<PipelineShader>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing;
