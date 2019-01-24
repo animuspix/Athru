@@ -32,7 +32,7 @@ class FigureRaster
 		};
 
 		// GPU buffer exposing [RasterInput] to the rasterization shader
-		AthruBuffer<RasterInput, GPGPUStuff::CBuffer> rasterInput;
+		AthruGPU::AthruBuffer<RasterInput, AthruGPU::CBuffer> rasterInput;
 
 		// Planet rasterizer
 		ComputeShader planetRaster;
@@ -45,6 +45,6 @@ class FigureRaster
 
 		// Atlas containing rasterized planet SDFs for the current system +
 		// rasterized plants/animals for the nearest planet
-		AthruBuffer<float, GPGPUStuff::WLimitedBuffer> rasterAtlas;
+		AthruGPU::AthruBuffer<float, AthruGPU::WLimitedBuffer> rasterAtlas;
 };
 

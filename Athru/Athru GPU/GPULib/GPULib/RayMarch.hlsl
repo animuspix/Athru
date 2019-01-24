@@ -27,18 +27,16 @@ void main(uint3 groupID : SV_GroupID,
     // mask those cases here
     // Assumes one-dimensional dispatches
     uint numRays = counters[23];
+    uint maxID = numRays - 1;
     uint rayID = threadID + groupID.x * 128;
-    if (rayID > numRays) { return; }
+    if (rayID > maxID) { return; }
 
     // [Consume()] a pixel from the end of [traceables]
     LiBounce traceable = traceables.Consume();
-
     if (rayID == 0)
     {
         // Zero generic dispatch sizes
         counters[18] = 0;
-        counters[19] = 0;
-        counters[20] = 0;
 
         // We're pushing new dispatch sizes, so update assumed threads/group here
         // ([1] because dispatch sizes are incremented naively and scaled down
@@ -48,8 +46,8 @@ void main(uint3 groupID : SV_GroupID,
     // Extract a Philox-permutable value from [randBuf]
     // Also cache the accessor value used to retrieve that value in the first place
     // Initialize [randBuf] with hashed start times in the first frame
-    PhiloStrm randStrm = randBuf[rayID];
-    float4 rand = philoxPermu(randStrm);
+    PhiloStrm randStrm = randBuf[traceable.id.x];
+    float4 rand = iToFloatV(philoxPermu(randStrm));
 
     // Small vector for raymarching offsets between bounces
     float3 rayVec = EPSILON_MIN.xxx;
@@ -58,20 +56,25 @@ void main(uint3 groupID : SV_GroupID,
     float eps = bounceInfo.z;
 
     // Generate a parameterized path culling weight
-    const float minCull = 0.1f; // Could optionally set this through [RenderInput]
-    const float maxCull = 0.65f; // Could optionally set this through [RenderInput]
+    const float minCull = 0.01f; // Could optionally set this through [RenderInput]
+    const float maxCull = 0.15f; // Could optionally set this through [RenderInput]
     float d = numRays / resInfo.w;
     float m = counters[22] / bounceInfo.x;
-    float cullWeight = lerp(m + minCull, maxCull, d * m);
+    float cullWeight = lerp(minCull, maxCull, lerp(d, m, m));
 
     // Baseline ray distance
     // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
     float rayDist = (eps * 2.0f);
 
-    displayTex[traceable.id.yz] = iToFloatV(rand);
-    return;
+    // Optionally output noise to the display, then break out
+    //#define NOISE_OUT
+    #ifdef NOISE_OUT
+        displayTex[traceable.id.yz] = rand;
+        return;
+    #endif
 
     // March towards the next intersection in the scene
+    float4 rgba = 1.0f.xxxx;
     Figure star = figures[STELLAR_FIG_ID];
     for (uint i = 0u; i < MAX_VIS_MARCHER_STEPS; i += 1u)
     {
@@ -87,15 +90,19 @@ void main(uint3 groupID : SV_GroupID,
         // Process intersections
         if (sceneField[0].x < eps)
         {
-            // Set incident position for the current bounce (ray origin for succeeding rays may be equal to
-            // incident or exitant position for previous rays, so we avoid setting that until after we've
-            // evaluated materials at the intersection position)
-            traceable.eP = sceneField[1];
+            // Set incident position for the current bounce (exitant position depends on the intersected surface,
+            // so we avoid setting that until after we've evaluated materials at [rayVec])
+            traceable.iP = rayVec;
+
+            // Cache incident SDF type + figure-ID
+            traceable.dfType = sceneField[0].y;
+            traceable.figID = sceneField[0].z;
+
             // Process light-source intersections
-            if (sceneField[0].y == STELLAR_FIG_ID) // Only stellar light sources supported for now
+            if (sceneField[0].z == STELLAR_FIG_ID) // Only stellar light sources supported for now
             {
                 // Immediately break out on light-source intersections
-                displayTex[traceable.id.yz] *= float4(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, rayDist), 1.0f);
+                rgba = float4(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, rayDist), 1.0f);
                 break; // Exit the marching loop without preparing the current intersection for next-event-estimation
                        // + sampling
             }
@@ -106,14 +113,20 @@ void main(uint3 groupID : SV_GroupID,
                 // Update generic dispatch group sizes
                 InterlockedAdd(counters[18], 1u);
 
-                // Update bounce counter
-                InterlockedAdd(counters[22], 1u);
-
                 // Upcoming stage [BouncePrep] has no access to [randBuf], so pass Philox key/state through the intersection instead
                 traceable.randStrm = randStrm;
 
                 // Pass surviving paths into [surfIsections]
                 surfIsections.Append(traceable);
+            }
+            else
+            {
+                //#define CULL_HIGHLIGHT
+                #ifdef CULL_HIGHLIGHT
+                    rgba = float4(0.1f, 0.75f, 0.2f, 1.0f);
+                #else
+                    rgba = float4(0.0f.xxx, 1.0f);
+                #endif
             }
 
             // Exit the marching loop
@@ -130,11 +143,13 @@ void main(uint3 groupID : SV_GroupID,
         // Ignore rays that travel too far into the scene
         if (rayDist >= MAX_RAY_DIST)
         {
-            displayTex[traceable.id.yz] *= float4(0.0f.xxx, 1.0f);
+            rgba = float4(0.0f, 0.0f, 0.0f, 1.0f);
             break;
         }
         rayDist += sceneField[0].x;
     }
+    // Apply primary-ray shading
+    displayTex[traceable.id.yz] *= rgba;
     // Update Philox key/state for the current path
     randBuf[traceable.id.x] = randStrm;
 }

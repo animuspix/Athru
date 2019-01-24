@@ -1,6 +1,8 @@
 #pragma once
 
 #include "AppGlobals.h"
+#include "AthruBuffer.h"
+#include <math.h>
 
 namespace GraphicsStuff
 {
@@ -17,9 +19,6 @@ namespace GraphicsStuff
 
 	// Rendering information
 	extern constexpr u4Byte SCREEN_RECT_INDEX_COUNT = 6;
-	extern constexpr u4Byte GROUP_WIDTH_PATH_REDUCTION = 16;
-	extern constexpr u4Byte GROUP_HEIGHT_PATH_REDUCTION = 16;
-	extern constexpr u4Byte GROUP_AREA_PATH_REDUCTION = 256;
 	extern constexpr u4Byte MAX_NUM_BOUNCES = 7;
 	extern constexpr u4Byte MAX_NUM_SSURF_BOUNCES = 512;
 	extern constexpr u4Byte NUM_AA_SAMPLES = 8192;
@@ -39,10 +38,19 @@ namespace GraphicsStuff
 	};
 }
 
-namespace GPGPUStuff
+namespace AthruGPU
 {
 	// Number of random seeds to expose to the GPU random number generator
 	extern constexpr u4Byte NUM_RAND_SEEDS = 32917504;
+
+	// Dispatch axis generator for full-screen compute passes
+	// Should specify as [consteval] after C++20
+	constexpr DirectX::XMUINT3 fullscreenDispatchAxes(u4Byte groupWidth)
+	{
+		return DirectX::XMUINT3((u4Byte)(std::ceil(float(GraphicsStuff::DISPLAY_WIDTH) / groupWidth)),
+								(u4Byte)(std::ceil(float(GraphicsStuff::DISPLAY_HEIGHT) / groupWidth)),
+								1);
+	}
 
 	// SDF atlas information
 	extern constexpr u4Byte RASTER_ATLAS_WIDTH = 128;
@@ -56,18 +64,22 @@ namespace GPGPUStuff
 	// Indirect dispatch helpers
 	extern constexpr u4Byte DISPATCH_ARGS_SIZE = 12;
 
-	// Supported buffer types in Athru
-	struct CBuffer {}; // Constant buffer, read/writable from the CPU/GPU
-	struct GPURWBuffer {}; // Generic UAV buffer, read/writable from the GPU but not the CPU
-	struct AppBuffer : GPURWBuffer {}; // Generic UAV buffer with the same read/write qualities as [GPURWBuffer], but behaves
-									   // like a parallel stack instead of an array (insertion with [Append()], removal with
-									   // [Consume()])
-	struct WLimitedBuffer : GPURWBuffer {}; // Same behaviour as GPURWBuffer, GPU writability can be toggled on/off
-	struct GPURBuffer {}; // Generic SRV buffer, readable but not writable from the GPU, inaccessible from the CPU
-	struct StrmBuffer {}; // Streaming buffer with CPU-write permissions but not CPU-read; GPU read-only
-	struct StgBuffer {}; // Staging buffer, used to copy GPU-only information across to the CPU (useful for e.g.
-						 // extracting structure counts from append/consume buffers)
-	struct CtrBuffer : GPURWBuffer {}; // Counter buffer used to streamline compute-shader dispatch; contains at least one set of three elements
-									   // representing a dispatch vector
+	// Read structure count for a given append/consume buffer
+	template<typename BuffContent>
+	u4Byte appConsumeCount(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
+						   const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+						   AthruBuffer<BuffContent, AppBuffer>& buffer)
+	{
+		AthruBuffer<u4Byte, StgBuffer> buff = AthruGPU::AthruBuffer<u4Byte, StgBuffer>(device,
+																					   nullptr,
+																					   1,
+																					   DXGI_FORMAT_R32_UINT);
+		context->CopyStructureCount(buff.buf.Get(), 0, buffer.view().Get());
+		D3D11_MAPPED_SUBRESOURCE count;
+		context->Map(buff.buf.Get(), 0, D3D11_MAP_READ, 0, &count);
+		u4Byte counter = *(u4Byte*)(count.pData);
+		context->Unmap(buff.buf.Get(), 0);
+		return counter;
+	}
 }
 

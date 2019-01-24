@@ -7,6 +7,10 @@
 // discrete state/keys for every possible use
 #define RAND_BUF_LENGTH 32917504
 
+#ifndef UTILITIES_LINKED
+    #include "GenericUtility.hlsli"
+#endif
+
 // State buffer for the random number generator (see [philoxPermu], below)
 RWStructuredBuffer<PhiloStrm> randBuf : register(u1);
 
@@ -64,6 +68,6 @@ PhiloStrm strmBuilder(uint ndx)
 PhiloStrm philoxVal(uint ndx,
                     uint frameCtr)
 {
-    if (frameCtr > 0u) { return randBuf[ndx % RAND_BUF_LENGTH]; } // Compilation errors using a ternary operator here, compact if instead
+    if (frameCtr > 1u) { return randBuf[ndx % RAND_BUF_LENGTH]; } // Compilation errors using a ternary operator here, compact if instead
     else { return strmBuilder(ndx); }
 }

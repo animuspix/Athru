@@ -13,9 +13,9 @@ void main(uint3 groupID : SV_GroupID,
     if (linPixID == 0) { counters[22] = 0; } // Zero the light bounce counter
     // Filter/tonemap, then transfer to the display texture
     float4 tx = displayTex[pixID];
-    displayTex[pixID] = tx * float4(1.0f, 0.8f.xxx);
-                        //float4(PathPost(tx.rgb,
-                        //                tx.a,
-                        //                linPixID,
-                        //                resInfo.z), 1.0f);
+    displayTex[pixID] = float4(PathPost(tx.rgb,
+                                        tx.a,
+                                        linPixID,
+                                        resInfo.z), 1.0f);
+                        //tx;
 }

@@ -14,12 +14,12 @@
 ConsumeStructuredBuffer<LiBounce> surfIsections : register(u6);
 
 // Material intersection buffers
-AppendStructuredBuffer<LiBounce> diffuIsections : register(u7);
-AppendStructuredBuffer<LiBounce> mirroIsections : register(u5);
-AppendStructuredBuffer<LiBounce> refraIsections : register(u3);
-AppendStructuredBuffer<LiBounce> snowwIsections : register(u2);
-AppendStructuredBuffer<LiBounce> ssurfIsections : register(u1);
-AppendStructuredBuffer<LiBounce> furryIsections : register(u0);
+AppendStructuredBuffer<LiBounce> diffuIsections : register(u0);
+AppendStructuredBuffer<LiBounce> mirroIsections : register(u1);
+AppendStructuredBuffer<LiBounce> refraIsections : register(u2);
+AppendStructuredBuffer<LiBounce> snowwIsections : register(u3);
+AppendStructuredBuffer<LiBounce> ssurfIsections : register(u5);
+AppendStructuredBuffer<LiBounce> furryIsections : register(u7);
 
 [numthreads(8, 8, 4)]
 void main(uint3 groupID : SV_GroupID,
@@ -28,12 +28,20 @@ void main(uint3 groupID : SV_GroupID,
     // Automatically dispatched threads can still outnumber data available;
     // mask those cases here
     // Assumes one-dimensional dispatches
-    uint numRays = counters[23];
+    uint maxID = counters[23] - 1;
     uint rayID = threadID + groupID.x * 256u;
-    if (rayID > numRays) { return; }
+    if (rayID > maxID) { return; }
 
     // [Consume()] an intersection from the end of [surfIsections]
     LiBounce isect = surfIsections.Consume();
+    if (rayID == 0)
+    {
+        counters[22] += 1u; // Update bounce counter
+        counters[18] = 0; // Zero generic dispatch sizes
+        // We'll be pushing new dispatch sizes from the material samplers, so update assumed threads/group here
+        // ([1] because dispatch sizes are incremented naively and scaled down afterwards)
+        counters[21] = 1;
+    }
 
     // Cache epsilon value used in the current frame
     float eps = bounceInfo.z;

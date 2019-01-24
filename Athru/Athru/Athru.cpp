@@ -75,7 +75,7 @@ void GameLoop()
 			planetsRastered = true;
 		}
 
-		// whenever planets aren't being rasterized
+		// Pass the scene to the gpu whenever planets aren't being rasterized
 		if (!planetsRastered)
 		{
 			// Pass the read-only SDF raster-atlas along to the GPU every frame

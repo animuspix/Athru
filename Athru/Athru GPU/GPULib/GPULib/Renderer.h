@@ -83,39 +83,39 @@ class Renderer
 		};
 
 		// A reference to the rendering-specific input/constant buffer (with layout defined by [RenderInput])
-		AthruBuffer<RenderInput, GPGPUStuff::CBuffer> renderInputBuffer;
+		AthruGPU::AthruBuffer<RenderInput, AthruGPU::CBuffer> renderInputBuffer;
 
 		// Small buffer letting us restrict path-tracing dispatches to paths persisting after
 		// each tracing/processing/sampling iteration
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> traceables;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> traceables;
 
 		// Surface intersection buffer (carries successful intersections across for next-event-estimation + material synthesis)
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> surfIsections;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> surfIsections;
 
 		// Material intersection buffers
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> diffuIsections;
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> mirroIsections;
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> refraIsections;
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> snowwIsections;
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> ssurfIsections;
-		AthruBuffer<LiBounce, GPGPUStuff::AppBuffer> furryIsections;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> diffuIsections;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> mirroIsections;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> refraIsections;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> snowwIsections;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> ssurfIsections;
+		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> furryIsections;
 
 		// Generic counter buffer, carries dispatch axis sizes per-material in 0-17,
 		// generic axis sizes in 18-20, thread count assumed for dispatch axis sizes
 		// in [21], and a light bounce counter in [22]
 		// Also raw generic append-buffer lengths in [23], and material append-buffer
 		// lengths in 24-29
-		AthruBuffer<u4Byte, GPGPUStuff::CtrBuffer> ctrBuf;
+		AthruGPU::AthruBuffer<u4Byte, AthruGPU::CtrBuffer> ctrBuf;
 
 		// [rndrCtr] layout referencess
-		const u4Byte RNDR_CTR_OFFSET_GENERIC = (GraphicsStuff::NUM_SUPPORTED_SURF_BXDFS * GPGPUStuff::DISPATCH_ARGS_SIZE);
+		const u4Byte RNDR_CTR_OFFSET_GENERIC = (GraphicsStuff::NUM_SUPPORTED_SURF_BXDFS * AthruGPU::DISPATCH_ARGS_SIZE);
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
-		AthruBuffer<PixHistory, GPGPUStuff::GPURWBuffer> aaBuffer;
+		AthruGPU::AthruBuffer<PixHistory, AthruGPU::GPURWBuffer> aaBuffer;
 
 		// A reference to the presentation-only input/constant buffer (with layout equivalent to [DirectX::XMFLOAT4])
-		AthruBuffer<DirectX::XMFLOAT4, GPGPUStuff::CBuffer> displayInputBuffer;
+		AthruGPU::AthruBuffer<DirectX::XMFLOAT4, AthruGPU::CBuffer> displayInputBuffer;
 
 		// Reference to the Direct3D device context
 		const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context;

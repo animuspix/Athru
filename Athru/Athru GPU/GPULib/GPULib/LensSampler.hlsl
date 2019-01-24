@@ -76,6 +76,8 @@ void main(uint3 groupID : SV_GroupID,
     uint2 pixID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
                         (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
     uint linPixID = pixID.x + (pixID.y * resInfo.x);
+    // Mask off excess threads
+    if (linPixID > (resInfo.w - 1)) { return; }
 
     // Extract per-path Philox streams from [randBuf]
     PhiloStrm randStrm = philoxVal(linPixID,
@@ -91,16 +93,14 @@ void main(uint3 groupID : SV_GroupID,
     // Prepare zeroth "bounce" for the core tracing/intersection shader
     if (linPixID == 0)
     {
-        counters[18] = resInfo.w;
-        counters[19] = 1;
-        counters[20] = 1;
+        counters[18] = resInfo.w; // Update generic dispatch size
         // We're pushing new dispatch sizes, so update assumed threads/group here
         // ([1] because dispatch sizes are incremented naively and scaled down
         // afterwards)
         counters[21] = 1;
     }
     // Could append indices here instead of full bounces (smaller memory footprint)
-    //traceables.Append(LiBounceInitter(uint3(linPixID, pixID), pRay.xyz, cameraPos.xyz, randStrm));
+    traceables.Append(LiBounceInitter(uint3(linPixID, pixID), pRay.xyz, cameraPos.xyz, randStrm));
 
     // Update PRNG state
     randBuf[linPixID] = randStrm;

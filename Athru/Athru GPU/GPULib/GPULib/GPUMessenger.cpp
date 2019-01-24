@@ -4,11 +4,11 @@
 GPUMessenger::GPUMessenger(const Microsoft::WRL::ComPtr<ID3D11Device>& device)
 {
 	// Construct the GPU scene buffer
-	sceneBuf = AthruBuffer<SceneFigure::Figure, GPGPUStuff::StrmBuffer>(device,
+	sceneBuf = AthruGPU::AthruBuffer<SceneFigure::Figure, AthruGPU::StrmBuffer>(device,
 																		nullptr,
 																		SceneStuff::MAX_NUM_SCENE_FIGURES);
 	// Construct the GPU generic input buffer
-	gpuInputBuffer = AthruBuffer<GPUInput, GPGPUStuff::CBuffer>(device, nullptr);
+	gpuInputBuffer = AthruGPU::AthruBuffer<GPUInput, AthruGPU::CBuffer>(device, nullptr);
 }
 
 GPUMessenger::~GPUMessenger() {}

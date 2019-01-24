@@ -53,63 +53,63 @@ Renderer::Renderer(HWND windowHandle,
 			context(d3dContext)
 {
 	// Construct the render-specific input buffer
-	renderInputBuffer = AthruBuffer<RenderInput, GPGPUStuff::CBuffer>(device,
+	renderInputBuffer = AthruGPU::AthruBuffer<RenderInput, AthruGPU::CBuffer>(device,
 																	  nullptr);
 
 	// Build the buffer we'll be using to store
 	// image samples for temporal smoothing/anti-aliasing
-	aaBuffer = AthruBuffer<PixHistory, GPGPUStuff::GPURWBuffer>(device,
+	aaBuffer = AthruGPU::AthruBuffer<PixHistory, AthruGPU::GPURWBuffer>(device,
 																nullptr,
 																GraphicsStuff::DISPLAY_AREA);
 	// Create the tracing append/consume buffer
-	traceables = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
-															  nullptr,
-															  GraphicsStuff::DISPLAY_AREA);
+	traceables = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
+																	  nullptr,
+																	  GraphicsStuff::DISPLAY_AREA);
 
 	// Create the intersection/surface buffer
-	surfIsections = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
+	surfIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 																 nullptr,
 																 GraphicsStuff::DISPLAY_AREA);
 
 	// Create the diffuse intersection buffer
-	diffuIsections = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
+	diffuIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 																  nullptr,
 																  GraphicsStuff::DISPLAY_AREA);
 	// Create the mirrorlike intersection buffer
-	mirroIsections = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
+	mirroIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 																  nullptr,
 																  GraphicsStuff::DISPLAY_AREA);
 	// Create the refractive intersection buffer
-	refraIsections = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
+	refraIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 																  nullptr,
 																  GraphicsStuff::DISPLAY_AREA);
 	// Create the snowy intersection buffer
-	snowwIsections = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
+	snowwIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 															      nullptr,
 															      GraphicsStuff::DISPLAY_AREA);
 
 	// Create the organic/sub-surface scattering intersection buffer
-	ssurfIsections = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
+	ssurfIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 																  nullptr,
 																  GraphicsStuff::DISPLAY_AREA);
 
 	// Create the furry intersection buffer
-	furryIsections = AthruBuffer<LiBounce, GPGPUStuff::AppBuffer>(device,
+	furryIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 																  nullptr,
 																  GraphicsStuff::DISPLAY_AREA);
 
 	// Create the material counter + its matching staging resource
-	u4Byte ctrs[30] = { 0, 0, 0, // Initially zero per-material dispatch sizes
-						0, 0, 0,
-						0, 0, 0,
-						0, 0, 0,
-						0, 0, 0,
-						0, 0, 0,
-						0, 0, 0, // Initially zero generic dispatch sizes
+	u4Byte ctrs[30] = { 0, 1, 1, // Initially zero per-material dispatch sizes
+						0, 1, 1,
+						0, 1, 1,
+						0, 1, 1,
+						0, 1, 1,
+						0, 1, 1,
+						0, 1, 1, // Initially zero generic dispatch sizes
 						1, 0, 0, // One thread/group assumed by default, initially zero light bounces,
 						0, 0, 0, // initially no generic elements, initially no materials
 						0, 0, 0 };
-	ctrBuf = AthruBuffer<u4Byte, GPGPUStuff::CtrBuffer>(device,
+	ctrBuf = AthruGPU::AthruBuffer<u4Byte, AthruGPU::CtrBuffer>(device,
 														&ctrs,
 														30,
 														DXGI_FORMAT::DXGI_FORMAT_R32_UINT);
@@ -119,7 +119,7 @@ Renderer::Renderer(HWND windowHandle,
 													  GraphicsStuff::DISPLAY_HEIGHT,
 													  GraphicsStuff::DISPLAY_AREA,
 													  GraphicsStuff::NUM_AA_SAMPLES);
-	displayInputBuffer = AthruBuffer<DirectX::XMFLOAT4, GPGPUStuff::CBuffer>(device,
+	displayInputBuffer = AthruGPU::AthruBuffer<DirectX::XMFLOAT4, AthruGPU::CBuffer>(device,
 																			 (void*)&displayInfo);
 }
 
@@ -147,7 +147,6 @@ void Renderer::Render(Camera* camera)
 
 		// Propagate rays out to intersection
 		this->Trace();
-		break;
 
 		// Perform bounce operations
 		// Non-atmospheric/cloudy refractors (snow/fur/generic-subsurface/generic-refractors)
@@ -182,7 +181,8 @@ void Renderer::SampleLens(DirectX::XMVECTOR& cameraPosition,
 
 	// Sampled directions are fed to the intersection shader through [traceables], so push that along
 	// as well
-	context->CSSetUnorderedAccessViews(3, 1, traceables.view().GetAddressOf(), 0);
+	u4Byte initTraceCtr = 0;
+	context->CSSetUnorderedAccessViews(3, 1, traceables.view().GetAddressOf(), &initTraceCtr);
 
 	// Later we'll also need the material intersection buffer, the surface intersection buffer, and the
 	// material counter-buffer; get all those onto the GPU here
@@ -225,17 +225,37 @@ void Renderer::SampleLens(DirectX::XMVECTOR& cameraPosition,
 	context->CSSetConstantBuffers(1, 1, renderInputBuffer.buf.GetAddressOf());
 
 	// Dispatch the pre-processing shader
-	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
-					  GraphicsStuff::DISPLAY_HEIGHT / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
-					  1);
+	DirectX::XMUINT3 disp = AthruGPU::fullscreenDispatchAxes(16);
+	context->Dispatch(disp.x,
+					  disp.y,
+					  disp.z);
 }
 
 void Renderer::Trace()
 {
+	// Optional counter-buffer debug code
+	//#define CTR_DBG
+	#ifdef CTR_DBG
+		AthruGPU::AthruBuffer<u4Byte, AthruGPU::StgBuffer> buff = AthruGPU::AthruBuffer<u4Byte, AthruGPU::StgBuffer>(AthruGPU::GPU::AccessD3D()->GetDevice(),
+																													 nullptr,
+																													 30,
+																													 DXGI_FORMAT_R32_UINT);
+		context->CopyResource(buff.buf.Get(), ctrBuf.buf.Get());
+		D3D11_MAPPED_SUBRESOURCE ctr;
+		context->Map(buff.buf.Get(), 0, D3D11_MAP_READ, 0, &ctr);
+		u4Byte* ctrRef = (u4Byte*)(ctr.pData);
+		context->Unmap(buff.buf.Get(), 0);
+	#endif
+	// Optional length-check for the traceables buffer
+	//#define TRACEABLES_DBG
+	#ifdef TRACEABLES_DBG
+		u4Byte traceableLen = AthruGPU::appConsumeCount<LiBounce>(context,
+																  AthruGPU::GPU::AccessD3D()->GetDevice(),
+																  traceables);
+	#endif
 	context->CSSetShader(tracers[1].shader.Get(), nullptr, 0);
 	context->DispatchIndirect(ctrBuf.buf.Get(),
 							  RNDR_CTR_OFFSET_GENERIC);
-
 	// Scale output dispatch arguments to match the threads/group in [BouncePrep]
 	context->CSSetShader(dispatchScale256.shader.Get(),
 						 nullptr, 0);
@@ -254,6 +274,13 @@ void Renderer::Bounce(const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& d
 	context->CSSetUnorderedAccessViews(7, 1, furryIsections.view().GetAddressOf(), 0);
 	context->DispatchIndirect(ctrBuf.buf.Get(),
 							  RNDR_CTR_OFFSET_GENERIC); // Perform material synthesis/sorting
+
+	//#define ISECTIONS_DBG
+	#ifdef ISECTIONS_DBG
+		u4Byte traceableLen = AthruGPU::appConsumeCount<LiBounce>(context,
+																  AthruGPU::GPU::AccessD3D()->GetDevice(),
+																  diffuIsections);
+	#endif
 
 	// Scale output dispatch arguments to match threads/group for the sampling
 	// shaders
@@ -275,7 +302,7 @@ void Renderer::Bounce(const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& d
 		context->CSSetShader(samplers[matNdx].shader.Get(), nullptr, 0);
 		context->CSSetUnorderedAccessViews(6, 1, matBuffer.GetAddressOf(), nullptr);
 		context->DispatchIndirect(ctrBuf.buf.Get(),
-								  GPGPUStuff::DISPATCH_ARGS_SIZE * matNdx);
+								  AthruGPU::DISPATCH_ARGS_SIZE * matNdx);
 		ID3D11UnorderedAccessView* nullUAV = nullptr;
 		context->CSSetUnorderedAccessViews(6, 1, &nullUAV, 0);
 	};
@@ -285,15 +312,30 @@ void Renderer::Bounce(const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& d
 	//MatSampler((u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::SNOWW, snowwIsections.view());
 	//MatSampler((u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::SSURF, ssurfIsections.view());
 	//MatSampler((u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::FURRY, furryIsections.view());
+
+	// Optional counter-buffer debug code
+	#define CTR_DBG
+	#ifdef CTR_DBG
+		AthruGPU::AthruBuffer<u4Byte, AthruGPU::StgBuffer> buff = AthruGPU::AthruBuffer<u4Byte, AthruGPU::StgBuffer>(AthruGPU::GPU::AccessD3D()->GetDevice(),
+																													 nullptr,
+																													 30,
+																													 DXGI_FORMAT_R32_UINT);
+		context->CopyResource(buff.buf.Get(), ctrBuf.buf.Get());
+		D3D11_MAPPED_SUBRESOURCE ctr;
+		context->Map(buff.buf.Get(), 0, D3D11_MAP_READ, 0, &ctr);
+		u4Byte* ctrRef = (u4Byte*)(ctr.pData);
+		context->Unmap(buff.buf.Get(), 0);
+	#endif
 }
 
 void Renderer::Prepare()
 {
 	context->CSSetShader(post.shader.Get(), nullptr, 0);
 	context->CSSetUnorderedAccessViews(2, 1, aaBuffer.view().GetAddressOf(), 0);
-	context->Dispatch(GraphicsStuff::DISPLAY_WIDTH / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
-					  GraphicsStuff::DISPLAY_HEIGHT / GraphicsStuff::GROUP_WIDTH_PATH_REDUCTION,
-					  1);
+	DirectX::XMUINT3 disp = AthruGPU::fullscreenDispatchAxes(16);
+	context->Dispatch(disp.x,
+					  disp.y,
+					  disp.z);
 
 	// Resources can't be exposed through unordered-access-views (read/write allowed) and shader-
 	// resource-views (read-only) simultaneously, so un-bind the local unordered-access-view

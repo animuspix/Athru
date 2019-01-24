@@ -15,27 +15,18 @@ void main(uint3 groupID : SV_GroupID,
 {
     // Cache linear thread ID
     uint linDispID = threadID + (groupID.x * 256); // Assumes one-dimensional dispatches from [BouncePrep]
-    if (linDispID > counters[24]) { return; } // Mask off excess threads (assumes one-dimensional dispatches)
+    if (linDispID > (counters[24] - 1)) { return; } // Mask off excess threads (assumes one-dimensional dispatches)
 
     // Cache intersection info for the sample point
     LiBounce isect = diffuIsections.Consume();
-    if (linDispID == 0)
-    {
-        // Zero diffuse dispatch sizes
-        counters[0] = 0;
-        counters[1] = 0;
-        counters[2] = 0;
+    if (linDispID == 0) // Zero diffuse dispatch sizes
+    { counters[0] = 0; }
 
-        // We're pushing new dispatch sizes, so update assumed threads/group here
-        // ([1] because dispatch sizes are incremented naively and scaled down
-        // afterwards)
-        counters[21] = 1;
-    }
     // Extract a Philox-permutable value from [randBuf]
     // Also cache the accessor value used to retrieve that value in the first place
     // Initialize [randBuf] with hashed start times in the first frame
     PhiloStrm randStrm = isect.randStrm;
-    float4 rand = philoxPermu(randStrm);
+    float4 rand = iToFloatV(philoxPermu(randStrm));
 
     // Cache adaptive epsilon
     float eps = bounceInfo.z;
@@ -80,7 +71,7 @@ void main(uint3 groupID : SV_GroupID,
 
     // Update bounce gather information
     bool srcGatherOcc = isect.gatherOcc.x;
-    isect.gatherOcc.x = !(isect.gatherOcc.x || occData[1].w);
+    isect.gatherOcc.x = (isect.gatherOcc.x && occData[1].w);
     isect.gatherRGB = float4(neeRGB, 1.0f); // PDFs already transformed with the power heuristic +
                                             // applied to gather rays
 
@@ -89,22 +80,26 @@ void main(uint3 groupID : SV_GroupID,
     if (isect.gatherOcc.x)
     {
         // Sample an incoming ray direction for light-transport
+        float3 oDir = isect.dirs[0];
         float4 iDir = DiffuseDir(isect.dirs[2],
                                  isect.dirs[1],
                                  rand.xy);
         isect.dirs[0] = mul(iDir.xyz, normSpace); // Trace along the bounce direction
-        iDir.w *= isect.mat[0][(uint)isect.mat[2].z]; // Scale surface PDFs by selection probability for the chosen
+        iDir.w /= isect.mat[0][(uint)isect.mat[2].z]; // Scale surface PDFs by selection probability for the chosen
                                                       // material primitive
 
         // Shade with the expected incoming direction
-        float3 rgb = DiffuseBRDF(surf,
+        float3 rgb = //abs(dot(isect.dirs[1], isect.dirs[0])).xxx;
+                     DiffuseBRDF(surf,
                                  float3x3(iDir.xyz,
                                           isect.dirs[1],
                                           isect.dirs[2])) / ZERO_PDF_REMAP(iDir.w) * abs(dot(isect.dirs[1],
                                                                                              isect.dirs[0]));
+        isect.dirs[2] = oDir; // Update outgoing direction
         displayTex[isect.id.yz] *= float4(rgb, 1.0f);
         if (dot(rgb, 1.0f.xxx) > 0.0f) // Only propagate paths with nonzero brightnesss
         {
+            isect.iP -= (isect.dirs[2] * -1.0f) * eps; // Shift intersections outside the local figure
             isect.eP = isect.iP; // Diffuse bounce, incident and exitant positions are equivalent
             traceables.Append(isect);
             InterlockedAdd(counters[18], 1u); // Update indirect dispatch group size
@@ -112,7 +107,7 @@ void main(uint3 groupID : SV_GroupID,
         }
     }
     else // Otherwise apply next-event-estimated shading into path color
-    { displayTex[isect.id.yz] *= float4(isect.gatherRGB.rgb, 1.0f); }
+    { displayTex[isect.id.yz] *= isect.gatherRGB; }
 
     // Update Philox key/state for the current path
     randBuf[isect.id.x] = randStrm;

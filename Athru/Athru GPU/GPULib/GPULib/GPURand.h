@@ -3,6 +3,7 @@
 #include <chrono>
 #include <d3d11.h>
 #include <random>
+#include "GPUGlobals.h"
 #include "AthruBuffer.h"
 #include "PhiloStrm.h"
 #include "UtilityServiceCentre.h"
@@ -15,10 +16,10 @@ struct GPURand
 		// No initial data! :O
 		// Too finicky to pass starting seeds along to Athru's buffer interface, so we'll
 		// just seed with GPU hashes instead :P
-		u4Byte numSeeds = GPGPUStuff::NUM_RAND_SEEDS;
-		gpuRandState = AthruBuffer<PhiloStrm, GPGPUStuff::GPURWBuffer>(device,
-																	   nullptr,
-																	   GPGPUStuff::NUM_RAND_SEEDS);
+		u4Byte numSeeds = AthruGPU::NUM_RAND_SEEDS;
+		gpuRandState = AthruGPU::AthruBuffer<PhiloStrm, AthruGPU::GPURWBuffer>(device,
+																			   nullptr,
+																			   AthruGPU::NUM_RAND_SEEDS);
 	}
 	~GPURand(){}
 
@@ -32,5 +33,5 @@ struct GPURand
 	// instance of the 32-bit Xorshift RNG
 	// described here:
 	// https://en.wikipedia.org/wiki/Xorshift
-	AthruBuffer<PhiloStrm, GPGPUStuff::GPURWBuffer> gpuRandState;
+	AthruGPU::AthruBuffer<PhiloStrm, AthruGPU::GPURWBuffer> gpuRandState;
 };

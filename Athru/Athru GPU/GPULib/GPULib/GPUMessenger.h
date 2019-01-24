@@ -40,10 +40,10 @@ class GPUMessenger
 		};
 		// ...And a reference to the buffer we'll need in order
 		// to send that input data over to the GPU
-		AthruBuffer<GPUInput, GPGPUStuff::CBuffer> gpuInputBuffer;
+		AthruGPU::AthruBuffer<GPUInput, AthruGPU::CBuffer> gpuInputBuffer;
 
 		// A reference to the CPU-write/GPU-read buffer we'll use
 		// to transfer per-object data across to the GPU at the
 		// start of each frame
-		AthruBuffer<SceneFigure::Figure, GPGPUStuff::StrmBuffer> sceneBuf;
+		AthruGPU::AthruBuffer<SceneFigure::Figure, AthruGPU::StrmBuffer> sceneBuf;
 };

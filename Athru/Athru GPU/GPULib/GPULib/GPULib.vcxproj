@@ -230,6 +230,7 @@
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Compute</ShaderType>
     </FxCompile>
+    <None Include="DispatchScale.hlsli" />
     <None Include="FigureBuffer.hlsli">
       <ShaderType Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Compute</ShaderType>
       <ShaderModel Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">4.0</ShaderModel>
@@ -304,6 +305,7 @@
     <None Include="LightingUtility.hlsli" />
     <None Include="Materials.hlsli" />
     <None Include="GenericUtility.hlsli" />
+    <None Include="RenderUtility.hlsli" />
     <None Include="RenderUtilityCore.hlsli" />
     <None Include="ScenePost.hlsli" />
   </ItemGroup>

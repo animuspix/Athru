@@ -142,7 +142,7 @@ float4x4 MatGen(float3 coord,
         default:
             // Cache material probabilities
             // Will eventually update [matStats] for volumetric materials (fur, subsurface-scattering volumes, cloudy media)
-            float4 matStats = float4(0.98f, 0.02f, 0.0f.xx);
+            float4 matStats = float4(1.0f, 0.0f, 0.0f.xx);
 
             // Cache the current surface/volume type
             float4 rand = philoxPermu(randStrm);
