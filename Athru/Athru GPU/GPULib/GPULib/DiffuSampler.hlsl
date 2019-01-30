@@ -56,7 +56,7 @@ void main(uint3 groupID : SV_GroupID,
                                        isect.dirs[1],
                                        isect.dirs[2])) /
                   MISWeight(1, isect.gatherRGB.w,
-                            !occData[1].w, neeWi.w);
+                            1, neeWi.w);
     }
     if (!occData[1].w) // Process surface gathers with MIS
     {
@@ -65,7 +65,7 @@ void main(uint3 groupID : SV_GroupID,
                               float3x3(neeWi.xyz,
                                        isect.dirs[1],
                                        isect.dirs[2])) /
-                  MISWeight(!isect.gatherOcc.x, isect.gatherRGB.w,
+                  MISWeight(1, isect.gatherRGB.w,
                             1, neeWi.w);
     }
 
@@ -80,17 +80,16 @@ void main(uint3 groupID : SV_GroupID,
     if (isect.gatherOcc.x)
     {
         // Sample an incoming ray direction for light-transport
-        float3 oDir = isect.dirs[0];
+        float3 oDir = isect.dirs[0]; // Cache the outgoing direction
         float4 iDir = DiffuseDir(isect.dirs[2],
                                  isect.dirs[1],
                                  rand.xy);
-        isect.dirs[0] = mul(iDir.xyz, normSpace); // Trace along the bounce direction
+        isect.dirs[0].xyz = mul(iDir.xyz, normSpace); // Trace along the bounce direction
         iDir.w /= isect.mat[0][(uint)isect.mat[2].z]; // Scale surface PDFs by selection probability for the chosen
                                                       // material primitive
 
         // Shade with the expected incoming direction
-        float3 rgb = //abs(dot(isect.dirs[1], isect.dirs[0])).xxx;
-                     DiffuseBRDF(surf,
+        float3 rgb = DiffuseBRDF(surf,
                                  float3x3(iDir.xyz,
                                           isect.dirs[1],
                                           isect.dirs[2])) / ZERO_PDF_REMAP(iDir.w) * abs(dot(isect.dirs[1],

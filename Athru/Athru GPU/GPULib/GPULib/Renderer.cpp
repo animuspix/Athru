@@ -135,7 +135,7 @@ void Renderer::Render(Camera* camera)
 					 displayTexRW);
 	// Perform path-tracing
 	// One extra bounce to account for primary ray emission
-	// All rays at each bounce are guaranteed to have the same depth, so we can perform Russian Roulette
+	// All rays at each bounce are guaranteed to have the same depth, so we can perform path
 	// cancellation here instead of in-shader for better performance
 	for (int i = 0; i < GraphicsStuff::MAX_NUM_BOUNCES; i += 1) // Avoid infinite paths by clipping rays after
 																// [MAX_NUM_BOUNCES]

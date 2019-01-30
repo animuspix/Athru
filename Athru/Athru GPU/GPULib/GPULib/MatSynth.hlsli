@@ -186,7 +186,7 @@ float4x4 MatGen(float3 coord,
                 matStats.y *= fres.x; // Scale mirror probability for dielectrics
                 matStats.z *= (1.0f - fres.x); // Scale refractive probability for dielectrics
             }
-            float3 rgb = abs(sin(norml));
+            float3 rgb = 1.0f.xxx;//abs(norml);//abs(sin(norml));
             return float4x4(matStats,
                             rgb, alpha, // Procedural color, fixed surface roughness
                             fres, bxdfID, 0.0f, // Fresnel values in [xy], surface/volume type in [z], [w] is unused

@@ -98,6 +98,8 @@ void main(uint3 groupID : SV_GroupID,
         // ([1] because dispatch sizes are incremented naively and scaled down
         // afterwards)
         counters[21] = 1;
+        // Zero bounce counter
+        counters[22] = 0;
     }
     // Could append indices here instead of full bounces (smaller memory footprint)
     traceables.Append(LiBounceInitter(uint3(linPixID, pixID), pRay.xyz, cameraPos.xyz, randStrm));

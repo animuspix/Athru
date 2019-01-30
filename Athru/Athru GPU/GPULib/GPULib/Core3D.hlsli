@@ -288,21 +288,17 @@ float3 PtToPlanet(float3 pt,
     return pt / planetScale;
 }
 
-// Small debug switch, replaces all scene surfaces with a sphere
-// near the middle of the default view
+// Small debug switch, replaces planetary surfaces with spheres for simpler shading debugging
 //#define PLANET_DEBUG
 
 // Return distance + surface information for the nearest planet
 float2x3 PlanetDF(float3 pt,
                   Figure planet,
-                  uint figID,
                   float eps)
 {
     // Pass [pt] into the given planet's local space
-    #ifndef PLANET_DEBUG
-        pt = PtToPlanet(pt,
-                        planet.scale.x);
-    #endif
+    pt = PtToPlanet(pt,
+                    planet.scale.x);
 
     // Read out the appropriate distance value
     float jDist = Julia(planet.distCoeffs[0],
@@ -310,10 +306,7 @@ float2x3 PlanetDF(float3 pt,
 
     // Return sphere distance for debugging
     #ifdef PLANET_DEBUG
-        return float2x3(max(SphereDF(pt, float4(700.0f, 0.0f, 400.0f, 100.0f)), eps * 0.9f), // Surface distance; thresholded to [eps * 0.9f] for near-surface intersections
-                        DF_TYPE_PLANET, // Figure distance-field type
-                        figID, // Figure ID
-                        float3(700.0f, 0.0f, 400.0f)); // Fixed figure origin
+        jDist = SphereDF(pt, float4(0.0f.xxx, 1.0f));
     #endif
 
     // Return the approximate distance to the Julia fractal's surface
@@ -324,10 +317,10 @@ float2x3 PlanetDF(float3 pt,
     // we applied the division /before/ sampling the field)
     return float2x3(max(jDist * planet.scale.x, eps * 0.9f), // Scaled surface distance; thresholded to [eps * 0.9f] for near-surface intersections
                     DF_TYPE_PLANET, // Figure distance-field type
-                    figID, // Figure ID
-                    (float3(cos((float)figID * (RADS_PER_PLANET * 2.0f)),
+                    0x1, // Figure ID
+                    (float3(cos((float)0x1 * (RADS_PER_PLANET * 2.0f)),
                             0.0f,
-                            sin((float)figID * (RADS_PER_PLANET * 2.0f))) * PLANETARY_RING_RADIUS) + systemOri.xyz) ; // Symmetric figure origin
+                            sin((float)0x1 * (RADS_PER_PLANET * 2.0f))) * PLANETARY_RING_RADIUS) + systemOri.xyz) ; // Symmetric figure origin
 }
 
 // Return distance + surface information for the local star
@@ -344,10 +337,10 @@ float2x3 StarDF(float3 pt,
                               linTransf);
     if (!useFigBounds)
     {
-        return float2x3(sphereDF,
-                        DF_TYPE_STAR,
-                        0.0f,
-                        linTransf.xyz); // Stars never leave the system origin
+      return float2x3(sphereDF,
+                      DF_TYPE_STAR,
+                      0.0f,
+                      linTransf.xyz); // Stars never leave the system origin
     }
     else
     {
@@ -358,13 +351,44 @@ float2x3 StarDF(float3 pt,
     }
 }
 
+// Analytical Julia gradient is giving different + discontinuous results compared to
+// approximate gradient; optionally enable tetrahedral finite-differences gradient here
+#define APPROX_PLANET_GRAD
+
+// Extract planetary tetrahedral gradient; marginally
+// faster than a six-point cuboid approximation, but
+// also less accurate
+// Sourced from shadertoy user nimitz: https://www.shadertoy.com/view/Xts3WM
+// (see five-tap normal/curvature function)
+float4 tetGrad(float3 samplePoint,
+               Figure fig,
+               float adaptEps)
+{
+    float2 e = float2(-1.0f, 1.0f) * adaptEps;
+    float t1 = PlanetDF(samplePoint + e.yxx, fig, adaptEps)[0].x;
+    float t2 = PlanetDF(samplePoint + e.xxy, fig, adaptEps)[0].x;
+    float t3 = PlanetDF(samplePoint + e.xyx, fig, adaptEps)[0].x;
+    float t4 = PlanetDF(samplePoint + e.yyy, fig, adaptEps)[0].x;
+
+    float3 gradVec = t1 * e.yxx +
+                     t2 * e.xxy +
+                     t3 * e.xyx +
+                     t4 * e.yyy;
+
+    float gradMag = length(gradVec);
+    return float4(gradVec / gradMag, gradMag);
+}
+
 // Planet-specific gradient; just outputs analytical Julia gradient for now,
 // will update for physical displacement later
 float3 PlanetGrad(float3 samplePoint,
                   Figure fig)
 {
     #ifdef PLANET_DEBUG
-        return normalize(samplePoint - float3(700.0f, 0.0f, 400.0f));
+        return normalize(samplePoint); // Points expected to be in local surface space
+    #endif
+    #ifdef APPROX_PLANET_GRAD
+        return tetGrad(samplePoint, fig, 0.1f).xyz;
     #endif
     return JuliaGrad(fig.distCoeffs[0],
                      samplePoint);
@@ -405,7 +429,7 @@ float2x3 SceneField(float3 pt,
                                            // (planetary figures are placed with a per-ray symmetric
                                            // transformation)
     uint figID = planetNdx(theta);
-    float2x3 sceneDist = PlanetDF(pt, figures[0x1], 0x1, eps);
+    float2x3 sceneDist = PlanetDF(pt, figures[0x1], eps);
     float2x3 starDist = StarDF(pt, rayOri, useFigBounds);
     return trackedFigUnion(float4x3(float2x3(sceneDist[0].x + ((screenedFig == 0x1) * MAX_RAY_DIST),
                                              sceneDist[0].yz,

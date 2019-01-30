@@ -73,6 +73,22 @@ void main(uint3 groupID : SV_GroupID,
         return;
     #endif
 
+    //#define STAR_SDF_DEBUG
+    #ifdef STAR_SDF_DEBUG
+        float2x3 sceneField = SceneField(float3(0.0f.xxx),
+                                         traceable.eP,
+                                         true,
+                                         FILLER_SCREEN_ID,
+                                         eps);
+        displayTex[traceable.id.yz] *= sceneField[0].z == 0.0f;
+                                       //float4((StarDF(cameraPos.xyz + traceable.dirs[0], cameraPos.xyz, false)[0].x == (length(cameraPos.xyz + traceable.dirs[0]) - figures[0].scale.x)).xxx, 1.0f);
+                                       //float4((SphereDF(cameraPos.xyz, float4(systemOri.xyz, figures[0].scale.x)).x == (length(cameraPos.xyz) - figures[0].scale.x)).xxx, 1.0f);
+        return;
+    #endif
+
+    // Controls debug shading for stellar intersections + escaped rays
+    //#define LOST_RAY_DEBUG
+
     // March towards the next intersection in the scene
     float4 rgba = 1.0f.xxxx;
     Figure star = figures[STELLAR_FIG_ID];
@@ -103,6 +119,9 @@ void main(uint3 groupID : SV_GroupID,
             {
                 // Immediately break out on light-source intersections
                 rgba = float4(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, rayDist), 1.0f);
+                #ifdef LOST_RAY_DEBUG
+                    rgba = float4(1.0f.xx, 0.0f, 1.0f);
+                #endif
                 break; // Exit the marching loop without preparing the current intersection for next-event-estimation
                        // + sampling
             }
@@ -143,7 +162,10 @@ void main(uint3 groupID : SV_GroupID,
         // Ignore rays that travel too far into the scene
         if (rayDist >= MAX_RAY_DIST)
         {
-            rgba = float4(0.0f, 0.0f, 0.0f, 1.0f);
+            rgba = float4(0.0f.xxx, 1.0f);
+            #ifdef LOST_RAY_DEBUG
+                rgba = float4(0.0f, 0.0f, 1.0f, 1.0f);
+            #endif
             break;
         }
         rayDist += sceneField[0].x;

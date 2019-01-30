@@ -48,7 +48,11 @@ void main(uint3 groupID : SV_GroupID,
 
     // Perform source-sampling for next-event-estimation
     Figure star = figures[STELLAR_FIG_ID];
-    isect.dirs[1] = PlanetGrad(isect.iP,
+    float3 pt = isect.iP;
+    #ifndef APPROX_PLANET_GRAD
+        pt = PtToPlanet(pt, figures[isect.figID].scale.x),
+    #endif
+    isect.dirs[1] = PlanetGrad(pt,
                                figures[isect.figID]); // Placeholder gradient, will use figure-adaptive normals later...
     float4 rand = iToFloatV(philoxPermu(isect.randStrm));
     float3 stellarSurfPos = StellarSurfPos(float4(systemOri.xyz,

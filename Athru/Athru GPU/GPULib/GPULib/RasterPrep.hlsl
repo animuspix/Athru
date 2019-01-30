@@ -17,5 +17,4 @@ void main(uint3 groupID : SV_GroupID,
                                         tx.a,
                                         linPixID,
                                         resInfo.z), 1.0f);
-                        //tx;
 }

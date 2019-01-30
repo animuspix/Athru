@@ -254,7 +254,6 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
         float3 rayVec = (offset * rayDir.xyz) + rayOri.xyz;
         float dist = PlanetDF(rayVec,
                               figures[(int)rayOri.w],
-                              (int)rayOri.w,
                               rayDir.w)[0].x;
         inSurf = dist < rayDir.w;
         if (!inSurf) { break; }
