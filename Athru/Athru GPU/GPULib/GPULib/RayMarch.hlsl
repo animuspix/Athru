@@ -73,19 +73,6 @@ void main(uint3 groupID : SV_GroupID,
         return;
     #endif
 
-    //#define STAR_SDF_DEBUG
-    #ifdef STAR_SDF_DEBUG
-        float2x3 sceneField = SceneField(float3(0.0f.xxx),
-                                         traceable.eP,
-                                         true,
-                                         FILLER_SCREEN_ID,
-                                         eps);
-        displayTex[traceable.id.yz] *= sceneField[0].z == 0.0f;
-                                       //float4((StarDF(cameraPos.xyz + traceable.dirs[0], cameraPos.xyz, false)[0].x == (length(cameraPos.xyz + traceable.dirs[0]) - figures[0].scale.x)).xxx, 1.0f);
-                                       //float4((SphereDF(cameraPos.xyz, float4(systemOri.xyz, figures[0].scale.x)).x == (length(cameraPos.xyz) - figures[0].scale.x)).xxx, 1.0f);
-        return;
-    #endif
-
     // Controls debug shading for stellar intersections + escaped rays
     //#define LOST_RAY_DEBUG
 
