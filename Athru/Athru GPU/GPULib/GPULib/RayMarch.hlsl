@@ -58,13 +58,13 @@ void main(uint3 groupID : SV_GroupID,
     // Generate a parameterized path culling weight
     const float minCull = 0.01f; // Could optionally set this through [RenderInput]
     const float maxCull = 0.15f; // Could optionally set this through [RenderInput]
-    float d = numRays / resInfo.w;
+    float d = numRays / tilingInfo.z;
     float m = counters[22] / bounceInfo.x;
     float cullWeight = lerp(minCull, maxCull, lerp(d, m, m));
 
     // Baseline ray distance
     // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
-    float rayDist = (eps * 2.0f);
+    float t = (eps * 2.0f);
 
     // Optionally output noise to the display, then break out
     //#define NOISE_OUT
@@ -72,6 +72,13 @@ void main(uint3 groupID : SV_GroupID,
         displayTex[traceable.id.yz] = rand;
         return;
     #endif
+
+    // Relevant values for distance relaxation
+    float w = 1.0f; // Moving relaxation factor
+    const float maxW = 1.2f; // Upper relaxation limit
+    float prevF = 0.0f; // Most recent distance at each step
+    float prevDt = 0.0f; // Most recent offset at each step
+    bool relaxed = true; // On/off switch for distance relaxation
 
     // Controls debug shading for stellar intersections + escaped rays
     //#define LOST_RAY_DEBUG
@@ -82,7 +89,7 @@ void main(uint3 groupID : SV_GroupID,
     for (uint i = 0u; i < MAX_VIS_MARCHER_STEPS; i += 1u)
     {
         // Scale rays through the scene, add bounce/emission origin
-        rayVec = float3(rayDist * traceable.dirs[0]) + traceable.eP;
+        rayVec = float3(t * traceable.dirs[0]) + traceable.eP;
 
         // Evaluate the scene SDF
         float2x3 sceneField = SceneField(rayVec,
@@ -90,6 +97,21 @@ void main(uint3 groupID : SV_GroupID,
                                          true,
                                          FILLER_SCREEN_ID,
                                          eps);
+
+        // Revert to standard sphere-tracing on excessive relaxation
+        if (prevF + sceneField[0].x < prevDt && relaxed)
+        {
+            relaxed = false;
+            t += prevDt * 1.0f - w;
+            rayVec = float3(t * traceable.dirs[0]) + traceable.eP;
+            sceneField = SceneField(rayVec,
+                                    traceable.eP,
+                                    true,
+                                    FILLER_SCREEN_ID,
+                                    eps);
+            w = 1.0f;
+        }
+
         // Process intersections
         if (sceneField[0].x < eps)
         {
@@ -105,7 +127,7 @@ void main(uint3 groupID : SV_GroupID,
             if (sceneField[0].z == STELLAR_FIG_ID) // Only stellar light sources supported for now
             {
                 // Immediately break out on light-source intersections
-                rgba = float4(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, rayDist), 1.0f);
+                rgba = float4(Emission(STELLAR_RGB, STELLAR_BRIGHTNESS, t), 1.0f);
                 #ifdef LOST_RAY_DEBUG
                     rgba = float4(1.0f.xx, 0.0f, 1.0f);
                 #endif
@@ -138,16 +160,15 @@ void main(uint3 groupID : SV_GroupID,
             // Exit the marching loop
             break;
         }
-        // Handle participating media + volumetrics
-        //if () // Evaluate phase functions
+        //else if () // Handle participating media + volumetrics
+        //           // Evaluate phase functions
         //{
             // Scale media shading when phase functions return more than [some value]
             // Only atmospheric/cloud scattering supported atm
             //if (atmosScttr) { displayTex[traceable.id.yz] *= atmosT(); }
             //else { displayTex[traceable.id.yz] *= cloudyT(); }
         //}
-        // Ignore rays that travel too far into the scene
-        if (rayDist >= MAX_RAY_DIST)
+        else if (t >= MAX_RAY_DIST) // Ignore rays that travel too far into the scene
         {
             rgba = float4(0.0f.xxx, 1.0f);
             #ifdef LOST_RAY_DEBUG
@@ -155,7 +176,13 @@ void main(uint3 groupID : SV_GroupID,
             #endif
             break;
         }
-        rayDist += sceneField[0].x;
+        else // Update ray-marching values
+        {
+            prevF = sceneField[0].x; // Update most-recent scene distance
+            prevDt = prevF * w; // Update most-recent ray offset
+            t += prevDt; // Offset rays at each step
+            if (relaxed) { w = lerp(1.0f, maxW, pow(0.9f, sceneField[0].x)); } // Scale [w] closer to [maxW] as rays approach the threshold distance from the scene
+        }
     }
     // Apply primary-ray shading
     displayTex[traceable.id.yz] *= rgba;

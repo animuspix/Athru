@@ -98,7 +98,6 @@ void main(uint3 groupID : SV_GroupID,
         displayTex[isect.id.yz] *= float4(rgb, 1.0f);
         if (dot(rgb, 1.0f.xxx) > 0.0f) // Only propagate paths with nonzero brightnesss
         {
-            isect.iP -= (isect.dirs[2] * -1.0f) * eps; // Shift intersections outside the local figure
             isect.eP = isect.iP; // Diffuse bounce, incident and exitant positions are equivalent
             traceables.Append(isect);
             InterlockedAdd(counters[18], 1u); // Update indirect dispatch group size

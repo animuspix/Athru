@@ -54,49 +54,49 @@ Renderer::Renderer(HWND windowHandle,
 {
 	// Construct the render-specific input buffer
 	renderInputBuffer = AthruGPU::AthruBuffer<RenderInput, AthruGPU::CBuffer>(device,
-																	  nullptr);
+																			  nullptr);
 
 	// Build the buffer we'll be using to store
 	// image samples for temporal smoothing/anti-aliasing
 	aaBuffer = AthruGPU::AthruBuffer<PixHistory, AthruGPU::GPURWBuffer>(device,
-																nullptr,
-																GraphicsStuff::DISPLAY_AREA);
+																		nullptr,
+																		GraphicsStuff::DISPLAY_AREA);
 	// Create the tracing append/consume buffer
 	traceables = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
 																	  nullptr,
-																	  GraphicsStuff::DISPLAY_AREA);
+																	  GraphicsStuff::TILING_AREA);
 
 	// Create the intersection/surface buffer
 	surfIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																 nullptr,
-																 GraphicsStuff::DISPLAY_AREA);
+																		 nullptr,
+																		 GraphicsStuff::TILING_AREA);
 
 	// Create the diffuse intersection buffer
 	diffuIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																  nullptr,
-																  GraphicsStuff::DISPLAY_AREA);
+																		  nullptr,
+																		  GraphicsStuff::TILING_AREA);
 	// Create the mirrorlike intersection buffer
 	mirroIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																  nullptr,
-																  GraphicsStuff::DISPLAY_AREA);
+																		  nullptr,
+																		  GraphicsStuff::TILING_AREA);
 	// Create the refractive intersection buffer
 	refraIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																  nullptr,
-																  GraphicsStuff::DISPLAY_AREA);
+																		  nullptr,
+																		  GraphicsStuff::TILING_AREA);
 	// Create the snowy intersection buffer
 	snowwIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-															      nullptr,
-															      GraphicsStuff::DISPLAY_AREA);
+																		  nullptr,
+																		  GraphicsStuff::TILING_AREA);
 
 	// Create the organic/sub-surface scattering intersection buffer
 	ssurfIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																  nullptr,
-																  GraphicsStuff::DISPLAY_AREA);
+																		  nullptr,
+																		  GraphicsStuff::TILING_AREA);
 
 	// Create the furry intersection buffer
 	furryIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																  nullptr,
-																  GraphicsStuff::DISPLAY_AREA);
+																		  nullptr,
+																		  GraphicsStuff::TILING_AREA);
 
 	// Create the material counter + its matching staging resource
 	u4Byte ctrs[30] = { 0, 1, 1, // Initially zero per-material dispatch sizes
@@ -186,9 +186,10 @@ void Renderer::SampleLens(DirectX::XMVECTOR& cameraPosition,
 
 	// Later we'll also need the material intersection buffer, the surface intersection buffer, and the
 	// material counter-buffer; get all those onto the GPU here
-	// (+ also push our AA integration buffer)
+	// (+ also push our AA integration buffer, and the rasterizable pixel-set)
 	context->CSSetUnorderedAccessViews(6, 1, surfIsections.view().GetAddressOf(), 0);
 	context->CSSetUnorderedAccessViews(4, 1, ctrBuf.view().GetAddressOf(), 0);
+	context->CSSetUnorderedAccessViews(7, 1, rasterPx.view().GetAddressOf(), 0);
 
 	// Expose the local input buffer for writing
 	D3D11_MAPPED_SUBRESOURCE shaderInput;
@@ -218,14 +219,26 @@ void Renderer::SampleLens(DirectX::XMVECTOR& cameraPosition,
 											   GraphicsStuff::NUM_AA_SAMPLES,
 											   GraphicsStuff::DISPLAY_AREA);
 
+	// Update [tilingInfo]
+	shaderInputPtr->tilingInfo = DirectX::XMUINT4(GraphicsStuff::TILING_WIDTH,
+												  GraphicsStuff::TILING_HEIGHT,
+												  GraphicsStuff::TILING_AREA,
+												  0);
+
+	// Update [tileInfo]
+	shaderInputPtr->tileInfo = DirectX::XMUINT4(GraphicsStuff::TILE_WIDTH,
+												GraphicsStuff::TILE_HEIGHT,
+												GraphicsStuff::TILE_AREA,
+												0);
+
 	// Break the write-allowed connection to the shader input buffer
 	context->Unmap(renderInputBuffer.buf.Get(), 0);
 
 	// Pass the data in the local input buffer over to the GPU
 	context->CSSetConstantBuffers(1, 1, renderInputBuffer.buf.GetAddressOf());
 
-	// Dispatch the pre-processing shader
-	DirectX::XMUINT3 disp = AthruGPU::fullscreenDispatchAxes(16);
+	// Dispatch the lens sampler
+	DirectX::XMUINT3 disp = AthruGPU::tiledDispatchAxes(16);
 	context->Dispatch(disp.x,
 					  disp.y,
 					  disp.z);
@@ -332,7 +345,8 @@ void Renderer::Prepare()
 {
 	context->CSSetShader(post.shader.Get(), nullptr, 0);
 	context->CSSetUnorderedAccessViews(2, 1, aaBuffer.view().GetAddressOf(), 0);
-	DirectX::XMUINT3 disp = AthruGPU::fullscreenDispatchAxes(16);
+	context->CSSetUnorderedAccessViews(3, 1, rasterPx.view().GetAddressOf(), 0);
+	DirectX::XMUINT3 disp = AthruGPU::tiledDispatchAxes(16);
 	context->Dispatch(disp.x,
 					  disp.y,
 					  disp.z);

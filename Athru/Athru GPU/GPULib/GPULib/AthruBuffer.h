@@ -225,8 +225,8 @@ namespace AthruGPU
 			{
 				return sizeof(ContentType) * ((std::is_class<ContentType>::value || std::is_same<AthruBufType, AthruGPU::AppBuffer>::value) &&
 											  !(std::is_same<AthruBufType, AthruGPU::CBuffer>::value)); // Structure-byte-stride is zeroed
-																										  // for unstructured and constant
-																										  // buffers
+																										// for unstructured and constant
+																										// buffers
 			}
 			u4Byte bufUAVFlags()
 			{

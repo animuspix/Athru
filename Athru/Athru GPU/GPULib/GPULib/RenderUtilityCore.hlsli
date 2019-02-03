@@ -17,6 +17,8 @@ cbuffer RenderInput : register(b1)
 					   // for path tracing in [w] (integer) ([w]/real is unused)
     uint4 resInfo; // Resolution info carrier; contains app resolution in [xy],
 	               // AA sampling rate in [z], and display area in [w]
+	uint4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
+	uint4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
 }
 
 // Concrete representation for light bounces after/during ray-marching;
@@ -25,7 +27,7 @@ cbuffer RenderInput : register(b1)
 struct LiBounce
 {
 	uint3 id; // Path ID for the current bounce (needed for shading); one-dimensional pixel
-			  // offset in [x], two-dimensional index in [yz]
+			  // offset in [x], two-dimensional index in [yz], [w] is unused
 	float4x3 dirs; // Incoming/normal/outgoing/half
 	float3 iP; // Incident position
 	float3 eP; // Exitant position (usually equivalent to incident position,

@@ -80,6 +80,8 @@ class Renderer
 										  // tracing epsilon value in [z]; [w] is unused
 			DirectX::XMUINT4 resInfo; // Resolution info carrier; contains app resolution in [xy],
 									  // AA sampling rate in [z], and display area in [w]
+			DirectX::XMUINT4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
+			DirectX::XMUINT4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
 		};
 
 		// A reference to the rendering-specific input/constant buffer (with layout defined by [RenderInput])
@@ -88,6 +90,9 @@ class Renderer
 		// Small buffer letting us restrict path-tracing dispatches to paths persisting after
 		// each tracing/processing/sampling iteration
 		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> traceables;
+
+		// Rasterization buffer, used to restrict filtering/anti-aliasing to the pixels explicitly sampled in each frame
+		AthruGPU::AthruBuffer<DirectX::XMUINT3, AthruGPU::AppBuffer> rasterPx;
 
 		// Surface intersection buffer (carries successful intersections across for next-event-estimation + material synthesis)
 		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> surfIsections;

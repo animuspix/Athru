@@ -22,6 +22,12 @@ namespace GraphicsStuff
 	extern constexpr u4Byte MAX_NUM_BOUNCES = 7;
 	extern constexpr u4Byte MAX_NUM_SSURF_BOUNCES = 512;
 	extern constexpr u4Byte NUM_AA_SAMPLES = 8192;
+	extern constexpr u4Byte TILE_WIDTH = 2;
+	extern constexpr u4Byte TILE_HEIGHT = 2;
+	extern constexpr u4Byte TILE_AREA = TILE_WIDTH * TILE_HEIGHT;
+	extern constexpr u4Byte TILING_WIDTH = DISPLAY_WIDTH / TILE_WIDTH;
+	extern constexpr u4Byte TILING_HEIGHT = DISPLAY_HEIGHT / TILE_HEIGHT;
+	extern constexpr u4Byte TILING_AREA = TILING_WIDTH * TILING_HEIGHT;
 	extern constexpr uByte NUM_SUPPORTED_SURF_BXDFS = 6;
 	extern constexpr float EPSILON_MIN = 0.0001f;
 	extern constexpr float EPSILON_MAX = 0.1f;
@@ -49,6 +55,15 @@ namespace AthruGPU
 	{
 		return DirectX::XMUINT3((u4Byte)(std::ceil(float(GraphicsStuff::DISPLAY_WIDTH) / groupWidth)),
 								(u4Byte)(std::ceil(float(GraphicsStuff::DISPLAY_HEIGHT) / groupWidth)),
+								1);
+	}
+
+	// Dispatch axis generator for tiled compute passes (assumed shading-specific)
+	// Should specify as [consteval] after C++20
+	constexpr DirectX::XMUINT3 tiledDispatchAxes(u4Byte groupWidth)
+	{
+		return DirectX::XMUINT3((u4Byte)(std::ceil(float(GraphicsStuff::TILING_WIDTH) / groupWidth)),
+								(u4Byte)(std::ceil(float(GraphicsStuff::TILING_HEIGHT) / groupWidth)),
 								1);
 	}
 

@@ -54,6 +54,7 @@ void main(uint3 groupID : SV_GroupID,
     #endif
     isect.dirs[1] = PlanetGrad(pt,
                                figures[isect.figID]); // Placeholder gradient, will use figure-adaptive normals later...
+    isect.iP -= -(isect.dirs[0]) * eps; // Shift intersections outside the local figure
     float4 rand = iToFloatV(philoxPermu(isect.randStrm));
     float3 stellarSurfPos = StellarSurfPos(float4(systemOri.xyz,
                                                   figures[STELLAR_FIG_ID].scale.x),

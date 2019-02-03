@@ -30,6 +30,11 @@ struct PixHistory
 // reduce per-frame GPU loading)
 RWStructuredBuffer<PixHistory> aaBuffer : register(u2);
 
+// Texture giving approach velocity for the data imaged at each pixel; data quickly moving away
+// from the camera are sampled less than static data to minimize ghosting (controllable with a motion-blur value
+// interpolating between maximum & scaled sampling rates)
+//RWTexture2D<float4> veloTex : register(u3);
+
 // Smooths frames by applying temporal anti-aliasing (sample accumulation occurs in
 // time and space simultaneously); filtering is supported by applying the generalized
 // sample integrator ([x, y] are sample coordinates, [L] is the radiance function,

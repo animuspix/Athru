@@ -10,7 +10,7 @@
 struct LiBounce
 {
 	DirectX::XMUINT3 id; // Path ID for the current bounce (needed for shading); one-dimensional pixel
-						 // offset in [x], two-dimensional index in [yz]
+						 // offset in [x], two-dimensional index in [yz], [w] is unused
 	DirectX::XMFLOAT4 dirs[3]; // Incoming/normal/outgoing/half
 	DirectX::XMFLOAT3 iP; // Incident position
 	DirectX::XMFLOAT3 eP; // Exitant position (usually equivalent to incident position,

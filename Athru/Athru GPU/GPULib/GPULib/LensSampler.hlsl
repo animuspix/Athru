@@ -13,6 +13,9 @@ AppendStructuredBuffer<LiBounce> traceables : register(u3);
 // dispatch than to bind new resources near each rendering call)
 AppendStructuredBuffer<LiBounce> surfIsections : register(u6);
 
+// Buffer carrying samples to rasterize for the current frame
+AppendStructuredBuffer<uint2> rasterPx : register(u7);
+
 // Ray direction for a pinhole camera (simple tangent-driven
 // pixel projection), given a pixel ID + a two-dimensional
 // resolution vector + a super-sampling scaling factor
@@ -75,25 +78,33 @@ void main(uint3 groupID : SV_GroupID,
     // Extract a pixel ID from the given thread/group IDs
     uint2 pixID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
                         (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
-    uint linPixID = pixID.x + (pixID.y * resInfo.x);
+    uint linPixID = pixID.x + (pixID.y * tilingInfo.x);
     // Mask off excess threads
-    if (linPixID > (resInfo.w - 1)) { return; }
+    if (linPixID > (tilingInfo.z - 1)) { return; }
+
+    // Select a pixel from within the current tile
+    // Try to cover the whole tile as efficiently as possible
+    uint frameCtr = uint(tInfo.z);
+    uint2 px = uint2(frameCtr % 2,
+                     (frameCtr % 3) / 2) + // Compute offset
+                     (pixID * tileInfo.x); // Sum into the scaled tile origin
+    uint linPx = px.x + px.y * resInfo.x;
 
     // Extract per-path Philox streams from [randBuf]
-    PhiloStrm randStrm = philoxVal(linPixID,
-                                   tInfo.z);
+    PhiloStrm randStrm = philoxVal(linPx,
+                                   frameCtr);
     float4 rand = iToFloatV(philoxPermu(randStrm));
 
     // Generate an outgoing ray-direction for the current pixel
     // + a corresponding filter value
-    float4 pRay = PixToRay(pixID,
-                           aaBuffer[linPixID].sampleCount.x + 1,
+    float4 pRay = PixToRay(px,
+                           aaBuffer[linPx].sampleCount.x + 1,
                            rand.xy);
 
     // Prepare zeroth "bounce" for the core tracing/intersection shader
     if (linPixID == 0)
     {
-        counters[18] = resInfo.w; // Update generic dispatch size
+        counters[18] = tilingInfo.z; // Update generic dispatch size
         // We're pushing new dispatch sizes, so update assumed threads/group here
         // ([1] because dispatch sizes are incremented naively and scaled down
         // afterwards)
@@ -102,11 +113,14 @@ void main(uint3 groupID : SV_GroupID,
         counters[22] = 0;
     }
     // Could append indices here instead of full bounces (smaller memory footprint)
-    traceables.Append(LiBounceInitter(uint3(linPixID, pixID), pRay.xyz, cameraPos.xyz, randStrm));
+    traceables.Append(LiBounceInitter(uint3(linPx, px), pRay.xyz, cameraPos.xyz, randStrm));
+
+    // Cache pixel indices for rasterization
+    rasterPx.Append(px);
 
     // Update PRNG state
-    randBuf[linPixID] = randStrm;
+    randBuf[linPx] = randStrm;
 
     // Initialize path values for the current pixel
-    displayTex[pixID] = float4(1.0f.xxx, pRay.w);
+    displayTex[px] = float4(1.0f.xxx, pRay.w);
 }

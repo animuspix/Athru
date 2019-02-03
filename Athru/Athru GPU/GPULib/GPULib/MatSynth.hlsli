@@ -145,7 +145,7 @@ float4x4 MatGen(float3 coord,
             float4 matStats = float4(1.0f, 0.0f, 0.0f.xx);
 
             // Cache the current surface/volume type
-            float4 rand = philoxPermu(randStrm);
+            float4 rand = iToFloatV(philoxPermu(randStrm));
             uint bxdfID = MatBXDFID(matStats,
                                     rand.x);
 
@@ -186,7 +186,8 @@ float4x4 MatGen(float3 coord,
                 matStats.y *= fres.x; // Scale mirror probability for dielectrics
                 matStats.z *= (1.0f - fres.x); // Scale refractive probability for dielectrics
             }
-            float3 rgb = 1.0f.xxx;//abs(norml);//abs(sin(norml));
+            float3 rgb = float3(abs(cross(wo, norml)).r, 0.5f, 0.5f);
+                         //1.0f.xxx;
             return float4x4(matStats,
                             rgb, alpha, // Procedural color, fixed surface roughness
                             fres, bxdfID, 0.0f, // Fresnel values in [xy], surface/volume type in [z], [w] is unused
