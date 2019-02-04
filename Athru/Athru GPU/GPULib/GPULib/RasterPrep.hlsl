@@ -1,24 +1,28 @@
 #include "RenderUtility.hlsli"
 #include "ScenePost.hlsli"
 
-// Buffer carrying samples to rasterize for the current frame
-ConsumeStructuredBuffer<uint2> rasterPx : register(u3);
+// Filtering/AA occurs with tiled pixel positions, so include the pixel/tile-mapper
+// here
+#include "TileMapper.hlsli"
 
 [numthreads(8, 8, 4)]
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
 {
     // Extract a pixel ID from the given thread/group IDs
-    uint2 pixID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
+    uint2 tileID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
                         (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
-    uint linPixID = pixID.x + (pixID.y * tilingInfo.x);
-    if (linPixID > tilingInfo.z) { return; } // Mask off excess threads
-    if (linPixID == 0) { counters[22] = 0; } // Zero the light bounce counter
+    uint linTileID = tileID.x + (tileID.y * tilingInfo.x);
+    if (linTileID > tilingInfo.z - 1) { return; } // Mask off excess threads
+    if (linTileID == 0) { counters[22] = 0; } // Zero the light bounce counter
     // Filter/tonemap, then transfer to the display texture
-    uint2 px = rasterPx.Consume();
-    float4 tx = displayTex[px];
-    displayTex[px] = float4(PathPost(tx.rgb,
-                                     tx.a,
-                                     linPixID,
-                                     resInfo.z), 1.0f);
+    uint3 px = TilePx(tileID,
+                      tInfo.z,
+                      resInfo.x,
+                      tileInfo.xy);
+    float4 tx = displayTex[px.yz];
+    displayTex[px.yz] = float4(PathPost(tx.rgb,
+                                        tx.a,
+                                        px.x,
+                                        resInfo.z), 1.0f);
 }

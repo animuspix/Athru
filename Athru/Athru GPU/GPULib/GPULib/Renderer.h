@@ -91,9 +91,6 @@ class Renderer
 		// each tracing/processing/sampling iteration
 		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> traceables;
 
-		// Rasterization buffer, used to restrict filtering/anti-aliasing to the pixels explicitly sampled in each frame
-		AthruGPU::AthruBuffer<DirectX::XMUINT3, AthruGPU::AppBuffer> rasterPx;
-
 		// Surface intersection buffer (carries successful intersections across for next-event-estimation + material synthesis)
 		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> surfIsections;
 

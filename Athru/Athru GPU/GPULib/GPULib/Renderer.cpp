@@ -186,10 +186,9 @@ void Renderer::SampleLens(DirectX::XMVECTOR& cameraPosition,
 
 	// Later we'll also need the material intersection buffer, the surface intersection buffer, and the
 	// material counter-buffer; get all those onto the GPU here
-	// (+ also push our AA integration buffer, and the rasterizable pixel-set)
+	// (+ also push our AA integration buffer)
 	context->CSSetUnorderedAccessViews(6, 1, surfIsections.view().GetAddressOf(), 0);
 	context->CSSetUnorderedAccessViews(4, 1, ctrBuf.view().GetAddressOf(), 0);
-	context->CSSetUnorderedAccessViews(7, 1, rasterPx.view().GetAddressOf(), 0);
 
 	// Expose the local input buffer for writing
 	D3D11_MAPPED_SUBRESOURCE shaderInput;
@@ -327,7 +326,7 @@ void Renderer::Bounce(const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& d
 	//MatSampler((u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::FURRY, furryIsections.view());
 
 	// Optional counter-buffer debug code
-	#define CTR_DBG
+	//#define CTR_DBG
 	#ifdef CTR_DBG
 		AthruGPU::AthruBuffer<u4Byte, AthruGPU::StgBuffer> buff = AthruGPU::AthruBuffer<u4Byte, AthruGPU::StgBuffer>(AthruGPU::GPU::AccessD3D()->GetDevice(),
 																													 nullptr,
@@ -345,7 +344,6 @@ void Renderer::Prepare()
 {
 	context->CSSetShader(post.shader.Get(), nullptr, 0);
 	context->CSSetUnorderedAccessViews(2, 1, aaBuffer.view().GetAddressOf(), 0);
-	context->CSSetUnorderedAccessViews(3, 1, rasterPx.view().GetAddressOf(), 0);
 	DirectX::XMUINT3 disp = AthruGPU::tiledDispatchAxes(16);
 	context->Dispatch(disp.x,
 					  disp.y,

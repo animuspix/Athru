@@ -115,7 +115,7 @@ void GameLoop()
 		// Small penalty from output, but useful for performance measurement when graphics debugging isn't available
 		// (like e.g. on school/work PCs without admin privileges)
 		//AthruCore::Utility::AccessLogger()->Log(TimeStuff::FPS(), "FPS");
-		AthruCore::Utility::AccessLogger()->Log(TimeStuff::deltaTime() * 1000.0f, "Time between frames (milliseconds)");
+		AthruCore::Utility::AccessLogger()->Log<Logger::DESTINATIONS::LOG_FILE>(TimeStuff::deltaTime() * 1000.0f, "Time between frames (milliseconds)");
 		//AthruCore::Utility::AccessLogger()->Log<Logger::DESTINATIONS::LOG_FILE>(TimeStuff::frameCtr, "Frame counter");
 
 		// Update the frame counter
