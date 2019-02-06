@@ -141,7 +141,7 @@ void Renderer::Render(Camera* camera)
 																// [MAX_NUM_BOUNCES]
 	{
 		// Scale counter buffer to 128 threads/group before tracing each bounce
-		context->CSSetShader(dispatchScale128.shader.Get(),
+		context->CSSetShader(dispatchScale256.shader.Get(),
 							 nullptr, 0);
 		context->Dispatch(1, 1, 1);
 

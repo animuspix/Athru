@@ -19,7 +19,7 @@ AppendStructuredBuffer<LiBounce> surfIsections : register(u6);
 // ray-marcher
 #define MAX_VIS_MARCHER_STEPS 512
 
-[numthreads(8, 4, 4)]
+[numthreads(8, 8, 4)]
 void main(uint3 groupID : SV_GroupID,
           uint threadID : SV_GroupIndex)
 {

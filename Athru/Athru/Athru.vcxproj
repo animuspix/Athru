@@ -86,8 +86,8 @@
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <CodeAnalysisRuleSet>C:\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <RunCodeAnalysis>true</RunCodeAnalysis>
+    <CodeAnalysisRuleSet>..\..\..\..\..\..\..\Program Files (x86)\Microsoft Visual Studio 14.0\Team Tools\Static Analysis Tools\Rule Sets\NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>
@@ -159,8 +159,8 @@
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>NDEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <SDLCheck>true</SDLCheck>
-      <EnablePREfast>true</EnablePREfast>
-      <AdditionalIncludeDirectories>$(SolutionDir)Athru Maths\MathsLib\MathsLib;$(SolutionDir)ThirdParty\DirectXTex;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <EnablePREfast>false</EnablePREfast>
+      <AdditionalIncludeDirectories>$(SolutionDir)Athru GPU\GPULib\GPULib;$(SolutionDir)Athru Utilities\UtilityLib\UtilityLib;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <LanguageStandard>stdcpp17</LanguageStandard>
     </ClCompile>
     <Link>
@@ -168,7 +168,7 @@
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>$(SolutionDir)Athru Maths\MathsLib\x64\Release\MathsLib.lib;$(SolutionDir)ThirdParty\DirectXTex\DirectXTex\Bin\Desktop_2015\x64\Release\DirectXTex.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>$(OutDir)GPULib.lib;$(OutDir)UtilityLib.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
     <FxCompile>
       <DisableOptimizations>false</DisableOptimizations>
