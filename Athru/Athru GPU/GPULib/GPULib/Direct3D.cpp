@@ -74,9 +74,11 @@ Direct3D::Direct3D(HWND hwnd)
 		swapChainDesc.BufferDesc.RefreshRate.Denominator = 1;
 	}
 
+	// Check swap-chain description & instantiation here
+
 	// Instantiate the swap chain, Direct3D device, and Direct3D device context
 	D3D_FEATURE_LEVEL featureLevel = D3D_FEATURE_LEVEL_11_0;
-	result = D3D11CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0,
+	result = D3D12CreateDeviceAndSwapChain(nullptr, D3D_DRIVER_TYPE_HARDWARE, 0,
 										   D3D11_CREATE_DEVICE_DEBUG, &featureLevel, 1,
 										   D3D11_SDK_VERSION, &swapChainDesc, &swapChain, &device,
 										   nullptr, &deviceContext);
@@ -88,9 +90,9 @@ Direct3D::Direct3D(HWND hwnd)
 	assert(SUCCEEDED(result));
 
 	// Cache the address of the back buffer
-	Microsoft::WRL::ComPtr<ID3D11Texture2D> backBufferPtr;
+	Microsoft::WRL::ComPtr<ID3D12Texture2D> backBufferPtr;
 	result = swapChain->GetBuffer(0,
-								  __uuidof(ID3D11Texture2D),
+								  __uuidof(ID3D12Texture2D),
 								  (void**)&backBufferPtr);
 	assert(SUCCEEDED(result));
 
@@ -99,32 +101,6 @@ Direct3D::Direct3D(HWND hwnd)
 	assert(backBufferPtr != nullptr);
 	result = device->CreateRenderTargetView(backBufferPtr.Get(), NULL, &defaultRenderTarget);
 	assert(SUCCEEDED(result));
-
-	// Send the render target view into the output pipeline; Athru uses strictly implicit rendering, so
-	// no need for defined depth-buffer
-	deviceContext->OMSetRenderTargets(1, defaultRenderTarget.GetAddressOf(), nullptr);
-
-	// Describe the rasterizer
-	D3D11_RASTERIZER_DESC rasterDesc;
-	rasterDesc.AntialiasedLineEnable = false;
-	rasterDesc.CullMode = D3D11_CULL_BACK;
-	rasterDesc.DepthBias = 0;
-	rasterDesc.DepthBiasClamp = 0.0f;
-	rasterDesc.DepthClipEnable = false;
-	rasterDesc.FillMode = D3D11_FILL_SOLID;
-	rasterDesc.FrontCounterClockwise = false;
-	rasterDesc.MultisampleEnable = false;
-	rasterDesc.ScissorEnable = false;
-	rasterDesc.SlopeScaledDepthBias = 0.0f;
-
-	// Instantiate the rasterizer state from the raster description
-	// and store it within [rasterState]
-	result = device->CreateRasterizerState(&rasterDesc, &rasterState);
-	assert(SUCCEEDED(result));
-
-	// Match the internal rasterizer state to the rasterizer state instantiated
-	// above
-	deviceContext->RSSetState(rasterState.Get());
 
 	// Create the Direct3D viewport
 	D3D11_VIEWPORT viewport;
@@ -153,20 +129,67 @@ void Direct3D::Output()
 	swapChain->Present(GraphicsStuff::VSYNC_ENABLED, 0);
 
 	// Flipped-sequential double-buffering unbinds the render-target, so rebind it here
-	deviceContext->OMSetRenderTargets(1, defaultRenderTarget.GetAddressOf(), nullptr);
+	//graphicsCmdList->OMSetRenderTargets(1, defaultRenderTarget.GetAddressOf(), nullptr);
 }
 
-const Microsoft::WRL::ComPtr<ID3D11Device>& Direct3D::GetDevice()
+void Direct3D::InitRasterPipeline(const D3D12_SHADER_BYTECODE& vs,
+								  const D3D12_SHADER_BYTECODE& ps,
+								  const D3D12_INPUT_LAYOUT_DESC& inputLayout,
+								  ID3D12RootSignature* rootSig)
+{
+	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline;
+	pipeline.pRootSignature = rootSig;
+	pipeline.VS = vs;
+	pipeline.PS = ps;
+	pipeline.BlendState.AlphaToCoverageEnable = false;
+	pipeline.BlendState.IndependentBlendEnable = false;
+	pipeline.BlendState.RenderTarget[0].BlendEnable = false; // No blending/transparency in Athru
+	pipeline.RasterizerState.DepthClipEnable = false; // Try to guarantee that the presentation quad will never clip out of the display
+													  // (super unlikely but verifiable code is nice)
+	pipeline.DepthStencilState.DepthEnable = false; // Strictly implicit rendering in Athru, no strong need for a depth buffer
+	pipeline.InputLayout = inputLayout; // Pass along the provided input layout
+	pipeline.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED; // No discontinuous index-buffers in Athru
+	pipeline.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // Only triangular geometry in Athru (representing the display quad)
+	pipeline.NumRenderTargets = 1; // Only one render target atm
+	pipeline.
+}
+
+const Microsoft::WRL::ComPtr<ID3D12Device>& Direct3D::GetDevice()
 {
 	return device;
 }
 
-const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& Direct3D::GetDeviceContext()
+const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& Direct3D::GetGraphicsQueue()
 {
-	return deviceContext;
+	return graphicsQueue;
 }
 
-const DXGI_ADAPTER_DESC& Direct3D::GetAdapterInfo()
+const Microsoft::WRL::ComPtr<ID3D12CommandList>& Direct3D::GetGraphicsCmdList()
+{
+	return graphicsCmdList;
+}
+
+const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& Direct3D::GetComputeQueue()
+{
+	return computeQueue;
+}
+
+const Microsoft::WRL::ComPtr<ID3D12CommandList>& Direct3D::GetComputeCmdList()
+{
+	return computeCmdList;
+}
+
+const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& Direct3D::GetCopyQueue()
+{
+	return copyQueue;
+}
+
+const Microsoft::WRL::ComPtr<ID3D12CommandList>& Direct3D::GetCopyCmdList()
+{
+	return copyCmdList;
+}
+
+const DXGI_ADAPTER_DESC3& Direct3D::GetAdapterInfo()
 {
 	return adapterInfo;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #include <chrono>
-#include <d3d11.h>
+#include <d3d12.h>
 #include <random>
 #include "GPUGlobals.h"
 #include "AthruBuffer.h"
