@@ -151,7 +151,17 @@ void Direct3D::InitRasterPipeline(const D3D12_SHADER_BYTECODE& vs,
 	pipeline.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED; // No discontinuous index-buffers in Athru
 	pipeline.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // Only triangular geometry in Athru (representing the display quad)
 	pipeline.NumRenderTargets = 1; // Only one render target atm
-	pipeline.
+	pipeline.RTVFormats[0] = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
+	pipeline.SampleDesc.Count = 1;
+	pipeline.SampleDesc.Quality = 0; // We're literally only using the raster pipeline to present path-tracing results to the display; heavy
+									 // filtering within our own compute pipeline means we'll be ok with single-sample minimal-quality MSAA
+									 // (basically we're using our own AA solution so we don't need to enable it on GPU as well)
+	pipeline.NodeMask = 0; // No multi-gpu support for now (*might* use the igpu as a co-processor for data analytics/UI rendering in the future)
+	pipeline.CachedPSO.CachedBlobSizeInBytes = 0;
+	pipeline.CachedPSO.pCachedBlob = nullptr; // No cached PSO stuff *rn* but might use it in the future; could
+											  // save some setup time on startup
+	pipeline.Flags = D3D12_PIPELINE_STATE_FLAG_NONE; // No flags atm
+	// Construct, assign pipeline state here
 }
 
 const Microsoft::WRL::ComPtr<ID3D12Device>& Direct3D::GetDevice()
