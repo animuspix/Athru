@@ -126,6 +126,7 @@ void Direct3D::Output()
 	//
 	// If vsync is disabled (read: equal to [false] or [0]), present it as
 	// fast as possible
+	// *much* more wrapping code needed here, compare with Microsoft's practice project
 	swapChain->Present(GraphicsStuff::VSYNC_ENABLED, 0);
 
 	// Flipped-sequential double-buffering unbinds the render-target, so rebind it here
@@ -135,7 +136,9 @@ void Direct3D::Output()
 void Direct3D::InitRasterPipeline(const D3D12_SHADER_BYTECODE& vs,
 								  const D3D12_SHADER_BYTECODE& ps,
 								  const D3D12_INPUT_LAYOUT_DESC& inputLayout,
-								  ID3D12RootSignature* rootSig)
+								  ID3D12RootSignature* rootSig,
+								  const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState,
+								  const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& graphicsCmdAlloc)
 {
 	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline;
 	pipeline.pRootSignature = rootSig;
@@ -162,6 +165,15 @@ void Direct3D::InitRasterPipeline(const D3D12_SHADER_BYTECODE& vs,
 											  // save some setup time on startup
 	pipeline.Flags = D3D12_PIPELINE_STATE_FLAG_NONE; // No flags atm
 	// Construct, assign pipeline state here
+	device->CreateGraphicsPipelineState(&pipeline,
+										__uuidof(ID3D12PipelineState),
+										(void**)pipelineState.GetAddressOf());
+	HRESULT hr = graphicsCmdList->Reset(graphicsCmdAlloc.Get(), pipelineState.Get());
+	assert(SUCCEEDED(hr));
+	graphicsCmdList->SetPipelineState(pipelineState.Get());
+	graphicsCmdList->Close(); // Might be worth extending this and [ExecuteCommandLists] later to pack more work into the first graphics submission
+	ID3D12CommandList* listPttr[1] = { graphicsCmdList.Get() };
+	graphicsQueue->ExecuteCommandLists(1, listPttr);
 }
 
 const Microsoft::WRL::ComPtr<ID3D12Device>& Direct3D::GetDevice()
@@ -174,7 +186,7 @@ const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& Direct3D::GetGraphicsQueue()
 	return graphicsQueue;
 }
 
-const Microsoft::WRL::ComPtr<ID3D12CommandList>& Direct3D::GetGraphicsCmdList()
+const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& Direct3D::GetGraphicsCmdList()
 {
 	return graphicsCmdList;
 }

@@ -1,7 +1,7 @@
 #pragma once
 
 #pragma comment(lib, "dxgi.lib")
-#pragma comment(lib, "d3d11.lib")
+#pragma comment(lib, "d3d12.lib")
 #pragma comment(lib, "d3dcompiler.lib")
 
 #include <dxgi.h>
@@ -24,7 +24,9 @@ class Direct3D
 		void InitRasterPipeline(const D3D12_SHADER_BYTECODE& vs,
 								const D3D12_SHADER_BYTECODE& ps,
 								const D3D12_INPUT_LAYOUT_DESC& inputLayout,
-								ID3D12RootSignature* rootSig);
+								ID3D12RootSignature* rootSig,
+								const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState,
+								const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& graphicsCmdAlloc);
 
 		// Retrieve the device + main command queues without incrementing their reference
 		// counts (also retrieve their command-lists)
@@ -63,8 +65,7 @@ class Direct3D
 		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> samplerHeap;
 
 		// Significant command queues & command lists
-		// Command allocators are carried by the GPU-side [StackAllocator]
-		// (undefined atm)
+		// Command allocators are carried by [GPUMemory]
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> graphicsQueue;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> graphicsCmdList;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> computeQueue;
