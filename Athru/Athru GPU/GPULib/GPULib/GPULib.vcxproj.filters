@@ -114,6 +114,9 @@
     <ClInclude Include="LiBounce.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GPUMemory.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -159,6 +162,9 @@
       <Filter>C++\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="FigureRaster.cpp">
+      <Filter>C++\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GPUMemory.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
   </ItemGroup>

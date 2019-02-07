@@ -155,6 +155,7 @@
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="FigureRaster.h" />
     <ClInclude Include="GPUGlobals.h" />
+    <ClInclude Include="GPUMemory.h" />
     <ClInclude Include="GPURand.h" />
     <ClInclude Include="GPUServiceCentre.h" />
     <ClInclude Include="GPUUpdateManager.h" />
@@ -181,6 +182,7 @@
   <ItemGroup>
     <ClCompile Include="ComputeShader.cpp" />
     <ClCompile Include="FigureRaster.cpp" />
+    <ClCompile Include="GPUMemory.cpp" />
     <ClCompile Include="GPURand.cpp" />
     <ClCompile Include="GPUServiceCentre.cpp" />
     <ClCompile Include="GPUUpdateManager.cpp" />
