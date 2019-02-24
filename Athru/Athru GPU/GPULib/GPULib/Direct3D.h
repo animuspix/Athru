@@ -8,6 +8,7 @@
 #include <dxgi1_6.h>
 #include <d3dcommon.h>
 #include <d3d12.h>
+#include "GPUMemory.h"
 #include <wrl/client.h>
 
 class Direct3D
@@ -16,8 +17,9 @@ class Direct3D
 		Direct3D(HWND hwnd);
 		~Direct3D();
 
-		// Commit draw/dispatch calls to the GPU
-		void Output();
+		// Present generated imagery to the output monitor/Win64 surface
+		// Implicitly calls [ExecuteCommandLists()], should always run at the end of a render-pass
+		void Output(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex);
 
 		// Initialize presentation pipeline-state (only one raster pipeline in Athru, so no need to bundle full
 		// pipeline state with shader objects)
@@ -25,28 +27,50 @@ class Direct3D
 								const D3D12_SHADER_BYTECODE& ps,
 								const D3D12_INPUT_LAYOUT_DESC& inputLayout,
 								ID3D12RootSignature* rootSig,
-								const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState,
-								const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& graphicsCmdAlloc);
+								const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState);
+
+		// Update compute pipeline-state (issued by shader objects over [Direct3D] so everything in [AthruGPU] can
+		// easily check current pipeline state before e.g. resetting a command list)
+		void UpdateComputePipeline(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState);
+
+		// Execute a busy spinner until GPU work finishes for the compute/graphics/copy-queues
+		template<D3D12_COMMAND_LIST_TYPE critQueue> // Should restrict this to [TYPE_DIRECT], [TYPE_COMPUTE], and [TYPE_COPY] with C++20
+													// concepts
+		void WaitForQueue()
+		{
+			const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& queue;
+			u4Byte sel = (u4Byte)(critQueue);
+			const Microsoft::WRL::ComPtr<ID3D12Fence>& fence = sync[sel];
+			u8Byte fenceVal& = syncValues[sel];
+			if constexpr (sel == 0)
+			{ queue = graphicsQueue; }
+			else if constexpr (sel == 1)
+			{ queue = computeQueue; }
+			else if constexpr (sel == 2)
+			{ queue = copyQueue; }
+			assert(SUCCEEDED(queue->Signal(fence.Get(), fenceVal)));
+			assert(SUCCEEDED(fence->SetEventOnCompletion(syncValues[backBufferNdx * (sel + 1)], syncEvt[sel])));
+			WaitForSingleObjectEx(syncEvt, INFINITE, false); // Allow infinite silent waiting for GPU operations
+			fenceVal += 1; // Keep fence values consistent between CPU/GPU
+		}
+
+		// Retrieve a reference to the active graphics pipeline-state & compute pipeline-state
+		const Microsoft::WRL::ComPtr<ID3D12PipelineState>& GetGraphicsState();
+		const Microsoft::WRL::ComPtr<ID3D12PipelineState>& GetComputeState();
 
 		// Retrieve the device + main command queues without incrementing their reference
-		// counts (also retrieve their command-lists)
+		// counts (also retrieve their command-lists + allocators)
 		const Microsoft::WRL::ComPtr<ID3D12Device>& GetDevice();
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetGraphicsQueue(); // Path-tracing & image/mesh processing here
-		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& GetGraphicsCmdList(); // Main command list paired to the graphics queue
+		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& GetGraphicsCmdList();
+		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetGraphicsCmdAllocator();
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetComputeQueue(); // Physics & ecosystem updates go here
-		const Microsoft::WRL::ComPtr<ID3D12CommandList>& GetComputeCmdList(); // Main command list paired to the compute queue
+		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& GetComputeCmdList();
+		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetComputeCmdAllocator();
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetCopyQueue(); // System->GPU or GPU->System copies (useful for UI & things like
 																		  // radar, camera modes, etc.)
-		const Microsoft::WRL::ComPtr<ID3D12CommandList>& GetCopyCmdList(); // Main command list paired to the copy queue
-
-		// Retrieve a constant reference to the render-target-view descriptor-heap
-		const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetRTVDescHeap();
-
-		// Retrieve a constant reference to the sampler descriptor-heap
-		const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetGenericDescHeap();
-
-		// Retrieve a constant reference to the generic descriptor heap (used with arbitrary shader inputs)
-		const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetSamperDescHeap();
+		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& GetCopyCmdList();
+		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetCopyCmdAllocator();
 
 		// Retrieve a constant reference to information about the video adapter
 		const DXGI_ADAPTER_DESC3& GetAdapterInfo();
@@ -56,41 +80,41 @@ class Direct3D
 		DXGI_ADAPTER_DESC3 adapterInfo;
 
 		// Swap-chain & device
-		Microsoft::WRL::ComPtr<IDXGISwapChain4> swapChain;
+		Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain;
 		Microsoft::WRL::ComPtr<ID3D12Device> device;
 
-		// Core/default descriptor heaps
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> rtvHeap;
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> genericHeap;
-		Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> samplerHeap;
+		// Active graphics/compute pipeline-states
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> activeGraphicsState;
+		Microsoft::WRL::ComPtr<ID3D12PipelineState> activeComputeState;
 
 		// Significant command queues & command lists
-		// Command allocators are carried by [GPUMemory]
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> graphicsQueue;
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> graphicsCmdList;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> computeQueue;
-		Microsoft::WRL::ComPtr<ID3D12CommandList> computeCmdList;
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> computeCmdList;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> copyQueue;
-		Microsoft::WRL::ComPtr<ID3D12CommandList> copyCmdList;
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> copyCmdList;
 
-		// Useful possible optimization - sparse normal maps!
-		// - Generate coarse 2D normal maps along each positive/negative axis for each planet & each plant/animal species in each
-		//   system visited by the player (stream between storage/cpu-memory/gpu-memory as needed)
-		// - Each map encodes depth & normal direction per-pixel (axis mappings are implicit in the buffer ordering); sample points
-		//   should use the standard surface SDFs and march surfaces down to the minimal epsilon before
-		// - Maps should be high-res, but not 4K or higher (will maybe use 2048x2048 unordered-access-views)
-		// - Successful scene intersections should still use sampled normals for shading; mapped normals are mainly a ray-marching
-		//   thing
-		// - Can cheaply measure approximate gradient at each point (by projecting into the cubemap), then interpolate sphere-tracing
-		//   step distance between [0...2] according to the similarity between gradient and the incident ray (checked with the
-		//   dot-product)
-		// - Normal maps generated this way (basically normal cubemaps) can't easily adapt to concave geometry; likely best to adapt
-		//   concave texture-mapping solutions (like some sort of numerical unwrap) instead
-		// - Normal map generation likely to be super-expensive; possibly best to pre-generate and load them into CPU memory on
-		//   startup
+		// Graphics/compute/copy command-allocators
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> graphicsCmdAlloc;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> computeCmdAlloc;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> copyCmdAlloc;
 
-		// Reference to the standard render-target
+		// Reference to the standard render-target + debug-device
 		Microsoft::WRL::ComPtr<D3D12_GPU_DESCRIPTOR_HANDLE> defaultRenderTarget;
 		Microsoft::WRL::ComPtr<ID3D12Debug> debugDevice;
+
+		// DX12 fence interfaces for GPU/CPU synchronization, also separate fence
+		// values for each back-buffer surface + command-queue
+		// + WinAPI event handles to capture fence updates
+		const Microsoft::WRL::ComPtr<ID3D12Fence> sync[3];
+		u8Byte syncValues[AthruGPU::NUM_SWAPCHAIN_BUFFERS * 3];
+		HANDLE syncEvt[3];
+
+		// Index of the current back-buffer surface at each frame
+		uByte backBufferNdx;
+
+		// Reference to Athru's GPU memory/residency manager
+		GPUMemory* gpuMem;
 };
 

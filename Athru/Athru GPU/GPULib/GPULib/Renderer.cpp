@@ -5,7 +5,7 @@
 #include <functional>
 
 Renderer::Renderer(HWND windowHandle,
-				   const Microsoft::WRL::ComPtr<ID3D11Device>& device,
+				   const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 				   const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext) :
 			tracers{ ComputeShader(device,
 								   windowHandle,

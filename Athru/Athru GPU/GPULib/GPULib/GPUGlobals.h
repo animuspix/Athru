@@ -1,7 +1,8 @@
 #pragma once
 
 #include "AppGlobals.h"
-#include "AthruBuffer.h"
+#include "AthruResrc.h"
+#include <DirectXMath.h>
 #include <math.h>
 
 namespace GraphicsStuff
@@ -32,6 +33,9 @@ namespace GraphicsStuff
 	extern constexpr float EPSILON_MIN = 0.0001f;
 	extern constexpr float EPSILON_MAX = 0.1f;
 
+	// Default Athru texture clear color
+	extern constexpr float DEFAULT_TEX_CLEAR_VALUE[4] = { 1.0f, 0.5f, 0.25f, 1.0f };
+
 	// Enum list of supported primitive materials
 	enum class SUPPORTED_SURF_BXDDFS
 	{
@@ -46,8 +50,39 @@ namespace GraphicsStuff
 
 namespace AthruGPU
 {
-	// Number of random seeds to expose to the GPU random number generator
-	extern constexpr u4Byte NUM_RAND_SEEDS = 32917504;
+	// Number of random seeds to expose to the GPU random number generator for path tracing
+	// Not too many path-tracing seeds, so all remain resident on GPU each frame
+	extern constexpr u4Byte NUM_RAND_PT_SEEDS = GraphicsStuff::DISPLAY_AREA;
+
+	// Number of random seeds to expose to the GPU random number generator for physics & ecology
+	// Many more of these neeeded for accurate simulation (independant terrain noise, texture noise,
+	// plant/animal distributional noise, possibly stohastic fluid simulation...), so most seeds will
+	// be loaded in tiled/reserved memory and segments needed in each frame will be streamed across
+	// to the GPU on-demand
+	extern constexpr u4Byte NUM_RAND_PHYS_ECO_SEEDS = 28917504;
+
+	// Expected maximum onboard GPU memory usage (for resource data)
+	// Just working with dedicated memory atm, might implement streaming resources for assets when I start loading them in
+	extern constexpr u4Byte EXPECTED_ONBOARD_GPU_RESRC_MEM = 800000000;
+
+	// Expected maximum shared GPU memory usage (for resource upload)
+	// Current memory needed for 10x planets + render input + core input (to the next largest power-of-two); likely to
+	// grow as I fill in ecology/physics systems)
+	extern constexpr u4Byte EXPECTED_SHARED_GPU_UPLO_MEM = 1024;
+
+	// Expected maximum number of shader-visible resource views
+	// Likely to grow after I implement physics + ecology systems
+	extern constexpr u4Byte EXPECTED_NUM_GPU_SHADER_VIEWS = 16;
+
+	// GPU/DX12 heap types available in Athru
+	enum class HEAP_TYPES
+	{
+		UPLO,
+		GPU_ACCESS_ONLY
+	};
+
+	// Number of surfaces in the swap-chain (for single/double/triple-buffering)
+	extern constexpr uByte NUM_SWAPCHAIN_BUFFERS = 3;
 
 	// Dispatch axis generator for full-screen compute passes
 	// Should specify as [consteval] after C++20
@@ -78,23 +113,5 @@ namespace AthruGPU
 
 	// Indirect dispatch helpers
 	extern constexpr u4Byte DISPATCH_ARGS_SIZE = 12;
-
-	// Read structure count for a given append/consume buffer
-	template<typename BuffContent>
-	u4Byte appConsumeCount(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
-						   const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-						   AthruBuffer<BuffContent, AppBuffer>& buffer)
-	{
-		AthruBuffer<u4Byte, StgBuffer> buff = AthruGPU::AthruBuffer<u4Byte, StgBuffer>(device,
-																					   nullptr,
-																					   1,
-																					   DXGI_FORMAT_R32_UINT);
-		context->CopyStructureCount(buff.buf.Get(), 0, buffer.view().Get());
-		D3D11_MAPPED_SUBRESOURCE count;
-		context->Map(buff.buf.Get(), 0, D3D11_MAP_READ, 0, &count);
-		u4Byte counter = *(u4Byte*)(count.pData);
-		context->Unmap(buff.buf.Get(), 0);
-		return counter;
-	}
 }
 

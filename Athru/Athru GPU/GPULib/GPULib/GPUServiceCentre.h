@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Direct3D.h"
+#include "GPUMemory.h"
 #include "Renderer.h"
 #include "GPUUpdateManager.h"
 #include "GPUMessenger.h"

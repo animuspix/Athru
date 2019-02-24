@@ -151,7 +151,7 @@
     </Lib>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="AthruBuffer.h" />
+    <ClInclude Include="AthruResrc.h" />
     <ClInclude Include="ComputeShader.h" />
     <ClInclude Include="FigureRaster.h" />
     <ClInclude Include="GPUGlobals.h" />
