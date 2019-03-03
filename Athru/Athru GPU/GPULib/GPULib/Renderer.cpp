@@ -6,7 +6,9 @@
 
 Renderer::Renderer(HWND windowHandle,
 				   const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-				   const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext) :
+				   const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue,
+				   const Microsoft::WRL::ComPtr<ID3D12CommandList>& rndrCmdList,
+				   const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& rndrCmdAlloc) :
 			tracers{ ComputeShader(device,
 								   windowHandle,
 								   L"LensSampler.cso"),
@@ -306,8 +308,7 @@ void Renderer::Bounce(const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& d
 	context->CSSetUnorderedAccessViews(0, 1, displayTex.GetAddressOf(), nullptr);
 
 	// Local sampling function
-	std::function<void(const u4Byte&,
-					   const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>&)> MatSampler =
+	auto MatSampler =
 	[this](const u4Byte& matNdx,
 		   const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& matBuffer)
 	{

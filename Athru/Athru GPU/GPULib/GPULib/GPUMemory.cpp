@@ -16,7 +16,7 @@ GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device)
 											  // Athru for multiple adapters
 	memDesc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
 	memDesc.Flags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
-	assert(SUCCEEDED(device->CreateHeap(&memDesc, __uuidof(ID3D12Heap), (void**)resrcMem.mem.GetAddressOf())));
+	resrcMem = GPUStackedMem<ID3D12Heap>(memDesc, device);
 
 	// Create the upload heap
 	memDesc.SizeInBytes = AthruGPU::EXPECTED_SHARED_GPU_UPLO_MEM;
@@ -26,7 +26,7 @@ GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device)
 	memDesc.Properties.CreationNodeMask = 0x1; // Only one adapter atm
 	memDesc.Properties.VisibleNodeMask = 0x1;
 	// Alignment & flags are the same as main memory
-	assert(SUCCEEDED(device->CreateHeap(&memDesc, __uuidof(ID3D12Heap), (void**)uploMem.mem.GetAddressOf())));
+	uploMem = GPUStackedMem<ID3D12Heap>(memDesc, device);
 
 	// Create the shader-visible descriptor heap
 	D3D12_DESCRIPTOR_HEAP_DESC descHeapDesc;
@@ -34,22 +34,19 @@ GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device)
 	descHeapDesc.NumDescriptors = AthruGPU::EXPECTED_NUM_GPU_SHADER_VIEWS;
 	descHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	descHeapDesc.NodeMask = 0x1; // Only one adapter atm
-	assert(SUCCEEDED(device->CreateDescriptorHeap(&descHeapDesc, __uuidof(ID3D12DescriptorHeap), (void**)shaderViewMem.mem.GetAddressOf())));
+	shaderViewMem = GPUStackedMem<ID3D12DescriptorHeap>(descHeapDesc, device);
 
 	// -- No render-targets or depth-stencils used by Athru, compute-shading only -- //
 }
 
 GPUMemory::~GPUMemory()
 {
-	// Reset stack offsets
-	resrcMem.offs = 0;
-	shaderViewMem.offs = 0;
-
 	// Clear GPU allocations here
 	// --
 
 	// Explicitly reset smart pointers
 	resrcMem.mem = nullptr;
+	uploMem.mem = nullptr;
 	shaderViewMem.mem = nullptr;
 }
 
@@ -58,10 +55,10 @@ HRESULT GPUMemory::AllocBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							const D3D12_RESOURCE_DESC* bufDesc,
 							const D3D12_RESOURCE_STATES initState,
 							const Microsoft::WRL::ComPtr<ID3D12Resource>& bufPttr,
-							const AthruGPU::HEAP_TYPES heap = AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY)
+							const AthruGPU::HEAP_TYPES heap)
 {
 	GPUStackedMem<ID3D12Heap>& mem = (heap == AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY) ? resrcMem : uploMem;
-	u4Byte offs = mem.offs;
+	u8Byte offs = mem.offs;
 	mem.offs += bufSize;
 	return device->CreatePlacedResource(mem.mem.Get(),
 										offs,
@@ -79,7 +76,7 @@ HRESULT GPUMemory::AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							const D3D12_CLEAR_VALUE optimalClearColor,
 							const Microsoft::WRL::ComPtr<ID3D12Resource>& texPttr)
 {
-	u4Byte offs = resrcMem.offs;
+	u8Byte offs = resrcMem.offs;
 	resrcMem.offs += texSize;
 	return device->CreatePlacedResource(resrcMem.mem.Get(),
 										offs,
@@ -88,6 +85,33 @@ HRESULT GPUMemory::AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 										&optimalClearColor,
 										__uuidof(ID3D12Resource),
 										(void**)texPttr.GetAddressOf());
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocCBV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+												const D3D12_CONSTANT_BUFFER_VIEW_DESC* viewDesc)
+{
+	return AllocView(device,
+					 viewDesc);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocSRV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+												const D3D12_SHADER_RESOURCE_VIEW_DESC* viewDesc,
+												const Microsoft::WRL::ComPtr<ID3D12Resource>& resrc)
+{
+	return AllocView(device,
+					 viewDesc,
+					 resrc);
+}
+
+D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocUAV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+												const D3D12_UNORDERED_ACCESS_VIEW_DESC* viewDesc,
+												const Microsoft::WRL::ComPtr<ID3D12Resource>& dataResrc,
+												const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc)
+{
+	return AllocView(device,
+					 viewDesc,
+					 dataResrc,
+					 ctrResrc);
 }
 
 // Push constructions for this class through Athru's custom allocator

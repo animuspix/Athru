@@ -1,7 +1,7 @@
 #pragma once
 
 #include <d3d12.h>
-#include "AthruBuffer.h"
+#include "AthruResrc.h"
 #include "PixHistory.h"
 #include "ComputeShader.h"
 #include "ScreenPainter.h"
@@ -12,8 +12,10 @@ class Renderer
 {
 	public:
 		Renderer(HWND windowHandle,
-				 const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-				 const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext);
+				 const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+				 const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue,
+				 const Microsoft::WRL::ComPtr<ID3D12CommandList>& rndrCmdList,
+				 const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& rndrCmdAlloc);
 		~Renderer();
 		void Render(Camera* camera);
 
@@ -24,14 +26,13 @@ class Renderer
 	private:
 		// Lens sampler
 		void SampleLens(DirectX::XMVECTOR& cameraPosition,
-						DirectX::XMMATRIX& viewMatrix,
-						const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexRW);
+						DirectX::XMMATRIX& viewMatrix);
 
 		// Ray/scene intersector & volumetric sampler
 		void Trace();
 
 		// Bounce preparation; next-event-estimation & material synthesis, also surface sampling
-		void Bounce(const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexRW);
+		void Bounce();
 
 		// Filter/tonemap rendered images before denoising/rasterization in [Present]
 		void Prepare();
@@ -85,40 +86,63 @@ class Renderer
 		};
 
 		// A reference to the rendering-specific input/constant buffer (with layout defined by [RenderInput])
-		AthruGPU::AthruBuffer<RenderInput, AthruGPU::CBuffer> renderInputBuffer;
+		AthruGPU::AthruResrc<LiBounce,
+							 AthruGPU::AppBuffer,
+							 AthruGPU::RESRC_COPY_STATES::NUL,
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> renderInputBuffer;
 
 		// Small buffer letting us restrict path-tracing dispatches to paths persisting after
 		// each tracing/processing/sampling iteration
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> traceables;
+		AthruGPU::AthruResrc<LiBounce,
+							 AthruGPU::AppBuffer,
+							 AthruGPU::RESRC_COPY_STATES::NUL,
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> traceables;
 
 		// Surface intersection buffer (carries successful intersections across for next-event-estimation + material synthesis)
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> surfIsections;
+		AthruGPU::AthruResrc<LiBounce,
+							 AthruGPU::AppBuffer,
+							 AthruGPU::RESRC_COPY_STATES::NUL,
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> surfIsections;
 
 		// Material intersection buffers
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> diffuIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> mirroIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> refraIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> snowwIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> ssurfIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> furryIsections;
+		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer, AthruGPU::RESRC_COPY_STATES::NUL, AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> diffuIsections;
+		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer, AthruGPU::RESRC_COPY_STATES::NUL, AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> mirroIsections;
+		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer, AthruGPU::RESRC_COPY_STATES::NUL, AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> refraIsections;
+		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer, AthruGPU::RESRC_COPY_STATES::NUL, AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> snowwIsections;
+		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer, AthruGPU::RESRC_COPY_STATES::NUL, AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> ssurfIsections;
+		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer, AthruGPU::RESRC_COPY_STATES::NUL, AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> furryIsections;
 
 		// Generic counter buffer, carries dispatch axis sizes per-material in 0-17,
 		// generic axis sizes in 18-20, thread count assumed for dispatch axis sizes
 		// in [21], and a light bounce counter in [22]
 		// Also raw generic append-buffer lengths in [23], and material append-buffer
 		// lengths in 24-29
-		AthruGPU::AthruBuffer<u4Byte, AthruGPU::CtrBuffer> ctrBuf;
+		AthruGPU::AthruResrc<u4Byte,
+							 AthruGPU::CtrBuffer,
+							 AthruGPU::RESRC_COPY_STATES::NUL,
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> ctrBuf;
 
 		// [rndrCtr] layout referencess
 		const u4Byte RNDR_CTR_OFFSET_GENERIC = (GraphicsStuff::NUM_SUPPORTED_SURF_BXDFS * AthruGPU::DISPATCH_ARGS_SIZE);
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
-		AthruGPU::AthruBuffer<PixHistory, AthruGPU::GPURWBuffer> aaBuffer;
+		AthruGPU::AthruResrc<PixHistory,
+							 AthruGPU::RWResrc<AthruGPU::Buffer>,
+							 AthruGPU::RESRC_COPY_STATES::NUL,
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> aaBuffer;
 
 		// A reference to the presentation-only input/constant buffer (with layout equivalent to [DirectX::XMFLOAT4])
-		AthruGPU::AthruBuffer<DirectX::XMFLOAT4, AthruGPU::CBuffer> displayInputBuffer;
+		//AthruGPU::AthruBuffer<DirectX::XMFLOAT4, AthruGPU::CBuffer> displayInputBuffer;
 
-		// Reference to the Direct3D device context
-		const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context;
+		// References to Athru's main rendering command-queue/command-list/command-allocator, needed for DX12 work submission
+		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;
+		const Microsoft::WRL::ComPtr<ID3D12CommandList>& renderCmdList;
+		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& renderCmdAllocator;
+
+		// References to utility command lists (bundles) used to encapsulate Athru shading stages
+		const Microsoft::WRL::ComPtr<ID3D12CommandList>& sampleLensCmdList; // A small bundle capturing commands issued for lens-sampling
+		const Microsoft::WRL::ComPtr<ID3D12CommandList>& ptStepCmdList; // A bundle capturing events at each path-tracing step (tracing rays, evaluating local materials on intersection,
+																		// computing path changes and tracing the next step)
+		const Microsoft::WRL::ComPtr<ID3D12CommandList>& postCmdList; // Another small bundle capturing commands issued for anti-aliasing, tone-mapping, and denoising
 };

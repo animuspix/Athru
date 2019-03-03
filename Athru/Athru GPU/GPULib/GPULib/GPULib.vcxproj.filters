@@ -90,9 +90,6 @@
     <ClInclude Include="PixHistory.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AthruBuffer.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
@@ -115,6 +112,9 @@
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GPUMemory.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AthruResrc.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
   </ItemGroup>
