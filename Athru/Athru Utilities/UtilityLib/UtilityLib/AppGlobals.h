@@ -47,6 +47,10 @@ namespace MemoryStuff
 	// Maximum supported number of memory-markers
 	constexpr uByte MAX_MARKER_COUNT = 120;
 
+	// Maximum supported footprint for Athru-controlled CPU-side memory
+	// Allocation assumes Athru will use 255 megabytes at most
+	const u8Byte STARTING_HEAP_ALLOC = 255000000;
+
 	// Small compile-time function returning whether or
 	// not the current target platform is 64-bit
 	constexpr bool platform64()

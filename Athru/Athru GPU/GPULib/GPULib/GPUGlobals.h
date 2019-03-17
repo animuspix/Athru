@@ -18,6 +18,9 @@ namespace GraphicsStuff
 																					 // [tan(VERT_FIELD_OF_VIEW_RADS * 0.5f)]
 	extern constexpr float FRUSTUM_HEIGHT_AT_NEAR = FRUSTUM_WIDTH_AT_NEAR / DISPLAY_ASPECT_RATIO;
 
+	// Each shader gets one megabyte of local memory for bytecode
+	extern constexpr u4Byte SHADER_DXIL_ALLOC = 1048576;
+
 	// Rendering information
 	extern constexpr u4Byte SCREEN_RECT_INDEX_COUNT = 6;
 	extern constexpr u4Byte MAX_NUM_BOUNCES = 7;

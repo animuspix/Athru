@@ -2,7 +2,7 @@
 #include "UpdateShader.h"
 
 UpdateShader::UpdateShader(LPCWSTR shaderFilePath) :
-						   ComputeShader(AthruGPU::GPU::AccessD3D()->GetDevice(),
+						   ComputePass(AthruGPU::GPU::AccessD3D()->GetDevice(),
 										 AthruCore::Utility::AccessApp()->GetHWND(),
 										 shaderFilePath) {}
 

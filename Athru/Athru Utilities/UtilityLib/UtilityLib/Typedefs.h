@@ -8,6 +8,9 @@ typedef signed char sByte;
 // An eight-bit unsigned type
 typedef unsigned char uByte;
 
+// A generic byte type for C++ file operations, with no specified signedness
+typedef char nsByte;
+
 // A sixteen-bit signed type
 typedef signed short s2Byte;
 

@@ -2,7 +2,7 @@
 
 #include "ComputeShader.h"
 
-class UpdateShader : public ComputeShader
+class UpdateShader : public ComputePass
 {
 	public:
 		UpdateShader(LPCWSTR shaderFilePath);

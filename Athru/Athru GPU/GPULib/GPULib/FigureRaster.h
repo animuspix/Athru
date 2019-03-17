@@ -35,7 +35,7 @@ class FigureRaster
 		AthruGPU::AthruBuffer<RasterInput, AthruGPU::CBuffer> rasterInput;
 
 		// Planet rasterizer
-		ComputeShader planetRaster;
+		ComputePass planetRaster;
 
 		// Plant rasterizer
 		// ...will implement when possible...

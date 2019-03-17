@@ -12,6 +12,7 @@ class Renderer
 {
 	public:
 		Renderer(HWND windowHandle,
+				 const AthruGPU::GPUMemory& gpuMem,
 				 const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 				 const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue,
 				 const Microsoft::WRL::ComPtr<ID3D12CommandList>& rndrCmdList,
@@ -44,19 +45,19 @@ class Renderer
 		// Small array of tracing shaders; [0] contains the lens-sampler (finds outgoing directions,
 		// initializes light paths), [1] contains the intersection shader (traces/marches rays through
 		// the scene)
-		ComputeShader tracers[2];
+		ComputePass tracers[2];
 
 		// Bounce preparation shader (material synthesis + export)
-		ComputeShader bouncePrep;
+		ComputePass bouncePrep;
 
 		// Small array of sampling shaders; each element performs sampling + shading for a different
 		// surface type (support for diffuse, mirrorlike, refractive, subsurface/snowy, generic subsurface, and furry
 		// is expected; only diffuse and mirrorlike are supported at the moment)
-		ComputeShader samplers[6];
+		ComputePass samplers[6];
 
 		// Small shader for filtering & tonemapping (denoising works well with texture sampling, so that runs
 		// directly inside the presentation shader)
-		ComputeShader post;
+		ComputePass post;
 
 		// Rasterization shader, needed for mostly-compute graphics under DX11 (afaik);
 		// also performs denoising
@@ -67,9 +68,9 @@ class Renderer
 		// by [256], and so on)
 		// Defined here instead of globally so I can use rendering-specific resource bindings (avoiding rebinding everything
 		// each time I adjust the counter-buffer)
-		ComputeShader dispatchScale512;
-		ComputeShader dispatchScale256;
-		ComputeShader dispatchScale128;
+		ComputePass dispatchScale512;
+		ComputePass dispatchScale256;
+		ComputePass dispatchScale128;
 
 		// Rendering-specific input struct
 		struct RenderInput
@@ -141,8 +142,8 @@ class Renderer
 		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& renderCmdAllocator;
 
 		// References to utility command lists (bundles) used to encapsulate Athru shading stages
-		const Microsoft::WRL::ComPtr<ID3D12CommandList>& sampleLensCmdList; // A small bundle capturing commands issued for lens-sampling
-		const Microsoft::WRL::ComPtr<ID3D12CommandList>& ptStepCmdList; // A bundle capturing events at each path-tracing step (tracing rays, evaluating local materials on intersection,
-																		// computing path changes and tracing the next step)
-		const Microsoft::WRL::ComPtr<ID3D12CommandList>& postCmdList; // Another small bundle capturing commands issued for anti-aliasing, tone-mapping, and denoising
+		Microsoft::WRL::ComPtr<ID3D12CommandList> sampleLensCmdList; // A small bundle capturing commands issued for lens-sampling
+		Microsoft::WRL::ComPtr<ID3D12CommandList> ptStepCmdList; // A bundle capturing events at each path-tracing step (tracing rays, evaluating local materials on intersection,
+																 // computing path changes and tracing the next step)
+		Microsoft::WRL::ComPtr<ID3D12CommandList> postCmdList; // Another small bundle capturing commands issued for anti-aliasing, tone-mapping, and denoising
 };

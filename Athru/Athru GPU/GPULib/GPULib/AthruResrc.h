@@ -17,9 +17,9 @@ namespace AthruGPU
 	struct RWResrc : public ResrcType {}; // A read/write allowed resource (GPU-only)
 	template<typename ResrcType>
 	struct RResrc : public ResrcType {}; // A read-only resource (GPU-only)
-	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]
+	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]; uploadable resources should only take the [AthruGPU::Buffer] meta-type
 	struct UploBuffer : public ReadabilityType {}; // An uploadable resource (CPU-write-once, GPU-read); Athru only allows buffer upload atm
-										  // (very few image assets, data assets might be easier to upload in buffers)
+												   // (very few image assets, data assets might be easier to upload in buffers)
 	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]
 	struct StrmResrc : ReadabilityType {}; // Tiled streaming buffer, mainly allocated within virtual memory and partly loaded into GPU dedicated memory on-demand
 
@@ -56,34 +56,21 @@ namespace AthruGPU
 	struct AthruResrc
 	{
 		public:
-			AthruResrc() {}; // Empty default constructor, allows uninitialized resources
-			decltype(SelFn) InitResrc = SelFn; // Conditionally defined initializer, not sure if constructors can be compile-time reduced
-											   // as much as procedurally-typed functions
+			AthruResrc() {}
 			Microsoft::WRL::ComPtr<ID3D12Resource> resrc; // Internal DX12 resource
 			D3D12_CPU_DESCRIPTOR_HANDLE resrcAddr; // CPU-accessible handle for the descriptor matched with [resrc]
 												   // Unsure whether it's reasonable to track this, have asked stack overflow
-		private:
-			inline static auto SelFn =
-			[]()
-			{
-				if constexpr (std::is_base_of<AthruGPU::Buffer, AthruResrcType>::value)
-				{
-					constexpr bool appBuf = std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value;
-					if constexpr (appBuf) { return InitAppBuf; }
-					else if constexpr (!appBuf) { return InitBuf; }
-				}
-				else if constexpr (std::is_base_of<AthruGPU::Texture, AthruResrcType>::value)
-				{
-					constexpr bool rwTex = std::is_same<AthruResrcType, AthruGPU::RWResrc>::value;
-					if constexpr (rwTex) { return InitRWTex; }
-					else if constexpr (!rwTex) { return InitRTex; }
-				}
-			};
+			// Explicit initializer choices because a single composed initializer becomes invisible to the IDE
 			void InitBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 const GPUMemory& gpuMem,
 						 u4Byte width = 1,
 						 DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN)
 			{
+				static_assert(!std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value &&
+							  !std::is_base_of<AthruGPU::Texture, AthruResrcType>::value,
+							  "Generic buffer initialization is only valid for read/write buffers, counter buffers, constant buffers, and uploadable buffers; \
+							   textures should be initialized with [InitRWTex(...)] or [InitRTex(...)], and append-consume buffers should be initialized with \
+							   [InitAppBuf(...)]");
 				InitAllBufs(device,
 						    gpuMem,
 							width,
@@ -92,10 +79,13 @@ namespace AthruGPU
 			void InitAppBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							const GPUMemory& gpuMem,
 							const Microsoft::WRL::ComPtr<ID3D12Resource>* ctrResrc,
+							const u4Byte& width,
 							const u4Byte& ctrEltOffs = 0,
-							const u4Byte& width = 1,
 							DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN)
 			{
+				static_assert(std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value,
+							  "Append/consume buffer initialization is only valid for stack-like dynamically sized buffers fed from the GPU; generic buffers \
+							   should be initialized from [InitBuf(...)], and textures should be initialized with [InitRWTex(...)] or [InitRTex(...)]");
 				InitAllBufs(device,
 							gpuMem,
 							width,
@@ -103,6 +93,51 @@ namespace AthruGPU
 							ctrResrc,
 							ctrEltOffs);
 			}
+			void InitRWTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+						   const GPUMemory& gpuMem,
+						   // Assumed no base data for textures (may be neater to format planetary/animal data with
+						   // structured buffers instead of textures, afaik DX resources are zeroed by default)
+						   u4Byte width = 1,
+						   u4Byte height = 1,
+						   u4Byte depth = 1,
+						   DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
+						   float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE)
+			{
+				static_assert(std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Texture>>::value,
+							  "Read/writable texture initialization is only valid for read/writable resources inheriting from the [AthruGPU::Texture] meta-type; prefer \
+							   one of the buffer initializers for buffer resources or [InitRTex(...)] to initialize read-only texture resources");
+				InitTex(device,
+						gpuMem,
+						width,
+						height,
+						depth,
+						viewFmt,
+						clearRGBA);
+			}
+			void InitRTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+						  const GPUMemory& gpuMem,
+						  // Assumed no base data for textures (may be neater to format planetary/animal data with
+						  // structured buffers instead of textures, afaik DX resources are zeroed by default)
+						  u4Byte width = 1,
+						  u4Byte height = 1,
+						  u4Byte depth = 1,
+						  DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
+						  D3D12_SHADER_COMPONENT_MAPPING shaderChannelMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
+						  float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE)
+			{
+				static_assert(std::is_same<AthruResrcType, AthruGPU::RResrc<AthruGPU::Texture>>::value,
+							  "Read-only texture initialization is only valid for read-only resources inheriting from the [AthruGPU::Texture] meta-type; prefer \
+							   one of the buffer initializers for buffer resources or [InitRWTex(...)] to initialize read/writable texture resources");
+				InitTex(device,
+						gpuMem,
+						width,
+						height,
+						depth,
+						viewFmt,
+						clearRGBA,
+						shaderChannelMapping);
+			}
+		private:
 			void InitAllBufs(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							 const GPUMemory& gpuMem,
 							 u4Byte width = 1,
@@ -207,44 +242,6 @@ namespace AthruGPU
 												 nullptr);
 				}
 				// -- Descriptor table bindings are handled by game systems (rendering/physics/ecology); return here --
-			}
-			void InitRWTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-						   const GPUMemory& gpuMem,
-						   // Assumed no base data for textures (may be neater to format planetary/animal data with
-						   // structured buffers instead of textures, afaik DX resources are zeroed by default)
-						   u4Byte width = 1,
-						   u4Byte height = 1,
-						   u4Byte depth = 1,
-						   DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
-						   float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE)
-			{
-				InitTex(device,
-						gpuMem,
-						width,
-						height,
-						depth,
-						viewFmt,
-						clearRGBA);
-			}
-			void InitRTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-						  const GPUMemory& gpuMem,
-						  // Assumed no base data for textures (may be neater to format planetary/animal data with
-						  // structured buffers instead of textures, afaik DX resources are zeroed by default)
-						  u4Byte width = 1,
-						  u4Byte height = 1,
-						  u4Byte depth = 1,
-						  DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
-						  D3D12_SHADER_COMPONENT_MAPPING shaderChannelMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING,
-						  float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE)
-			{
-				InitTex(device,
-						gpuMem,
-						width,
-						height,
-						depth,
-						viewFmt,
-						clearRGBA,
-						shaderChannelMapping);
 			}
 			void InitTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 const GPUMemory& gpuMem,

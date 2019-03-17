@@ -121,6 +121,9 @@ void GameLoop()
 		// Update the frame counter
 		TimeStuff::frameCtr += 1;
 	}
+
+	// Quick memory occupancy profile for tuning
+	AthruCore::Utility::AccessLogger()->LogMem(AthruCore::Utility::AccessMemory()->GetStart());
 }
 
 int WINAPI WinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ PSTR pScmdline, _In_ int iCmdshow)

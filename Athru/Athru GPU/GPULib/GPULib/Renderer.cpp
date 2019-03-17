@@ -2,133 +2,167 @@
 #include "Renderer.h"
 #include "PixHistory.h"
 #include "Camera.h"
+#include "GPUMemory.h"
 #include <functional>
 
 Renderer::Renderer(HWND windowHandle,
+				   const AthruGPU::GPUMemory& gpuMem,
 				   const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 				   const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue,
 				   const Microsoft::WRL::ComPtr<ID3D12CommandList>& rndrCmdList,
 				   const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& rndrCmdAlloc) :
-			tracers{ ComputeShader(device,
-								   windowHandle,
-								   L"LensSampler.cso"),
-					 ComputeShader(device,
-					 			   windowHandle,
-					 			   L"RayMarch.cso") },
+			tracers{ ComputePass(device,
+								 windowHandle,
+								 "LensSampler.cso",
+								 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+					 ComputePass(device,
+					 			 windowHandle,
+					 			 "RayMarch.cso",
+								 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC) },
 			bouncePrep(device,
 					   windowHandle,
-					   L"BouncePrep.cso"),
-			samplers{ ComputeShader(device,
+					   "BouncePrep.cso",
+					   AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+			samplers{ ComputePass(device,
 									windowHandle,
-									L"DiffuSampler.cso"),
-					  ComputeShader(device,
-									windowHandle,
-									L"MirroSampler.cso"),
-					  ComputeShader(device,
-									windowHandle,
-									L"RefraSampler.cso"),
-					  ComputeShader(device,
-									windowHandle,
-									L"SnowwSampler.cso"),
-					  ComputeShader(device,
-									windowHandle,
-									L"SsurfSampler.cso"),
-					  ComputeShader(device,
-									windowHandle,
-									L"FurrySampler.cso") },
+									"DiffuSampler.cso",
+									AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+					  ComputePass(device,
+								  windowHandle,
+								  "MirroSampler.cso",
+								  AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+					  ComputePass(device,
+								  windowHandle,
+								  "RefraSampler.cso",
+								  AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+					  ComputePass(device,
+								  windowHandle,
+								  "SnowwSampler.cso",
+								  AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+					  ComputePass(device,
+								  windowHandle,
+								  "SsurfSampler.cso",
+								  AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+					  ComputePass(device,
+								  windowHandle,
+								  "FurrySampler.cso",
+								  AthruGPU::RESRC_CTX::RNDR_OR_GENERIC) },
 			post(device,
 				 windowHandle,
-				 L"RasterPrep.cso"),
+				 "RasterPrep.cso",
+				 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
 			screenPainter(device,
 						  windowHandle,
 						  L"PresentationVerts.cso",
 						  L"PresentationColors.cso"),
 			dispatchScale128(device,
 							 windowHandle,
-							 L"dispScale128.cso"),
+							 "dispScale128.cso",
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
 			dispatchScale256(device,
 							 windowHandle,
-							 L"dispScale256.cso"),
+							 "dispScale256.cso",
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
 			dispatchScale512(device,
 							 windowHandle,
-							 L"dispScale512.cso"),
-			context(d3dContext)
+							 "dispScale512.cso",
+							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+			renderQueue(rndrCmdQueue),
+			renderCmdList(rndrCmdList),
+			renderCmdAllocator(rndrCmdAlloc)
 {
 	// Construct the render-specific input buffer
-	renderInputBuffer = AthruGPU::AthruBuffer<RenderInput, AthruGPU::CBuffer>(device,
-																			  nullptr);
+	renderInputBuffer.InitBuf(device, gpuMem);
 
 	// Build the buffer we'll be using to store
 	// image samples for temporal smoothing/anti-aliasing
-	aaBuffer = AthruGPU::AthruBuffer<PixHistory, AthruGPU::GPURWBuffer>(device,
-																		nullptr,
-																		GraphicsStuff::DISPLAY_AREA);
+	aaBuffer.InitBuf(device,
+					 gpuMem,
+					 GraphicsStuff::DISPLAY_AREA);
+
+	// Create the counter buffer
+	// Likely more efficient to define this as GPU-only and initialize on the zeroth frame than to upload
+	// single-use initial data on startup
+	ctrBuf.InitBuf(device,
+				   gpuMem,
+				   30,
+				   DXGI_FORMAT::DXGI_FORMAT_R32_UINT);
+
 	// Create the tracing append/consume buffer
-	traceables = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																	  nullptr,
-																	  GraphicsStuff::TILING_AREA);
+	traceables.InitAppBuf(device,
+						  gpuMem,
+						  &(ctrBuf.resrc),
+						  GraphicsStuff::TILING_AREA,
+						  RNDR_CTR_OFFSET_GENERIC);
 
 	// Create the intersection/surface buffer
-	surfIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																		 nullptr,
-																		 GraphicsStuff::TILING_AREA);
+	surfIsections.InitAppBuf(device,
+							 gpuMem,
+							 &(ctrBuf.resrc),
+						     GraphicsStuff::TILING_AREA,
+							 RNDR_CTR_OFFSET_GENERIC);
 
 	// Create the diffuse intersection buffer
-	diffuIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																		  nullptr,
-																		  GraphicsStuff::TILING_AREA);
+	diffuIsections.InitAppBuf(device,
+							  gpuMem,
+							  &(ctrBuf.resrc),
+						      GraphicsStuff::TILING_AREA,
+							  0);
+
 	// Create the mirrorlike intersection buffer
-	mirroIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																		  nullptr,
-																		  GraphicsStuff::TILING_AREA);
+	mirroIsections.InitAppBuf(device,
+							  gpuMem,
+							  &(ctrBuf.resrc),
+						      GraphicsStuff::TILING_AREA,
+							  12);
+
 	// Create the refractive intersection buffer
-	refraIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																		  nullptr,
-																		  GraphicsStuff::TILING_AREA);
+	refraIsections.InitAppBuf(device,
+							  gpuMem,
+							  &(ctrBuf.resrc),
+						      GraphicsStuff::TILING_AREA,
+							  24);
+
 	// Create the snowy intersection buffer
-	snowwIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																		  nullptr,
-																		  GraphicsStuff::TILING_AREA);
+	snowwIsections.InitAppBuf(device,
+							  gpuMem,
+							  &(ctrBuf.resrc),
+						      GraphicsStuff::TILING_AREA,
+							  36);
 
 	// Create the organic/sub-surface scattering intersection buffer
-	ssurfIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																		  nullptr,
-																		  GraphicsStuff::TILING_AREA);
+	ssurfIsections.InitAppBuf(device,
+							  gpuMem,
+							  &(ctrBuf.resrc),
+						      GraphicsStuff::TILING_AREA,
+							  48);
 
 	// Create the furry intersection buffer
-	furryIsections = AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer>(device,
-																		  nullptr,
-																		  GraphicsStuff::TILING_AREA);
-
-	// Create the material counter + its matching staging resource
-	u4Byte ctrs[30] = { 0, 1, 1, // Initially zero per-material dispatch sizes
-						0, 1, 1,
-						0, 1, 1,
-						0, 1, 1,
-						0, 1, 1,
-						0, 1, 1,
-						0, 1, 1, // Initially zero generic dispatch sizes
-						1, 0, 0, // One thread/group assumed by default, initially zero light bounces,
-						0, 0, 0, // initially no generic elements, initially no materials
-						0, 0, 0 };
-	ctrBuf = AthruGPU::AthruBuffer<u4Byte, AthruGPU::CtrBuffer>(device,
-														&ctrs,
-														30,
-														DXGI_FORMAT::DXGI_FORMAT_R32_UINT);
+	furryIsections.InitAppBuf(device,
+							  gpuMem,
+							  &(ctrBuf.resrc),
+						      GraphicsStuff::TILING_AREA,
+							  60);
 
 	// Construct the presentation-only constant buffer
-	DirectX::XMFLOAT4 displayInfo = DirectX::XMFLOAT4(GraphicsStuff::DISPLAY_WIDTH,
-													  GraphicsStuff::DISPLAY_HEIGHT,
-													  GraphicsStuff::DISPLAY_AREA,
-													  GraphicsStuff::NUM_AA_SAMPLES);
-	displayInputBuffer = AthruGPU::AthruBuffer<DirectX::XMFLOAT4, AthruGPU::CBuffer>(device,
-																			 (void*)&displayInfo);
+	//DirectX::XMFLOAT4 displayInfo = DirectX::XMFLOAT4(GraphicsStuff::DISPLAY_WIDTH,
+	//												  GraphicsStuff::DISPLAY_HEIGHT,
+	//												  GraphicsStuff::DISPLAY_AREA,
+	//												  GraphicsStuff::NUM_AA_SAMPLES);
+	//displayInputBuffer = AthruGPU::AthruBuffer<DirectX::XMFLOAT4, AthruGPU::CBuffer>(device,
+	//																				 (void*)&displayInfo);
 }
 
 Renderer::~Renderer(){}
 
 void Renderer::Render(Camera* camera)
 {
+	// Dispatch lens sampler
+	// [wait]
+	// Dispatch path-tracing bundle in a tight loop
+	// [wait]
+	// Dispatch post-processing bundle & copy onto the back-buffer
+
 	// Load PRNG states, generate camera directions + filter values,
 	// initialize the intersection buffer
 	const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexRW = camera->GetViewFinder()->GetDisplayTex().readWriteView;
