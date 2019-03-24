@@ -39,31 +39,10 @@
     <ClInclude Include="targetver.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AthruTexture2D.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Direct3D.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PlanarUnwrapper.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PostVertex.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneVertex.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PipelineShader.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ComputeShader.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GPUServiceCentre.h">
@@ -75,31 +54,13 @@
     <ClInclude Include="GPURand.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ScreenPainter.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GPUMessenger.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GPUUpdateManager.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UpdateShader.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PixHistory.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Renderer.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ViewFinder.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AthruRect.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FigureRaster.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PhiloStrm.h">
@@ -117,18 +78,18 @@
     <ClInclude Include="AthruResrc.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ComputePass.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GradientMapper.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Direct3D.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="PipelineShader.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ComputeShader.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="GPUServiceCentre.cpp">
@@ -140,31 +101,19 @@
     <ClCompile Include="GPURand.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ScreenVertex.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ScreenPainter.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GPUMessenger.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GPUUpdateManager.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UpdateShader.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ViewFinder.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="FigureRaster.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GPUMemory.cpp">
+      <Filter>C++\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="ComputePass.cpp">
+      <Filter>C++\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GradientMapper.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
   </ItemGroup>

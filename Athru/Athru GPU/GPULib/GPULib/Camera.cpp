@@ -36,9 +36,6 @@ Camera::Camera()
 	// vector, and [localUp]
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
-	// Create the camera's viewfinder (screen rect)
-	viewfinder = new ViewFinder(AthruGPU::GPU::AccessD3D()->GetDevice());
-
 	// Initialise the spin-speed modifier for mouse-look
 	spinSpeed = 0.5f;
 
@@ -47,10 +44,7 @@ Camera::Camera()
 				 GetSystemMetrics(SM_CYSCREEN) / 2);
 }
 
-Camera::~Camera()
-{
-	viewfinder->~ViewFinder();
-}
+Camera::~Camera() {}
 
 void Camera::Update()
 {
@@ -109,7 +103,7 @@ void Camera::Translate(DirectX::XMVECTOR displacement)
 	position = _mm_add_ps(positionCopy, displacement);
 }
 
-DirectX::XMVECTOR& Camera::GetTranslation()
+DirectX::XMVECTOR Camera::GetTranslation() const
 {
 	return position;
 }
@@ -123,12 +117,12 @@ void Camera::SetRotation(DirectX::XMFLOAT3 eulerAngles)
 																	   coreRotationEuler.z);
 }
 
-DirectX::XMVECTOR Camera::GetRotationQuaternion()
+DirectX::XMVECTOR Camera::GetRotationQuaternion() const
 {
 	return coreRotationQuaternion;
 }
 
-DirectX::XMFLOAT3 Camera::GetRotationEuler()
+DirectX::XMFLOAT3 Camera::GetRotationEuler() const
 {
 	return coreRotationEuler;
 }
@@ -186,19 +180,14 @@ void Camera::RefreshViewData()
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 }
 
-DirectX::XMMATRIX& Camera::GetViewMatrix()
+DirectX::XMMATRIX Camera::GetViewMatrix() const
 {
 	return viewMatrix;
 }
 
-CameraLookData Camera::GetLookData()
+CameraLookData Camera::GetLookData() const
 {
 	return lookInfo;
-}
-
-ViewFinder* Camera::GetViewFinder()
-{
-	return viewfinder;
 }
 
 // Push constructions for this class through Athru's custom allocator

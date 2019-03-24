@@ -1,7 +1,6 @@
 #pragma once
 
 #include <directxmath.h>
-#include "ViewFinder.h"
 
 struct CameraLookData
 {
@@ -24,22 +23,19 @@ class Camera
 
 		// Set/get camera world position
 		void Translate(DirectX::XMVECTOR displacement);
-		DirectX::XMVECTOR& GetTranslation();
+		DirectX::XMVECTOR GetTranslation() const;
 
 		// Set camera rotation, extract rotation info in
 		// complex (quaternion) or angular (euler) form
 		void SetRotation(DirectX::XMFLOAT3 eulerAngles);
-		DirectX::XMVECTOR GetRotationQuaternion();
-		DirectX::XMFLOAT3 GetRotationEuler();
+		DirectX::XMVECTOR GetRotationQuaternion() const;
+		DirectX::XMFLOAT3 GetRotationEuler() const;
 
 		// Update the view matrix and look-vector, extract
 		// either for external calculations
 		void RefreshViewData();
-		DirectX::XMMATRIX& GetViewMatrix();
-		CameraLookData GetLookData();
-
-		// Fetch the viewfinder (screen rect) for post-processing/rendering
-		ViewFinder* GetViewFinder();
+		DirectX::XMMATRIX GetViewMatrix() const;
+		CameraLookData GetLookData() const;
 
 		// Classical mouse-look function; causes the camera to rotate
 		// horizontally (about local-Y) when the mouse moves
@@ -67,10 +63,6 @@ class Camera
 		// render-culling; also useful for some screen-space shaders e.g.
 		// simulated depth of field
 		CameraLookData lookInfo;
-
-		// A rect (one-sided rectangle) projected onto the screen; used to render the screen
-		// texture after post-processing
-		ViewFinder* viewfinder;
 
 		// Whether or not to enable mouselook; settable because the current voxel grid width
 		// (100 units, so volume is 100^3) is taxing enough that free look becomes super

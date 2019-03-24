@@ -5,6 +5,7 @@
 #include <tuple>
 #include "Typedefs.h"
 #include "leakChecker.h"
+#include "AppGlobals.h"
 #include <windows.h>
 
 class Logger

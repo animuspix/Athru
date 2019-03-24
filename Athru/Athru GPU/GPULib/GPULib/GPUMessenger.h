@@ -2,34 +2,31 @@
 
 #include <d3d12.h>
 #include "SceneFigure.h"
-#include "AthruBuffer.h"
-#include "ComputeShader.h"
+#include "AthruResrc.h"
+#include "ComputePass.h"
 #include <wrl\client.h>
 
 class GPUMessenger
 {
 	public:
-		GPUMessenger(const Microsoft::WRL::ComPtr<ID3D11Device>& device);
+		GPUMessenger(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+                     AthruGPU::GPUMemory& gpuMem);
 		~GPUMessenger();
 
-		// Pass scene data along to the GPU
-		void SceneToGPU(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context,
-						SceneFigure::Figure* figures);
+		// Upload per-system scene data to the GPU
+        // Per-planet upload is unimplemented atm, but expected once I have planetary UVs ready
+		void SysToGPU(SceneFigure::Figure* system);
 
-		// Pass the generic input buffer along to the GPU
-		void CoreInputToGPU(const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context, const DirectX::XMFLOAT4& sysOri);
-
-		// Retrieve a gpu-read-only resource view of the
-		// scene-data associated with [this]
-		const Microsoft::WRL::ComPtr<ID3D11ShaderResourceView>& GetGPUSceneView();
+		// Pass per-frame inputs along to the GPU
+		void InputsToGPU(const DirectX::XMFLOAT4& sysOri,
+                         const Camera* camera);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
-		// A simple input struct that provides various per-frame
-		// constants to the GPU
+		// Generic constant inputs
 		struct GPUInput
 		{
 			DirectX::XMFLOAT4 tInfo; // Time info for each frame;
@@ -38,12 +35,38 @@ class GPUMessenger
 			DirectX::XMFLOAT4 systemOri; // Origin for the current star-system; useful for predicting figure
 										 // positions during ray-marching/tracing (in [xyz], [w] is unused)
 		};
-		// ...And a reference to the buffer we'll need in order
-		// to send that input data over to the GPU
-		AthruGPU::AthruBuffer<GPUInput, AthruGPU::CBuffer> gpuInputBuffer;
+        // + CPU-side mapping point
+        GPUInput* gpuInput;
+		// + a matching GPU-side constant buffer
+		AthruGPU::AthruResrc<GPUInput,
+		                     AthruGPU::CBuffer,
+		                     AthruGPU::RESRC_COPY_STATES::NUL,
+		                     AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> gpuInputBuffer;
 
-		// A reference to the CPU-write/GPU-read buffer we'll use
-		// to transfer per-object data across to the GPU at the
-		// start of each frame
-		AthruGPU::AthruBuffer<SceneFigure::Figure, AthruGPU::StrmBuffer> sceneBuf;
+        // Path-tracing inputs
+		// Rendering-specific input struct
+		struct RenderInput
+		{
+			DirectX::XMVECTOR cameraPos; // Camera position in [xyz], [w] is unused
+			DirectX::XMMATRIX viewMat; // View matrix
+			DirectX::XMMATRIX iViewMat; // Inverse view matrix
+			DirectX::XMFLOAT4 bounceInfo; // Maximum number of bounces in [x], number of supported surface BXDFs in [y],
+										  // tracing epsilon value in [z]; [w] is unused
+			DirectX::XMUINT4 resInfo; // Resolution info carrier; contains app resolution in [xy],
+									  // AA sampling rate in [z], and display area in [w]
+			DirectX::XMUINT4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
+			DirectX::XMUINT4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
+		};
+        // + CPU side mapping point
+        RenderInput* rndrInput;
+		// + a matching GPU-side constant buffer
+		AthruGPU::AthruResrc<RenderInput,
+		                     AthruGPU::CBuffer,
+		                     AthruGPU::RESRC_COPY_STATES::NUL,
+		                     AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> renderInputBuffer;
+		// System buffer
+        AthruGPU::AthruResrc<SceneFigure::Figure,
+                             AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>,
+                             AthruGPU::RESRC_COPY_STATES::NUL,
+                             AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> sysBuf;
 };

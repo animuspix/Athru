@@ -1,7 +1,6 @@
 #pragma once
 
 #include "AppGlobals.h"
-#include "AthruResrc.h"
 #include <DirectXMath.h>
 #include <math.h>
 
@@ -59,7 +58,7 @@ namespace AthruGPU
 
 	// Number of random seeds to expose to the GPU random number generator for physics & ecology
 	// Many more of these neeeded for accurate simulation (independant terrain noise, texture noise,
-	// plant/animal distributional noise, possibly stohastic fluid simulation...), so most seeds will
+	// plant/animal distributional noise, possibly stochastic fluid simulation...), so most seeds will
 	// be loaded in tiled/reserved memory and segments needed in each frame will be streamed across
 	// to the GPU on-demand
 	extern constexpr u4Byte NUM_RAND_PHYS_ECO_SEEDS = 28917504;
@@ -111,7 +110,7 @@ namespace AthruGPU
 	extern constexpr u4Byte RASTER_CELL_DEPTH = 128;
 	extern constexpr u4Byte RASTER_CELL_VOLUM = RASTER_CELL_DEPTH * RASTER_ATLAS_WIDTH * RASTER_ATLAS_WIDTH;
 	extern constexpr u4Byte RASTER_THREADS_PER_CELL = 512;
-	extern constexpr u4Byte RASTER_ATLAS_DEPTH = RASTER_CELL_DEPTH * SceneStuff::PLANETS_PER_SYSTEM; // Less than ten plant/animal types per system seems reasonable...
+	extern constexpr u4Byte RASTER_ATLAS_DEPTH = RASTER_CELL_DEPTH * SceneStuff::BODIES_PER_SYSTEM; // Less than ten plant/animal types per system seems reasonable...
 	extern constexpr u4Byte RASTER_ATLAS_VOLUM = RASTER_ATLAS_WIDTH * RASTER_ATLAS_HEIGHT * RASTER_ATLAS_DEPTH;
 
 	// Indirect dispatch helpers

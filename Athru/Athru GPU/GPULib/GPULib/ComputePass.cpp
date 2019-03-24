@@ -1,7 +1,5 @@
-#include <d3dcompiler.h>
-#include <experimental/filesystem>
 #include "UtilityServiceCentre.h"
-#include "ComputeShader.h"
+#include "ComputePass.h"
 
 ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 HWND windowHandle,

@@ -19,7 +19,8 @@ class Direct3D
 
 		// Present generated imagery to the output monitor/Win64 surface
 		// Implicitly calls [ExecuteCommandLists()], should always run at the end of a render-pass
-		void Output(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex);
+		void Present(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex,
+					const D3D12_RESOURCE_STATES& dispTexState);
 
 		// Initialize presentation pipeline-state (only one raster pipeline in Athru, so no need to bundle full
 		// pipeline state with shader objects)
@@ -53,6 +54,9 @@ class Direct3D
 			WaitForSingleObjectEx(syncEvt, INFINITE, false); // Allow infinite silent waiting for GPU operations
 			fenceVal += 1; // Keep fence values consistent between CPU/GPU
 		}
+
+		// Retrieve a reference to the GPU memory manager
+		AthruGPU::GPUMemory& GetGPUMem();
 
 		// Retrieve a reference to the active graphics pipeline-state & compute pipeline-state
 		const Microsoft::WRL::ComPtr<ID3D12PipelineState>& GetGraphicsState();
@@ -100,8 +104,7 @@ class Direct3D
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> computeCmdAlloc;
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> copyCmdAlloc;
 
-		// Reference to the standard render-target + debug-device
-		Microsoft::WRL::ComPtr<D3D12_GPU_DESCRIPTOR_HANDLE> defaultRenderTarget;
+		// The DX12 debug-device
 		Microsoft::WRL::ComPtr<ID3D12Debug> debugDevice;
 
 		// DX12 fence interfaces for GPU/CPU synchronization, also separate fence
@@ -115,6 +118,6 @@ class Direct3D
 		uByte backBufferNdx;
 
 		// Reference to Athru's GPU memory/residency manager
-		GPUMemory* gpuMem;
+		AthruGPU::GPUMemory* gpuMem;
 };
 

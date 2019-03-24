@@ -153,10 +153,10 @@ namespace GraphicsStuff
 namespace SceneStuff
 {
 	extern constexpr u4Byte SYSTEM_COUNT = 100;
-	extern constexpr u4Byte PLANETS_PER_SYSTEM = 10;
+	extern constexpr u4Byte BODIES_PER_SYSTEM = 10;
 	extern constexpr u4Byte PLANTS_PER_PLANET = 100;
 	extern constexpr u4Byte ANIMALS_PER_PLANET = 100;
-	extern constexpr u4Byte MAX_NUM_SCENE_FIGURES = PLANETS_PER_SYSTEM +
+	extern constexpr u4Byte MAX_NUM_SCENE_FIGURES = BODIES_PER_SYSTEM +
 													PLANTS_PER_PLANET +
 													ANIMALS_PER_PLANET;
 }

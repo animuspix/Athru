@@ -4,22 +4,21 @@
 #include <d3d12.h>
 #include <random>
 #include "GPUGlobals.h"
-#include "AthruBuffer.h"
+#include "AthruResrc.h"
 #include "PhiloStrm.h"
+#include "GPUMemory.h"
 #include "UtilityServiceCentre.h"
 
 struct GPURand
 {
-	GPURand(const Microsoft::WRL::ComPtr<ID3D11Device>& device)
+	GPURand(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+			AthruGPU::GPUMemory& gpuMem)
 	{
-		// Build the GPU RNG's state buffer
-		// No initial data! :O
-		// Too finicky to pass starting seeds along to Athru's buffer interface, so we'll
-		// just seed with GPU hashes instead :P
-		u4Byte numSeeds = AthruGPU::NUM_RAND_SEEDS;
-		gpuRandState = AthruGPU::AthruBuffer<PhiloStrm, AthruGPU::RWBuffer>(device,
-																			   nullptr,
-																			   AthruGPU::NUM_RAND_SEEDS);
+		// Build the path-tracing RNG's state buffer
+        // (unseeded from CPU bc we can synthesize seeds on GPU with some hash functions anyways, and seeding
+        // on the GPU lets us avoid copying data onto the upload heap or having to think about efficient
+        // initialization strategies for each stream at startup)
+		ptRandState.InitBuf(device, gpuMem, AthruGPU::NUM_RAND_PT_SEEDS);
 	}
 	~GPURand(){}
 
@@ -27,11 +26,10 @@ struct GPURand
 	void* operator new(size_t size);
 	void operator delete(void* target);
 
-	// State buffer to improve GPU random number
-	// generation, where each individual block of
-	// 32-bit state is associated with an
-	// instance of the 32-bit Xorshift RNG
-	// described here:
-	// https://en.wikipedia.org/wiki/Xorshift
-	AthruGPU::AthruBuffer<PhiloStrm, AthruGPU::GPURWBuffer> gpuRandState;
+	// Path-tracing RNG state buffer; each chunk of state is a separate Philox stream
+    // (see documentation in [PhiloStrm.h])
+	AthruGPU::AthruResrc<PhiloStrm,
+						 AthruGPU::RWResrc<AthruGPU::Buffer>,
+						 AthruGPU::RESRC_COPY_STATES::NUL,
+						 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> ptRandState;
 };

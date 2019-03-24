@@ -1,6 +1,7 @@
 #include <assert.h>
 #include "Typedefs.h"
 #include "UtilityServiceCentre.h"
+#include "AthruResrc.h"
 #include "Direct3D.h"
 
 Direct3D::Direct3D(HWND hwnd)
@@ -74,34 +75,35 @@ Direct3D::Direct3D(HWND hwnd)
 	assert(SUCCEEDED(hr));
 
 	// Construct the GPU memory manager (creates generic heap + descriptor heaps + command allocators)
-	gpuMem = new GPUMemory(device);
+	gpuMem = new AthruGPU::GPUMemory(device);
 
-	// Create the graphics command queue + allocator
+	// Create the graphics command queue + allocator + command list
 	D3D12_COMMAND_QUEUE_DESC cmdQueueDesc;
 	cmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT;
 	cmdQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY::D3D12_COMMAND_QUEUE_PRIORITY_HIGH;
 	cmdQueueDesc.Flags = D3D12_COMMAND_QUEUE_FLAGS::D3D12_COMMAND_QUEUE_FLAG_NONE;
 	cmdQueueDesc.NodeMask = 0x1; // Only one adapter atm
-	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)graphicsCmdList.GetAddressOf());
+	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)graphicsQueue.GetAddressOf());
 	assert(SUCCEEDED(hr));
-	assert(SUCCEEDED(device->CreateCommandAllocator(cmdQueueDesc.Type, __uuidof(ID3D12CommandAllocator), (void**)computeCmdAlloc.GetAddressOf())));
-	// Command-list creation occurs alongside pipeline initialization (i.e. the graphics command list stays un-created until it's initialized by the renderer,
-	// the compute command list stays un-created until it's initialized by the physics system)
+	assert(SUCCEEDED(device->CreateCommandAllocator(cmdQueueDesc.Type, __uuidof(ID3D12CommandAllocator), (void**)graphicsCmdAlloc.GetAddressOf())));
+	assert(SUCCEEDED(device->CreateCommandList(0x1, cmdQueueDesc.Type, graphicsCmdAlloc.Get(), nullptr, __uuidof(ID3D12GraphicsCommandList), (void**)graphicsCmdList.GetAddressOf())));
 
 	// Create the compute command queue + allocator
 	cmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COMPUTE;
 	cmdQueueDesc.Priority = D3D12_COMMAND_QUEUE_PRIORITY::D3D12_COMMAND_QUEUE_PRIORITY_NORMAL;
 	// Otherwise same settings as the graphics command queue
-	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)computeCmdList.GetAddressOf());
+	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)computeQueue.GetAddressOf());
 	assert(SUCCEEDED(hr));
-	assert(SUCCEEDED(device->CreateCommandAllocator(cmdQueueDesc.Type, __uuidof(ID3D12CommandAllocator), (void**)copyCmdAlloc.GetAddressOf())));
+	assert(SUCCEEDED(device->CreateCommandAllocator(cmdQueueDesc.Type, __uuidof(ID3D12CommandAllocator), (void**)computeCmdAlloc.GetAddressOf())));
+	assert(SUCCEEDED(device->CreateCommandList(0x1, cmdQueueDesc.Type, computeCmdAlloc.Get(), nullptr, __uuidof(ID3D12GraphicsCommandList), (void**)computeCmdList.GetAddressOf())));
 
 	// Create the copy command queue + allocator
 	cmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY;
 	// Otherwise same settings as the compute command queue
-	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)copyCmdList.GetAddressOf());
+	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)copyQueue.GetAddressOf());
 	assert(SUCCEEDED(hr));
-	assert(SUCCEEDED(device->CreateCommandAllocator(cmdQueueDesc.Type, __uuidof(ID3D12CommandAllocator), (void**)graphicsCmdAlloc.GetAddressOf())));
+	assert(SUCCEEDED(device->CreateCommandAllocator(cmdQueueDesc.Type, __uuidof(ID3D12CommandAllocator), (void**)copyCmdAlloc.GetAddressOf())));
+	assert(SUCCEEDED(device->CreateCommandList(0x1, cmdQueueDesc.Type, copyCmdAlloc.Get(), nullptr, __uuidof(ID3D12GraphicsCommandList), (void**)copyCmdList.GetAddressOf())));
 
 	// Describe + construct the swap-chain
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
@@ -137,19 +139,46 @@ Direct3D::Direct3D(HWND hwnd)
 
 Direct3D::~Direct3D() {}
 
-void Direct3D::Output(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex)
+void Direct3D::Present(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex,
+					 const D3D12_RESOURCE_STATES& dispTexState)
 {
 	// Copy the the display texture into the current back-buffer
 	// Direct copies don't seem to work (can only access the zeroth back-buffer index?), should ask
 	// CGSE about options here
-	//D3D12_TEXTURE_COPY_LOCATION texSrc;
-	//texSrc.pResource = displayTex.Get();
-	//texSrc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	//texSrc.SubresourceIndex = 0; // No mip-maps on the display texture
-	//D3D12_TEXTURE_COPY_LOCATION texDst;
-	//Microsoft::WRL::ComPtr<ID3D11Resource> backBufTx; // Not sure about initialisation here
-	//texDst.pResource = swapChain->GetBuffer(swapChain->GetCurrentBackBufferIndex(), __uuidof(ID3D11Resource*), (void**)backBufTx.GetAddressOf()); // No mip-maps on the back-buffer
-	//graphicsCmdList->CopyTextureRegion(&texDst, 0, 0, 0, &texSrc, nullptr);
+	D3D12_TEXTURE_COPY_LOCATION texSrc;
+	texSrc.pResource = displayTex.Get();
+	texSrc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+	texSrc.SubresourceIndex = 0; // No mip-maps on the display texture
+	D3D12_TEXTURE_COPY_LOCATION texDst;
+	Microsoft::WRL::ComPtr<ID3D12Resource> backBufTx; // Not sure about initialisation here
+	HRESULT res = swapChain->GetBuffer(TimeStuff::frameCtr % 3, __uuidof(ID3D12Resource*), (void**)backBufTx.GetAddressOf());
+	assert(SUCCEEDED(false));
+	texDst.pResource = backBufTx.Get();
+	texDst.SubresourceIndex = 0; // No mip-maps on the back-buffer
+	texDst.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+
+	// Prepare resource barriers
+	D3D12_RESOURCE_BARRIER copyBarriers[2];
+	copyBarriers[0] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
+												  backBufTx,
+												  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT);
+	copyBarriers[1] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE,
+												  displayTex,
+												  dispTexState);
+
+	// Transition to copyable resources & perform copy to the back-buffer
+	graphicsCmdList->ResourceBarrier(2, copyBarriers);
+	graphicsCmdList->CopyTextureRegion(&texDst, 0, 0, 0, &texSrc, nullptr); // Perform copy to the back-buffer
+
+	// Transition back to standard-use resources
+	copyBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST;
+	copyBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT;
+	copyBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE;
+	copyBarriers[1].Transition.StateAfter = dispTexState;
+	graphicsCmdList->ResourceBarrier(2, copyBarriers);
+	graphicsCmdList->Close(); // End graphics submissions for the current frame
+    graphicsQueue->ExecuteCommandLists(1, (ID3D12CommandList**)graphicsCmdList.GetAddressOf()); // Execute graphics commands
+    // -- Might need an extra sync here, unsure --
 
 	// Pass the back-buffer up to the output monitor/Win64 surface
 	// If vsync is enabled (read: equal to [true] or [1]), present the data
@@ -207,6 +236,11 @@ void Direct3D::UpdateComputePipeline(const Microsoft::WRL::ComPtr<ID3D12Pipeline
 	activeComputeState = pipelineState; // Update active compute pipeline state
 	computeCmdList->SetPipelineState(pipelineState.Get()); // Assign new pipeline state within the API
 														   // Assumed called within a broader command-list reset/execution block
+}
+
+AthruGPU::GPUMemory& Direct3D::GetGPUMem()
+{
+	return *gpuMem;
 }
 
 const Microsoft::WRL::ComPtr<ID3D12PipelineState>& Direct3D::GetGraphicsState()

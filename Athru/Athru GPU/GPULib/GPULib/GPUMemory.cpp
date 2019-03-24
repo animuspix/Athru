@@ -1,7 +1,7 @@
 #include "GPUMemory.h"
 #include "UtilityServiceCentre.h"
 
-GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device)
+AthruGPU::GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device)
 {
 	// Create main GPU heap
 	D3D12_HEAP_DESC memDesc;
@@ -39,74 +39,71 @@ GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device)
 	// -- No render-targets or depth-stencils used by Athru, compute-shading only -- //
 }
 
-GPUMemory::~GPUMemory()
+AthruGPU::GPUMemory::~GPUMemory()
 {
-	// Clear GPU allocations here
-	// --
-
 	// Explicitly reset smart pointers
 	resrcMem.mem = nullptr;
 	uploMem.mem = nullptr;
 	shaderViewMem.mem = nullptr;
 }
 
-HRESULT GPUMemory::AllocBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-							const u4Byte& bufSize,
-							const D3D12_RESOURCE_DESC* bufDesc,
-							const D3D12_RESOURCE_STATES initState,
-							const Microsoft::WRL::ComPtr<ID3D12Resource>& bufPttr,
-							const AthruGPU::HEAP_TYPES heap)
+HRESULT AthruGPU::GPUMemory::AllocBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+									  const u4Byte& bufSize,
+									  const D3D12_RESOURCE_DESC bufDesc,
+									  const D3D12_RESOURCE_STATES initState,
+									  const Microsoft::WRL::ComPtr<ID3D12Resource>& bufPttr,
+									  const AthruGPU::HEAP_TYPES heap)
 {
 	GPUStackedMem<ID3D12Heap>& mem = (heap == AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY) ? resrcMem : uploMem;
 	u8Byte offs = mem.offs;
 	mem.offs += bufSize;
 	return device->CreatePlacedResource(mem.mem.Get(),
 										offs,
-										bufDesc,
+										&bufDesc,
 										initState,
 										nullptr,
 										__uuidof(ID3D12Resource),
 										(void**)bufPttr.GetAddressOf());
 }
 
-HRESULT GPUMemory::AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-							const u4Byte& texSize,
-							const D3D12_RESOURCE_DESC* texDesc,
-							const D3D12_RESOURCE_STATES initState,
-							const D3D12_CLEAR_VALUE optimalClearColor,
-							const Microsoft::WRL::ComPtr<ID3D12Resource>& texPttr)
+HRESULT AthruGPU::GPUMemory::AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+									  const u4Byte& texSize,
+									  const D3D12_RESOURCE_DESC texDesc,
+									  const D3D12_RESOURCE_STATES initState,
+									  const D3D12_CLEAR_VALUE optimalClearColor,
+									  const Microsoft::WRL::ComPtr<ID3D12Resource>& texPttr)
 {
 	u8Byte offs = resrcMem.offs;
 	resrcMem.offs += texSize;
 	return device->CreatePlacedResource(resrcMem.mem.Get(),
 										offs,
-										texDesc,
+										&texDesc,
 										initState,
 										&optimalClearColor,
 										__uuidof(ID3D12Resource),
 										(void**)texPttr.GetAddressOf());
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocCBV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-												const D3D12_CONSTANT_BUFFER_VIEW_DESC* viewDesc)
+D3D12_CPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::AllocCBV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+														  const D3D12_CONSTANT_BUFFER_VIEW_DESC* viewDesc)
 {
 	return AllocView(device,
 					 viewDesc);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocSRV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-												const D3D12_SHADER_RESOURCE_VIEW_DESC* viewDesc,
-												const Microsoft::WRL::ComPtr<ID3D12Resource>& resrc)
+D3D12_CPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::AllocSRV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+														  const D3D12_SHADER_RESOURCE_VIEW_DESC* viewDesc,
+														  const Microsoft::WRL::ComPtr<ID3D12Resource>& resrc)
 {
 	return AllocView(device,
 					 viewDesc,
 					 resrc);
 }
 
-D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocUAV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-												const D3D12_UNORDERED_ACCESS_VIEW_DESC* viewDesc,
-												const Microsoft::WRL::ComPtr<ID3D12Resource>& dataResrc,
-												const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc)
+D3D12_CPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::AllocUAV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+														  const D3D12_UNORDERED_ACCESS_VIEW_DESC* viewDesc,
+														  const Microsoft::WRL::ComPtr<ID3D12Resource>& dataResrc,
+														  const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc)
 {
 	return AllocView(device,
 					 viewDesc,
@@ -115,14 +112,14 @@ D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocUAV(const Microsoft::WRL::ComPtr<ID3
 }
 
 // Push constructions for this class through Athru's custom allocator
-void* GPUMemory::operator new(size_t size)
+void* AthruGPU::GPUMemory::operator new(size_t size)
 {
 	StackAllocator* allocator = AthruCore::Utility::AccessMemory();
 	return allocator->AlignedAlloc(size, (uByte)std::alignment_of<GPUMemory>(), false);
 }
 
 // We aren't expecting to use [delete], so overload it to do nothing
-void GPUMemory::operator delete(void* target)
+void AthruGPU::GPUMemory::operator delete(void* target)
 {
 	return;
 }

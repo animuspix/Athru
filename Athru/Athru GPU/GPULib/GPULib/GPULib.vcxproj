@@ -152,50 +152,33 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="AthruResrc.h" />
-    <ClInclude Include="ComputeShader.h" />
-    <ClInclude Include="FigureRaster.h" />
+    <ClInclude Include="ComputePass.h" />
+    <ClInclude Include="GradientMapper.h" />
     <ClInclude Include="GPUGlobals.h" />
     <ClInclude Include="GPUMemory.h" />
     <ClInclude Include="GPURand.h" />
     <ClInclude Include="GPUServiceCentre.h" />
-    <ClInclude Include="GPUUpdateManager.h" />
     <ClInclude Include="LiBounce.h" />
     <ClInclude Include="PhiloStrm.h" />
     <ClInclude Include="PixHistory.h" />
-    <ClInclude Include="AthruRect.h" />
     <ClInclude Include="Renderer.h" />
     <ClInclude Include="GPUMessenger.h" />
     <ClInclude Include="SceneFigure.h" />
-    <ClInclude Include="ViewFinder.h" />
-    <ClInclude Include="AthruTexture2D.h" />
     <ClInclude Include="Camera.h" />
     <ClInclude Include="Direct3D.h" />
-    <ClInclude Include="Mesh.h" />
-    <ClInclude Include="PlanarUnwrapper.h" />
-    <ClInclude Include="ScreenPainter.h" />
-    <ClInclude Include="PostVertex.h" />
-    <ClInclude Include="PipelineShader.h" />
     <ClInclude Include="targetver.h" />
-    <ClInclude Include="SceneVertex.h" />
-    <ClInclude Include="UpdateShader.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="ComputeShader.cpp" />
-    <ClCompile Include="FigureRaster.cpp" />
+    <ClCompile Include="ComputePass.cpp" />
+    <ClCompile Include="GradientMapper.cpp" />
     <ClCompile Include="GPUMemory.cpp" />
     <ClCompile Include="GPURand.cpp" />
     <ClCompile Include="GPUServiceCentre.cpp" />
-    <ClCompile Include="GPUUpdateManager.cpp" />
     <ClCompile Include="Renderer.cpp" />
     <ClCompile Include="GPUMessenger.cpp" />
     <ClCompile Include="SceneFigure.cpp" />
-    <ClCompile Include="ViewFinder.cpp" />
     <ClCompile Include="Camera.cpp" />
     <ClCompile Include="Direct3D.cpp" />
-    <ClCompile Include="ScreenPainter.cpp" />
-    <ClCompile Include="ScreenVertex.cpp" />
-    <ClCompile Include="PipelineShader.cpp" />
-    <ClCompile Include="UpdateShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="dispScale128.hlsl">

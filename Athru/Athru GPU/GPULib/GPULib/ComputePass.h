@@ -4,6 +4,7 @@
 #include <windows.h>
 #include <wrl\client.h>
 #include "GPUGlobals.h"
+#include "AthruResrc.h"
 
 class ComputePass
 {
