@@ -28,6 +28,17 @@ AthruGPU::GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& devic
 	// Alignment & flags are the same as main memory
 	uploMem = GPUStackedMem<ID3D12Heap>(memDesc, device);
 
+    // Create the readback heap
+    memDesc.SizeInBytes = 28; // At least seven integer values needed in each path-tracing iteration
+                              // (one for each primitive material type + one extra for generic ray/path
+                              // processing)
+    memDesc.Properties.Type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK;
+    memDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+    memDesc.Properties.CreationNodeMask = 0x1; // Only one adapter atm
+    memDesc.Properties.VisibleNodeMask = 0x1;
+    // Alignment + flags are the same as main memory
+    rdbkMem = GPUStackedMem<ID3D12Heap>(memDesc, device);
+
 	// Create the shader-visible descriptor heap
 	D3D12_DESCRIPTOR_HEAP_DESC descHeapDesc;
 	descHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV;
@@ -55,6 +66,7 @@ HRESULT AthruGPU::GPUMemory::AllocBuf(const Microsoft::WRL::ComPtr<ID3D12Device>
 									  const AthruGPU::HEAP_TYPES heap)
 {
 	GPUStackedMem<ID3D12Heap>& mem = (heap == AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY) ? resrcMem : uploMem;
+    if (heap == AthruGPU::HEAP_TYPES::READBACK) { mem = rdbkMem;}
 	u8Byte offs = mem.offs;
 	mem.offs += bufSize;
 	return device->CreatePlacedResource(mem.mem.Get(),
@@ -109,6 +121,11 @@ D3D12_CPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::AllocUAV(const Microsoft::WRL::
 					 viewDesc,
 					 dataResrc,
 					 ctrResrc);
+}
+
+const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& AthruGPU::GPUMemory::GetShaderViewMem()
+{
+    return shaderViewMem.mem;
 }
 
 // Push constructions for this class through Athru's custom allocator

@@ -139,47 +139,8 @@ Direct3D::Direct3D(HWND hwnd)
 
 Direct3D::~Direct3D() {}
 
-void Direct3D::Present(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex,
-					 const D3D12_RESOURCE_STATES& dispTexState)
+void Direct3D::Present()
 {
-	// Copy the the display texture into the current back-buffer
-	// Direct copies don't seem to work (can only access the zeroth back-buffer index?), should ask
-	// CGSE about options here
-	D3D12_TEXTURE_COPY_LOCATION texSrc;
-	texSrc.pResource = displayTex.Get();
-	texSrc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	texSrc.SubresourceIndex = 0; // No mip-maps on the display texture
-	D3D12_TEXTURE_COPY_LOCATION texDst;
-	Microsoft::WRL::ComPtr<ID3D12Resource> backBufTx; // Not sure about initialisation here
-	HRESULT res = swapChain->GetBuffer(TimeStuff::frameCtr % 3, __uuidof(ID3D12Resource*), (void**)backBufTx.GetAddressOf());
-	assert(SUCCEEDED(false));
-	texDst.pResource = backBufTx.Get();
-	texDst.SubresourceIndex = 0; // No mip-maps on the back-buffer
-	texDst.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-
-	// Prepare resource barriers
-	D3D12_RESOURCE_BARRIER copyBarriers[2];
-	copyBarriers[0] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
-												  backBufTx,
-												  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT);
-	copyBarriers[1] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE,
-												  displayTex,
-												  dispTexState);
-
-	// Transition to copyable resources & perform copy to the back-buffer
-	graphicsCmdList->ResourceBarrier(2, copyBarriers);
-	graphicsCmdList->CopyTextureRegion(&texDst, 0, 0, 0, &texSrc, nullptr); // Perform copy to the back-buffer
-
-	// Transition back to standard-use resources
-	copyBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST;
-	copyBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT;
-	copyBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE;
-	copyBarriers[1].Transition.StateAfter = dispTexState;
-	graphicsCmdList->ResourceBarrier(2, copyBarriers);
-	graphicsCmdList->Close(); // End graphics submissions for the current frame
-    graphicsQueue->ExecuteCommandLists(1, (ID3D12CommandList**)graphicsCmdList.GetAddressOf()); // Execute graphics commands
-    // -- Might need an extra sync here, unsure --
-
 	// Pass the back-buffer up to the output monitor/Win64 surface
 	// If vsync is enabled (read: equal to [true] or [1]), present the data
 	// in sync with the screen refresh rate
@@ -188,54 +149,6 @@ void Direct3D::Present(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex,
 	// fast as possible
 	HRESULT hr = swapChain->Present(GraphicsStuff::VSYNC_ENABLED, 0);
 	assert(SUCCEEDED(hr)); // If present fails, something is wrong
-
-	// Schedule the next frame...? Ask CGSE about this
-}
-
-void Direct3D::InitRasterPipeline(const D3D12_SHADER_BYTECODE& vs,
-								  const D3D12_SHADER_BYTECODE& ps,
-								  const D3D12_INPUT_LAYOUT_DESC& inputLayout,
-								  ID3D12RootSignature* rootSig,
-								  const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState)
-{
-	D3D12_GRAPHICS_PIPELINE_STATE_DESC pipeline;
-	pipeline.pRootSignature = rootSig;
-	pipeline.VS = vs;
-	pipeline.PS = ps;
-	pipeline.BlendState.AlphaToCoverageEnable = false;
-	pipeline.BlendState.IndependentBlendEnable = false;
-	pipeline.BlendState.RenderTarget[0].BlendEnable = false; // No blending/transparency in Athru
-	pipeline.RasterizerState.DepthClipEnable = false; // Try to guarantee that the presentation quad will never clip out of the display
-													  // (super unlikely but verifiable code is nice)
-	pipeline.DepthStencilState.DepthEnable = false; // Strictly implicit rendering in Athru, no strong need for a depth buffer
-	pipeline.InputLayout = inputLayout; // Pass along the provided input layout
-	pipeline.IBStripCutValue = D3D12_INDEX_BUFFER_STRIP_CUT_VALUE_DISABLED; // No discontinuous index-buffers in Athru
-	pipeline.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE; // Only triangular geometry in Athru (representing the display quad)
-	pipeline.NumRenderTargets = 1; // Only one render target atm
-	pipeline.RTVFormats[0] = DXGI_FORMAT::DXGI_FORMAT_R8G8B8A8_UNORM;
-	pipeline.SampleDesc.Count = 1;
-	pipeline.SampleDesc.Quality = 0; // We're literally only using the raster pipeline to present path-tracing results to the display; heavy
-									 // filtering within our own compute pipeline means we'll be ok with single-sample minimal-quality MSAA
-									 // (basically we're using our own AA solution so we don't need to enable it on GPU as well)
-	pipeline.NodeMask = 0; // No multi-gpu support for now (*might* use the igpu as a co-processor for data analytics/UI rendering in the future)
-	pipeline.CachedPSO.CachedBlobSizeInBytes = 0;
-	pipeline.CachedPSO.pCachedBlob = nullptr; // No cached PSO stuff *rn* but might use it in the future; could
-											  // save some setup time on startup
-	pipeline.Flags = D3D12_PIPELINE_STATE_FLAG_NONE; // No flags atm
-	// Construct, assign pipeline state here
-	HRESULT hr = device->CreateGraphicsPipelineState(&pipeline,
-													 __uuidof(ID3D12PipelineState),
-													 (void**)pipelineState.GetAddressOf());
-	assert(SUCCEEDED(hr));
-	activeGraphicsState = pipelineState; // Update active graphics pipeline state
-	graphicsCmdList->SetPipelineState(pipelineState.Get()); // Assumed called within a broader command-list reset/execution block
-}
-
-void Direct3D::UpdateComputePipeline(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState)
-{
-	activeComputeState = pipelineState; // Update active compute pipeline state
-	computeCmdList->SetPipelineState(pipelineState.Get()); // Assign new pipeline state within the API
-														   // Assumed called within a broader command-list reset/execution block
 }
 
 AthruGPU::GPUMemory& Direct3D::GetGPUMem()
@@ -243,14 +156,10 @@ AthruGPU::GPUMemory& Direct3D::GetGPUMem()
 	return *gpuMem;
 }
 
-const Microsoft::WRL::ComPtr<ID3D12PipelineState>& Direct3D::GetGraphicsState()
+void Direct3D::GetBackBuf(Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx)
 {
-	return activeGraphicsState;
-}
-
-const Microsoft::WRL::ComPtr<ID3D12PipelineState>& Direct3D::GetComputeState()
-{
-	return activeComputeState;
+    HRESULT res = swapChain->GetBuffer(TimeStuff::frameCtr % 3, __uuidof(ID3D12Resource*), (void**)backBufTx.GetAddressOf());
+    assert(SUCCEEDED(false));
 }
 
 const Microsoft::WRL::ComPtr<ID3D12Device>& Direct3D::GetDevice()

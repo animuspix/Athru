@@ -30,12 +30,13 @@ class Renderer
 		// Bounce preparation shader (material synthesis + export)
 		ComputePass bouncePrep;
 
-		// Small array of sampling shaders; each element performs sampling + shading for a different
-		// surface type (support for diffuse, mirrorlike, refractive, subsurface/snowy, generic subsurface, and furry
+        // Per-frame lens sampler
+        ComputePass lensSampler;
+
+		// Small array of surface sampling shaders; each element performs sampling + shading for a different
+		// primitive material (support for diffuse, mirrorlike, refractive, subsurface/snowy, generic subsurface, and furry
 		// is expected; only diffuse and mirrorlike are supported at the moment)
-		// Although these are technically surface samplers, the first index contains a specialty lens sampler to generate
-		// initial ray positions and directions in each frame
-		ComputePass samplers[7];
+		ComputePass bdxfs[6];
 
 		// Small shader for filtering & tonemapping (denoising works well with texture sampling, so that runs
 		// directly inside the presentation shader)
@@ -46,6 +47,8 @@ class Renderer
 		// by [256], and so on)
 		// Defined here instead of globally so I can use rendering-specific resource bindings (avoiding rebinding everything
 		// each time I adjust the counter-buffer)
+        // Suspect I can work without these if I change counter updates in each shader to map between thread-group sizes instead
+        // of naively incrementing the dispatch buffer for each re-emitted ray in a shading pass
 		ComputePass dispatchScale512;
 		ComputePass dispatchScale256;
 		ComputePass dispatchScale128;
@@ -71,7 +74,7 @@ class Renderer
 		// Also raw generic append-buffer lengths in [23], and material append-buffer
 		// lengths in 24-29
 		AthruGPU::AthruResrc<u4Byte,
-							 AthruGPU::RWResrc<AthruGPU::Buffer>> ctrBuf;
+							 AthruGPU::ReadbkResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>> ctrBuf;
 
 		// [rndrCtr] layout referencess
 		const u4Byte RNDR_CTR_OFFSET_GENERIC = (GraphicsStuff::NUM_SUPPORTED_SURF_BXDFS * AthruGPU::DISPATCH_ARGS_SIZE);
@@ -89,15 +92,4 @@ class Renderer
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;
 		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& renderCmdList;
 		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& renderCmdAllocator;
-
-		// Utility command lists (bundles) used to encapsulate Athru shading stages
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> sampleLens; // A small bundle capturing commands issued for lens-sampling
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> ptStep; // A bundle capturing events at each path-tracing step (tracing rays, evaluating local materials on intersection,
-																  // computing path changes and tracing the next step)
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> postProc; // Another small bundle capturing commands issued for anti-aliasing, tone-mapping, and denoising
-
-		// Utility command allocators; each allocator captures state for one of the bundles described above
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> lensCmds;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> ptStepCmds;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> postProcCmds;
 };

@@ -17,6 +17,9 @@ namespace AthruGPU
 	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]; uploadable resources should only take the [AthruGPU::Buffer] meta-type
 	struct UploResrc : public ReadabilityType {}; // An uploadable resource (CPU-write, GPU-read); Athru only allows buffer upload atm
 												  // (very few image assets, data assets might be easier to upload in buffers)
+    template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]; readback resources should only take the [AthruGPU::Buffer] meta-type
+    struct ReadbkResrc : public ReadabilityType {}; // A readback resource (CPU-read, GPU-write); Athru only allows buffer readback atm, but might support texture
+                                                    // readback in future for e.g. saving/sharing in-game photos/screenshots
 	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]
 	struct StrmResrc : ReadabilityType {}; // Tiled streaming buffer, mainly allocated within virtual memory and partly loaded into GPU dedicated memory on-demand
 
@@ -482,6 +485,10 @@ namespace AthruGPU
                                     std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value) ||
                                    std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
                 { return AthruGPU::HEAP_TYPES::UPLO; }
+                else if constexpr ((std::is_same<AthruResrcType, AthruGPU::ReadbkResrc<AthruGPU::RResrc<AthruGPU::Buffer>>>::value ||
+                                    std::is_same<AthruResrcType, AthruGPU::ReadbkResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value) &&
+                                   !std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
+                { return AthruGPU::HEAP_TYPES::READBACK; }
             }
 	};
 }

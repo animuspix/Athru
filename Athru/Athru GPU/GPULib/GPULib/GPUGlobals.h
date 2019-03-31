@@ -80,7 +80,8 @@ namespace AthruGPU
 	enum class HEAP_TYPES
 	{
 		UPLO,
-		GPU_ACCESS_ONLY
+		GPU_ACCESS_ONLY,
+        READBACK
 	};
 
 	// Number of surfaces in the swap-chain (for single/double/triple-buffering)

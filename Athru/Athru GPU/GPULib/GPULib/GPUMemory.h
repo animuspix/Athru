@@ -121,6 +121,10 @@ namespace AthruGPU
 															const D3D12_UNORDERED_ACCESS_VIEW_DESC* viewDesc,
 															const Microsoft::WRL::ComPtr<ID3D12Resource>& dataResrc,
 															const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc);
+            // Return a reference to the shader descriptor heap ([shaderViewMem])
+            const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetShaderViewMem();
+
+            // Allocate a
 
 			// Overload the standard allocation/de-allocation operators
 			void* operator new(size_t size);
@@ -196,6 +200,9 @@ namespace AthruGPU
 			GPUStackedMem<ID3D12Heap> resrcMem; // Main buffer/texture/queue/list memory
 			GPUStackedMem<ID3D12Heap> uploMem; // CPU->GPU intermediate upload memory (used for planetary load-in + cbuffers)
 											   // Animal memory could easily be too dense to be wholly GPU-resident, so stream that in through tiled resources instead
+            GPUStackedMem<ID3D12Heap> rdbkMem; // GPU->CPU intermediate readback memory (mainly used for tracking path counts between shading stages; Athru's path-tracing
+                                               // style guarantees stalls between stages (either from UAV barriers or from readback), so there's less reason to choose indirect
+                                               // dispatch over a conceptually simpler readback->dispatch->update->readback loop)
 			GPUStackedMem<ID3D12DescriptorHeap> shaderViewMem; // Descriptor memory for shader-visible views (constant-buffer, shader-resource, unordered-access)
 			D3D12_CPU_DESCRIPTOR_HANDLE shaderViewStart; // Handle for the start of [shaderViewMem.mem]; not easily defined within [GPUStackedMem], not enough descriptor
 														 // heaps to justify creating another struct

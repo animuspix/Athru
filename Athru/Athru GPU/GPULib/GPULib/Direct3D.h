@@ -18,21 +18,7 @@ class Direct3D
 		~Direct3D();
 
 		// Present generated imagery to the output monitor/Win64 surface
-		// Implicitly calls [ExecuteCommandLists()], should always run at the end of a render-pass
-		void Present(const Microsoft::WRL::ComPtr<ID3D12Resource>& displayTex,
-					const D3D12_RESOURCE_STATES& dispTexState);
-
-		// Initialize presentation pipeline-state (only one raster pipeline in Athru, so no need to bundle full
-		// pipeline state with shader objects)
-		void InitRasterPipeline(const D3D12_SHADER_BYTECODE& vs,
-								const D3D12_SHADER_BYTECODE& ps,
-								const D3D12_INPUT_LAYOUT_DESC& inputLayout,
-								ID3D12RootSignature* rootSig,
-								const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState);
-
-		// Update compute pipeline-state (issued by shader objects over [Direct3D] so everything in [AthruGPU] can
-		// easily check current pipeline state before e.g. resetting a command list)
-		void UpdateComputePipeline(const Microsoft::WRL::ComPtr<ID3D12PipelineState>& pipelineState);
+		void Present();
 
 		// Execute a busy spinner until GPU work finishes for the compute/graphics/copy-queues
 		template<D3D12_COMMAND_LIST_TYPE critQueue> // Should restrict this to [TYPE_DIRECT], [TYPE_COMPUTE], and [TYPE_COPY] with C++20
@@ -57,6 +43,10 @@ class Direct3D
 
 		// Retrieve a reference to the GPU memory manager
 		AthruGPU::GPUMemory& GetGPUMem();
+
+        // Map the swap-chain's backbuffer onto a D3D resource
+        // Might edit this to return UWP display surface instead and control back-buffer copies myself
+        void GetBackBuf(Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx);
 
 		// Retrieve a reference to the active graphics pipeline-state & compute pipeline-state
 		const Microsoft::WRL::ComPtr<ID3D12PipelineState>& GetGraphicsState();
