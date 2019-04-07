@@ -7,13 +7,6 @@ GPUMessenger::GPUMessenger(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 	// Construct the system buffer
     sysBuf.InitBuf(device, gpuMem, SceneStuff::BODIES_PER_SYSTEM);
 
-	// Cache a reference to Athru's CPU memory allocator; needed because D3D12's map/unmap logic expects double-pointers
-    // to CPU access variables, and its much easier to make a smaller allocation for each mapping point (+ pass an address
-    // to the result) than to try to recover offsets from the class layout + the instance pointer [this]
-    // For per-frame maps/unmaps I'd normally create a single-element array, but those become invalid when resources are
-    // mapped past the end of the calling scope (Athru keeps constant buffers mapped until the application closes)
-    //StackAllocator* allocator = AthruCore::Utility::AccessMemory();
-
     // Construct the generic GPU input buffer
     //gpuInput = (GPUInput*)allocator->AlignedAlloc(sizeof(GPUInput), (uByte)std::alignment_of<GPUInput>(), false);
 	gpuInputBuffer.InitCBuf(device,
