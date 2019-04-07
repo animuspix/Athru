@@ -36,7 +36,7 @@ class Renderer
 		// Small array of surface sampling shaders; each element performs sampling + shading for a different
 		// primitive material (support for diffuse, mirrorlike, refractive, subsurface/snowy, generic subsurface, and furry
 		// is expected; only diffuse and mirrorlike are supported at the moment)
-		ComputePass bdxfs[6];
+		ComputePass bxdfs[6];
 
 		// Small shader for filtering & tonemapping (denoising works well with texture sampling, so that runs
 		// directly inside the presentation shader)
@@ -53,31 +53,32 @@ class Renderer
 		ComputePass dispatchScale256;
 		ComputePass dispatchScale128;
 
+		// Path information buffer, updated per-bounce
+		// Should update member type appropriately
+		AthruGPU::AthruResrc<LiBounce, AthruGPU::RWResrc<AthruGPU::Buffer>> pxPaths;
+
 		// Small buffer letting us restrict path-tracing dispatches to paths persisting after
 		// each tracing/processing/sampling iteration
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> traceables;
+		// Each element is a pixel index
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> traceables;
 
 		// Surface intersection buffer (carries successful intersections across for next-event-estimation + material synthesis)
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> surfIsections;
+		// Each element is a pixel index
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> surfIsections;
 
 		// Material intersection buffers
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> diffuIsections;
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> mirroIsections;
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> refraIsections;
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> snowwIsections;
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> ssurfIsections;
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::AppBuffer> furryIsections;
+		// Each element is a pixel index
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> diffuIsections;
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> mirroIsections;
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> refraIsections;
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> snowwIsections;
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> ssurfIsections;
+		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> furryIsections;
 
-		// Generic counter buffer, carries dispatch axis sizes per-material in 0-17,
-		// generic axis sizes in 18-20, thread count assumed for dispatch axis sizes
-		// in [21], and a light bounce counter in [22]
-		// Also raw generic append-buffer lengths in [23], and material append-buffer
-		// lengths in 24-29
+		// Counter buffers for indirect dispatch; each buffer contains three 4-byte
+		// elements to match the three dispatch axes expected by D3D12
 		AthruGPU::AthruResrc<u4Byte,
-							 AthruGPU::ReadbkResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>> ctrBuf;
-
-		// [rndrCtr] layout referencess
-		const u4Byte RNDR_CTR_OFFSET_GENERIC = (GraphicsStuff::NUM_SUPPORTED_SURF_BXDFS * AthruGPU::DISPATCH_ARGS_SIZE);
+							 AthruGPU::RWResrc<AthruGPU::Buffer>> ctrs[8];
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
@@ -88,8 +89,22 @@ class Renderer
 		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
 							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTex;
 
-		// References to Athru's main rendering command-queue/command-list/command-allocator, needed for DX12 work submission
+		// References to Athru's main rendering command-queue/command-list/command-allocator
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;
 		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& renderCmdList;
 		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& renderCmdAllocator;
+
+		// Specialized lens-sampling command-list + command-allocator
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lensList;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> lensAlloc;
+
+		// Specialized path-tracing command-list + command-allocator +
+		// command signatures for indirect dispatch
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> ptCmdList;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> ptCmdAllocator;
+		Microsoft::WRL::ComPtr<ID3D12CommandSignature> ptCmdSig;
+
+		// Constant PT starting/finished fence values
+		static constexpr u8Byte PT_STARTING = 16u;
+		static constexpr u8Byte PT_ENDED = 32u;
 };
