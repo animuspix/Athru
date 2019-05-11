@@ -1,5 +1,4 @@
 
-#include "RenderUtility.hlsli"
 #ifndef LIGHTING_UTILITIES_LINKED
     #include "LightingUtility.hlsli"
 #endif
@@ -8,12 +7,15 @@
 #endif
 
 // Buffer carrying intersections across ray-march iterations
-ConsumeStructuredBuffer<LiBounce> traceables : register(u3);
+ConsumeStructuredBuffer<uint> traceables : register(u11);
 
-// Buffer carrying intersections between ray-march iterations
-// Basically a staging buffer to allow separate intersection tests
-// and next-event-estimation/sampling
-AppendStructuredBuffer<LiBounce> surfIsections : register(u6);
+// Material intersection buffers
+AppendStructuredBuffer<uint> diffuIsections : register(u12);
+AppendStructuredBuffer<uint> mirroIsections : register(u13);
+AppendStructuredBuffer<uint> refraIsections : register(u14);
+AppendStructuredBuffer<uint> snowwIsections : register(u15);
+AppendStructuredBuffer<uint> ssurfIsections : register(u16);
+AppendStructuredBuffer<uint> furryIsections : register(u17);
 
 // The maximum number of steps allowed for the primary
 // ray-marcher
@@ -26,41 +28,32 @@ void main(uint3 groupID : SV_GroupID,
     // Automatically dispatched threads can still outnumber data available;
     // mask those cases here
     // Assumes one-dimensional dispatches
-    uint numRays = counters[23];
-    uint maxID = numRays - 1;
+    uint2 numAndStride;
+    traceables.GetDimensions(numAndStride.x, numAndStride.y);
+    uint maxID = numAndStride.x - 1;
     uint rayID = threadID + groupID.x * 128;
     if (rayID > maxID) { return; }
 
     // [Consume()] a pixel from the end of [traceables]
-    LiBounce traceable = traceables.Consume();
-    if (rayID == 0)
-    {
-        // Zero generic dispatch sizes
-        counters[18] = 0;
+    uint ndx = traceables.Consume();
 
-        // We're pushing new dispatch sizes, so update assumed threads/group here
-        // ([1] because dispatch sizes are incremented naively and scaled down
-        // afterwards)
-        counters[21] = 1;
-    }
     // Extract a Philox-permutable value from [randBuf]
     // Also cache the accessor value used to retrieve that value in the first place
     // Initialize [randBuf] with hashed start times in the first frame
-    PhiloStrm randStrm = randBuf[traceable.id.x];
+    PhiloStrm randStrm = randBuf[ndx];
     float4 rand = iToFloatV(philoxPermu(randStrm));
 
     // Small vector for raymarching offsets between bounces
     float3 rayVec = EPSILON_MIN.xxx;
 
     // Cache input epsilon values
-    float eps = bounceInfo.z;
+    float eps = rndrInfo.bounceInfo.z;
 
     // Generate a parameterized path culling weight
     const float minCull = 0.01f; // Could optionally set this through [RenderInput]
     const float maxCull = 0.15f; // Could optionally set this through [RenderInput]
-    float d = numRays / tilingInfo.z;
-    float m = counters[22] / bounceInfo.x;
-    float cullWeight = lerp(minCull, maxCull, lerp(d, m, m));
+    float m = numAndStride.x / rndrInfo.bounceInfo.x;
+    float cullWeight = lerp(minCull, maxCull, m); // Per-tile counters could allow more dynamic culling here
 
     // Baseline ray distance
     // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
@@ -86,14 +79,15 @@ void main(uint3 groupID : SV_GroupID,
     // March towards the next intersection in the scene
     float4 rgba = 1.0f.xxxx;
     Figure star = figures[STELLAR_FIG_ID];
+    float2x3 ray = rays[ndx];
     for (uint i = 0u; i < MAX_VIS_MARCHER_STEPS; i += 1u)
     {
         // Scale rays through the scene, add bounce/emission origin
-        rayVec = float3(t * traceable.dirs[0]) + traceable.eP;
+        rayVec = float3(t * ray[1]) + ray[0];
 
         // Evaluate the scene SDF
         float2x3 sceneField = SceneField(rayVec,
-                                         traceable.eP,
+                                         ray[0],
                                          true,
                                          FILLER_SCREEN_ID,
                                          eps);
@@ -103,9 +97,9 @@ void main(uint3 groupID : SV_GroupID,
         {
             relaxed = false;
             t += prevDt * 1.0f - w;
-            rayVec = float3(t * traceable.dirs[0]) + traceable.eP;
+            rayVec = float3(t * ray[1]) + ray[0];
             sceneField = SceneField(rayVec,
-                                    traceable.eP,
+                                    ray[1],
                                     true,
                                     FILLER_SCREEN_ID,
                                     eps);
@@ -115,14 +109,6 @@ void main(uint3 groupID : SV_GroupID,
         // Process intersections
         if (sceneField[0].x < eps)
         {
-            // Set incident position for the current bounce (exitant position depends on the intersected surface,
-            // so we avoid setting that until after we've evaluated materials at [rayVec])
-            traceable.iP = rayVec;
-
-            // Cache incident SDF type + figure-ID
-            traceable.dfType = sceneField[0].y;
-            traceable.figID = sceneField[0].z;
-
             // Process light-source intersections
             if (sceneField[0].z == STELLAR_FIG_ID) // Only stellar light sources supported for now
             {
@@ -136,16 +122,42 @@ void main(uint3 groupID : SV_GroupID,
             }
 
             // Stochastically cancel paths with [cullWeight]; prepare surviving intersections for next-event-estimation + sampling
-            if (rand.z > cullWeight)
+            if (rand.x > cullWeight)
             {
-                // Update generic dispatch group sizes
-                InterlockedAdd(counters[18], 1u);
+                // Set incident position for the current bounce (exitant position depends on the intersected surface,
+                // so we avoid setting that until after we've evaluated materials at [rayVec])
+                rayOris[ndx] = rayVec;
 
-                // Upcoming stage [BouncePrep] has no access to [randBuf], so pass Philox key/state through the intersection instead
-                traceable.randStrm = randStrm;
+                // Cache incident SDF type + figure-ID
+                figIDs[ndx] = sceneField[0].z;
 
-                // Pass surviving paths into [surfIsections]
-                surfIsections.Append(traceable);
+                // Choose a material for the current position, then pass the
+                // current ray to a per-material output stream
+                uint matPrim = MatPrimAt(rayVec, rand.yz);
+                switch (matPrim)
+                {
+                    case 0:
+                        diffuIsections.Append(ndx);
+                        break;
+                    case 1:
+                        mirroIsections.Append(ndx);
+                        break;
+                    case 2:
+                        refraIsections.Append(ndx);
+                        break;
+                    case 3:
+                        snowwIsections.Append(ndx);
+                        break;
+                    case 4:
+                        ssurfIsections.Append(ndx);
+                        break;
+                    case 5:
+                        furryIsections.Append(ndx);
+                        break;
+                    default:
+                        abort();
+                        break; // Unknown material
+                }
             }
             else
             {
@@ -185,7 +197,8 @@ void main(uint3 groupID : SV_GroupID,
         }
     }
     // Apply primary-ray shading
-    displayTex[traceable.id.yz] *= rgba;
+    displayTex[ndx] *= rgba;
+
     // Update Philox key/state for the current path
-    randBuf[traceable.id.x] = randStrm;
+    randBuf[ndx] = randStrm;
 }

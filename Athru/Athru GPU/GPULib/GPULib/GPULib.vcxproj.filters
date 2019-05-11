@@ -84,6 +84,9 @@
     <ClInclude Include="GradientMapper.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="ResrcContext.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -118,12 +121,6 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="PresentationColors.hlsl">
-      <Filter>Shaders\Filtering, post-processing, presentation</Filter>
-    </FxCompile>
-    <FxCompile Include="PresentationVerts.hlsl">
-      <Filter>Shaders\Filtering, post-processing, presentation</Filter>
-    </FxCompile>
     <FxCompile Include="RasterPrep.hlsl">
       <Filter>Shaders\Filtering, post-processing, presentation</Filter>
     </FxCompile>
@@ -147,9 +144,6 @@
     </FxCompile>
     <FxCompile Include="LensSampler.hlsl">
       <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="BouncePrep.hlsl">
-      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="PlanetRaster.hlsl">
       <Filter>Shaders</Filter>
@@ -183,9 +177,6 @@
     <None Include="MatSynth.hlsli">
       <Filter>Shaders\Materials &amp; Sampling</Filter>
     </None>
-    <None Include="MIS.hlsli">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </None>
     <None Include="Core3D.hlsli">
       <Filter>Shaders</Filter>
     </None>
@@ -201,19 +192,7 @@
     <None Include="GeometricUtility.hlsli">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Lighting.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="LightingUtility.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="PhiloBuf.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="RenderUtilityCore.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="RenderUtility.hlsli">
       <Filter>Shaders</Filter>
     </None>
     <None Include="DispatchScale.hlsli">
@@ -221,6 +200,12 @@
     </None>
     <None Include="TileMapper.hlsli">
       <Filter>Shaders\Render Tiling</Filter>
+    </None>
+    <None Include="RenderBinds.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="PhiloInit.hlsli">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

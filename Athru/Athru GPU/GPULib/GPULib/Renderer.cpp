@@ -11,143 +11,78 @@ Renderer::Renderer(HWND windowHandle,
 				   const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue,
 				   const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& rndrCmdList,
 				   const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& rndrCmdAlloc) :
+			// Initialize rendering resources in the order expected by the GPU
+			resrcCtx(std::make_tuple(std::function<void()>([device, gpuMem]() { AthruGPU::GPU::AccessGPUMessenger()->RenderInputInitter()(device, const_cast<AthruGPU::GPUMemory&>(gpuMem)); }),
+									 std::function<void()>([device, gpuMem, this]() { aaBuffer.InitBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), GraphicsStuff::DISPLAY_AREA); }),
+									 std::function<void()>([device, gpuMem, this]() { for (u4Byte i = 0; i < 8; i += 1) { ctrs[i].InitBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), 3, DXGI_FORMAT::DXGI_FORMAT_R32_UINT); } }), 
+									 std::function<void()>([device, gpuMem, this]() { traceables.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }),
+									 std::function<void()>([device, gpuMem, this]() { surfIsections.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }),
+									 std::function<void()>([device, gpuMem, this]() { diffuIsections.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }),
+									 std::function<void()>([device, gpuMem, this]() { mirroIsections.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }),
+									 std::function<void()>([device, gpuMem, this]() { refraIsections.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }),
+									 std::function<void()>([device, gpuMem, this]() { snowwIsections.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }), 
+									 std::function<void()>([device, gpuMem, this]() { ssurfIsections.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }),
+									 std::function<void()>([device, gpuMem, this]() { furryIsections.InitAppBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), nullptr, GraphicsStuff::TILING_AREA, 0); }),
+									 std::function<void()>([device, gpuMem, this]() { displayTex.InitRWTex(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT); }) ), 
+									 AthruGPU::RESRC_CTX::RENDER, false),
+			// Initialize rendering code
 			tracer{ ComputePass(device,
 					 			windowHandle,
 					 			"RayMarch.cso",
-								AthruGPU::RESRC_CTX::RNDR_OR_GENERIC) },
+								AthruGPU::RESRC_CTX::RENDER) },
 			bouncePrep(device,
 					   windowHandle,
 					   "BouncePrep.cso",
-					   AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+					   AthruGPU::RESRC_CTX::RENDER),
             lensSampler(ComputePass(device,
 								    windowHandle,
 								    "LensSampler.cso",
-								    AthruGPU::RESRC_CTX::RNDR_OR_GENERIC)),
+								    AthruGPU::RESRC_CTX::RENDER)),
 			bxdfs{ ComputePass(device,
 							   windowHandle,
 							   "DiffuSampler.cso",
-							   AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							   AthruGPU::RESRC_CTX::RENDER),
 				   ComputePass(device,
-				   		       windowHandle,
-				   		       "MirroSampler.cso",
-				   		       AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							   windowHandle,
+							   "MirroSampler.cso",
+							   AthruGPU::RESRC_CTX::RENDER),
 				   ComputePass(device,
-				   		       windowHandle,
-				   		       "RefraSampler.cso",
-				   		       AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							   windowHandle,
+							   "RefraSampler.cso",
+							   AthruGPU::RESRC_CTX::RENDER),
 				   ComputePass(device,
-				   		       windowHandle,
-				   		       "SnowwSampler.cso",
-				   		       AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							   windowHandle,
+							   "SnowwSampler.cso",
+							   AthruGPU::RESRC_CTX::RENDER),
 				   ComputePass(device,
-				   		       windowHandle,
-				   		       "SsurfSampler.cso",
-				   		       AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							   windowHandle,
+							   "SsurfSampler.cso",
+							   AthruGPU::RESRC_CTX::RENDER),
 				   ComputePass(device,
-				   		       windowHandle,
+							   windowHandle,
 							   "FurrySampler.cso",
-							   AthruGPU::RESRC_CTX::RNDR_OR_GENERIC) },
+							   AthruGPU::RESRC_CTX::RENDER) },
 			post(device,
 				 windowHandle,
 				 "RasterPrep.cso",
-				 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+				 AthruGPU::RESRC_CTX::RENDER),
 			dispatchScale128(device,
 							 windowHandle,
 							 "dispScale128.cso",
-							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							 AthruGPU::RESRC_CTX::RENDER),
 			dispatchScale256(device,
 							 windowHandle,
 							 "dispScale256.cso",
-							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							 AthruGPU::RESRC_CTX::RENDER),
 			dispatchScale512(device,
 							 windowHandle,
 							 "dispScale512.cso",
-							 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC),
+							 AthruGPU::RESRC_CTX::RENDER),
+			// Cache references to the rendering command queue/list/allocator
 			renderQueue(rndrCmdQueue),
 			renderCmdList(rndrCmdList),
 			renderCmdAllocator(rndrCmdAlloc)
 {
-    // Prepare D3D12 resources
-    //////////////////////////
-
-	// Build the buffer we'll be using to store
-	// image samples for temporal smoothing/anti-aliasing
-	aaBuffer.InitBuf(device,
-					 gpuMem,
-					 GraphicsStuff::DISPLAY_AREA);
-
-	// Create counter buffers
-	// Likely more efficient to define these as mostly-GPU and initialize on the zeroth frame than to upload
-	// single-use initial data on startup
-	for (u4Byte i = 0; i < 8; i += 1)
-	{
-		ctrs[i].InitBuf(device,
-						gpuMem,
-						3,
-						DXGI_FORMAT::DXGI_FORMAT_R32_UINT);
-	}
-
-	// Create the tracing append/consume buffer
-	traceables.InitAppBuf(device,
-						  gpuMem,
-						  nullptr,
-						  GraphicsStuff::TILING_AREA,
-						  0);
-
-	// Create the intersection/surface buffer
-	surfIsections.InitAppBuf(device,
-							 gpuMem,
-							 nullptr,
-						     GraphicsStuff::TILING_AREA,
-							 0);
-
-	// Create the diffuse intersection buffer
-	diffuIsections.InitAppBuf(device,
-							  gpuMem,
-							  nullptr,
-						      GraphicsStuff::TILING_AREA,
-							  0);
-
-	// Create the mirrorlike intersection buffer
-	mirroIsections.InitAppBuf(device,
-							  gpuMem,
-							  nullptr,
-						      GraphicsStuff::TILING_AREA,
-							  0);
-
-	// Create the refractive intersection buffer
-	refraIsections.InitAppBuf(device,
-							  gpuMem,
-							  nullptr,
-						      GraphicsStuff::TILING_AREA,
-							  0);
-
-	// Create the snowy intersection buffer
-	snowwIsections.InitAppBuf(device,
-							  gpuMem,
-							  nullptr,
-						      GraphicsStuff::TILING_AREA,
-							  36);
-
-	// Create the organic/sub-surface scattering intersection buffer
-	ssurfIsections.InitAppBuf(device,
-							  gpuMem,
-							  nullptr,
-						      GraphicsStuff::TILING_AREA,
-							  0);
-
-	// Create the furry intersection buffer
-	furryIsections.InitAppBuf(device,
-							  gpuMem,
-							  nullptr,
-						      GraphicsStuff::TILING_AREA,
-							  0);
-
-	// Create the output texture
-	displayTex.InitRWTex(device, gpuMem,
-						 GraphicsStuff::DISPLAY_WIDTH,
-						 GraphicsStuff::DISPLAY_HEIGHT);
-
 	// Create specialized work submission/synchronization interfaces,
 	// prepare rendering commands
 	//////////////////////////

@@ -1,4 +1,5 @@
 #include "UtilityServiceCentre.h"
+#include "ResrcContext.h"
 #include "ComputePass.h"
 
 ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
@@ -21,6 +22,7 @@ ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 													   // should adjust [GPUMemory] to help with that
 	rootParam.DescriptorTable.pDescriptorRanges = nullptr; // Dependant on shader context, locked to [nullptr] atm
 	rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // No option for compute-only; all raster stages are manually screened below
+	rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
 	u4Byte numSamplers = 0; // Likely dependant on shader context, locked to zero atm
 
 	// Prepare root signature/resource context

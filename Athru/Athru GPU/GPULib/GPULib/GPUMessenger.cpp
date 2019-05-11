@@ -2,23 +2,10 @@
 #include "GPUMessenger.h"
 
 GPUMessenger::GPUMessenger(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-                           AthruGPU::GPUMemory& gpuMem)
-{
-	// Construct the system buffer
-    sysBuf.InitBuf(device, gpuMem, SceneStuff::BODIES_PER_SYSTEM);
-
-    // Construct the generic GPU input buffer
-    //gpuInput = (GPUInput*)allocator->AlignedAlloc(sizeof(GPUInput), (uByte)std::alignment_of<GPUInput>(), false);
-	gpuInputBuffer.InitCBuf(device,
-                            gpuMem,
-                            (address*)&gpuInput);
-
-    // Construct the rendering-specific GPU input buffer
-    //rndrInput = (RenderInput*)allocator->AlignedAlloc(sizeof(RenderInput), (uByte)std::alignment_of<RenderInput>(), false);
-    renderInputBuffer.InitCBuf(device,
-                               gpuMem,
-                               (address*)&rndrInput);
-}
+                           AthruGPU::GPUMemory& gpuMem) : 
+						   resrcContext(std::make_tuple(std::function<void()>([device, gpuMem, this]() { sysBuf.InitBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), SceneStuff::BODIES_PER_SYSTEM); }), 
+														std::function<void()>([device, gpuMem, this]() { gpuInputBuffer.InitCBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), (address*)&gpuInput); })), 
+														AthruGPU::RESRC_CTX::GENERIC, true) {}
 
 GPUMessenger::~GPUMessenger()
 {
@@ -70,6 +57,19 @@ void GPUMessenger::InputsToGPU(const DirectX::XMFLOAT4& sysOri,
                                            0);
 
     // Update physics & ecosystem inputs here...
+}
+
+std::function<void(const Microsoft::WRL::ComPtr<ID3D12Device>&, AthruGPU::GPUMemory&)> GPUMessenger::RenderInputInitter()
+{
+	decltype(renderInputBuffer)* renderInputBuf = &renderInputBuffer;
+	RenderInput*& renderInput = rndrInput;
+	return std::function([renderInputBuf, renderInput](const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+													   AthruGPU::GPUMemory& gpuMem) { renderInputBuf->InitCBuf(device, gpuMem, (address*)&renderInput); });
+}
+
+AthruGPU::ResrcContext<std::function<void()>, std::function<void()>>& GPUMessenger::AccessResrcContext()
+{
+	return resrcContext;
 }
 
 // Push constructions for this class through Athru's custom allocator

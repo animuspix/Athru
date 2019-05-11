@@ -23,15 +23,6 @@ namespace AthruGPU
 	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]
 	struct StrmResrc : ReadabilityType {}; // Tiled streaming buffer, mainly allocated within virtual memory and partly loaded into GPU dedicated memory on-demand
 
-	// Athru resource usage contexts; include rendering, physics, and ecology
-	// Used to offset resources into appropriate descriptor tables (if possible, unsure how automated descriptor management is)
-	enum class RESRC_CTX
-	{
-		RNDR_OR_GENERIC,
-		PHYSICS_OR_ECO,
-		ECOLOGY
-	};
-
 	// Supported resource copy states in Athru
 	enum class RESRC_COPY_STATES
 	{
@@ -70,15 +61,13 @@ namespace AthruGPU
 	template <typename ContentType,
 			  typename AthruResrcType, // Restrict to defined Athru resource types when possible... (see Concepts in C++20)
 			  RESRC_COPY_STATES initCopyState = RESRC_COPY_STATES::NUL, // Resources may be copy-sources, copy-destinations, or neither, but not sources & destinations simultaneously
-			  RESRC_CTX resrcContext = RESRC_CTX::RNDR_OR_GENERIC, // Describe whether a resource is mainly used generically/for rendering, for physics/ecology, or just for ecology
-									                               // (kinda unintuitive, but simplifies descriptor table organization)
 			  ContentType* initDataPttr = nullptr, // Specify initial resource data; only accessed for buffers atm
 			  bool crossCmdQueues = false, // Specify a resource may be shared across command queues
 			  bool crossGPUs = false> // Specify a resource may be shared across system GPUs
 	struct AthruResrc
 	{
 		public:
-			AthruResrc() {}
+			AthruResrc() { }
             ~AthruResrc()
             {
                 // Unmap constant buffers (first mapped during initialization, see below)

@@ -8,7 +8,7 @@ GradientMapper::GradientMapper(const Microsoft::WRL::ComPtr<ID3D12Device>& devic
 			  planetRaster(device,
 						   windowHandle,
 						   "PlanetRaster.cso",
-                           AthruGPU::RESRC_CTX::RNDR_OR_GENERIC)
+                           AthruGPU::RESRC_CTX::GENERIC)
 {
     // Initialize gradient-map inputs
     rasterInputBuffer.InitCBuf(device,

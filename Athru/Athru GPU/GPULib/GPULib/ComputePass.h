@@ -5,6 +5,7 @@
 #include <wrl\client.h>
 #include "GPUGlobals.h"
 #include "AthruResrc.h"
+#include "ResrcContext.h"
 
 class ComputePass
 {

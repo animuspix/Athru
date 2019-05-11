@@ -23,7 +23,7 @@ namespace TimeStuff
 
 	inline float FPS()
 	{
-		return std::round(1.0f / deltaTime());
+		return (float)round(1.0f / deltaTime());
 	}
 
 	inline float time()

@@ -1,19 +1,3 @@
-
-// Small #define to avert multiple inclusion
-#define PHILO_BUF_LINKED
-
-// Length of the PRNG state buffer (see above)
-// 32M entries is huge (790MB :O) but it should guarantee
-// discrete state/keys for every possible use
-#define RAND_BUF_LENGTH 32917504
-
-#ifndef UTILITIES_LINKED
-    #include "GenericUtility.hlsli"
-#endif
-
-// State buffer for the random number generator (see [philoxPermu], below)
-RWStructuredBuffer<PhiloStrm> randBuf : register(u1);
-
 // Four-wide vector hash, modified from Nimitz's WebGL2 Quality Hashes Collection
 // (https://www.shadertoy.com/view/Xt3cDn)
 // Named as a mix between the basis hash (XXHash32-derived, https://github.com/Cyan4973/xxHash)
@@ -51,23 +35,9 @@ uint ihashIII(uint i)
 }
 
 // Short initializer for Philox streams
-PhiloStrm strmBuilder(uint ndx)
+void strmBuilder(uint ndx, out uint4 ctr, out uint2 key)
 {
-    PhiloStrm strm;
-    strm.ctr = xxminstd32(ndx); // Seed state by hashing indices with xxminstd32 (see above)
-    strm.key = uint2(ihashIII(ndx), tmhash(ndx)); // Partially seed keys with a different hash (not Wang or xxminstd32)
+    ctr = xxminstd32(ndx); // Seed state by hashing indices with xxminstd32 (see above)
+    key = uint2(ihashIII(ndx), tmhash(ndx)); // Partially seed keys with a different hash (not Wang or xxminstd32)
     return strm;
-}
-
-// Per-thread RNG reference; hashes the given v alue once
-// for uniformly-distributed buffer indices, and again
-// to generate global seed values in the zeroth frame
-// (since we've stopped seeding from the CPU)
-// Returns instantaneous RNG values to the callsite, outputs
-// singly-hashed indices through [ndx]
-PhiloStrm philoxVal(uint ndx,
-                    uint frameCtr)
-{
-    if (frameCtr > 1u) { return randBuf[ndx % RAND_BUF_LENGTH]; } // Compilation errors using a ternary operator here, compact if instead
-    else { return strmBuilder(ndx); }
 }

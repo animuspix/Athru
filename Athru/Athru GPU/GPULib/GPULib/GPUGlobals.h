@@ -91,8 +91,8 @@ namespace AthruGPU
 	// Should specify as [consteval] after C++20
 	constexpr DirectX::XMUINT3 fullscreenDispatchAxes(u4Byte groupWidth)
 	{
-		return DirectX::XMUINT3((u4Byte)(std::ceil(float(GraphicsStuff::DISPLAY_WIDTH) / groupWidth)),
-								(u4Byte)(std::ceil(float(GraphicsStuff::DISPLAY_HEIGHT) / groupWidth)),
+		return DirectX::XMUINT3((u4Byte)(ceil(float(GraphicsStuff::DISPLAY_WIDTH) / groupWidth)),
+								(u4Byte)(ceil(float(GraphicsStuff::DISPLAY_HEIGHT) / groupWidth)),
 								1);
 	}
 
@@ -100,8 +100,8 @@ namespace AthruGPU
 	// Should specify as [consteval] after C++20
 	constexpr DirectX::XMUINT3 tiledDispatchAxes(u4Byte groupWidth)
 	{
-		return DirectX::XMUINT3((u4Byte)(std::ceil(float(GraphicsStuff::TILING_WIDTH) / groupWidth)),
-								(u4Byte)(std::ceil(float(GraphicsStuff::TILING_HEIGHT) / groupWidth)),
+		return DirectX::XMUINT3((u4Byte)(ceil(float(GraphicsStuff::TILING_WIDTH) / groupWidth)),
+								(u4Byte)(ceil(float(GraphicsStuff::TILING_HEIGHT) / groupWidth)),
 								1);
 	}
 

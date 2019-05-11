@@ -1,11 +1,13 @@
 #pragma once
 
 #include <d3d12.h>
+#include <functional>
 #include "AthruResrc.h"
 #include "PixHistory.h"
 #include "ComputePass.h"
 #include "Camera.h"
 #include "LiBounce.h"
+#include "ResrcContext.h"
 
 class Renderer
 {
@@ -88,6 +90,15 @@ class Renderer
 		// Render output texture, copied to the back-buffer each frame
 		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
 							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTex;
+
+		// Resource context for [this], helps guarantee descriptors are placed in the order expected by
+		// the compute shading passes declared above
+		AthruGPU::ResrcContext<std::function<void()>, std::function<void()>,
+							   std::function<void()>, std::function<void()>,
+							   std::function<void()>, std::function<void()>,
+							   std::function<void()>, std::function<void()>,
+							   std::function<void()>, std::function<void()>,
+							   std::function<void()>, std::function<void()>> resrcCtx;
 
 		// References to Athru's main rendering command-queue/command-list/command-allocator
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;

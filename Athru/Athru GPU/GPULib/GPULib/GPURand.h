@@ -30,6 +30,5 @@ struct GPURand
     // (see documentation in [PhiloStrm.h])
 	AthruGPU::AthruResrc<PhiloStrm,
 						 AthruGPU::RWResrc<AthruGPU::Buffer>,
-						 AthruGPU::RESRC_COPY_STATES::NUL,
-						 AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> ptRandState;
+						 AthruGPU::RESRC_COPY_STATES::NUL> ptRandState;
 };

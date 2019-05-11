@@ -1,10 +1,12 @@
 #pragma once
 
 #include <d3d12.h>
+#include <functional>
 #include "SceneFigure.h"
 #include "AthruResrc.h"
 #include "ComputePass.h"
 #include <wrl\client.h>
+#include "ResrcContext.h"
 
 class GPUMessenger
 {
@@ -20,6 +22,14 @@ class GPUMessenger
 		// Pass per-frame inputs along to the GPU
 		void InputsToGPU(const DirectX::XMFLOAT4& sysOri,
                          const Camera* camera);
+
+		// Generate + return a lambda wrapping the render input buffer's initializer so it can be placed
+		// appropriately inside the rendering section of the global cbv/srv/uav descriptor heap
+		std::function<void(const Microsoft::WRL::ComPtr<ID3D12Device>&, AthruGPU::GPUMemory&)> RenderInputInitter();
+
+		// Generic/utility resources might be allocated from outside [GPUMessenger], so make the generic resource context
+		// available here
+		AthruGPU::ResrcContext<std::function<void()>, std::function<void()>>& AccessResrcContext();
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
@@ -40,8 +50,7 @@ class GPUMessenger
 		// + a matching GPU-side constant buffer
 		AthruGPU::AthruResrc<GPUInput,
 		                     AthruGPU::CBuffer,
-		                     AthruGPU::RESRC_COPY_STATES::NUL,
-		                     AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> gpuInputBuffer;
+		                     AthruGPU::RESRC_COPY_STATES::NUL> gpuInputBuffer;
 
         // Path-tracing inputs
 		// Rendering-specific input struct
@@ -62,11 +71,13 @@ class GPUMessenger
 		// + a matching GPU-side constant buffer
 		AthruGPU::AthruResrc<RenderInput,
 		                     AthruGPU::CBuffer,
-		                     AthruGPU::RESRC_COPY_STATES::NUL,
-		                     AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> renderInputBuffer;
+		                     AthruGPU::RESRC_COPY_STATES::NUL> renderInputBuffer;
+
 		// System buffer
         AthruGPU::AthruResrc<SceneFigure::Figure,
                              AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>,
-                             AthruGPU::RESRC_COPY_STATES::NUL,
-                             AthruGPU::RESRC_CTX::RNDR_OR_GENERIC> sysBuf;
+                             AthruGPU::RESRC_COPY_STATES::NUL> sysBuf;
+
+		// Generic/utility shading context
+		AthruGPU::ResrcContext<std::function<void()>, std::function<void()>> resrcContext;
 };

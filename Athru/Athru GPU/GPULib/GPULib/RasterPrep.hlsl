@@ -1,4 +1,4 @@
-#include "RenderUtility.hlsli"
+#include "RenderBinds.hlsli"
 #include "ScenePost.hlsli"
 
 // Filtering/AA occurs with tiled pixel positions, so include the pixel/tile-mapper
@@ -11,18 +11,22 @@ void main(uint3 groupID : SV_GroupID,
 {
     // Extract a pixel ID from the given thread/group IDs
     uint2 tileID = uint2((groupID.x * TRACING_GROUP_WIDTH) + (threadID % TRACING_GROUP_WIDTH),
-                        (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
-    uint linTileID = tileID.x + (tileID.y * tilingInfo.x);
-    if (linTileID > tilingInfo.z - 1) { return; } // Mask off excess threads
-    if (linTileID == 0) { counters[22] = 0; } // Zero the light bounce counter
-    // Filter/tonemap, then transfer to the display texture
+                         (groupID.y * TRACING_GROUP_WIDTH) + (threadID / TRACING_GROUP_WIDTH));
+    uint linTileID = tileID.x + (tileID.y * rndrInfo.tilingInfo.x);
+    if (linTileID > rndrInfo.tilingInfo.z - 1) { return; } // Mask off excess threads
+
+    // Generate per-frame pixel coordinate, sample texel
     uint3 px = TilePx(tileID,
-                      tInfo.z,
-                      resInfo.x,
-                      tileInfo.xy);
+                      gpuInfo.tInfo.z,
+                      rndrInfo.resInfo.x,
+                      rndrInfo.tileInfo.xy);
     float4 tx = displayTex[px.yz];
+
+    // Would perform denoising here...
+
+    // Filter/tonemap, then transfer back to the display texture
     displayTex[px.yz] = float4(PathPost(tx.rgb,
                                         tx.a,
                                         px.x,
-                                        resInfo.z), 1.0f);
+                                        rndrInfo.resInfo.z), 1.0f);
 }

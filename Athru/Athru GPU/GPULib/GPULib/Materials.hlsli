@@ -87,6 +87,8 @@ float4 DiffuseDir(float3 wo,
 
 // Diffuse reflectance away from any given surface; uses the Oren-Nayar BRDF
 // Surface carries color in [rgb], RMS microfacet roughness/variance in [a]
+// Directions have input direction in [0], macrosurface normal in [1],
+// output direction in [2]
 float3 DiffuseBRDF(float4 surf,
                    float3x3 surfDirs)
 {
@@ -279,128 +281,4 @@ float3 RefrBXDF(float4x3 dirs, // Input direction in [0], half-vector in [1],
            surf.rgb; // Transmissive color (T)
 }
 
-// Volumetric Dir/PDF/BRDF here (stochastic raymaching (i.e. random walks) + phase functions)
-// Atmospheric effects (dust, Rayleigh scattering, Mie scattering) are handled discretely inside
-// the main lighting functions (i.e. in [Lighting.hlsli])
-
-// Spatial sampler for surfaces; accepts an arbitrary input direction and returns appropriate
-// surface radiance
-float4 MatSpat(float3x3 dirs, // Input direction in [0], macrosurface normal in [1],
-                              // output direction in [2]
-               float4 matStats,
-               float3 rgb,
-               float4 surfInfo)
-{
-    switch ((uint) surfInfo.x)
-    {
-        case BXDF_ID_DIFFU:
-            return float4(DiffuseBRDF(float4(rgb,
-                                             surfInfo.a),
-                                      dirs),
-                          DiffusePDF(dirs[0],
-                                     dirs[1]) / ZERO_PDF_REMAP(matStats.x));
-        case BXDF_ID_MIRRO:
-            float3 hm = normalize(dirs[0] + dirs[2]);
-            return float4(MirroBRDF(float4x3(dirs[0],
-                                             hm,
-                                             dirs[2],
-                                             dirs[1]),
-                                    float4(rgb, surfInfo.a),
-                                    surfInfo.y),
-                          MirroPDF(float4x3(dirs[0],
-                                            hm,
-                                            dirs[2],
-                                            dirs[1]),
-                                   surfInfo.w) / ZERO_PDF_REMAP(matStats.y));
-        case BXDF_ID_REFRA:
-            // Evaluate local radiance given [wi], also apply PDF
-            float3 hr = normalize(dirs[2] + (dirs[0] * surfInfo.z));
-            return float4(RefrBXDF(float4x3(dirs[0],
-                                            hr,
-                                            dirs[2],
-                                            dirs[1]),
-                                 float4(rgb, surfInfo.a),
-                                 surfInfo.y,
-                                 surfInfo.z),
-                          RefrPDF(float4x3(dirs[0],
-                                   	       hr,
-                                   	       dirs[2],
-                                   	       dirs[1]),
-                                  surfInfo.z,
-                                  surfInfo.a) / ZERO_PDF_REMAP(matStats.z));
-        // Add other material types here...
-        default:
-            return 0.0f.xxxx;
-    }
-}
-
-// Generic surface sampler; branches once/material instead of once/BXDF + once/PDF + once/direction
-// [surfInfo] gives the reflectance/scattering/transmittance function selected
-// by the given material for the current ray in [x], the surface's Fresnel coefficient + eta-ratio in [yz],
-// and the local surface variance in [w]
-float2x4 MatSrf(float3 wo,
-                float3 norml,
-                float3 muNorml,
-                float4 matStats, // BXDF probabilities for the current material
-                float3 rgb, // Diffuse surface color
-                float4 surfInfo,
-                float2 uv01)
-{
-    switch ((uint)surfInfo.x)
-    {
-        case BXDF_ID_DIFFU:
-            // Generate diffuse direction + evaluate weighted local radiance
-            float4 wid = DiffuseDir(wo,
-                                    norml,
-                                    uv01);
-            float3 ld = DiffuseBRDF(float4(rgb, surfInfo.a),
-                                    float3x3(wid.xyz,
-                                             norml,
-                                             wo));
-            // Return radiance + the generated ray direction + PDF to the callsite
-            return float2x4(wid.xyz, 0.0f.x,
-                            ld, (wid.a / ZERO_PDF_REMAP(matStats.x)));
-        case BXDF_ID_MIRRO:
-            // Generate mirror-reflective direction + matching PDF
-            float3 hm = 1.0f.xxx;
-            float4 wim = MirroDir(wo,
-                                  muNorml,
-                                  norml,
-                                  surfInfo.w,
-                                  hm);
-            // Evaluate local radiance given [wi], also apply PDF
-            float3 lm = MirroBRDF(float4x3(wim.xyz,
-                                           hm,
-                                           wo,
-                                           norml),
-                                  float4(rgb, surfInfo.a),
-                                  surfInfo.y);
-            // Return radiance + ray direction + PDF
-            return float2x4(wim.xyz, 0.0f,
-                            lm, (wim.a / ZERO_PDF_REMAP(matStats.y)));
-        case BXDF_ID_REFRA:
-            // Generate refractive direction + matching PDF
-            float3 hr = 1.0f.xxx;
-            float4 wir = RefrDir(wo,
-                                 muNorml,
-                                 norml,
-                                 surfInfo.z,
-                                 surfInfo.a,
-                                 hr);
-            // Evaluate local radiance given [wi], also apply PDF
-            float3 lr = RefrBXDF(float4x3(wir.xyz,
-                                          hr,
-                                          wo,
-                                          norml),
-                                 float4(rgb, surfInfo.a),
-                                 surfInfo.y,
-                                 surfInfo.z);
-            // Return radiance + ray direction
-            return float2x4(wir.xyz, 0.0f,
-                            lr, (wir.a / ZERO_PDF_REMAP(matStats.z)));
-        // Add other material types here...
-        default:
-            return float2x4(0.0f.xxxx,
-                            0.0f.xxxx);
-    }
-}
+// Volumetric/atmospheric functions here

@@ -36,7 +36,7 @@
 #define STELLAR_FIG_ID 0
 
 // Useful shader input data
-cbuffer GPUInput : register(b0)
+struct GPUInput
 {
     float4 tInfo; // Delta-time in [x], current time (seconds) in [y], frame count in [z],
                   // nothing in [w]
