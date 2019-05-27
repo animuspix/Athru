@@ -5,7 +5,9 @@
 #define RENDER_BINDS_LINKED
 
 // Rendering passes inherit generic resources
-#include "GenericBinds.hlsli"
+#ifndef GENERIC_BINDS_LINKED
+	#include "GenericBinds.hlsli"
+#endif
 
 // Rendering-specific input from the CPU
 struct RenderInput
@@ -20,6 +22,7 @@ struct RenderInput
 	               // AA sampling rate in [z], and display area in [w]
 	uint4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
 	uint4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
+	float4 excess[3]; // DX12 buffers are 256-byte aligned; padding allocated here
 };
 ConstantBuffer<RenderInput> rndrInfo : register(b1);
 
@@ -31,23 +34,25 @@ RWStructuredBuffer<PhiloStrm> randBuf : register(u0);
 RWStructuredBuffer<float2x3> rays : register(u1);
 
 // Incident (previous) position + output direction at each bounce
-RWBuffer<float3> rayOris : register(u4);
-RWBuffer<float3> outDirs : register(u5);
+RWBuffer<float3> rayOris : register(u2);
+RWBuffer<float3> outDirs : register(u3);
 
-// Reflective color + roughness at each bounce
-RWBuffer<float4> surfRGBA : register(u6);
-
-// Most recent index of refraction per-bounce
-RWBuffer<float> iors : register(u7);
+// Most recent index of refraction/absorption per-bounce
+RWBuffer<float2> iors : register(u4);
 
 // Figure IDs at the last intersection, used for figure-specific gradients + material queries
 // during shading/bounce preparation
-RWBuffer<uint> figIDs : register(u8);
+RWBuffer<uint> figIDs : register(u5);
 
 // Write-allowed reference to the display texture
 // (copied to the display each frame on rasterization, carries colors in [rgb] and
 // filter values + pixel indices in [w])
-RWTexture2D<float4> displayTex : register(u9);
+RWTexture2D<float4> displayTex : register(u6);
+
+// 8bpp back-buffer proxy, receives tonemapped data from [displayTex]; used because
+// the format used with [displayTex] is incompatible with the back-buffer
+// (R32G32B32A32_FLOAT vs. R8G8B8A8_UNORM)
+RWTexture2D<float4> displayTexLDR : register(u7);
 
 // Samples + counter variables for each pixel
 // (needed for temporal smoothing/AA)
@@ -68,4 +73,4 @@ struct PixHistory
 // Buffer carrying anti-aliasing image samples
 // (Athru AA is performed over time rather than space to
 // reduce per-frame GPU loading)
-RWStructuredBuffer<PixHistory> aaBuffer : register(u10);
+RWStructuredBuffer<PixHistory> aaBuffer : register(u8);

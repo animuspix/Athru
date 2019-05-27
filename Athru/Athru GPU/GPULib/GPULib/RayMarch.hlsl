@@ -6,16 +6,19 @@
     #include "Core3D.hlsli"
 #endif
 
+// Append/consume counters for traceables + material primitives
+RWBuffer<uint> counters : register(u9);
+
 // Buffer carrying intersections across ray-march iterations
-ConsumeStructuredBuffer<uint> traceables : register(u11);
+ConsumeStructuredBuffer<uint> traceables : register(u10);
 
 // Material intersection buffers
-AppendStructuredBuffer<uint> diffuIsections : register(u12);
-AppendStructuredBuffer<uint> mirroIsections : register(u13);
-AppendStructuredBuffer<uint> refraIsections : register(u14);
-AppendStructuredBuffer<uint> snowwIsections : register(u15);
-AppendStructuredBuffer<uint> ssurfIsections : register(u16);
-AppendStructuredBuffer<uint> furryIsections : register(u17);
+AppendStructuredBuffer<uint> diffuIsections : register(u11);
+AppendStructuredBuffer<uint> mirroIsections : register(u12);
+AppendStructuredBuffer<uint> refraIsections : register(u13);
+AppendStructuredBuffer<uint> snowwIsections : register(u14);
+AppendStructuredBuffer<uint> ssurfIsections : register(u15);
+AppendStructuredBuffer<uint> furryIsections : register(u16);
 
 // The maximum number of steps allowed for the primary
 // ray-marcher
@@ -27,12 +30,9 @@ void main(uint3 groupID : SV_GroupID,
 {
     // Automatically dispatched threads can still outnumber data available;
     // mask those cases here
-    // Assumes one-dimensional dispatches
-    uint2 numAndStride;
-    traceables.GetDimensions(numAndStride.x, numAndStride.y);
-    uint maxID = numAndStride.x - 1;
-    uint rayID = threadID + groupID.x * 128;
-    if (rayID > maxID) { return; }
+    uint rayID = threadID + groupID.x * 256; // Assumes one-dimensional dispatches, will need to patch appropriately
+	uint numRays = counters[0];
+    if (rayID > numRays - 1) { return; }
 
     // [Consume()] a pixel from the end of [traceables]
     uint ndx = traceables.Consume();
@@ -52,7 +52,7 @@ void main(uint3 groupID : SV_GroupID,
     // Generate a parameterized path culling weight
     const float minCull = 0.01f; // Could optionally set this through [RenderInput]
     const float maxCull = 0.15f; // Could optionally set this through [RenderInput]
-    float m = numAndStride.x / rndrInfo.bounceInfo.x;
+    float m = numRays / rndrInfo.bounceInfo.x;
     float cullWeight = lerp(minCull, maxCull, m); // Per-tile counters could allow more dynamic culling here
 
     // Baseline ray distance
@@ -133,7 +133,7 @@ void main(uint3 groupID : SV_GroupID,
 
                 // Choose a material for the current position, then pass the
                 // current ray to a per-material output stream
-                uint matPrim = MatPrimAt(rayVec, rand.yz);
+                uint matPrim = MatPrimAt(rayVec, rand.z);
                 switch (matPrim)
                 {
                     case 0:
@@ -197,7 +197,7 @@ void main(uint3 groupID : SV_GroupID,
         }
     }
     // Apply primary-ray shading
-    displayTex[ndx] *= rgba;
+    displayTex[uint2(ndx % rndrInfo.resInfo.x, ndx / rndrInfo.resInfo.x)] *= rgba;
 
     // Update Philox key/state for the current path
     randBuf[ndx] = randStrm;

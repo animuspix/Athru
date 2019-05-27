@@ -138,7 +138,7 @@ float FurryChance(float3 coord) { return 0.0f; }
 
 // Choose a material primitive for the given coordinate
 // Will eventually be asset-driven, fixed diffuse-only atm
-uint MatPrimAt(float3 coord, float2 u01)
+uint MatPrimAt(float3 coord, float u01)
 {
     float freqs[6] = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
     return MatBXDFID(freqs,
@@ -164,5 +164,5 @@ float3 SurfRGB(float3 wo, float3 norml)
 // Per-vertex (fixed atm) indices of refraction/absorption
 float2 SurfEtaKappa()
 {
-    float2 etaKap = float2(1.33f, 1.1f);
+    return float2(1.33f, 1.1f);
 }

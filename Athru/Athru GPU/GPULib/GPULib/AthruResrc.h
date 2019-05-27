@@ -8,7 +8,11 @@ namespace AthruGPU
 	// Supported resource types in Athru
 	struct Buffer {};
 	struct Texture {};
-	struct CBuffer : public Buffer {}; // Only compatible with the [Buffer] resource type
+	struct MessageBuffer : public Buffer {}; // Only compatible with the [Buffer] resource type
+											 // The message-buffer stores some constants updated per-frame, and stages system metadata (parameters for planets +
+											 // plant species) before transfer to GPU-only memory
+    struct ReadbkBuffer : public Buffer {}; // A readback resource (CPU-read, GPU-write); only buffer readback is supported, and readback resources cannot
+											// be bound for GPU input (=> they only support the D3D12_RESOURCE_STATES_COPY_DEST usage state)
 	struct AppBuffer : public Buffer {}; // Only compatible with the [Buffer] resource type
 	template<typename ResrcType> // [ResrcType] must be either [Buffer] or [Texture], enforceable with C++20 concepts
 	struct RWResrc : public ResrcType {}; // A read/write allowed resource (GPU-only)
@@ -17,9 +21,6 @@ namespace AthruGPU
 	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]; uploadable resources should only take the [AthruGPU::Buffer] meta-type
 	struct UploResrc : public ReadabilityType {}; // An uploadable resource (CPU-write, GPU-read); Athru only allows buffer upload atm
 												  // (very few image assets, data assets might be easier to upload in buffers)
-    template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]; readback resources should only take the [AthruGPU::Buffer] meta-type
-    struct ReadbkResrc : public ReadabilityType {}; // A readback resource (CPU-read, GPU-write); Athru only allows buffer readback atm, but might support texture
-                                                    // readback in future for e.g. saving/sharing in-game photos/screenshots
 	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]
 	struct StrmResrc : ReadabilityType {}; // Tiled streaming buffer, mainly allocated within virtual memory and partly loaded into GPU dedicated memory on-demand
 
@@ -42,6 +43,7 @@ namespace AthruGPU
 		barrier.Transition.pResource = resrc.Get();
 		barrier.Transition.StateBefore = shiftFrom;
 		barrier.Transition.StateAfter = shiftTo;
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE; // Use [begin] and [end] flags for split barriers
 		barrier.Transition.Subresource = 0; // No mipmaps in Athru
 		return barrier;
 	}
@@ -70,8 +72,8 @@ namespace AthruGPU
 			AthruResrc() { }
             ~AthruResrc()
             {
-                // Unmap constant buffers (first mapped during initialization, see below)
-                if constexpr (std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
+                // Unmap the message buffer (first mapped during initialization, see below)
+                if constexpr (std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
                 {
                     D3D12_RANGE range;
                     range.Begin = 0;
@@ -80,54 +82,71 @@ namespace AthruGPU
                 }
             }
 
-			Microsoft::WRL::ComPtr<ID3D12Resource> resrc; // Internal DX12 resource
-			D3D12_CPU_DESCRIPTOR_HANDLE resrcAddr; // CPU-accessible handle for the descriptor matched with [resrc]
-												   // Unsure whether it's reasonable to track this, have asked stack overflow
-			D3D12_RESOURCE_STATES resrcState; // D3D12 resource state at any particular time (render-target, unordered access, non-pixel shader resource...)
+			Microsoft::WRL::ComPtr<ID3D12Resource> resrc = nullptr; // Internal DX12 resource
+			D3D12_CPU_DESCRIPTOR_HANDLE resrcViewAddr = { }; // CPU-accessible handle for the descriptor matched with [resrc]
+															 // Resource views associated with the message buffer are strictly bound over constant inputs
+															 // (the first ~256 bytes) because the remaining message space is empty per-frame and used to
+															 // stage scene metadata before transferring it to gpu-only memory for higher
+															 // performance
+			D3D12_RESOURCE_STATES resrcState = D3D12_RESOURCE_STATE_COMMON; // D3D12 resource state at any particular time (render-target, unordered access, non-pixel shader resource...)
+
 			// Explicit initializer choices because a single composed initializer becomes invisible to the IDE
+			//////////////////////////////////////////////////////////////////////////////////////////////////
+
+			// Initialize a generic read-only or read/write buffer resource on GPU-preferred memory
 			void InitBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 GPUMemory& gpuMem,
 						 u4Byte width = GraphicsStuff::TILING_AREA,
 						 DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN)
 			{
-				static_assert(!std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value &&
-                              !std::is_same<AthruResrcType, AthruGPU::CBuffer>::value &&
-							  !std::is_base_of<AthruGPU::Texture, AthruResrcType>::value,
-							  "Generic buffer initialization is only valid for read/write buffers, counter buffers, and uploadable buffers; \
-							   textures should be initialized with [InitRWTex(...)] or [InitRTex(...)], append-consume buffers should be initialized with \
-							   [InitAppBuf(...)], and constant buffers should be initialized with [InitCBuf(...)]");
 				InitAllBufs(device,
 						    gpuMem,
 							width,
 							viewFmt);
 			}
-            void InitCBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-						  GPUMemory& gpuMem,
-                          address* mappedCPUAddr) // The CPU-side address that will process writes to the resource
-			{
-				static_assert(!std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value &&
-                              !std::is_same<AthruResrcType, AthruGPU::RWResrc<Buffer>>::value &&
-                              !std::is_same<AthruResrcType, AthruGPU::RResrc<Buffer>>::value &&
-							  !std::is_base_of<AthruGPU::Texture, AthruResrcType>::value,
-							  "Constant buffer initialization is only valid for small CPU->GPU structured input buffers; \
-							   textures should be initialized with [InitRWTex(...)] or [InitRTex(...)], append-consume buffers should be initialized with \
-							   [InitAppBuf(...)], and generic buffer resources should be initialized with [InitBuf(...)]");
 
+			// Initialize the CPU->GPU message buffer
+            void InitMsgBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+						    GPUMemory& gpuMem,
+                            address* mappedCPUAddr) // The CPU-side address that will process message writes
+			{
                 // Constant buffers use the same generalized initializer as generic buffers, but with unspecified hardware format and exactly one element
                 // (since Athru only expects to use constant buffers as structured lists of character/numeric shader inputs, and not for e.g. passing
                 // CPU-driven point clouds to the GPU)
 				InitAllBufs(device,
 						    gpuMem,
-							0x1, // Only one element in constant buffers; input structures define the byte layout seen by shaders
+							65536, // Buffers are 65536-byte aligned and this is likely to be the zeroth one allocated in the upload heap, so specify that many
+								   // elements here (the message buffer is a generic bag-of-bytes with no specific format)
 							DXGI_FORMAT_UNKNOWN);
 
-                // Immediately map constant buffers after initialization
+                // Immediately map the message buffer after initialization
                 D3D12_RANGE range;
                 range.Begin = 0;
-                range.End = 0; // Athru constant buffers are implicitly write-only for the CPU
+                range.End = 0; // The message buffer is implicitly write-only for the CPU
                 HRESULT hr = resrc->Map(0, &range, mappedCPUAddr);
                 assert(SUCCEEDED(hr));
 			}
+
+			// Initialize the readback buffer
+			void InitReadbkBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+							   GPUMemory& gpuMem)
+			{
+				// No bindable views, so just allocate the readback buffer and test for errors before returning
+				/////////////////////////////////////////////////////////////////////////////////////////////////////
+
+				// Allocate the buffer + record resource state
+				HRESULT hr = gpuMem.AllocBuf(device, AthruGPU::EXPECTED_SHARED_GPU_RDBK_MEM,
+											bufResrcDesc(AthruGPU::EXPECTED_SHARED_GPU_RDBK_MEM, DXGI_FORMAT_UNKNOWN),
+											D3D12_RESOURCE_STATE_COPY_DEST, resrc,
+											AthruGPU::HEAP_TYPES::READBACK);
+				resrcState = D3D12_RESOURCE_STATE_COPY_DEST;
+				assert(SUCCEEDED(hr));
+
+				// Send [resrcViewAddr] to the zeroth address since we'll never bind any views to the readback buffer
+				resrcViewAddr.ptr = NULL;
+			}
+
+			// Initialize an append/consume buffer resource
 			void InitAppBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							GPUMemory& gpuMem,
 							const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc,
@@ -135,10 +154,6 @@ namespace AthruGPU
 							const u4Byte& ctrEltOffs = 0,
 							DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN)
 			{
-				static_assert(std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value,
-							  "Append/consume buffer initialization is only valid for stack-like dynamically sized buffers fed from the GPU; generic buffers \
-							   should be initialized from [InitBuf(...)], textures should be initialized with [InitRWTex(...)] or [InitRTex(...)], and constant \
-                               buffers should be initialized with [InitCBuf(...)]");
 				InitAllBufs(device,
 							gpuMem,
 							width,
@@ -146,6 +161,73 @@ namespace AthruGPU
 							ctrResrc,
 							ctrEltOffs);
 			}
+
+			// Initialize a read/write buffer resource in GPU-preferred memory without committing to a view
+			void InitRawRWBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+							  GPUMemory& gpuMem,
+							  u4Byte& numBytes)
+			{
+				HRESULT hr = gpuMem.AllocBuf(device, numBytes,
+											 bufResrcDesc(numBytes, DXGI_FORMAT_UNKNOWN), initState(), resrc,
+											 AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY);
+				assert(SUCCEEDED(hr));
+
+				// Send [resrcViewAddr] to the zeroth address since we'll be generating the views associated with each raw buffer separately
+				// to the raw buffers themselves
+				resrcViewAddr.ptr = NULL;
+			}
+
+			// Initialize an append/consume view over a given buffer resource
+			void InitAppProj(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+							 GPUMemory& gpuMem,
+							 const Microsoft::WRL::ComPtr<ID3D12Resource>& targetResrc,
+							 const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc,
+							 const u4Byte& width = GraphicsStuff::TILING_AREA,
+							 const u4Byte& ctrEltOffs = 0,
+							 const u4Byte& viewOffs = 0,
+							 DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN)
+			{
+				D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc;
+				viewDesc.Format = viewFmt;
+				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+				viewDesc.Buffer.FirstElement = viewOffs / sizeof(ContentType);
+				viewDesc.Buffer.NumElements = width;
+				viewDesc.Buffer.StructureByteStride = sizeof(ContentType);
+				viewDesc.Buffer.CounterOffsetInBytes = ctrEltOffs;
+				viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE; // No untyped resource views in Athru atm
+				resrcViewAddr = gpuMem.AllocUAV(device,
+											    &viewDesc,
+											    targetResrc,
+											    ctrResrc); // Append/consume buffers are allocated as standard UAVs with a pointer to a counter resource
+				resrc = nullptr; // Projections are pure views over resources defined externally, so nullify the local resource here
+			}
+
+			// Initialize a standard read/write view over a given buffer resource
+			void InitRWBufProj(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+							   GPUMemory& gpuMem,
+							   const Microsoft::WRL::ComPtr<ID3D12Resource>& targetResrc,
+							   const u4Byte& width = GraphicsStuff::TILING_AREA,
+							   const u4Byte& viewOffs = 0,
+							   DXGI_FORMAT viewFmt = DXGI_FORMAT_UNKNOWN)
+			{
+				D3D12_UNORDERED_ACCESS_VIEW_DESC viewDesc;
+				viewDesc.Format = viewFmt;
+				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+				viewDesc.Buffer.NumElements = width;
+				viewDesc.Buffer.StructureByteStride = 0;
+				if constexpr (std::is_class<ContentType>::value)
+				{ viewDesc.Buffer.StructureByteStride = sizeof(ContentType); }
+				viewDesc.Buffer.FirstElement = viewOffs / sizeof(ContentType);
+				viewDesc.Buffer.CounterOffsetInBytes = 0;
+				viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE; // No untyped resource views in Athru atm
+				resrcViewAddr = gpuMem.AllocUAV(device,
+											    &viewDesc,
+											    targetResrc,
+											    nullptr);
+				resrc = nullptr; // Projections are pure views over resources defined externally, so nullify the local resource here
+			}
+
+			// Initialize a read/writable texture resource
 			void InitRWTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						   GPUMemory& gpuMem,
 						   // Assumed no base data for textures (may be neater to format planetary/animal data with
@@ -156,14 +238,16 @@ namespace AthruGPU
 						   DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
 						   const float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE)
 			{
-				static_assert(std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Texture>>::value,
-							  "Read/writable texture initialization is only valid for read/writable resources inheriting from the [AthruGPU::Texture] meta-type; prefer \
-							   one of the buffer initializers for buffer resources or [InitRTex(...)] to initialize read-only texture resources");
-				InitTex<1, 1, 1>(device,
-						                      gpuMem,
-						                      viewFmt,
-						                      clearRGBA);
+				InitTex(device,
+						gpuMem,
+						width,
+						height,
+						depth,
+						viewFmt,
+						clearRGBA);
 			}
+
+			// Initialize a read-only texture resource
 			void InitRTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						  GPUMemory& gpuMem,
 						  // Assumed no base data for textures (may be neater to format planetary/animal data with
@@ -175,14 +259,14 @@ namespace AthruGPU
 						  const float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE,
                           D3D12_SHADER_COMPONENT_MAPPING shaderChannelMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
 			{
-				static_assert(std::is_same<AthruResrcType, AthruGPU::RResrc<AthruGPU::Texture>>::value,
-							  "Read-only texture initialization is only valid for read-only resources inheriting from the [AthruGPU::Texture] meta-type; prefer \
-							   one of the buffer initializers for buffer resources or [InitRWTex(...)] to initialize read/writable texture resources");
-				InitTex<1, 1, 1>(device,
-						                      gpuMem,
-						                      viewFmt,
-						                      clearRGBA,
-						                      shaderChannelMapping);
+				InitTex(device,
+						gpuMem,
+						width,
+						height,
+						depth,
+						viewFmt,
+						clearRGBA,
+						shaderChannelMapping);
 			}
 		private:
 			void InitAllBufs(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
@@ -194,15 +278,15 @@ namespace AthruGPU
 			{
 				// Allocate buffer memory
 				if constexpr (initDataPttr == nullptr)
-                {
+				{
 					HRESULT hr = gpuMem.AllocBuf(device,
 												 width * sizeof(ContentType),
-												 bufResrcDesc(width, viewFmt),
+												 bufResrcDesc(width * sizeof(ContentType), viewFmt),
 												 initState(),
-												 resrc.Get(),
-                                                 bufHeapType());
+												 resrc,
+				                                 bufHeapType());
 					assert(SUCCEEDED(hr));
-                }
+				}
 				else if constexpr (initDataPttr != nullptr)
 				{
 					// Allocate buffer + upload initial data to the main adapter
@@ -214,7 +298,6 @@ namespace AthruGPU
 																	                 resrc.Get());
 					assert(SUCCEEDED(hr));
 				}
-
 				// Allocate buffer descriptor/view
 				// Just provide view-descriptions here, tracking for descriptor offsets + view creation should happen within [GPUMemory]
 				// Should provide one descriptor table for rendering, one for physics, and one for ecological simulation
@@ -224,14 +307,12 @@ namespace AthruGPU
 				// reference (should read the paper too, I have it in my downloads folder as [fastVersatilePhysics])
 				// Publication link bc why not: https://www.yzhu.io/projects/siggraph18_mlsmpm_cpic/index.html
 				// [AthruResrc] instances should maintain a copy of their handle for validation + external reference
-				if constexpr (std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
+				if constexpr (std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
 				{
 					D3D12_CONSTANT_BUFFER_VIEW_DESC viewDesc;
 					viewDesc.BufferLocation = resrc->GetGPUVirtualAddress();
-					viewDesc.SizeInBytes = sizeof(ContentType); // Implicitly require 256-byte alignment for input types
-																// possible to scale allocations appropriately, but neater just to maintain some number of padding bytes
-																// and consume those whenever I add more members
-					resrcAddr = gpuMem.AllocCBV(device, &viewDesc);
+					viewDesc.SizeInBytes = AthruGPU::EXPECTED_GPU_CONSTANT_MEM;
+					resrcViewAddr = gpuMem.AllocCBV(device, &viewDesc);
 				}
 				else if constexpr (std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value)
 				{
@@ -244,10 +325,10 @@ namespace AthruGPU
 					viewDesc.Buffer.StructureByteStride = sizeof(ContentType);
 					viewDesc.Buffer.CounterOffsetInBytes = ctrEltOffs;
 					viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE; // No untyped resource views in Athru atm
-					resrcAddr = gpuMem.AllocUAV(device,
-												&viewDesc,
-												resrc,
-												ctrResrc); // Append/consume buffers are allocated as standard UAVs with a pointer to a counter resource
+					resrcViewAddr = gpuMem.AllocUAV(device,
+												    &viewDesc,
+												    resrc,
+												    ctrResrc); // Append/consume buffers are allocated as standard UAVs with a pointer to a counter resource
 				}
 				else if constexpr (std::is_base_of<AthruGPU::RWResrc<AthruGPU::Buffer>, AthruResrcType>::value)
 				{
@@ -256,56 +337,51 @@ namespace AthruGPU
 					viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 					viewDesc.Buffer.FirstElement = 0;
 					viewDesc.Buffer.NumElements = width;
-					viewDesc.Buffer.StructureByteStride = sizeof(ContentType);
+					viewDesc.Buffer.StructureByteStride = 0;
+					if constexpr (std::is_class<ContentType>::value)
+					{ viewDesc.Buffer.StructureByteStride = sizeof(ContentType); }
 					viewDesc.Buffer.CounterOffsetInBytes = 0;
 					viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE; // No untyped resource views in Athru atm
-					resrcAddr = gpuMem.AllocUAV(device,
-											    &viewDesc,
-											    resrc,
-											    nullptr);
+					resrcViewAddr = gpuMem.AllocUAV(device,
+											        &viewDesc,
+											        resrc,
+											        nullptr);
 				}
 				else if constexpr (std::is_base_of<AthruGPU::RResrc<AthruGPU::Buffer>, AthruResrcType>::value)
 				{
 					D3D12_SHADER_RESOURCE_VIEW_DESC viewDesc;
 					viewDesc.Format = viewFmt;
-					viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
+					viewDesc.ViewDimension = D3D12_SRV_DIMENSION_BUFFER;
 					viewDesc.Buffer.FirstElement = 0;
 					viewDesc.Buffer.NumElements = width;
 					viewDesc.Buffer.StructureByteStride = 0;
-					viewDesc.Buffer.Flags = D3D12_BUFFER_UAV_FLAG_NONE; // No untyped resource views in Athru atm
-					resrcAddr = gpuMem.AllocSRV(device,
-												&viewDesc,
-												resrc,
-												nullptr);
+					viewDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+					if constexpr (std::is_class<ContentType>::value)
+					{ viewDesc.Buffer.StructureByteStride = sizeof(ContentType); }
+					viewDesc.Buffer.Flags = D3D12_BUFFER_SRV_FLAG_NONE; // No untyped resource views in Athru atm
+					resrcViewAddr = gpuMem.AllocSRV(device,
+												    &viewDesc,
+												    resrc);
 				}
 				// -- Descriptor table bindings are handled by game systems (rendering/physics/ecology); return here --
 			}
-            template<u4Byte width, u4Byte height, u4Byte depth>
 			void InitTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 GPUMemory& gpuMem,
+						 u4Byte width,
+						 u4Byte height,
+						 u4Byte depth,
 						 // Assumed no base data for textures (may be neater to format planetary/animal data with
 						 // structured buffers instead of textures, afaik DX resources are zeroed by default)
 						 DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
 						 const float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE,
 						 D3D12_SHADER_COMPONENT_MAPPING shaderChannelMapping = (D3D12_SHADER_COMPONENT_MAPPING)D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
 			{
-				// Construct an object to capture the color/format we'll splat over the
-				// resource each time we clear its contents
-				// Assumes no depth-stencil resources (no/limited rasterization in Athru)
-				D3D12_CLEAR_VALUE clearColor;
-				clearColor.Format = viewFmt;
-				clearColor.Color[0] = clearRGBA[0];
-                clearColor.Color[1] = clearRGBA[1];
-                clearColor.Color[2] = clearRGBA[2];
-                clearColor.Color[3] = clearRGBA[3];
-
 				// Allocate texture memory
 				HRESULT hr = gpuMem.AllocTex(device,
 											 width * sizeof(ContentType),
 											 texResrcDesc(width, height, depth, viewFmt),
 											 initState(),
-											 clearColor,
-											 resrc.Get());
+											 resrc);
 				assert(SUCCEEDED(hr));
 
 				// Allocate texture descriptor/view
@@ -323,20 +399,23 @@ namespace AthruGPU
 				if constexpr (rwResrc)
 				{
                     // DIY surfaces in Athru, no real support for mip-mapping
-                    if constexpr (width > 1 && height == 1 && depth == 1)
+                    if (width > 1 && height == 1 && depth == 1)
                     {
-                        viewDesc.MipSlice = 0;
+						viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE1D;
+                        viewDesc.Texture1D.MipSlice = 0;
                     }
-                    else if constexpr (width > 1 && height > 1 && depth == 1)
+                    else if (width > 1 && height > 1 && depth == 1)
                     {
-                        viewDesc.MipSlice = 0;
-                        viewDesc.PlaneSlice = 0;
+						viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE2D;
+                        viewDesc.Texture2D.MipSlice = 0;
+                        viewDesc.Texture2D.PlaneSlice = 0;
                     }
-                    else if constexpr (width > 1 && height > 1 && depth > 1)
+                    else if (width > 1 && height > 1 && depth > 1)
                     {
-                        viewDesc.MipSlice = 0;
-                        viewDesc.FirstWSlice = 0;
-                        viewDesc.WSize = 0;
+						viewDesc.ViewDimension = D3D12_UAV_DIMENSION_TEXTURE3D;
+                        viewDesc.Texture3D.MipSlice = 0;
+                        viewDesc.Texture3D.FirstWSlice = 0;
+                        viewDesc.Texture3D.WSize = 0;
                     }
 
                     // Allocate read/writable textures
@@ -348,17 +427,12 @@ namespace AthruGPU
 				else if constexpr (!rwResrc)
 				{
                     // Match resource & view dimensions
-                    if constexpr (width > 1 && height == 1 && depth == 1)
+                    if (width > 1 && height == 1 && depth == 1)
                     { viewDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE1D; }
-                    else if constexpr (width > 1 && height > 1 && depth == 1)
+                    else if (width > 1 && height > 1 && depth == 1)
                     { viewDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D; }
-                    else if constexpr (width > 1 && height > 1 && depth > 1)
+                    else if (width > 1 && height > 1 && depth > 1)
                     { viewDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE3D; }
-
-                    // DIY surfaces in Athru, no real support for mip-mapping
-                    viewDesc.Texture3D.MostDetailedMip = 0;
-                    viewDesc.Texture3D.MipLevels = 1;
-                    viewDesc.Texture3D.ResourceMinLODClamp = 0.0f;
 
                     // Allocate read-only textures
 					gpuMem.AllocSRV(device,
@@ -372,11 +446,9 @@ namespace AthruGPU
 				// Initialize state value, set access fields as appropriate
 				D3D12_RESOURCE_STATES state = (D3D12_RESOURCE_STATES)0;
 				bool writeSet = false;
-				if constexpr (std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
-				{ state |= D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER; }
-				else if constexpr (std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Texture>>::value ||
-								   std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Buffer>>::value ||
-								   std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value) // Write-limited buffers default to write-allowed/[unordered-access]
+				if constexpr (std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Texture>>::value ||
+						      std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Buffer>>::value ||
+						      std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value) // Write-limited buffers default to write-allowed/[unordered-access]
 				{
 					state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
 					writeSet = true;
@@ -387,7 +459,8 @@ namespace AthruGPU
 				else if constexpr (std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Buffer>>>::value ||
                                    std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value ||
                                    std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Texture>>>::value ||
-                                   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Texture>>>::value)
+                                   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Texture>>>::value ||
+                                   std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
 				{ state = D3D12_RESOURCE_STATE_GENERIC_READ; }
 
 				// Set source/destination copy fields as appropriate
@@ -414,10 +487,11 @@ namespace AthruGPU
 			{
 				// Construct layout information; prefer undefined swizzling for tiled/streaming resources
                 // and standard DX12 swizzling for generic textures
-				D3D12_TEXTURE_LAYOUT layout = D3D12_TEXTURE_LAYOUT_64KB_STANDARD_SWIZZLE;
-				if constexpr (std::is_same<AthruResrcType, AthruGPU::StrmResrc<RWResrc<Texture>>>::value ||
-							  std::is_same<AthruResrcType, AthruGPU::StrmResrc<RResrc<Texture>>>::value)
-				{ layout = D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE; }
+				// Should test for support + optionally provide standard swizzle here in future
+				D3D12_TEXTURE_LAYOUT layout = D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE;
+				//if constexpr (std::is_same<AthruResrcType, AthruGPU::StrmResrc<RWResrc<Texture>>>::value ||
+				//			  std::is_same<AthruResrcType, AthruGPU::StrmResrc<RResrc<Texture>>>::value)
+				//{ layout = D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE; }
 
 				// Convert passed width/height/depth to a DX12 RESOURCE_DIMENSION object
 				D3D12_RESOURCE_DIMENSION resrcDim = D3D12_RESOURCE_DIMENSION_TEXTURE1D;
@@ -431,7 +505,7 @@ namespace AthruGPU
 				desc.Width = X;
 				desc.Height = Y;
 				desc.DepthOrArraySize = Z; // Implicitly no texture arrays in Athru
-				desc.MipLevels = 0; // All Athru textures are constantly full-res, without mip-mapping
+				desc.MipLevels = 1; // All Athru textures are constantly full-res, without mip-mapping
 				desc.Format = viewFmt;
 				desc.SampleDesc.Count = 1; // We're DIY rendering with minimal rasterization, so no multisampling anywhere
 				desc.SampleDesc.Quality = 0;
@@ -442,9 +516,9 @@ namespace AthruGPU
 			D3D12_RESOURCE_DESC bufResrcDesc(const u4Byte& width,
                                              const DXGI_FORMAT& viewFmt)
 			{
-				// Construct layout information; prefer driver layout definition for generic buffers and undefined swizzling
+				// Construct layout information; prefer row-major layout definition for generic buffers and undefined swizzling
 				// for tiled/streaming resources
-				D3D12_TEXTURE_LAYOUT layout = D3D12_TEXTURE_LAYOUT_UNKNOWN;
+				D3D12_TEXTURE_LAYOUT layout = D3D12_TEXTURE_LAYOUT_ROW_MAJOR;
 				if constexpr (std::is_same<AthruResrcType, AthruGPU::StrmResrc<RWResrc<Buffer>>>::value ||
 							  std::is_same<AthruResrcType, AthruGPU::StrmResrc<RResrc<Buffer>>>::value)
 				{ layout = D3D12_TEXTURE_LAYOUT_64KB_UNDEFINED_SWIZZLE; }
@@ -456,7 +530,7 @@ namespace AthruGPU
 				desc.Width = width;
 				desc.Height = 1;
 				desc.DepthOrArraySize = 1; // Implicitly no texture arrays in Athru
-				desc.MipLevels = 0; // All Athru textures are constantly full-res, without mip-mapping
+				desc.MipLevels = 1; // All Athru textures are constantly full-res, without mip-mapping
 				desc.Format = viewFmt;
 				desc.SampleDesc.Count = 1; // We're DIY rendering with minimal rasterization, so no multisampling anywhere
 				desc.SampleDesc.Quality = 0;
@@ -468,15 +542,14 @@ namespace AthruGPU
             {
                 if constexpr ((!std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Buffer>>>::value ||
                                !std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value) &&
-                              !std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
+                              !std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
                 { return AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY; }
                 else if constexpr ((std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Buffer>>>::value ||
                                     std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value) ||
-                                   std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
+                                   std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
                 { return AthruGPU::HEAP_TYPES::UPLO; }
-                else if constexpr ((std::is_same<AthruResrcType, AthruGPU::ReadbkResrc<AthruGPU::RResrc<AthruGPU::Buffer>>>::value ||
-                                    std::is_same<AthruResrcType, AthruGPU::ReadbkResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value) &&
-                                   !std::is_same<AthruResrcType, AthruGPU::CBuffer>::value)
+                else if constexpr (std::is_same<AthruResrcType, AthruGPU::ReadbkBuffer>::value ||
+                                   !std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
                 { return AthruGPU::HEAP_TYPES::READBACK; }
             }
 	};

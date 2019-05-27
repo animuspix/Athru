@@ -39,5 +39,4 @@ void strmBuilder(uint ndx, out uint4 ctr, out uint2 key)
 {
     ctr = xxminstd32(ndx); // Seed state by hashing indices with xxminstd32 (see above)
     key = uint2(ihashIII(ndx), tmhash(ndx)); // Partially seed keys with a different hash (not Wang or xxminstd32)
-    return strm;
 }

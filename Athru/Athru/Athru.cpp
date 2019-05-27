@@ -14,9 +14,6 @@ void GameLoop()
 	// Cache a local reference to the GPU messenger object
 	// Implicitly prepares first few generic resources
 	GPUMessenger* athruGPUMessenger = AthruGPU::GPU::AccessGPUMessenger();
-	// ...remaining generic resources prepared here ...//
-	// Initialize all generic resources, in order
-	athruGPUMessenger->AccessResrcContext().Init();
 
 	// Cache a local reference to the SDF rasterizer
 	//GradientMapper* athruSDFRaster = AthruGPU::GPU::AccessRasterizer();
@@ -48,7 +45,7 @@ void GameLoop()
 		athruApp->RelayOSMessages();
 
 		// Check for closing conditions
-		bool localCloseFlag = athruInput->IsKeyDown(VK_ESCAPE) || athruInput->GetCloseFlag();
+		const bool localCloseFlag = athruInput->IsKeyDown(VK_ESCAPE) || athruInput->GetCloseFlag();
 		if (localCloseFlag)
 		{
 			gameExiting = true;

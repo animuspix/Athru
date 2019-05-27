@@ -11,6 +11,7 @@ namespace AthruGPU
 		public:
 			GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device);
 			~GPUMemory();
+
 			// [GPUMemory] expects aligned Buffer/Texture/View allocations
 			HRESULT AllocBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							 const u4Byte& bufSize,
@@ -18,13 +19,14 @@ namespace AthruGPU
 							 const D3D12_RESOURCE_STATES initState,
 							 const Microsoft::WRL::ComPtr<ID3D12Resource>& bufPttr,
 							 const AthruGPU::HEAP_TYPES = AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY);
+
 			// [GPUMemory] expects aligned Buffer/Texture/View allocations
 			HRESULT AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							 const u4Byte& bufSize,
 							 const D3D12_RESOURCE_DESC texDesc,
 							 const D3D12_RESOURCE_STATES initState,
-							 const D3D12_CLEAR_VALUE optimalClearColor,
 							 const Microsoft::WRL::ComPtr<ID3D12Resource>& texPttr);
+
 			template<typename BufType,
                      AthruGPU::HEAP_TYPES bufHeapType>
 			void ArrayToGPUBuffer(const BufType* bufArr,
@@ -124,8 +126,6 @@ namespace AthruGPU
             // Return a reference to the shader descriptor heap ([shaderViewMem])
             const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetShaderViewMem();
 
-            // Allocate a
-
 			// Overload the standard allocation/de-allocation operators
 			void* operator new(size_t size);
 			void operator delete(void* target);
@@ -143,8 +143,7 @@ namespace AthruGPU
 				shaderViewMem.offs.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 
 				// Cache view handle
-				D3D12_CPU_DESCRIPTOR_HANDLE viewHandle;
-				viewHandle.ptr = shaderViewMem.offs.ptr;
+				D3D12_CPU_DESCRIPTOR_HANDLE viewHandle = shaderViewMem.offs;
 
 				// Allocate view & return descriptor handle
 				if constexpr (std::is_same<viewDescType, D3D12_CONSTANT_BUFFER_VIEW_DESC>::value)
@@ -160,6 +159,7 @@ namespace AthruGPU
 				}
 				else if constexpr (std::is_same<viewDescType, D3D12_UNORDERED_ACCESS_VIEW_DESC>::value)
 				{
+					u4Byte x = viewDesc->Buffer.NumElements;
 					device->CreateUnorderedAccessView(dataResrc.Get(),
 													  ctrResrc.Get(),
 													  (const D3D12_UNORDERED_ACCESS_VIEW_DESC*)viewDesc,
@@ -185,7 +185,7 @@ namespace AthruGPU
 					// Initialize GPU memory
 					constexpr bool resrcStack = std::is_same<HeapType, ID3D12Heap>::value;
 					if constexpr (resrcStack) { assert(SUCCEEDED(device->CreateHeap(&memDesc, __uuidof(ID3D12Heap), (void**)mem.GetAddressOf()))); }
-					else if constexpr (resrcStack) { assert(SUCCEEDED(device->CreateDescriptorHeap(&memDesc, __uuidof(ID3D12DescriptorHeap), (void**)mem.GetAddressOf()))); }
+					else if constexpr (!resrcStack) { assert(SUCCEEDED(device->CreateDescriptorHeap(&memDesc, __uuidof(ID3D12DescriptorHeap), (void**)mem.GetAddressOf()))); }
 
 					// Initialize data offset
 					if constexpr (resrcStack)

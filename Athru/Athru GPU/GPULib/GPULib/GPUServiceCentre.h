@@ -5,7 +5,6 @@
 #include "Renderer.h"
 #include "GPUMessenger.h"
 #include "GradientMapper.h"
-#include "GPURand.h"
 #include "UtilityServiceCentre.h"
 #include "GPUGlobals.h"
 
@@ -37,11 +36,10 @@ namespace AthruGPU
 			GPUMemory& gpuMem = d3DPttr->GetGPUMem();
             const Microsoft::WRL::ComPtr<ID3D12Device>& device = d3DPttr->GetDevice();
 			gpuMessengerPttr = new GPUMessenger(device, gpuMem);
-			gpuRand = new GPURand(device, gpuMem);
 
 			// Initialize the SDF rasterizer
 			HWND winHandle = AthruCore::Utility::AccessApp()->GetHWND();
-			rasterPttr = new GradientMapper(device, gpuMem, winHandle);
+			//rasterPttr = new GradientMapper(device, gpuMem, winHandle);
 
 			// Initialise the rendering manager + the GPU update manager
 			rendererPttr = new Renderer(winHandle, gpuMem,
@@ -54,10 +52,6 @@ namespace AthruGPU
 			// Clean-up the rendering manager
 			rendererPttr->~Renderer();
 			rendererPttr = nullptr;
-
-			// Clean-up data associated with the GPU
-			// random-number generator
-			gpuRand->~GPURand();
 
 			// Clean-up data associated with the SDF rasterizer
 			rasterPttr->~GradientMapper();
@@ -122,9 +116,5 @@ namespace AthruGPU
 		// before the Direct3D handler + the texture
 		// manager + the render manager were created)
 		static bool internalInit;
-
-		// Wrapper around a state buffer designed for
-		// improved GPU random number generation
-		static GPURand* gpuRand;
 	};
 };

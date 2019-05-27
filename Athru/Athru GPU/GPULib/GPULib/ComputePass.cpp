@@ -1,29 +1,49 @@
 #include "UtilityServiceCentre.h"
 #include "ResrcContext.h"
 #include "ComputePass.h"
+#include <filesystem>
 
 ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 HWND windowHandle,
 						 const char* shaderFilePath,
-					     const AthruGPU::RESRC_CTX shadingCtx)
+					     const AthruGPU::RESRC_CTX shadingCtx,
+						 const u4Byte& numCBVs, const u4Byte& numSRVs, const u4Byte& numUAVs)
 {
 	// Import the given file into Athru with an ordinary C++ binary input/output stream
 	std::ifstream strm = std::ifstream(shaderFilePath, std::ios::binary);
-	u4Byte len = 0; // File size in bytes
-	while (strm.eof()) { strm.seekg(len), len += 1; } // Find the character (byte) length of the given shader
+	u8Byte len = std::filesystem::file_size(shaderFilePath); // File size in bytes
 	strm.read(dxilMem, len); // Read bytecode into the subset of Athru's memory stack associated with [this]
 
 	// Map shading context (rendering/generic, rendering/generic/physics, rendering/generic/physics/ecology) onto
 	// descriptor ranges
-	// -- need to update shaders for SM6 and review before implementing this --
+	u4Byte numRanges = 3;
+	D3D12_DESCRIPTOR_RANGE ranges[3];
+	ranges[0].BaseShaderRegister = 0;
+	ranges[0].NumDescriptors = numCBVs;
+	ranges[0].OffsetInDescriptorsFromTableStart = 0;
+	ranges[0].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_CBV;
+	ranges[0].RegisterSpace = 0;
+	ranges[1] = ranges[0];
+	ranges[1].OffsetInDescriptorsFromTableStart = numCBVs;
+	ranges[1].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_SRV;
+	ranges[1].NumDescriptors = numSRVs;
+	ranges[2] = ranges[0];
+	ranges[2].OffsetInDescriptorsFromTableStart = numCBVs + numSRVs;
+	ranges[2].RangeType = D3D12_DESCRIPTOR_RANGE_TYPE_UAV;
+	ranges[2].NumDescriptors = numUAVs;
+
+	// No slot is allowed to bind zero descriptors, so shuffle ranges around appropriately
+	if (numCBVs == 0) { memcpy(&ranges[0], &ranges[1], sizeof(D3D12_DESCRIPTOR_RANGE) * 2); numRanges -= 1; }
+	if (numSRVs == 0) { memcpy(&ranges[numRanges - 2], &ranges[2], sizeof(D3D12_DESCRIPTOR_RANGE) * 2); numRanges -= 1; }
+	if (numUAVs == 0) { /* No copies needed, UAVs are last in the descriptor range anyway */ numRanges -= 1; }
+
+	// Prepare generated ranges into a table we can embed in the pass's PSO
 	D3D12_ROOT_PARAMETER rootParam = { };
-	rootParam.DescriptorTable.NumDescriptorRanges = 3; // Only SRVs/UAVs/CBVs to think about for compute
-													   // Nothing guarantees srv/uav/cbv sets are contiguous (as they need to be for descriptor ranges iirc),
-													   // should adjust [GPUMemory] to help with that
-	rootParam.DescriptorTable.pDescriptorRanges = nullptr; // Dependant on shader context, locked to [nullptr] atm
+	rootParam.DescriptorTable.NumDescriptorRanges = numRanges; // Only SRVs/UAVs/CBVs to think about for compute
+	rootParam.DescriptorTable.pDescriptorRanges = ranges;
 	rootParam.ShaderVisibility = D3D12_SHADER_VISIBILITY_ALL; // No option for compute-only; all raster stages are manually screened below
 	rootParam.ParameterType = D3D12_ROOT_PARAMETER_TYPE_DESCRIPTOR_TABLE;
-	u4Byte numSamplers = 0; // Likely dependant on shader context, locked to zero atm
+	u4Byte numSamplers = 0;
 
 	// Prepare root signature/resource context
 	D3D12_ROOT_SIGNATURE_DESC sig = { };
@@ -44,16 +64,19 @@ ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 												 &sigBlob,
 												 &sigErrBlob); // Procedural root signature descriptions must be serialized before the
 															   // signatures themselves can be created by the device
+	#ifdef _DEBUG
+		char* serializerErrors = (sigErrBlob == nullptr) ? nullptr : (char*)sigErrBlob->GetBufferPointer();
+	#endif
 	assert(SUCCEEDED(result));
 	device->CreateRootSignature(0x1,
-							    (void*)sigBlob.Get(),
+							    sigBlob->GetBufferPointer(),
 								sigBlob->GetBufferSize(),
 								__uuidof(ID3D12RootSignature),
 								(void**)&rootSig);
 
 	// Assemble pipeline state
 	D3D12_COMPUTE_PIPELINE_STATE_DESC pipeDesc = { };
-	pipeDesc.pRootSignature;
+	pipeDesc.pRootSignature = rootSig.Get();
 	pipeDesc.CS.pShaderBytecode = (void*)dxilMem;
 	pipeDesc.CS.BytecodeLength = len;
 	pipeDesc.NodeMask = 0x1; // Athru only uses one GPU atm

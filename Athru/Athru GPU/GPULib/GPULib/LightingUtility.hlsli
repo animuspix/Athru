@@ -5,9 +5,6 @@
 #ifndef MATERIALS_LINKED
     #include "Materials.hlsli"
 #endif
-#ifndef GEOMETRIC_UTILITIES_LINKED
-    #include "GeometricUtility.hlsli"
-#endif
 
 // Small flag to mark whether [this] has already been
 // included somewhere in the build process
@@ -337,12 +334,13 @@ float4 DiffuLiGather(float4 dirPDF,
                      float srcPDF,
                      float3x3 nSpace,
                      float starScale,
+					 float3 sysOri,
                      uint figID,
                      float eps,
                      float2 uv01)
 {
     // Perform source sampling
-    float3 stellarSurfPos = StellarSurfPos(float4(gpuInfo.systemOri.xyz,
+    float3 stellarSurfPos = StellarSurfPos(float4(sysOri,
                                                   starScale),
                                            uv01,
                                            pt);

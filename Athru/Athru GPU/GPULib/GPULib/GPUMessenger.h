@@ -17,26 +17,39 @@ class GPUMessenger
 
 		// Upload per-system scene data to the GPU
         // Per-planet upload is unimplemented atm, but expected once I have planetary UVs ready
+		// All bulk uploads will probably occur here so I can supply a reasonable amount of data to
+		// the copy command-list
 		void SysToGPU(SceneFigure::Figure* system);
 
 		// Pass per-frame inputs along to the GPU
 		void InputsToGPU(const DirectX::XMFLOAT4& sysOri,
                          const Camera* camera);
 
-		// Generate + return a lambda wrapping the render input buffer's initializer so it can be placed
-		// appropriately inside the rendering section of the global cbv/srv/uav descriptor heap
-		std::function<void(const Microsoft::WRL::ComPtr<ID3D12Device>&, AthruGPU::GPUMemory&)> RenderInputInitter();
+		// Access data copied into the read-back buffer at a given offset, in a given format
+		template<typename DataFmt>
+		DataFmt DataFromGPU(u4Byte offs)
+		{
+			D3D12_RANGE range;
+			range.Begin = offs;
+			range.End = AthruGPU::EXPECTED_SHARED_GPU_RDBK_MEM;
+			HRESULT hr = rdbkBuf.resrc->Map(0, &range, (void**)&gpuReadable);
+			assert(SUCCEEDED(hr));
+			DataFmt data = *((DataFmt*)(gpuReadable));
+			range.Begin = 0;
+			range.End = 0;
+			rdbkBuf.resrc->Unmap(0, &range);
+			return data;
+		}
 
-		// Generic/utility resources might be allocated from outside [GPUMessenger], so make the generic resource context
-		// available here
-		AthruGPU::ResrcContext<std::function<void()>, std::function<void()>>& AccessResrcContext();
+		// Acquire a const reference to the resource behind the readback buffer
+		const Microsoft::WRL::ComPtr<ID3D12Resource>& AccessReadbackBuf();
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
-		// Generic constant inputs
+		// Per-frame constant inputs
 		struct GPUInput
 		{
 			DirectX::XMFLOAT4 tInfo; // Time info for each frame;
@@ -44,18 +57,6 @@ class GPUMessenger
 									 // frame count in [z], nothing in [w]
 			DirectX::XMFLOAT4 systemOri; // Origin for the current star-system; useful for predicting figure
 										 // positions during ray-marching/tracing (in [xyz], [w] is unused)
-		};
-        // + CPU-side mapping point
-        GPUInput* gpuInput;
-		// + a matching GPU-side constant buffer
-		AthruGPU::AthruResrc<GPUInput,
-		                     AthruGPU::CBuffer,
-		                     AthruGPU::RESRC_COPY_STATES::NUL> gpuInputBuffer;
-
-        // Path-tracing inputs
-		// Rendering-specific input struct
-		struct RenderInput
-		{
 			DirectX::XMVECTOR cameraPos; // Camera position in [xyz], [w] is unused
 			DirectX::XMMATRIX viewMat; // View matrix
 			DirectX::XMMATRIX iViewMat; // Inverse view matrix
@@ -65,19 +66,26 @@ class GPUMessenger
 									  // AA sampling rate in [z], and display area in [w]
 			DirectX::XMUINT4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
 			DirectX::XMUINT4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
+			DirectX::XMFLOAT4 excess; // DX12 constant buffers are 256-byte aligned; padding allocated here
 		};
-        // + CPU side mapping point
-        RenderInput* rndrInput;
-		// + a matching GPU-side constant buffer
-		AthruGPU::AthruResrc<RenderInput,
-		                     AthruGPU::CBuffer,
-		                     AthruGPU::RESRC_COPY_STATES::NUL> renderInputBuffer;
+        // + CPU-side mapping point
+        GPUInput* gpuInput;
 
 		// System buffer
         AthruGPU::AthruResrc<SceneFigure::Figure,
-                             AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>,
-                             AthruGPU::RESRC_COPY_STATES::NUL> sysBuf;
+                             AthruGPU::RResrc<AthruGPU::Buffer>> sysBuf;
 
-		// Generic/utility shading context
-		AthruGPU::ResrcContext<std::function<void()>, std::function<void()>> resrcContext;
+		// CPU->GPU messaging buffer
+        AthruGPU::AthruResrc<uByte,
+							 AthruGPU::MessageBuffer> msgBuf;
+
+		// GPU->CPU readback buffer
+		AthruGPU::AthruResrc<uByte,
+							 AthruGPU::ReadbkBuffer> rdbkBuf;
+		// + CPU-side mapping point
+		uByte* gpuReadable;
+
+		// Messaging command-list + allocator
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> msgCmds;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> msgAlloc;
 };

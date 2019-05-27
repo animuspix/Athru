@@ -6,20 +6,21 @@ GradientMapper::GradientMapper(const Microsoft::WRL::ComPtr<ID3D12Device>& devic
                                AthruGPU::GPUMemory& gpuMem,
 						       const HWND windowHandle) :
 			  planetRaster(device,
-						   windowHandle,
-						   "PlanetRaster.cso",
-                           AthruGPU::RESRC_CTX::GENERIC)
+			  			   windowHandle,
+			 		       "PlanetRaster.cso",
+                           AthruGPU::RESRC_CTX::GENERIC,
+						   1, 1, 1)
 {
     // Initialize gradient-map inputs
-    rasterInputBuffer.InitCBuf(device,
-                               gpuMem,
-                               (address*)rasterInput);
+    //rasterInputBuffer.InitCBuf(device,
+    //                           gpuMem,
+    //                           (address*)rasterInput);
 }
 
 GradientMapper::~GradientMapper()
 {
     // Try to guarantee that gradient-mapping constants are unmapped on application exit
-    rasterInputBuffer.~AthruResrc();
+    //rasterInputBuffer.~AthruResrc();
 }
 
 void GradientMapper::RasterPlanets(const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& rndrCmds)

@@ -1,8 +1,8 @@
 
 // Only include GPU utilities if they haven't already
 // been included by another header
-#ifndef UTILITIES_LINKED
-    #include "GenericUtility.hlsli"
+#ifndef RENDER_BINDS_LINKED
+    #include "RenderBinds.hlsli"
 #endif
 
 // Small flag to mark whether [this] has already been

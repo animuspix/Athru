@@ -52,29 +52,36 @@ namespace GraphicsStuff
 
 namespace AthruGPU
 {
-	// Number of random seeds to expose to the GPU random number generator for path tracing
-	// Not too many path-tracing seeds, so all remain resident on GPU each frame
-	extern constexpr u4Byte NUM_RAND_PT_SEEDS = GraphicsStuff::DISPLAY_AREA;
+	// Number of random streams to expose to the GPU random number generator for path tracing
+	// Not too many values, so all remain resident on GPU each frame
+	extern constexpr u4Byte NUM_RAND_PT_STREAMS = GraphicsStuff::DISPLAY_AREA;
 
-	// Number of random seeds to expose to the GPU random number generator for physics & ecology
+	// Number of random streams to expose to the GPU random number generator for physics & ecology
 	// Many more of these neeeded for accurate simulation (independant terrain noise, texture noise,
-	// plant/animal distributional noise, possibly stochastic fluid simulation...), so most seeds will
-	// be loaded in tiled/reserved memory and segments needed in each frame will be streamed across
+	// plant/animal distributional noise, possibly stochastic fluid simulation...), so most values will
+	// be loaded in tiled/reserved memory and segments needed in each frame will be moved across
 	// to the GPU on-demand
-	extern constexpr u4Byte NUM_RAND_PHYS_ECO_SEEDS = 28917504;
+	extern constexpr u4Byte NUM_RAND_PHYS_ECO_STREAMS = 28917504;
 
-	// Expected maximum onboard GPU memory usage (for resource data)
+	// Expected maximum onboard GPU memory usage (for resource data) + 2048 bytes of padding
 	// Just working with dedicated memory atm, might implement streaming resources for assets when I start loading them in
-	extern constexpr u4Byte EXPECTED_ONBOARD_GPU_RESRC_MEM = 800000000;
+	extern constexpr u4Byte EXPECTED_ONBOARD_GPU_RESRC_MEM = 800002048;
 
 	// Expected maximum shared GPU memory usage (for resource upload)
-	// Current memory needed for 10x planets + render input + core input (to the next largest power-of-two); likely to
-	// grow as I fill in ecology/physics systems)
-	extern constexpr u4Byte EXPECTED_SHARED_GPU_UPLO_MEM = 1024;
+	extern constexpr u4Byte EXPECTED_SHARED_GPU_UPLO_MEM = 65536;
+
+	// Expected maximum shared GPU memory usage (for resource download/readback)
+	// Includes (DISPLAY_AREA * 12) bytes worth of screenshot memory (one set of 32-bit RGB values/pixel), ~28 kilobytes of
+	// aligned counter memory for path-tracing, and ~57KB of padding so that the full allocation is 65536-byte aligned
+	// Screenshots will be exported as PNG using the lodepng library: https://github.com/lvandeve/lodepng
+	extern constexpr u4Byte EXPECTED_SHARED_GPU_RDBK_MEM = ((GraphicsStuff::DISPLAY_AREA * 12) + (7 * 4096)) + 57344;
 
 	// Expected maximum number of shader-visible resource views
 	// Likely to grow after I implement physics + ecology systems
-	extern constexpr u4Byte EXPECTED_NUM_GPU_SHADER_VIEWS = 16;
+	extern constexpr u4Byte EXPECTED_NUM_GPU_SHADER_VIEWS = 20;
+
+	// Byte footprint for constant data in the CPU->GPU message buffer
+	extern constexpr u2Byte EXPECTED_GPU_CONSTANT_MEM = 256;
 
 	// GPU/DX12 heap types available in Athru
 	enum class HEAP_TYPES

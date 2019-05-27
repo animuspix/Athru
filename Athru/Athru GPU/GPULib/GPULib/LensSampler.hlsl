@@ -1,10 +1,12 @@
 
 #include "ScenePost.hlsli"
-#include "RenderBinds.hlsli"
+#ifndef RENDER_BINDS_LINKED
+	#include "RenderBinds.hlsli"
+#endif
 #include "PhiloInit.hlsli"
 
 // Buffer of marcheable/traceable rays processed by [RayMarch.hlsl]
-AppendStructuredBuffer<uint> traceables : register(u11);
+AppendStructuredBuffer<uint> traceables : register(u9);
 
 // Lens sampling occurs with tiled pixel positions, so include the pixel/tile-mapper
 // here

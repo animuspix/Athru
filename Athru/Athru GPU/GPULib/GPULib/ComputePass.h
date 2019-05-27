@@ -13,7 +13,8 @@ class ComputePass
 		ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 					HWND windowHandle,
 					const char* shaderFilePath,
-					const AthruGPU::RESRC_CTX shadingCtx);
+					const AthruGPU::RESRC_CTX shadingCtx,
+					const u4Byte& numCBVs, const u4Byte& numSRVs, const u4Byte& numUAVs);
 		~ComputePass();
 
 		// Overload the standard allocation/de-allocation operators

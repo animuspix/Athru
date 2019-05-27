@@ -25,20 +25,18 @@ class Direct3D
 													// concepts
 		void WaitForQueue()
 		{
-			const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& queue;
-			u4Byte sel = (u4Byte)(critQueue);
+			Microsoft::WRL::ComPtr<ID3D12CommandQueue>& queue = graphicsQueue;
+			constexpr u4Byte sel = (u4Byte)(critQueue);
 			const Microsoft::WRL::ComPtr<ID3D12Fence>& fence = sync[sel];
-			u8Byte fenceVal& = syncValues[sel];
-			if constexpr (sel == 0)
-			{ queue = graphicsQueue; }
-			else if constexpr (sel == 1)
+			u8Byte& fenceVal = syncValues[sel];
+			if constexpr (sel == 1)
 			{ queue = computeQueue; }
 			else if constexpr (sel == 2)
 			{ queue = copyQueue; }
 			assert(SUCCEEDED(queue->Signal(fence.Get(), fenceVal)));
-			assert(SUCCEEDED(fence->SetEventOnCompletion(syncValues[backBufferNdx * (sel + 1)], syncEvt[sel])));
-			WaitForSingleObjectEx(syncEvt, INFINITE, false); // Allow infinite silent waiting for GPU operations
-			fenceVal += 1; // Keep fence values consistent between CPU/GPU
+			assert(SUCCEEDED(fence->SetEventOnCompletion(syncValues[sel], syncEvt[sel])));
+			DWORD dw = WaitForSingleObject(syncEvt[sel], INFINITE); // Allow infinite silent waiting for GPU operations
+			fenceVal = (fenceVal + 1) % 2; // Alternate fence values between [1] and [0]
 		}
 
 		// Retrieve a reference to the GPU memory manager
@@ -46,7 +44,7 @@ class Direct3D
 
         // Map the swap-chain's backbuffer onto a D3D resource
         // Might edit this to return UWP display surface instead and control back-buffer copies myself
-        void GetBackBuf(Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx);
+        void GetBackBuf(const Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx);
 
 		// Retrieve a reference to the active graphics pipeline-state & compute pipeline-state
 		const Microsoft::WRL::ComPtr<ID3D12PipelineState>& GetGraphicsState();
@@ -100,7 +98,7 @@ class Direct3D
 		// DX12 fence interfaces for GPU/CPU synchronization, also separate fence
 		// values for each back-buffer surface + command-queue
 		// + WinAPI event handles to capture fence updates
-		const Microsoft::WRL::ComPtr<ID3D12Fence> sync[3];
+		Microsoft::WRL::ComPtr<ID3D12Fence> sync[3];
 		u8Byte syncValues[AthruGPU::NUM_SWAPCHAIN_BUFFERS * 3];
 		HANDLE syncEvt[3];
 

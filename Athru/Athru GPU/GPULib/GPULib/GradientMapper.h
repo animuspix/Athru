@@ -32,8 +32,8 @@ class GradientMapper
         // + CPU-side mapping point
         RasterInput* rasterInput;
 		// + a matching GPU-side constant buffer
-		AthruGPU::AthruResrc<RasterInput,
-		                     AthruGPU::CBuffer> rasterInputBuffer;
+		//AthruGPU::AthruResrc<RasterInput,
+		//                     AthruGPU::CBuffer> rasterInputBuffer;
 
 		// Planet mapper
 		ComputePass planetRaster;

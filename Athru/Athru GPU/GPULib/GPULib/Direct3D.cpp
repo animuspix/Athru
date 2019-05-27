@@ -13,7 +13,7 @@ Direct3D::Direct3D(HWND hwnd)
 		{ debugLayer->EnableDebugLayer(); }
 	#endif
 
-	// Create a DXGI builer object
+	// Create a DXGI builder object
 	Microsoft::WRL::ComPtr<IDXGIFactory2> dxgiBuilder;
 	u4Byte hr = CreateDXGIFactory1(IID_PPV_ARGS(&dxgiBuilder));
 	assert(SUCCEEDED(hr));
@@ -53,7 +53,7 @@ Direct3D::Direct3D(HWND hwnd)
 				if (SUCCEEDED(hr))
 				{
 					dx12GPU = true;
-					AthruCore::Utility::AccessLogger()->Log("DX12 support on discrete GPU available, creating device");
+					AthruCore::Utility::AccessLogger()->Log("DX12 support on integrated GPU available, creating device");
 					break;
 				}
 			}
@@ -135,6 +135,14 @@ Direct3D::Direct3D(HWND hwnd)
 											 nullptr, // No output restrictions (back-buffer can be displayed on any Win64 surface/any monitor)
 											 swapChain.GetAddressOf());
 	assert(SUCCEEDED(hr));
+
+	// Create cpu/gpu synchronization fences + events
+	for (u4Byte i = 0; i < 3; i += 1)
+	{
+		device->CreateFence(0, D3D12_FENCE_FLAG_NONE, __uuidof(sync[i]), (void**)&sync[i]);
+		syncValues[i] = 1; // Fences change between [1] and [0] after synchronization
+		syncEvt[i] = CreateEvent(NULL, FALSE, FALSE, L"WaitEvent");
+	}
 }
 
 Direct3D::~Direct3D() {}
@@ -156,10 +164,10 @@ AthruGPU::GPUMemory& Direct3D::GetGPUMem()
 	return *gpuMem;
 }
 
-void Direct3D::GetBackBuf(Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx)
+void Direct3D::GetBackBuf(const Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx)
 {
     HRESULT res = swapChain->GetBuffer(TimeStuff::frameCtr % 3, __uuidof(ID3D12Resource*), (void**)backBufTx.GetAddressOf());
-    assert(SUCCEEDED(false));
+    assert(SUCCEEDED(res));
 }
 
 const Microsoft::WRL::ComPtr<ID3D12Device>& Direct3D::GetDevice()

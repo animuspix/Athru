@@ -42,6 +42,7 @@ struct GPUInput
                   // nothing in [w]
     float4 systemOri; // Origin for the current star-system; useful for predicting figure
                       // positions during ray-marching/tracing (in [xyz], [w] is unused)
+	float4 excess[14]; // DX12 buffers are 256-byte aligned; padding allocated here
 };
 
 // Linearly scales the rotational part of the given quaternion

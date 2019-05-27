@@ -155,6 +155,11 @@ namespace SceneStuff
 	extern constexpr u4Byte SYSTEM_COUNT = 100;
 	extern constexpr u4Byte BODIES_PER_SYSTEM = 10;
 	extern constexpr u4Byte PLANTS_PER_PLANET = 100;
+	extern constexpr u4Byte ALIGNED_PARAMETRIC_FIGURES_PER_SYSTEM = 1024; // Total number of parameteric figures/system (number of plants * number
+																		  // of bodies, animal forms are defined explicitly with volumes in Athru)
+																		  // Aligned to the nearest power of two for simpler buffer management
+																		  // (+ at 64 bytes/figure 1024 figures should match exactly to the 65536-byte
+																		  // resource alignment requirement in d3d12)
 	extern constexpr u4Byte ANIMALS_PER_PLANET = 100;
 	extern constexpr u4Byte MAX_NUM_SCENE_FIGURES = BODIES_PER_SYSTEM +
 													PLANTS_PER_PLANET +

@@ -2,26 +2,55 @@
 #include "GPUMessenger.h"
 
 GPUMessenger::GPUMessenger(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-                           AthruGPU::GPUMemory& gpuMem) : 
-						   resrcContext(std::make_tuple(std::function<void()>([device, gpuMem, this]() { sysBuf.InitBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), SceneStuff::BODIES_PER_SYSTEM); }), 
-														std::function<void()>([device, gpuMem, this]() { gpuInputBuffer.InitCBuf(device, const_cast<AthruGPU::GPUMemory&>(gpuMem), (address*)&gpuInput); })), 
-														AthruGPU::RESRC_CTX::GENERIC, true) {}
+                           AthruGPU::GPUMemory& gpuMem)
+{
+	// Initialize the GPU message buffer
+	msgBuf.InitMsgBuf(device, gpuMem, (address*)&gpuInput);
+
+	// Initialize the readback buffer
+	rdbkBuf.InitReadbkBuf(device, gpuMem);
+
+	// Initialize the system buffer
+	sysBuf.InitBuf(device, gpuMem, SceneStuff::ALIGNED_PARAMETRIC_FIGURES_PER_SYSTEM, DXGI_FORMAT_UNKNOWN);
+
+	// Create messaging command list + allocator
+	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+								   __uuidof(msgAlloc),
+								   (void**)&msgAlloc);
+	device->CreateCommandList(0x1,
+							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+							  msgAlloc.Get(),
+							  nullptr,
+							  __uuidof(msgCmds),
+							  (void**)&msgCmds);
+}
 
 GPUMessenger::~GPUMessenger()
 {
     // Try to guarantee input buffers are unmapped on application exit
-    gpuInputBuffer.~AthruResrc();
-    renderInputBuffer.~AthruResrc();
+    msgBuf.~AthruResrc();
+	sysBuf.~AthruResrc();
 }
 
 void GPUMessenger::SysToGPU(SceneFigure::Figure* sceneFigures)
 {
-    SceneFigure::Figure* fig;
-    D3D12_RANGE mapRange = { 0, 0 };
-	assert(SUCCEEDED(sysBuf.resrc->Map(0, &mapRange, (void**)&fig)));
-	memcpy(fig, sceneFigures, SceneStuff::BODIES_PER_SYSTEM);
-    D3D12_RANGE unmapRange = { 0, sizeof(sceneFigures) };
-	sysBuf.resrc->Unmap(0, &unmapRange);
+	// Copy the given system to the upload heap
+	u2Byte numBytes = SceneStuff::BODIES_PER_SYSTEM * sizeof(SceneFigure);
+	memcpy(gpuInput + AthruGPU::EXPECTED_GPU_CONSTANT_MEM, sceneFigures, numBytes);
+
+	// Copy from the upload heap into [sysBuf]
+	D3D12_RESOURCE_BARRIER barriers[2] = { AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_SOURCE, msgBuf.resrc, msgBuf.resrcState),
+										   AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_DEST, sysBuf.resrc, sysBuf.resrcState) };
+	//msgCmds->ResourceBarrier(2, barriers); // Transition to copy resources
+	msgCmds->CopyBufferRegion(sysBuf.resrc.Get(), 0, msgBuf.resrc.Get(), AthruGPU::EXPECTED_GPU_CONSTANT_MEM, numBytes); // Perform copy
+	barriers[0] = AthruGPU::TransitionBarrier(msgBuf.resrcState, msgBuf.resrc, D3D12_RESOURCE_STATE_COPY_SOURCE);
+	barriers[1] = AthruGPU::TransitionBarrier(sysBuf.resrcState, sysBuf.resrc, D3D12_RESOURCE_STATE_COPY_DEST);
+	//msgCmds->ResourceBarrier(2, barriers); // Transition to previous resource states
+	HRESULT hr = msgCmds->Close();
+	assert(SUCCEEDED(hr));
+	AthruGPU::GPU::AccessD3D()->GetGraphicsQueue()->ExecuteCommandLists(0, (ID3D12CommandList**)msgCmds.GetAddressOf());
+	hr = msgAlloc->Reset();
+	assert(SUCCEEDED(hr));
 }
 
 void GPUMessenger::InputsToGPU(const DirectX::XMFLOAT4& sysOri,
@@ -39,37 +68,29 @@ void GPUMessenger::InputsToGPU(const DirectX::XMFLOAT4& sysOri,
     // Update rendering inputs
     DirectX::XMMATRIX viewMat = camera->GetViewMatrix();
     DirectX::XMVECTOR det = DirectX::XMMatrixDeterminant(viewMat);
-    rndrInput->cameraPos = camera->GetTranslation();
-    rndrInput->viewMat = viewMat;
-    rndrInput->iViewMat = DirectX::XMMatrixInverse(&det,
-                                                   viewMat);
-    rndrInput->resInfo = DirectX::XMUINT4(GraphicsStuff::DISPLAY_WIDTH,
-                                          GraphicsStuff::DISPLAY_HEIGHT,
-                                          GraphicsStuff::NUM_AA_SAMPLES,
-                                          GraphicsStuff::DISPLAY_AREA);
-    rndrInput->tilingInfo = DirectX::XMUINT4(GraphicsStuff::TILING_WIDTH,
-                                             GraphicsStuff::TILING_HEIGHT,
-                                             GraphicsStuff::TILING_AREA,
-                                             0);
-    rndrInput->tileInfo = DirectX::XMUINT4(GraphicsStuff::TILE_WIDTH,
-                                           GraphicsStuff::TILE_HEIGHT,
-                                           GraphicsStuff::TILE_AREA,
-                                           0);
+    gpuInput->cameraPos = camera->GetTranslation();
+    gpuInput->viewMat = viewMat;
+    gpuInput->iViewMat = DirectX::XMMatrixInverse(&det,
+                                                  viewMat);
+    gpuInput->resInfo = DirectX::XMUINT4(GraphicsStuff::DISPLAY_WIDTH,
+                                         GraphicsStuff::DISPLAY_HEIGHT,
+                                         GraphicsStuff::NUM_AA_SAMPLES,
+                                         GraphicsStuff::DISPLAY_AREA);
+    gpuInput->tilingInfo = DirectX::XMUINT4(GraphicsStuff::TILING_WIDTH,
+                                            GraphicsStuff::TILING_HEIGHT,
+                                            GraphicsStuff::TILING_AREA,
+                                            0);
+    gpuInput->tileInfo = DirectX::XMUINT4(GraphicsStuff::TILE_WIDTH,
+                                          GraphicsStuff::TILE_HEIGHT,
+                                          GraphicsStuff::TILE_AREA,
+                                          0);
 
     // Update physics & ecosystem inputs here...
 }
 
-std::function<void(const Microsoft::WRL::ComPtr<ID3D12Device>&, AthruGPU::GPUMemory&)> GPUMessenger::RenderInputInitter()
+const Microsoft::WRL::ComPtr<ID3D12Resource>& GPUMessenger::AccessReadbackBuf()
 {
-	decltype(renderInputBuffer)* renderInputBuf = &renderInputBuffer;
-	RenderInput*& renderInput = rndrInput;
-	return std::function([renderInputBuf, renderInput](const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-													   AthruGPU::GPUMemory& gpuMem) { renderInputBuf->InitCBuf(device, gpuMem, (address*)&renderInput); });
-}
-
-AthruGPU::ResrcContext<std::function<void()>, std::function<void()>>& GPUMessenger::AccessResrcContext()
-{
-	return resrcContext;
+	return rdbkBuf.resrc;
 }
 
 // Push constructions for this class through Athru's custom allocator

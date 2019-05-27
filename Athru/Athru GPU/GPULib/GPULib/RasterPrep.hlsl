@@ -24,9 +24,9 @@ void main(uint3 groupID : SV_GroupID,
 
     // Would perform denoising here...
 
-    // Filter/tonemap, then transfer back to the display texture
-    displayTex[px.yz] = float4(PathPost(tx.rgb,
-                                        tx.a,
-                                        px.x,
-                                        rndrInfo.resInfo.z), 1.0f);
+    // Filter/tonemap, then transfer to LDR output
+    displayTexLDR[px.yz] = float4(PathPost(tx.rgb,
+								  tx.a,
+								  px.x,
+								  rndrInfo.resInfo.z), 1.0f);
 }

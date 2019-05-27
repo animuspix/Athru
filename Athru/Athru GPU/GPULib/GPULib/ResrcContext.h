@@ -1,5 +1,7 @@
 #pragma once
 
+#include <array>
+
 namespace AthruGPU
 {
 	// Athru resource usage contexts; instances for GPU utilities, rendering, physics, and ecology
@@ -11,6 +13,10 @@ namespace AthruGPU
 		PHYSICS,
 		ECOLOGY
 	};
+
+	// Resource count per-context
+	// No physics/ecology resources defined atm
+	static constexpr u4Byte RESRCES_PER_CTX[4] = { 2, 22, 0, 0 };
 
 	// Small convenience structure to wrap lambdas inside a returnable type
 	template<typename callable>
@@ -26,7 +32,7 @@ namespace AthruGPU
 	class ResrcContext
 	{
 		public:
-			ResrcContext(std::tuple<resrcInitLambdas...> resrcInitters, const RESRC_CTX context, bool deferInit) : 
+			ResrcContext(std::tuple<resrcInitLambdas...> resrcInitters, const RESRC_CTX context, bool deferInit) :
 			initters(resrcInitters), ctx(context)
 			{
 				if (!deferInit)
@@ -51,7 +57,7 @@ namespace AthruGPU
 					}
 					else if (ctx == RESRC_CTX::RENDER)
 					{
-						#define RENDER_ORDER 0,1,2,3,4,5,6,7,8,9,10,11
+						#define RENDER_ORDER 0, 3, 5, 6, 7, 8, 9, 20, 1, 10, 11, 12, 13, 14, 15, 16, 4, 2
 						initCtx<RENDER_ORDER>();
 					}
 					else if (ctx == RESRC_CTX::PHYSICS)

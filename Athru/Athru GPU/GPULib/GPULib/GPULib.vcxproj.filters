@@ -28,9 +28,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Shaders\Dispatch scaling">
-      <UniqueIdentifier>{e9ef92d1-4ea7-4459-ae27-9d205231b693}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shaders\Render Tiling">
       <UniqueIdentifier>{ae778b17-2bbb-4910-bf35-a7f04b2bd33c}</UniqueIdentifier>
     </Filter>
@@ -49,9 +46,6 @@
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SceneFigure.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GPURand.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GPUMessenger.h">
@@ -101,9 +95,6 @@
     <ClCompile Include="SceneFigure.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GPURand.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GPUMessenger.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
@@ -151,15 +142,6 @@
     <FxCompile Include="RayMarch.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="dispScale128.hlsl">
-      <Filter>Shaders\Dispatch scaling</Filter>
-    </FxCompile>
-    <FxCompile Include="dispScale256.hlsl">
-      <Filter>Shaders\Dispatch scaling</Filter>
-    </FxCompile>
-    <FxCompile Include="dispScale512.hlsl">
-      <Filter>Shaders\Dispatch scaling</Filter>
-    </FxCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="AA.hlsli">
@@ -195,9 +177,6 @@
     <None Include="LightingUtility.hlsli">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="DispatchScale.hlsli">
-      <Filter>Shaders\Dispatch scaling</Filter>
-    </None>
     <None Include="TileMapper.hlsli">
       <Filter>Shaders\Render Tiling</Filter>
     </None>
@@ -205,6 +184,9 @@
       <Filter>Shaders</Filter>
     </None>
     <None Include="PhiloInit.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="GenericBinds.hlsli">
       <Filter>Shaders</Filter>
     </None>
   </ItemGroup>

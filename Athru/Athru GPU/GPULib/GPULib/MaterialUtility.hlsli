@@ -2,9 +2,6 @@
 #ifndef RENDER_BINDS_LINKED
     #include "RenderBinds.hlsli"
 #endif
-#ifndef CORE_3D_LINKED
-    #include "Core3D.hlsli"
-#endif
 
 // Small flag to mark whether [this] has already been
 // included somewhere in the build process

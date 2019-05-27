@@ -6,10 +6,10 @@ AthruGPU::GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& devic
 	// Create main GPU heap
 	D3D12_HEAP_DESC memDesc;
 	memDesc.SizeInBytes = AthruGPU::EXPECTED_ONBOARD_GPU_RESRC_MEM;
-	memDesc.Properties.Type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_CUSTOM; // Prefer explicit paging information + memory-pool preference when possible
-	memDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY::D3D12_CPU_PAGE_PROPERTY_NOT_AVAILABLE; // No cpu access for main memory
-	memDesc.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_L1; // Games built with Athru will be demanding enough for implicitly requiring a discrete adapter
-																	// to be ok
+	memDesc.Properties.Type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_DEFAULT;//D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_CUSTOM; // Prefer explicit paging information + memory-pool preference when possible
+	memDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY::D3D12_CPU_PAGE_PROPERTY_UNKNOWN;//_NOT_AVAILABLE; // No cpu access for main memory
+	memDesc.Properties.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN; // Games built with Athru will be demanding enough for implicitly requiring a discrete adapter
+																	     // to be ok
 	memDesc.Properties.CreationNodeMask = 0x1; // Create main memory on the zeroth GPU captured by the adapter (we're only building a single-gpu/single-adapter system
 											   // atm so this is guaranteed to be the discrete adapter)
 	memDesc.Properties.VisibleNodeMask = 0x1; // Expecting to use per-GPU heaps (since the discrete/integrated GPUs will be doing very different things) when I extend
@@ -29,9 +29,7 @@ AthruGPU::GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& devic
 	uploMem = GPUStackedMem<ID3D12Heap>(memDesc, device);
 
     // Create the readback heap
-    memDesc.SizeInBytes = 28; // At least seven integer values needed in each path-tracing iteration
-                              // (one for each primitive material type + one extra for generic ray/path
-                              // processing)
+    memDesc.SizeInBytes = AthruGPU::EXPECTED_SHARED_GPU_RDBK_MEM;
     memDesc.Properties.Type = D3D12_HEAP_TYPE::D3D12_HEAP_TYPE_READBACK;
     memDesc.Properties.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
     memDesc.Properties.CreationNodeMask = 0x1; // Only one adapter atm
@@ -74,7 +72,7 @@ HRESULT AthruGPU::GPUMemory::AllocBuf(const Microsoft::WRL::ComPtr<ID3D12Device>
 										&bufDesc,
 										initState,
 										nullptr,
-										__uuidof(ID3D12Resource),
+										__uuidof(bufPttr),
 										(void**)bufPttr.GetAddressOf());
 }
 
@@ -82,18 +80,22 @@ HRESULT AthruGPU::GPUMemory::AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>
 									  const u4Byte& texSize,
 									  const D3D12_RESOURCE_DESC texDesc,
 									  const D3D12_RESOURCE_STATES initState,
-									  const D3D12_CLEAR_VALUE optimalClearColor,
 									  const Microsoft::WRL::ComPtr<ID3D12Resource>& texPttr)
 {
-	u8Byte offs = resrcMem.offs;
-	resrcMem.offs += texSize;
-	return device->CreatePlacedResource(resrcMem.mem.Get(),
-										offs,
-										&texDesc,
-										initState,
-										&optimalClearColor,
-										__uuidof(ID3D12Resource),
-										(void**)texPttr.GetAddressOf());
+	// Optimizing aligned memory usage for textures is very awkward, so prefer committed resources here
+	D3D12_HEAP_PROPERTIES heapProps;
+	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+	heapProps.VisibleNodeMask = 0x1;
+	heapProps.CreationNodeMask = 0x1;
+	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
+	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
+	return device->CreateCommittedResource(&heapProps,
+										   D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+										   &texDesc,
+										   initState,
+										   nullptr,
+										   __uuidof(ID3D12Resource),
+										   (void**)texPttr.GetAddressOf());
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::AllocCBV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,

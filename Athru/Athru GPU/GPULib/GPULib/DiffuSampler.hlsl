@@ -3,13 +3,24 @@
     #include "Materials.hlsli"
 #endif
 
+// Append/consume counters for traceables + material primitives
+RWBuffer<uint> counters : register(u9);
+
 // Buffer carrying intersections across ray-march iterations
 // Simply ordered, used to minimize dispatch sizes for
 // ray-marching
-AppendStructuredBuffer<uint> traceables : register(u11);
+AppendStructuredBuffer<uint> traceables : register(u10);
 
-// Diffuse intersection buffer
-ConsumeStructuredBuffer<uint> diffuIsections : register(u12);
+// Material intersection buffers
+// Can save some performance + simplify header structure by converting these
+// back to standard buffers and appending/consuming manually; might implement
+// that after/during validation
+ConsumeStructuredBuffer<uint> diffuIsections : register(u11);
+ConsumeStructuredBuffer<uint> mirroIsections : register(u12);
+ConsumeStructuredBuffer<uint> refraIsections : register(u13);
+ConsumeStructuredBuffer<uint> snowwIsections : register(u14);
+ConsumeStructuredBuffer<uint> ssurfIsections : register(u15);
+ConsumeStructuredBuffer<uint> furryIsections : register(u16);
 
 [numthreads(8, 8, 4)]
 void main(uint3 groupID : SV_GroupID,
@@ -17,12 +28,11 @@ void main(uint3 groupID : SV_GroupID,
 {
     // Cache linear thread ID
     uint linDispID = threadID + (groupID.x * 256); // Assumes one-dimensional dispatches from [RayMarch]
-    if (linDispID > (counters[24] - 1)) { return; } // Mask off excess threads (assumes one-dimensional dispatches)
+    if (linDispID > counters[1]) { return; } // Mask off excess threads (assumes one-dimensional dispatches)
 
     // Cache intersection info for the sample point
     uint ndx = diffuIsections.Consume();
-    if (linDispID == 0) // Zero diffuse dispatch sizes
-    { counters[0] = 0; }
+	uint2 pix = uint2(ndx % rndrInfo.resInfo.x, ndx / rndrInfo.resInfo.x);
 
     // Extract a Philox-permutable value from [randBuf]
     // Also cache the accessor value used to retrieve that value in the first place
@@ -62,6 +72,7 @@ void main(uint3 groupID : SV_GroupID,
                                StellarPosPDF(),
                                normSpace,
                                star.scale.x,
+							   gpuInfo.systemOri.xyz,
                                figID,
                                eps,
                                rand.xy);
@@ -83,7 +94,7 @@ void main(uint3 groupID : SV_GroupID,
                                           n,
                                           wo)) / ZERO_PDF_REMAP(iDir.w) * abs(dot(n,
                                                                                   ray[1]));
-        displayTex[ndx] *= float4(rgb, 1.0f);
+        displayTex[pix] *= float4(rgb, 1.0f);
         if (dot(rgb, 1.0f.xxx) > 0.0f) // Only propagate paths with nonzero brightnesss
         {
             // Update current direction + position, also previous position
@@ -99,8 +110,8 @@ void main(uint3 groupID : SV_GroupID,
         }
     }
     else // Otherwise apply next-event-estimated shading into path color
-    { displayTex[ndx] *= float4(nee.rgb, 1.0f); } // PDFs already applied for [nee.rgb]
+    { displayTex[pix] *= float4(nee.rgb, 1.0f); } // PDFs already applied for [nee.rgb]
 
-    // Update Philox key/state for the current path
-    randBuf[ndx] = randStrm;
+	// Update Philox key/state for the current path
+	randBuf[ndx] = randStrm;
 }

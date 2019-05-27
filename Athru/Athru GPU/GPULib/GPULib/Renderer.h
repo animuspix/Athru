@@ -7,6 +7,7 @@
 #include "ComputePass.h"
 #include "Camera.h"
 #include "LiBounce.h"
+#include "PhiloStrm.h"
 #include "ResrcContext.h"
 
 class Renderer
@@ -29,9 +30,6 @@ class Renderer
 		// The intersection shader (traces/marches rays through the scene)
 		ComputePass tracer;
 
-		// Bounce preparation shader (material synthesis + export)
-		ComputePass bouncePrep;
-
         // Per-frame lens sampler
         ComputePass lensSampler;
 
@@ -44,43 +42,42 @@ class Renderer
 		// directly inside the presentation shader)
 		ComputePass post;
 
-		// Useful shaders for indirect dispatch, designed to trim dispatch arguments to match a chosen thread
-		// count (128-thread version divides dispatch arguments by [128], 256-thread version divides dispatch arguments
-		// by [256], and so on)
-		// Defined here instead of globally so I can use rendering-specific resource bindings (avoiding rebinding everything
-		// each time I adjust the counter-buffer)
-        // Suspect I can work without these if I change counter updates in each shader to map between thread-group sizes instead
-        // of naively incrementing the dispatch buffer for each re-emitted ray in a shading pass
-		ComputePass dispatchScale512;
-		ComputePass dispatchScale256;
-		ComputePass dispatchScale128;
+		// Buffer of rendering data, sections accessed by different projections declared below
+		AthruGPU::AthruResrc<uByte, AthruGPU::RWResrc<AthruGPU::Buffer>> rndrBuff;
 
-		// Path information buffer, updated per-bounce
-		// Should update member type appropriately
-		AthruGPU::AthruResrc<LiBounce, AthruGPU::RWResrc<AthruGPU::Buffer>> pxPaths;
+		// Path information projections, updated per-bounce
+		struct float2x3 { DirectX::XMFLOAT3 r0; DirectX::XMFLOAT3 r1; };
+		AthruGPU::AthruResrc<float2x3, AthruGPU::RWResrc<AthruGPU::Buffer>> rays;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3, AthruGPU::RWResrc<AthruGPU::Buffer>> rayOris;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3, AthruGPU::RWResrc<AthruGPU::Buffer>> outDirs;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT2, AthruGPU::RWResrc<AthruGPU::Buffer>> iors;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> figIDs;
 
-		// Small buffer letting us restrict path-tracing dispatches to paths persisting after
+		// Small projection letting us restrict path-tracing dispatches to paths persisting after
 		// each tracing/processing/sampling iteration
 		// Each element is a pixel index
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> traceables;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> traceables;
 
-		// Surface intersection buffer (carries successful intersections across for next-event-estimation + material synthesis)
+		// Material intersection projections
 		// Each element is a pixel index
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> surfIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> diffuIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> mirroIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> refraIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> snowwIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> ssurfIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> furryIsections;
 
-		// Material intersection buffers
-		// Each element is a pixel index
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> diffuIsections;
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> mirroIsections;
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> refraIsections;
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> snowwIsections;
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> ssurfIsections;
-		AthruGPU::AthruResrc<DirectX::XMUINT2, AthruGPU::AppBuffer> furryIsections;
+		// Path-tracing RNG state projection; each chunk of state is a separate Philox stream
+		// (see [PhiloStrm.h])
+		AthruGPU::AthruResrc<PhiloStrm, AthruGPU::RWResrc<AthruGPU::Buffer>> randState;
 
-		// Counter buffers for indirect dispatch; each buffer contains three 4-byte
-		// elements to match the three dispatch axes expected by D3D12
-		AthruGPU::AthruResrc<u4Byte,
-							 AthruGPU::RWResrc<AthruGPU::Buffer>> ctrs[8];
+		// Set of external counters for append/consume projections; zeroth index matches to
+		// traceable indices ([traceables]), indices 1-6 match to the intersection
+		// buffers declared above (diffuse/mirrorlike/refractive/snowy/generic-subsurface/furry)
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> counters;
+
+		// Small value recording how far counter values are offset into the rendering buffer
+		u4Byte counterOffset;
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
@@ -89,16 +86,9 @@ class Renderer
 
 		// Render output texture, copied to the back-buffer each frame
 		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
-							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTex;
-
-		// Resource context for [this], helps guarantee descriptors are placed in the order expected by
-		// the compute shading passes declared above
-		AthruGPU::ResrcContext<std::function<void()>, std::function<void()>,
-							   std::function<void()>, std::function<void()>,
-							   std::function<void()>, std::function<void()>,
-							   std::function<void()>, std::function<void()>,
-							   std::function<void()>, std::function<void()>,
-							   std::function<void()>, std::function<void()>> resrcCtx;
+							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexHDR;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
+							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexLDR;
 
 		// References to Athru's main rendering command-queue/command-list/command-allocator
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;
@@ -109,13 +99,9 @@ class Renderer
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lensList;
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> lensAlloc;
 
-		// Specialized path-tracing command-list + command-allocator +
-		// command signatures for indirect dispatch
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> ptCmdList;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> ptCmdAllocator;
-		Microsoft::WRL::ComPtr<ID3D12CommandSignature> ptCmdSig;
-
-		// Constant PT starting/finished fence values
-		static constexpr u8Byte PT_STARTING = 16u;
-		static constexpr u8Byte PT_ENDED = 32u;
+		// Specialized path-tracing command-lists + command-allocators
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> traceCmdList;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> traceCmdAllocator;
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> surfCmdList;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> surfCmdAllocator;
 };

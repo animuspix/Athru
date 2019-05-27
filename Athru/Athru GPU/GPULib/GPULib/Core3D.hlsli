@@ -16,7 +16,7 @@
 #include "FigureBuffer.hlsli"
 
 // Rasterized volume atlas for the current system + plants/animals on the local planet
-Buffer<float> rasterAtlas : register(t1);
+//Buffer<float> rasterAtlas : register(t1);
 
 // The maximum possible number of discrete figures within the
 // scene
@@ -39,8 +39,8 @@ Buffer<float> rasterAtlas : register(t1);
 // around the system disc)
 #define SYM_PLANET_ORI float3(PLANETARY_RING_RADIUS, 0.0f.xx)
 
-#ifndef UTILITIES_LINKED
-    #include "GenericUtility.hlsli"
+#ifndef GENERIC_BINDS_LINKED
+    #include "GenericBinds.hlsli"
 #endif
 
 // Voxel interface functions, useful for sampling/smoothing volumetric information
@@ -320,7 +320,7 @@ float2x3 PlanetDF(float3 pt,
                     0x1, // Figure ID
                     (float3(cos((float)0x1 * (RADS_PER_PLANET * 2.0f)),
                             0.0f,
-                            sin((float)0x1 * (RADS_PER_PLANET * 2.0f))) * PLANETARY_RING_RADIUS) + systemOri.xyz) ; // Symmetric figure origin
+                            sin((float)0x1 * (RADS_PER_PLANET * 2.0f))) * PLANETARY_RING_RADIUS) + gpuInfo.systemOri.xyz) ; // Symmetric figure origin
 }
 
 // Return distance + surface information for the local star
@@ -329,7 +329,7 @@ float2x3 StarDF(float3 pt,
                 bool useFigBounds)
 {
     Figure fig = figures[0];
-    float4 linTransf = float4(systemOri.xyz, fig.scale.x);
+    float4 linTransf = float4(gpuInfo.systemOri.xyz, fig.scale.x);
     float3 isect = BoundingSphereTrace(pt,
                                        rayOri,
                                        linTransf);
