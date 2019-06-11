@@ -7,3 +7,5 @@
 #define GENERIC_BINDS_LINKED
 ConstantBuffer<GPUInput> gpuInfo : register(b0);
 
+// [Figure] struct + figure-buffer
+#include "FigureBuffer.hlsli"

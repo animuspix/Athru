@@ -9,23 +9,6 @@
 	#include "GenericBinds.hlsli"
 #endif
 
-// Rendering-specific input from the CPU
-struct RenderInput
-{
-    float4 cameraPos; // Camera position in [xyz], [w] is unused
-    matrix viewMat;
-    matrix iViewMat;
-    float4 bounceInfo; // Maximum number of bounces in [x] (integer), path cancellation chance in [x] (real), number of supported surface BXDFs in [y] (integer),
-					   // tracing epsilon value in [z] (real), number of valid threads per-pass in [z] (integer), number of patches (groups) per-axis deployed
-					   // for path tracing in [w] (integer) ([w]/real is unused)
-    uint4 resInfo; // Resolution info carrier; contains app resolution in [xy],
-	               // AA sampling rate in [z], and display area in [w]
-	uint4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
-	uint4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
-	float4 excess[3]; // DX12 buffers are 256-byte aligned; padding allocated here
-};
-ConstantBuffer<RenderInput> rndrInfo : register(b1);
-
 // State buffer for the rendering-specific random number generator
 // (streamed data is used for physics/ecology RNG, which could require much more information)
 RWStructuredBuffer<PhiloStrm> randBuf : register(u0);

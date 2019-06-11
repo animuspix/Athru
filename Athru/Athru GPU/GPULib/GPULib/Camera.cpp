@@ -147,9 +147,13 @@ void Camera::MouseLook(Input* inputPttr)
 								  coreRotationEuler.y + yRotationDelta,
 								  0));
 
-	// Move the cursor back to the screen centre
-	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2,
-				 GetSystemMetrics(SM_CYSCREEN) / 2);
+	// Move the cursor back to the window centre
+	RECT rc = {};
+	LPRECT lpRc = &rc;
+	BOOL err = GetWindowRect(AthruCore::Utility::AccessApp()->GetHWND(), lpRc);
+	assert(err);
+	SetCursorPos(rc.left + (std::abs(rc.right - rc.left) / 2),
+				 rc.bottom + (std::abs(rc.top - rc.bottom) / 2));
 }
 
 void Camera::RefreshViewData()

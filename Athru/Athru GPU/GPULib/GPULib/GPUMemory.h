@@ -6,6 +6,16 @@
 
 namespace AthruGPU
 {
+	enum class SHADER_CTX
+	{
+		RNDR,
+		PHYS,
+		ECOL
+	};
+}
+
+namespace AthruGPU
+{
 	class GPUMemory
 	{
 		public:
@@ -123,8 +133,12 @@ namespace AthruGPU
 															const D3D12_UNORDERED_ACCESS_VIEW_DESC* viewDesc,
 															const Microsoft::WRL::ComPtr<ID3D12Resource>& dataResrc,
 															const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc);
+
             // Return a reference to the shader descriptor heap ([shaderViewMem])
             const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& GetShaderViewMem();
+
+			// Return a GPU handle to the descriptors associated with the given resource context
+			const D3D12_GPU_DESCRIPTOR_HANDLE GetBaseDescriptor(const SHADER_CTX ctx);
 
 			// Overload the standard allocation/de-allocation operators
 			void* operator new(size_t size);
@@ -139,9 +153,6 @@ namespace AthruGPU
 											      const Microsoft::WRL::ComPtr<ID3D12Resource>& dataResrc = nullptr,
 											      const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc = nullptr)
 			{
-				// Update descriptor-heap offset
-				shaderViewMem.offs.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-
 				// Cache view handle
 				D3D12_CPU_DESCRIPTOR_HANDLE viewHandle = shaderViewMem.offs;
 
@@ -159,12 +170,13 @@ namespace AthruGPU
 				}
 				else if constexpr (std::is_same<viewDescType, D3D12_UNORDERED_ACCESS_VIEW_DESC>::value)
 				{
-					u4Byte x = viewDesc->Buffer.NumElements;
 					device->CreateUnorderedAccessView(dataResrc.Get(),
 													  ctrResrc.Get(),
 													  (const D3D12_UNORDERED_ACCESS_VIEW_DESC*)viewDesc,
 													  viewHandle);
 				}
+				// Update descriptor-heap offset
+				shaderViewMem.offs.ptr += device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
 				return viewHandle;
 			}
 
@@ -204,8 +216,12 @@ namespace AthruGPU
                                                // style guarantees stalls between stages (either from UAV barriers or from readback), so there's less reason to choose indirect
                                                // dispatch over a conceptually simpler readback->dispatch->update->readback loop)
 			GPUStackedMem<ID3D12DescriptorHeap> shaderViewMem; // Descriptor memory for shader-visible views (constant-buffer, shader-resource, unordered-access)
-			D3D12_CPU_DESCRIPTOR_HANDLE shaderViewStart; // Handle for the start of [shaderViewMem.mem]; not easily defined within [GPUStackedMem], not enough descriptor
-														 // heaps to justify creating another struct
+															   // Not necessary yet, but likely to have one descriptor heap for storage and smaller ones for per-context work
+															   // (descriptors across contexts would be stored in [shaderViewMem], then those needed for specific contexts
+															   //  would be copied across to [rnderViewMem], [physicsViewMem], and [ecoViewMem] each frame)
+															   // This simplifies descriptor management, and makes it natural to only include the context bindings you'll use
+															   // in each shader
+			D3D12_GPU_DESCRIPTOR_HANDLE rnderCtxStart; // GPU handle to the start of the rendering descriptor heap
 			// -- No render-targets or depth-stencils used by Athru, compute-shading only -- //
 	};
 }

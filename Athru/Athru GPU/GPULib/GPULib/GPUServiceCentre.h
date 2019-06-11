@@ -43,8 +43,7 @@ namespace AthruGPU
 
 			// Initialise the rendering manager + the GPU update manager
 			rendererPttr = new Renderer(winHandle, gpuMem,
-										device, d3DPttr->GetGraphicsQueue(),
-										d3DPttr->GetGraphicsCmdList(), d3DPttr->GetGraphicsCmdAllocator());
+										device, d3DPttr->GetGraphicsQueue());
 		}
 
 		static void DeInit()
@@ -54,7 +53,7 @@ namespace AthruGPU
 			rendererPttr = nullptr;
 
 			// Clean-up data associated with the SDF rasterizer
-			rasterPttr->~GradientMapper();
+			//rasterPttr->~GradientMapper();
 
 			// Clean-up data associated with the GPU messenger
 			gpuMessengerPttr->~GPUMessenger();
@@ -84,10 +83,10 @@ namespace AthruGPU
 			return gpuMessengerPttr;
 		}
 
-		static GradientMapper* AccessRasterizer()
-		{
-			return rasterPttr;
-		}
+		//static GradientMapper* AccessRasterizer()
+		//{
+		//	return rasterPttr;
+		//}
 
 		static Renderer* AccessRenderer()
 		{
@@ -101,9 +100,9 @@ namespace AthruGPU
 		// CPU and GPU figure data
 		static GPUMessenger* gpuMessengerPttr;
 
-		// Volume rasterization object, used for preparing SDF textures when players travel between systems
-		// (planet rasterization) or planets (animal/plant rasterization)
-		static GradientMapper* rasterPttr;
+		// Volume rasterization object, generates gradient fields for faster ray/scene intersections
+		// during rendering
+		//static GradientMapper* rasterPttr;
 
 		// Visibility/lighting calculations, also
 		// post-production and presentation

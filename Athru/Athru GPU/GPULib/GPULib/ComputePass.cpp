@@ -1,12 +1,10 @@
 #include "UtilityServiceCentre.h"
-#include "ResrcContext.h"
 #include "ComputePass.h"
 #include <filesystem>
 
 ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 HWND windowHandle,
 						 const char* shaderFilePath,
-					     const AthruGPU::RESRC_CTX shadingCtx,
 						 const u4Byte& numCBVs, const u4Byte& numSRVs, const u4Byte& numUAVs)
 {
 	// Import the given file into Athru with an ordinary C++ binary input/output stream
@@ -14,8 +12,7 @@ ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 	u8Byte len = std::filesystem::file_size(shaderFilePath); // File size in bytes
 	strm.read(dxilMem, len); // Read bytecode into the subset of Athru's memory stack associated with [this]
 
-	// Map shading context (rendering/generic, rendering/generic/physics, rendering/generic/physics/ecology) onto
-	// descriptor ranges
+	// Compose descriptor ranges
 	u4Byte numRanges = 3;
 	D3D12_DESCRIPTOR_RANGE ranges[3];
 	ranges[0].BaseShaderRegister = 0;
@@ -86,6 +83,7 @@ ComputePass::ComputePass(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 
 ComputePass::~ComputePass()
 {
+	rootSig = nullptr;
 	shadingState = nullptr;
 }
 

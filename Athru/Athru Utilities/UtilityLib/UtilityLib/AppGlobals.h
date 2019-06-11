@@ -161,7 +161,4 @@ namespace SceneStuff
 																		  // (+ at 64 bytes/figure 1024 figures should match exactly to the 65536-byte
 																		  // resource alignment requirement in d3d12)
 	extern constexpr u4Byte ANIMALS_PER_PLANET = 100;
-	extern constexpr u4Byte MAX_NUM_SCENE_FIGURES = BODIES_PER_SYSTEM +
-													PLANTS_PER_PLANET +
-													ANIMALS_PER_PLANET;
 }

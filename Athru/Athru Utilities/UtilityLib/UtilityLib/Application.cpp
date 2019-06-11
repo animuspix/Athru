@@ -1,5 +1,7 @@
 #include "UtilityServiceCentre.h"
 #include "Application.h"
+#pragma comment(lib, "Shcore.lib")
+#include <shellscalingapi.h>
 
 Application::Application()
 {
@@ -119,8 +121,9 @@ LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM me
 
 void Application::BuildWindow(const int& windowedWidth, const int& windowedHeight)
 {
-	WNDCLASSEX wc;
-	DEVMODE dmScreenSettings;
+	// Mostly video content, so tell the OS to ignore display scaling before
+	// creating the window
+	SetProcessDpiAwareness(PROCESS_SYSTEM_DPI_AWARE);
 
 	// Get the instance of this application.
 	appInstance = GetModuleHandle(NULL);
@@ -129,6 +132,7 @@ void Application::BuildWindow(const int& windowedWidth, const int& windowedHeigh
 	appName = L"Athru";
 
 	// Setup the windows class with default settings.
+	WNDCLASSEX wc;
 	wc.style = CS_HREDRAW | CS_VREDRAW | CS_OWNDC;
 	wc.lpfnWndProc = WndProc;
 	wc.cbClsExtra = 0;
@@ -146,17 +150,19 @@ void Application::BuildWindow(const int& windowedWidth, const int& windowedHeigh
 	RegisterClassEx(&wc);
 
 	// Determine the resolution of the clients desktop screen.
-	int screenWidth = GetSystemMetrics(SM_CXSCREEN);
-	int screenHeight = GetSystemMetrics(SM_CYSCREEN);
+	// Should eventually enumerate these for each monitor in a drop-down and let the user choose where to
+	// launch the game/engine
+	monitorRes[0] = GetSystemMetrics(SM_CXSCREEN);
+	monitorRes[1] = GetSystemMetrics(SM_CYSCREEN);
 
 	// Setup the screen settings depending on whether it is running in full screen or in windowed mode.
 	if (GraphicsStuff::FULL_SCREEN)
 	{
 		// If full screen set the screen to maximum size of the users desktop and 32bit.
-		memset(&dmScreenSettings, 0, sizeof(dmScreenSettings));
+		DEVMODE dmScreenSettings = {};
 		dmScreenSettings.dmSize = sizeof(dmScreenSettings);
-		dmScreenSettings.dmPelsWidth = (unsigned long)screenWidth;
-		dmScreenSettings.dmPelsHeight = (unsigned long)screenHeight;
+		dmScreenSettings.dmPelsWidth = (unsigned long)monitorRes[0];
+		dmScreenSettings.dmPelsHeight = (unsigned long)monitorRes[1];
 		dmScreenSettings.dmBitsPerPel = 32;
 		dmScreenSettings.dmFields = DM_BITSPERPEL | DM_PELSWIDTH | DM_PELSHEIGHT;
 
@@ -169,14 +175,14 @@ void Application::BuildWindow(const int& windowedWidth, const int& windowedHeigh
 
 		// Create the window with the screen settings and get the handle to it.
 		appForm = CreateWindowEx(WS_EX_APPWINDOW, appName, appName,
-				  WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP, posX, posY, screenWidth,
-				  screenHeight, NULL, NULL, appInstance, NULL);
+				  WS_CLIPSIBLINGS | WS_CLIPCHILDREN | WS_POPUP, posX, posY, monitorRes[0],
+				  monitorRes[1], NULL, NULL, appInstance, NULL);
 	}
 	else
 	{
 		// Place the window in the middle of the screen.
-		int posX = (screenWidth - windowedWidth) / 2;
-		int posY = (screenHeight - windowedHeight) / 2;
+		int posX = (monitorRes[0] - windowedWidth) / 2;
+		int posY = (monitorRes[1] - windowedHeight) / 2;
 
 		// Create the window with the screen settings and get the handle to it.
 		appForm = CreateWindowEx(WS_EX_APPWINDOW, appName, appName,
@@ -216,6 +222,12 @@ void Application::CloseWindow()
 HWND Application::GetHWND()
 {
 	return appForm;
+}
+
+void Application::GetMonitorRes(u4Byte* x, u4Byte* y)
+{
+	*x = monitorRes[0];
+	*y = monitorRes[1];
 }
 
 // Push constructions for this class through Athru's custom allocator

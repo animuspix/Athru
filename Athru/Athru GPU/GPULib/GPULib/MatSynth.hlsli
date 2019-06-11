@@ -48,8 +48,6 @@ float FresMirr(float2 etaKap, // Surface indices of refraction (x) and extinctio
 // + incoming angle-of-incidence
 // Uses the dielectric Fresnel function from
 // Physically Based Rendering (Pharr, Jakob, Humphreys), page 518
-// Spectral Fresnel coefficient returned in [rgb], incoming/outgoing [eta] ratio
-// returned in [a]
 float2 FresDiel(float2 etaIO, // Incoming/outgoing indices of refraction
                			      // Vectorized indices are possible, but cause significant
                			      // dispersion that I'd rather avoid here
@@ -157,8 +155,10 @@ float SurfAlpha(float3 coord, uint bxdfID)
 // Will eventually reference a volume texture
 float3 SurfRGB(float3 wo, float3 norml)
 {
-    return float3(abs(cross(wo, norml)).r, 0.5f, 0.5f);
-                  //1.0f.xxx;
+    return //float3(abs(cross(wo, norml)).r, 0.5f, 0.5f);
+           1.0f.xxx;
+           //wo;
+           //norml;
 }
 
 // Per-vertex (fixed atm) indices of refraction/absorption

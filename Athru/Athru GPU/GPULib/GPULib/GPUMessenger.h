@@ -6,7 +6,6 @@
 #include "AthruResrc.h"
 #include "ComputePass.h"
 #include <wrl\client.h>
-#include "ResrcContext.h"
 
 class GPUMessenger
 {
@@ -27,18 +26,17 @@ class GPUMessenger
 
 		// Access data copied into the read-back buffer at a given offset, in a given format
 		template<typename DataFmt>
-		DataFmt DataFromGPU(u4Byte offs)
+		void DataFromGPU(u4Byte offs, u4Byte dataLen, DataFmt* readInto)
 		{
 			D3D12_RANGE range;
 			range.Begin = offs;
-			range.End = AthruGPU::EXPECTED_SHARED_GPU_RDBK_MEM;
+			range.End = offs + dataLen;
 			HRESULT hr = rdbkBuf.resrc->Map(0, &range, (void**)&gpuReadable);
 			assert(SUCCEEDED(hr));
-			DataFmt data = *((DataFmt*)(gpuReadable));
+			memcpy(readInto, gpuReadable, dataLen);
 			range.Begin = 0;
 			range.End = 0;
 			rdbkBuf.resrc->Unmap(0, &range);
-			return data;
 		}
 
 		// Acquire a const reference to the resource behind the readback buffer
@@ -74,6 +72,8 @@ class GPUMessenger
 		// System buffer
         AthruGPU::AthruResrc<SceneFigure::Figure,
                              AthruGPU::RResrc<AthruGPU::Buffer>> sysBuf;
+		// Length of the system buffer, in bytes
+		static constexpr u4Byte sysBytes = SceneStuff::ALIGNED_PARAMETRIC_FIGURES_PER_SYSTEM * sizeof(SceneFigure);
 
 		// CPU->GPU messaging buffer
         AthruGPU::AthruResrc<uByte,

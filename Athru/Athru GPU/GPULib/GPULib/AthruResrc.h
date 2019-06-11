@@ -13,6 +13,9 @@ namespace AthruGPU
 											 // plant species) before transfer to GPU-only memory
     struct ReadbkBuffer : public Buffer {}; // A readback resource (CPU-read, GPU-write); only buffer readback is supported, and readback resources cannot
 											// be bound for GPU input (=> they only support the D3D12_RESOURCE_STATES_COPY_DEST usage state)
+	struct IndirArgBuffer : public Buffer {}; // A resource used as an argument buffer for indirect draw/dispatch; Athru requires that indirect arguments are never bound
+											  // to pipeline state, with copies to/from a generic read/write buffer preferred for updates between indirect command
+											  // submissions
 	struct AppBuffer : public Buffer {}; // Only compatible with the [Buffer] resource type
 	template<typename ResrcType> // [ResrcType] must be either [Buffer] or [Texture], enforceable with C++20 concepts
 	struct RWResrc : public ResrcType {}; // A read/write allowed resource (GPU-only)
@@ -23,14 +26,6 @@ namespace AthruGPU
 												  // (very few image assets, data assets might be easier to upload in buffers)
 	template<typename ReadabilityType> // [ReadabilityType] is either [RResrc] or [RWResrc]
 	struct StrmResrc : ReadabilityType {}; // Tiled streaming buffer, mainly allocated within virtual memory and partly loaded into GPU dedicated memory on-demand
-
-	// Supported resource copy states in Athru
-	enum class RESRC_COPY_STATES
-	{
-		SRC,
-		NUL,
-		DST
-	};
 
 	// Convenience function to update expected usage for a given resource; blocks shader execution until
 	// change in resource state has completed
@@ -55,6 +50,7 @@ namespace AthruGPU
 		D3D12_RESOURCE_BARRIER barrier;
 		barrier.Type = D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_UAV;
 		barrier.UAV.pResource = resrc.Get();
+		barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
 		return barrier;
 	}
 
@@ -62,25 +58,40 @@ namespace AthruGPU
 	// Considering predicated dispatch for optimized ray masking: https://docs.microsoft.com/en-us/windows/desktop/direct3d12/predication
 	template <typename ContentType,
 			  typename AthruResrcType, // Restrict to defined Athru resource types when possible... (see Concepts in C++20)
-			  RESRC_COPY_STATES initCopyState = RESRC_COPY_STATES::NUL, // Resources may be copy-sources, copy-destinations, or neither, but not sources & destinations simultaneously
 			  ContentType* initDataPttr = nullptr, // Specify initial resource data; only accessed for buffers atm
 			  bool crossCmdQueues = false, // Specify a resource may be shared across command queues
 			  bool crossGPUs = false> // Specify a resource may be shared across system GPUs
 	struct AthruResrc
 	{
 		public:
-			AthruResrc() { }
-            ~AthruResrc()
-            {
-                // Unmap the message buffer (first mapped during initialization, see below)
-                if constexpr (std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
-                {
-                    D3D12_RANGE range;
-                    range.Begin = 0;
-                    range.End = sizeof(ContentType);
-                    resrc->Unmap(0, &range);
-                }
-            }
+			AthruResrc()
+			{
+				resrcState = D3D12_RESOURCE_STATE_COMMON;
+				if constexpr (std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Texture>>::value ||
+					std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Buffer>>::value ||
+					std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value) // Write-limited buffers default to write-allowed/[unordered-access]
+				{
+					resrcState = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
+				}
+				else if constexpr (std::is_same<AthruResrcType, AthruGPU::RResrc<AthruGPU::Buffer>>::value ||
+								   std::is_same<AthruResrcType, AthruGPU::RResrc<AthruGPU::Texture>>::value)
+				{
+					resrcState = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE;
+				} // Not expecting to use the raster pipeline atm (i.e. no shader-resources inside pixel-shader invocations)
+				else if constexpr (std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Buffer>>>::value ||
+								   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value ||
+								   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Texture>>>::value ||
+								   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Texture>>>::value ||
+								   std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
+				{
+					resrcState = D3D12_RESOURCE_STATE_GENERIC_READ;
+				}
+				else if constexpr (std::is_same<AthruResrcType, AthruGPU::IndirArgBuffer>::value)
+				{
+					resrcState = D3D12_RESOURCE_STATE_COPY_DEST;
+				}
+			}
+            ~AthruResrc() {}
 
 			Microsoft::WRL::ComPtr<ID3D12Resource> resrc = nullptr; // Internal DX12 resource
 			D3D12_CPU_DESCRIPTOR_HANDLE resrcViewAddr = { }; // CPU-accessible handle for the descriptor matched with [resrc]
@@ -88,7 +99,9 @@ namespace AthruGPU
 															 // (the first ~256 bytes) because the remaining message space is empty per-frame and used to
 															 // stage scene metadata before transferring it to gpu-only memory for higher
 															 // performance
-			D3D12_RESOURCE_STATES resrcState = D3D12_RESOURCE_STATE_COMMON; // D3D12 resource state at any particular time (render-target, unordered access, non-pixel shader resource...)
+
+			// D3D12 resource state at any particular time (render-target, unordered access, non-pixel shader resource...)
+			D3D12_RESOURCE_STATES resrcState = D3D12_RESOURCE_STATE_COMMON;
 
 			// Explicit initializer choices because a single composed initializer becomes invisible to the IDE
 			//////////////////////////////////////////////////////////////////////////////////////////////////
@@ -165,10 +178,10 @@ namespace AthruGPU
 			// Initialize a read/write buffer resource in GPU-preferred memory without committing to a view
 			void InitRawRWBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							  GPUMemory& gpuMem,
-							  u4Byte& numBytes)
+							  const u4Byte& numBytes)
 			{
 				HRESULT hr = gpuMem.AllocBuf(device, numBytes,
-											 bufResrcDesc(numBytes, DXGI_FORMAT_UNKNOWN), initState(), resrc,
+											 bufResrcDesc(numBytes, DXGI_FORMAT_UNKNOWN), resrcState, resrc,
 											 AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY);
 				assert(SUCCEEDED(hr));
 
@@ -215,7 +228,9 @@ namespace AthruGPU
 				viewDesc.ViewDimension = D3D12_UAV_DIMENSION_BUFFER;
 				viewDesc.Buffer.NumElements = width;
 				viewDesc.Buffer.StructureByteStride = 0;
-				if constexpr (std::is_class<ContentType>::value)
+				if constexpr (std::is_class<ContentType>::value &&
+							  !std::is_same<ContentType, DirectX::XMFLOAT4>::value &&
+							  !std::is_same<ContentType, DirectX::XMVECTOR>::value)
 				{ viewDesc.Buffer.StructureByteStride = sizeof(ContentType); }
 				viewDesc.Buffer.FirstElement = viewOffs / sizeof(ContentType);
 				viewDesc.Buffer.CounterOffsetInBytes = 0;
@@ -282,7 +297,7 @@ namespace AthruGPU
 					HRESULT hr = gpuMem.AllocBuf(device,
 												 width * sizeof(ContentType),
 												 bufResrcDesc(width * sizeof(ContentType), viewFmt),
-												 initState(),
+												 resrcState,
 												 resrc,
 				                                 bufHeapType());
 					assert(SUCCEEDED(hr));
@@ -293,7 +308,7 @@ namespace AthruGPU
 					HRESULT hr = gpuMem.ArrayToGPUBuffer<ContentType, bufHeapType()>(initDataPttr,
 																	                 width * sizeof(ContentType),
 																	                 bufResrcDesc(width, viewFmt1),
-																	                 initState(),
+																	                 resrcState,
 																	                 device,
 																	                 resrc.Get());
 					assert(SUCCEEDED(hr));
@@ -363,7 +378,6 @@ namespace AthruGPU
 												    &viewDesc,
 												    resrc);
 				}
-				// -- Descriptor table bindings are handled by game systems (rendering/physics/ecology); return here --
 			}
 			void InitTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						 GPUMemory& gpuMem,
@@ -380,7 +394,7 @@ namespace AthruGPU
 				HRESULT hr = gpuMem.AllocTex(device,
 											 width * sizeof(ContentType),
 											 texResrcDesc(width, height, depth, viewFmt),
-											 initState(),
+											 resrcState,
 											 resrc);
 				assert(SUCCEEDED(hr));
 
@@ -439,39 +453,6 @@ namespace AthruGPU
 									viewDesc,
 									resrc);
 				}
-				// -- Descriptor table bindings are handled by game systems (rendering/physics/ecology); return here --
-			}
-			D3D12_RESOURCE_STATES initState()
-			{
-				// Initialize state value, set access fields as appropriate
-				D3D12_RESOURCE_STATES state = (D3D12_RESOURCE_STATES)0;
-				bool writeSet = false;
-				if constexpr (std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Texture>>::value ||
-						      std::is_same<AthruResrcType, AthruGPU::RWResrc<AthruGPU::Buffer>>::value ||
-						      std::is_same<AthruResrcType, AthruGPU::AppBuffer>::value) // Write-limited buffers default to write-allowed/[unordered-access]
-				{
-					state = D3D12_RESOURCE_STATE_UNORDERED_ACCESS;
-					writeSet = true;
-				}
-				else if constexpr (std::is_same<AthruResrcType, AthruGPU::RResrc<AthruGPU::Buffer>>::value ||
-								   std::is_same<AthruResrcType, AthruGPU::RResrc<AthruGPU::Texture>>::value)
-				{ state = D3D12_RESOURCE_STATE_NON_PIXEL_SHADER_RESOURCE; } // Not expecting to use the raster pipeline atm (i.e. no shader-resources inside pixel-shader invocations)
-				else if constexpr (std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Buffer>>>::value ||
-                                   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Buffer>>>::value ||
-                                   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RResrc<AthruGPU::Texture>>>::value ||
-                                   std::is_same<AthruResrcType, AthruGPU::UploResrc<AthruGPU::RWResrc<AthruGPU::Texture>>>::value ||
-                                   std::is_same<AthruResrcType, AthruGPU::MessageBuffer>::value)
-				{ state = D3D12_RESOURCE_STATE_GENERIC_READ; }
-
-				// Set source/destination copy fields as appropriate
-				if constexpr (initCopyState == RESRC_COPY_STATES::DST)
-				{ state = D3D12_RESOURCE_STATE_COPY_DEST; }
-				else if constexpr (initCopyState == RESRC_COPY_STATES::SRC && !writeSet)
-				{ state |= D3D12_RESOURCE_STATE_COPY_SOURCE; }
-				else if constexpr (initCopyState == RESRC_COPY_STATES::SRC && writeSet)
-				{ state = D3D12_RESOURCE_STATE_COPY_SOURCE; }
-				resrcState = state; // Cache generated state
-				return state; // Return composed state
 			}
 			D3D12_RESOURCE_FLAGS resrcFlags() // Small function returning appropriate resource flags for different buffer types
 			{

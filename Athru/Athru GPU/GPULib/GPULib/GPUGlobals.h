@@ -24,7 +24,7 @@ namespace GraphicsStuff
 	extern constexpr u4Byte SCREEN_RECT_INDEX_COUNT = 6;
 	extern constexpr u4Byte MAX_NUM_BOUNCES = 7;
 	extern constexpr u4Byte MAX_NUM_SSURF_BOUNCES = 512;
-	extern constexpr u4Byte NUM_AA_SAMPLES = 8192;
+	extern constexpr u4Byte NUM_AA_SAMPLES = 256;//8192
 	extern constexpr u4Byte TILE_WIDTH = 2;
 	extern constexpr u4Byte TILE_HEIGHT = 2;
 	extern constexpr u4Byte TILE_AREA = TILE_WIDTH * TILE_HEIGHT;
@@ -67,18 +67,21 @@ namespace AthruGPU
 	// Just working with dedicated memory atm, might implement streaming resources for assets when I start loading them in
 	extern constexpr u4Byte EXPECTED_ONBOARD_GPU_RESRC_MEM = 800002048;
 
+	// Minimal byte footprint for aligned D3D12 buffer resources
+	extern constexpr u4Byte MINIMAL_D3D12_ALIGNED_BUFFER_MEM = 65536;
+
 	// Expected maximum shared GPU memory usage (for resource upload)
-	extern constexpr u4Byte EXPECTED_SHARED_GPU_UPLO_MEM = 65536;
+	extern constexpr u4Byte EXPECTED_SHARED_GPU_UPLO_MEM = MINIMAL_D3D12_ALIGNED_BUFFER_MEM;
 
 	// Expected maximum shared GPU memory usage (for resource download/readback)
-	// Includes (DISPLAY_AREA * 12) bytes worth of screenshot memory (one set of 32-bit RGB values/pixel), ~28 kilobytes of
-	// aligned counter memory for path-tracing, and ~57KB of padding so that the full allocation is 65536-byte aligned
+	// Includes (DISPLAY_AREA * 12) bytes worth of screenshot memory (one set of 32-bit RGB values/pixel) + ~44KB of
+	// padding so that the full allocation is 65536-byte aligned
 	// Screenshots will be exported as PNG using the lodepng library: https://github.com/lvandeve/lodepng
-	extern constexpr u4Byte EXPECTED_SHARED_GPU_RDBK_MEM = ((GraphicsStuff::DISPLAY_AREA * 12) + (7 * 4096)) + 57344;
+	extern constexpr u4Byte EXPECTED_SHARED_GPU_RDBK_MEM = (GraphicsStuff::DISPLAY_AREA * 12) + 45056;
 
 	// Expected maximum number of shader-visible resource views
 	// Likely to grow after I implement physics + ecology systems
-	extern constexpr u4Byte EXPECTED_NUM_GPU_SHADER_VIEWS = 20;
+	extern constexpr u4Byte EXPECTED_NUM_GPU_SHADER_VIEWS = 70;
 
 	// Byte footprint for constant data in the CPU->GPU message buffer
 	extern constexpr u2Byte EXPECTED_GPU_CONSTANT_MEM = 256;

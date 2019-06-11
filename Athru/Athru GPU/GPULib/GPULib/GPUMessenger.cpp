@@ -2,7 +2,7 @@
 #include "GPUMessenger.h"
 
 GPUMessenger::GPUMessenger(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-                           AthruGPU::GPUMemory& gpuMem)
+                           AthruGPU::GPUMemory& gpuMem) : gpuReadable(nullptr)
 {
 	// Initialize the GPU message buffer
 	msgBuf.InitMsgBuf(device, gpuMem, (address*)&gpuInput);
@@ -23,34 +23,42 @@ GPUMessenger::GPUMessenger(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							  nullptr,
 							  __uuidof(msgCmds),
 							  (void**)&msgCmds);
+
+	// Record upload -> dedicated memory copy
+	// (used to transfer parametric figure memory onto the GPU in each new system)
+	D3D12_RESOURCE_BARRIER sysBufBarriers[2] = { AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_DEST, sysBuf.resrc, sysBuf.resrcState),
+												 AthruGPU::TransitionBarrier(sysBuf.resrcState, sysBuf.resrc, D3D12_RESOURCE_STATE_COPY_DEST) };
+	msgCmds->ResourceBarrier(1, sysBufBarriers);
+	msgCmds->CopyBufferRegion(sysBuf.resrc.Get(), 0, msgBuf.resrc.Get(), 0, sysBytes); // Perform copy
+	msgCmds->ResourceBarrier(1, sysBufBarriers + 1);
+	HRESULT hr = msgCmds->Close();
+	assert(SUCCEEDED(hr));
 }
 
 GPUMessenger::~GPUMessenger()
 {
-    // Try to guarantee input buffers are unmapped on application exit
-    msgBuf.~AthruResrc();
-	sysBuf.~AthruResrc();
+	// Unmap message buffer, explicitly clear smart pointers
+	D3D12_RANGE range;
+	range.Begin = 0;
+	range.End = sysBytes;
+	msgBuf.resrc->Unmap(0, &range);
+	msgBuf.resrc = nullptr;
+	rdbkBuf.resrc = nullptr;
+	sysBuf.resrc = nullptr;
+	msgAlloc = nullptr;
+	msgCmds = nullptr;
 }
 
 void GPUMessenger::SysToGPU(SceneFigure::Figure* sceneFigures)
 {
 	// Copy the given system to the upload heap
-	u2Byte numBytes = SceneStuff::BODIES_PER_SYSTEM * sizeof(SceneFigure);
-	memcpy(gpuInput + AthruGPU::EXPECTED_GPU_CONSTANT_MEM, sceneFigures, numBytes);
+	memcpy(gpuInput, sceneFigures, sysBytes);
 
 	// Copy from the upload heap into [sysBuf]
-	D3D12_RESOURCE_BARRIER barriers[2] = { AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_SOURCE, msgBuf.resrc, msgBuf.resrcState),
-										   AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_DEST, sysBuf.resrc, sysBuf.resrcState) };
-	//msgCmds->ResourceBarrier(2, barriers); // Transition to copy resources
-	msgCmds->CopyBufferRegion(sysBuf.resrc.Get(), 0, msgBuf.resrc.Get(), AthruGPU::EXPECTED_GPU_CONSTANT_MEM, numBytes); // Perform copy
-	barriers[0] = AthruGPU::TransitionBarrier(msgBuf.resrcState, msgBuf.resrc, D3D12_RESOURCE_STATE_COPY_SOURCE);
-	barriers[1] = AthruGPU::TransitionBarrier(sysBuf.resrcState, sysBuf.resrc, D3D12_RESOURCE_STATE_COPY_DEST);
-	//msgCmds->ResourceBarrier(2, barriers); // Transition to previous resource states
-	HRESULT hr = msgCmds->Close();
-	assert(SUCCEEDED(hr));
-	AthruGPU::GPU::AccessD3D()->GetGraphicsQueue()->ExecuteCommandLists(0, (ID3D12CommandList**)msgCmds.GetAddressOf());
-	hr = msgAlloc->Reset();
-	assert(SUCCEEDED(hr));
+	// Scenes aren't configured for uploading complete systems yet, so ignore this for now
+	Direct3D* d3d = AthruGPU::GPU::AccessD3D();
+	d3d->GetGraphicsQueue()->ExecuteCommandLists(1, (ID3D12CommandList**)msgCmds.GetAddressOf());
+	d3d->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
 }
 
 void GPUMessenger::InputsToGPU(const DirectX::XMFLOAT4& sysOri,
@@ -72,6 +80,7 @@ void GPUMessenger::InputsToGPU(const DirectX::XMFLOAT4& sysOri,
     gpuInput->viewMat = viewMat;
     gpuInput->iViewMat = DirectX::XMMatrixInverse(&det,
                                                   viewMat);
+	gpuInput->bounceInfo = DirectX::XMFLOAT4(GraphicsStuff::MAX_NUM_BOUNCES, GraphicsStuff::NUM_SUPPORTED_SURF_BXDFS, GraphicsStuff::EPSILON_MAX, 0.0f);
     gpuInput->resInfo = DirectX::XMUINT4(GraphicsStuff::DISPLAY_WIDTH,
                                          GraphicsStuff::DISPLAY_HEIGHT,
                                          GraphicsStuff::NUM_AA_SAMPLES,

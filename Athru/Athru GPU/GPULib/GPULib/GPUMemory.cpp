@@ -15,7 +15,7 @@ AthruGPU::GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& devic
 	memDesc.Properties.VisibleNodeMask = 0x1; // Expecting to use per-GPU heaps (since the discrete/integrated GPUs will be doing very different things) when I extend
 											  // Athru for multiple adapters
 	memDesc.Alignment = D3D12_DEFAULT_RESOURCE_PLACEMENT_ALIGNMENT;
-	memDesc.Flags = D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES;
+	memDesc.Flags = D3D12_HEAP_FLAG_DENY_RT_DS_TEXTURES | D3D12_HEAP_FLAG_DENY_NON_RT_DS_TEXTURES;
 	resrcMem = GPUStackedMem<ID3D12Heap>(memDesc, device);
 
 	// Create the upload heap
@@ -44,6 +44,7 @@ AthruGPU::GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& devic
 	descHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_SHADER_VISIBLE;
 	descHeapDesc.NodeMask = 0x1; // Only one adapter atm
 	shaderViewMem = GPUStackedMem<ID3D12DescriptorHeap>(descHeapDesc, device);
+	rnderCtxStart = shaderViewMem.mem->GetGPUDescriptorHandleForHeapStart(); // Discrete per-context heaps are unimplemented atm
 
 	// -- No render-targets or depth-stencils used by Athru, compute-shading only -- //
 }
@@ -53,6 +54,7 @@ AthruGPU::GPUMemory::~GPUMemory()
 	// Explicitly reset smart pointers
 	resrcMem.mem = nullptr;
 	uploMem.mem = nullptr;
+	rdbkMem.mem = nullptr;
 	shaderViewMem.mem = nullptr;
 }
 
@@ -128,6 +130,23 @@ D3D12_CPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::AllocUAV(const Microsoft::WRL::
 const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap>& AthruGPU::GPUMemory::GetShaderViewMem()
 {
     return shaderViewMem.mem;
+}
+
+const D3D12_GPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::GetBaseDescriptor(const AthruGPU::SHADER_CTX ctx)
+{
+	switch (ctx)
+	{
+		case AthruGPU::SHADER_CTX::RNDR:
+			return rnderCtxStart;
+		case AthruGPU::SHADER_CTX::PHYS:
+			assert(false); // Unimplemented atm
+			return rnderCtxStart; // Default to the rendering shader context
+		case AthruGPU::SHADER_CTX::ECOL:
+			assert(false); // Unimplemented atm
+			return rnderCtxStart; // Default to the rendering shader context
+		default:
+			return rnderCtxStart; // Default to the rendering shader context
+	}
 }
 
 // Push constructions for this class through Athru's custom allocator

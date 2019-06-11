@@ -8,7 +8,6 @@
 #include "Camera.h"
 #include "LiBounce.h"
 #include "PhiloStrm.h"
-#include "ResrcContext.h"
 
 class Renderer
 {
@@ -16,9 +15,7 @@ class Renderer
 		Renderer(HWND windowHandle,
 				 AthruGPU::GPUMemory& gpuMem,
 				 const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-				 const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue,
-				 const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& rndrCmdList,
-				 const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& rndrCmdAlloc);
+				 const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue);
 		~Renderer();
 		void Render(Direct3D* d3d);
 
@@ -27,16 +24,19 @@ class Renderer
 		void operator delete(void* target);
 
 	private:
+		// Per-frame lens sampler
+		ComputePass lensSampler;
+
 		// The intersection shader (traces/marches rays through the scene)
 		ComputePass tracer;
 
-        // Per-frame lens sampler
-        ComputePass lensSampler;
+		// The dispatch generator; used to convert ray/material counters to indirect
+		// dispatch arguments (assumes 256 threads/group)
+		ComputePass dispEditor;
 
-		// Small array of surface sampling shaders; each element performs sampling + shading for a different
-		// primitive material (support for diffuse, mirrorlike, refractive, subsurface/snowy, generic subsurface, and furry
-		// is expected; only diffuse and mirrorlike are supported at the moment)
-		ComputePass bxdfs[6];
+		// Surface sampling megakernel; every individual group is coherent, but batches of groups are
+		// deployed against different materials
+		ComputePass surfSampler;
 
 		// Small shader for filtering & tonemapping (denoising works well with texture sampling, so that runs
 		// directly inside the presentation shader)
@@ -71,13 +71,29 @@ class Renderer
 		// (see [PhiloStrm.h])
 		AthruGPU::AthruResrc<PhiloStrm, AthruGPU::RWResrc<AthruGPU::Buffer>> randState;
 
-		// Set of external counters for append/consume projections; zeroth index matches to
-		// traceable indices ([traceables]), indices 1-6 match to the intersection
-		// buffers declared above (diffuse/mirrorlike/refractive/snowy/generic-subsurface/furry)
-		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> counters;
+		// External counters for append/consume projections
+		// Declared in separate memory for easier packing (counters are 4096-byte aligned)
+		// and to avoid creating inaccessible memory within [rndrBuff]
+		AthruGPU::AthruResrc<uByte, AthruGPU::RWResrc<AthruGPU::Buffer>> ctrBuff;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> traceCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> diffuCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> mirroCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> refraCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> snowwCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> ssurfCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> furryCtr;
 
-		// Small value recording how far counter values are offset into the rendering buffer
-		u4Byte counterOffset;
+		// Set of shader-visible tracing/sampling dispatch axes exposed each frame
+		// Successful intersections are recorded here for sampling, and recorded again if they
+		// pass through sampling without being absorbed by the scene or hitting a light source
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> dispAxesWrite;
+
+		// Argument buffer for indirect tracing + sampling dispatches
+		// Axes recorded by [dispAxesWrite] are copied in here before launching tracing/sampling passes;
+		// this allows indirectly dispatched passes to emit more indirect threads themselves (like a tracing
+		// pass processing persistent rays from a previous sampling pass, while feeding successful intersections
+		// into another sampling pass within the same bounce)
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3, AthruGPU::IndirArgBuffer> dispAxesArgs;
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
@@ -90,18 +106,27 @@ class Renderer
 		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
 							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexLDR;
 
-		// References to Athru's main rendering command-queue/command-list/command-allocator
+		// References to Athru's main rendering command-queue
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;
-		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& renderCmdList;
-		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& renderCmdAllocator;
 
 		// Specialized lens-sampling command-list + command-allocator
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lensList;
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> lensAlloc;
 
 		// Specialized path-tracing command-lists + command-allocators
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> traceCmdList;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> traceCmdAllocator;
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> surfCmdList;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> surfCmdAllocator;
+		// (also command signature for indirect dispatch)
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> ptCmdList;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> ptCmdAllocator;
+		Microsoft::WRL::ComPtr<ID3D12CommandSignature> ptCmdSignature;
+
+		// Specialized post-processing command-lists + command allocator
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> postCmdLists[AthruGPU::NUM_SWAPCHAIN_BUFFERS]; // One command-list for each swap-chain buffer
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> postCmdAllocator;
+
+		// Array of command-list sets to fire for each swap-chain buffer
+		// (batched version of lensList/ptCmdList/postCmdList[0...2] for neater command submission)
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> rnderCmdSets[3][3];
+
+		// Not every frame is a rendering frame, so internally keep track of render frames here
+		u4Byte rnderFrameCtr;
 };

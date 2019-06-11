@@ -9,59 +9,31 @@
 Renderer::Renderer(HWND windowHandle,
 				   AthruGPU::GPUMemory& gpuMem,
 				   const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-				   const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue,
-				   const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& rndrCmdList,
-				   const Microsoft::WRL::ComPtr<ID3D12CommandAllocator>& rndrCmdAlloc) :
-			// Initialize rendering code
-			tracer{ ComputePass(device,
-					 			windowHandle,
-					 			"RayMarch.cso",
-								AthruGPU::RESRC_CTX::RENDER,
-								2, 2, 17) },
+				   const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue) :
+			// Initialize shaders
             lensSampler(ComputePass(device,
 								    windowHandle,
 								    "LensSampler.cso",
-								    AthruGPU::RESRC_CTX::RENDER,
-									2, 2, 10)),
-			bxdfs{ ComputePass(device,
-							   windowHandle,
-							   "DiffuSampler.cso",
-							   AthruGPU::RESRC_CTX::RENDER,
-							   2, 2, 17),
-				   ComputePass(device,
-							   windowHandle,
-							   "MirroSampler.cso",
-							   AthruGPU::RESRC_CTX::RENDER,
-							   2, 2, 17),
-				   ComputePass(device,
-							   windowHandle,
-							   "RefraSampler.cso",
-							   AthruGPU::RESRC_CTX::RENDER,
-							   2, 2, 17),
-				   ComputePass(device,
-							   windowHandle,
-							   "SnowwSampler.cso",
-							   AthruGPU::RESRC_CTX::RENDER,
-							   2, 2, 17),
-				   ComputePass(device,
-							   windowHandle,
-							   "SsurfSampler.cso",
-							   AthruGPU::RESRC_CTX::RENDER,
-							   2, 2, 17),
-				   ComputePass(device,
-							   windowHandle,
-							   "FurrySampler.cso",
-							   AthruGPU::RESRC_CTX::RENDER,
-							   2, 2, 17) },
+									1, 1, 18)),
+			tracer{ ComputePass(device,
+					 			windowHandle,
+					 			"RayMarch.cso",
+								1, 1, 24) },
+			dispEditor { ComputePass(device,
+									 windowHandle,
+									 "RnderDispEditor.cso",
+									 1, 1, 24) },
+			surfSampler{ ComputePass(device,
+								     windowHandle,
+								     "SurfSampler.cso",
+								     1, 1, 24) },
 			post(device,
 				 windowHandle,
 				 "RasterPrep.cso",
-				 AthruGPU::RESRC_CTX::RENDER,
-				 2, 0, 9),
-			// Cache references to the rendering command queue/list/allocator
+				 1, 1, 17),
+			// Cache a reference to the rendering command queue
 			renderQueue(rndrCmdQueue),
-			renderCmdList(rndrCmdList),
-			renderCmdAllocator(rndrCmdAlloc)
+			rnderFrameCtr(0) // Rendering starts on the zeroth back-buffer
 {
 	// Initialize rendering buffer
 	constexpr u4Byte sizes[15] = { (AthruGPU::NUM_RAND_PT_STREAMS * sizeof(PhiloStrm)),
@@ -71,7 +43,7 @@ Renderer::Renderer(HWND windowHandle,
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(float)),
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(u4Byte)),
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(PixHistory)),
-								   7 * 4096, // Counters are 4096-byte aligned; space between each counter is used for frame metadata
+								   (8 * sizeof(u4Byte)),
 								   (GraphicsStuff::TILING_AREA * sizeof(u4Byte)),
 								   (GraphicsStuff::TILING_AREA * sizeof(u4Byte)),
 								   (GraphicsStuff::TILING_AREA * sizeof(u4Byte)),
@@ -82,32 +54,43 @@ Renderer::Renderer(HWND windowHandle,
 	u4Byte rndrMem = 0;
 	for (u4Byte i = 0; i < 15; i += 1)
 	{ rndrMem += sizes[i]; }
-	rndrMem += 65536 - (rndrMem % 65536);
+	rndrMem += 65536 - (rndrMem % 65536); // Adjust rendering memory footprint toward 64KB alignment
 	rndrBuff.InitRawRWBuf(device, gpuMem, rndrMem);
 	u4Byte offsets[15];
 	offsets[0] = 0;
 	offsets[1] = sizes[0];
 	for (u4Byte i = 2; i < 15; i += 1)
 	{ offsets[i] = offsets[i - 1] + sizes[i - 1]; }
-	counterOffset = offsets[7] + (4096 - offsets[7] % 4096);
 	randState.InitRWBufProj(device, gpuMem, rndrBuff.resrc, AthruGPU::NUM_RAND_PT_STREAMS);
-	rays.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, sizes[0]);
+	rays.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[1]);
 	rayOris.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[2]);
 	outDirs.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[3]);
 	iors.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[4]);
 	figIDs.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[5], DXGI_FORMAT_R32_UINT);
 	displayTexHDR.InitRWTex(device, gpuMem, GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT); // Initialize the display texture here so UAV layout
-																									      // matches shader code
+																										  // matches shader code
 	displayTexLDR.InitRWTex(device, gpuMem, GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT, 1u, DXGI_FORMAT_R8G8B8A8_UNORM);
-	aaBuffer.InitRWBufProj(device, gpuMem, rndrBuff.resrc,  GraphicsStuff::DISPLAY_AREA, offsets[6]);
-	counters.InitRWBufProj(device, gpuMem, rndrBuff.resrc, 7, offsets[7], DXGI_FORMAT_R32_UINT);
-	traceables.InitAppProj(device, gpuMem, rndrBuff.resrc, rndrBuff.resrc, GraphicsStuff::TILING_AREA, counterOffset, offsets[8]);
-	diffuIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, rndrBuff.resrc, GraphicsStuff::TILING_AREA, counterOffset + 4096, offsets[9]);
-	mirroIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, rndrBuff.resrc, GraphicsStuff::TILING_AREA, counterOffset + 8192, offsets[10]);
-	refraIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, rndrBuff.resrc, GraphicsStuff::TILING_AREA, counterOffset + 12288, offsets[11]);
-	snowwIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, rndrBuff.resrc, GraphicsStuff::TILING_AREA, counterOffset + 16384, offsets[12]);
-	ssurfIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, rndrBuff.resrc, GraphicsStuff::TILING_AREA, counterOffset + 20480, offsets[13]);
-	furryIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, rndrBuff.resrc, GraphicsStuff::TILING_AREA, counterOffset + 24576, offsets[14]);
+	aaBuffer.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[6]);
+	dispAxesWrite.InitRWBufProj(device, gpuMem, rndrBuff.resrc, 8, offsets[7], DXGI_FORMAT_R32_UINT);
+	dispAxesArgs.InitRawRWBuf(device, gpuMem, AthruGPU::MINIMAL_D3D12_ALIGNED_BUFFER_MEM); // Allocate aligned argument buffer separately to main rendering data
+																						   // so we can keep rendering data as [D3D12_RESOURCE_STATES_UNORDERED_ACCESS]
+																						   // while dispatch arguments transition to [D3D12_RESOURCE_STATES_INDIRECT_ARGUMENT]
+	ctrBuff.InitRawRWBuf(device, gpuMem, 7 * 4096); // Allocate material counter buffer separately to [rndrBuff] so we can pack data (counters are 4096-byte aligned) without
+													// aliasing tracing/sampling indices or creating inaccessible memory between buffer projections
+	traceCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 0, DXGI_FORMAT_R32_UINT);
+	diffuCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 4096, DXGI_FORMAT_R32_UINT);
+	mirroCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 8192, DXGI_FORMAT_R32_UINT);
+	refraCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 12288, DXGI_FORMAT_R32_UINT);
+	snowwCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 16384, DXGI_FORMAT_R32_UINT);
+	ssurfCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 20480, DXGI_FORMAT_R32_UINT);
+	furryCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 24576, DXGI_FORMAT_R32_UINT);
+	traceables.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 0, offsets[8]);
+	diffuIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 4096, offsets[9]);
+	mirroIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 8192, offsets[10]);
+	refraIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 12288, offsets[11]);
+	snowwIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 16384, offsets[12]);
+	ssurfIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 20480, offsets[13]);
+	furryIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 24576, offsets[14]);
 
 	// Create specialized work submission/synchronization interfaces,
 	// prepare rendering commands
@@ -117,7 +100,6 @@ Renderer::Renderer(HWND windowHandle,
 	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
 								   __uuidof(lensAlloc),
 								   (void**)&lensAlloc);
-	lensAlloc->Reset();
 	device->CreateCommandList(0x1,
 							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
 							  lensAlloc.Get(),
@@ -129,175 +111,191 @@ Renderer::Renderer(HWND windowHandle,
 	// Lens sampling in Athru/DX11 wrote to the counter buffer; no reason to do that in Athru/DX12
 	// Also no reason for lens sampling to append elements into [traceables]; can just index path
 	// data per-thread before tracing the zeroth bounce
-	lensList->SetDescriptorHeaps(1, gpuMem.GetShaderViewMem().GetAddressOf());
-	DirectX::XMUINT3 disp = AthruGPU::tiledDispatchAxes(16);
+	const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> viewHeap = gpuMem.GetShaderViewMem();
+	lensList->SetDescriptorHeaps(1, viewHeap.GetAddressOf());
 	lensList->SetComputeRootSignature(lensSampler.rootSig.Get());
+	D3D12_GPU_DESCRIPTOR_HANDLE baseRndrDescriptor = gpuMem.GetBaseDescriptor(AthruGPU::SHADER_CTX::RNDR);
+	lensList->SetComputeRootDescriptorTable(0, baseRndrDescriptor);
 	lensList->SetPipelineState(lensSampler.shadingState.Get());
+	DirectX::XMUINT3 disp = AthruGPU::tiledDispatchAxes(16);
 	lensList->Dispatch(disp.x, disp.y, disp.z);
 	lensList->Close(); // End lens-sampling submissions
 
-	// Create path-tracing command lists + allocators
-	// Path-tracing commands depend on per-frame information (dispatch counters), so they're recorded regularly
-	// instead of once at startup
+	// Create path-tracing command list + allocator
 	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-								   __uuidof(traceCmdAllocator),
-								   (void**)&traceCmdAllocator);
-	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-								   __uuidof(surfCmdAllocator),
-								   (void**)&surfCmdAllocator);
-
-	// PT commands are reset per-bounce, no need for an initial reset here
+								   __uuidof(ptCmdAllocator),
+								   (void**)&ptCmdAllocator);
 	device->CreateCommandList(0x1,
 							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-							  traceCmdAllocator.Get(),
+							  ptCmdAllocator.Get(),
 							  tracer.shadingState.Get(),
-							  __uuidof(traceCmdList),
-							  (void**)&traceCmdList);
-	device->CreateCommandList(0x1,
-							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-							  surfCmdAllocator.Get(),
-							  bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::DIFFU].shadingState.Get(),
-							  __uuidof(surfCmdList),
-							  (void**)&surfCmdList);
+							  __uuidof(ptCmdList),
+							  (void**)&ptCmdList);
 
-	// Prepare post-processing commands
-	renderCmdList->SetDescriptorHeaps(1, gpuMem.GetShaderViewMem().GetAddressOf());
-	// -- No pixel resource barrier here, sampled colors are staged per-path and copied onto the display texture during post-processing --
-	renderCmdList->SetComputeRootSignature(post.rootSig.Get());
-	renderCmdList->SetPipelineState(post.shadingState.Get());
-	renderCmdList->Dispatch(disp.x, disp.y, disp.z);
+	// Record path-tracing commands
+	///////////////////////////////
 
-	// Prepare presentation commands
-	////////////////////////////////
+	// Prepare command signature for indirect dispatch
+	D3D12_INDIRECT_ARGUMENT_DESC indirArgDesc;
+	indirArgDesc.Type = D3D12_INDIRECT_ARGUMENT_TYPE_DISPATCH;
+	D3D12_COMMAND_SIGNATURE_DESC cmdSigDesc;
+	cmdSigDesc.ByteStride = 24; // Three four-byte arguments
+	cmdSigDesc.NumArgumentDescs = 1; // Only one argument type supported
+	cmdSigDesc.pArgumentDescs = &indirArgDesc;
+	cmdSigDesc.NodeMask = 0x1; // No support for multi-GPU atm
+	device->CreateCommandSignature(&cmdSigDesc, nullptr, __uuidof(ptCmdSignature), &ptCmdSignature);
 
-	// Copy the the display texture into the current back-buffer
-	// Direct copies don't seem to work (can only access the zeroth back-buffer index?), should ask
-	// CGSE about options here
-	// Lots of stack-local logic here, might need to move those into persistent rendering state
-	Direct3D* d3d = AthruGPU::GPU::AccessD3D();
-	D3D12_TEXTURE_COPY_LOCATION texSrc;
-	texSrc.pResource = displayTexLDR.resrc.Get();
-	texSrc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
-	texSrc.SubresourceIndex = 0; // No mip-maps on the display texture
-	D3D12_TEXTURE_COPY_LOCATION texDst;
-	Microsoft::WRL::ComPtr<ID3D12Resource> backBufTx;
-	d3d->GetBackBuf(backBufTx);
-	texDst.pResource = backBufTx.Get();
-	texDst.SubresourceIndex = 0; // No mip-maps on the back-buffer
-	texDst.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+	// Prepare copy barriers for the read/write & indirect argument dispatch axes
+	D3D12_RESOURCE_BARRIER dispBarriers[4] = { AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_SOURCE, rndrBuff.resrc.Get(), rndrBuff.resrcState),
+											   AthruGPU::TransitionBarrier(dispAxesArgs.resrcState, dispAxesArgs.resrc.Get(), D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT),
+											   AthruGPU::TransitionBarrier(rndrBuff.resrcState, rndrBuff.resrc.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE),
+											   AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_INDIRECT_ARGUMENT, dispAxesArgs.resrc.Get(), dispAxesArgs.resrcState) };
 
-	// Prepare resource barriers
-	D3D12_RESOURCE_BARRIER copyBarriers[2];
-	copyBarriers[0] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST,
-												  backBufTx,
-												  D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT);
-	copyBarriers[1] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE,
-												  displayTexLDR.resrc,
-												  displayTexLDR.resrcState);
-
-	// Transition to copyable resources & perform copy to the back-buffer
-	renderCmdList->ResourceBarrier(2, copyBarriers);
-	renderCmdList->CopyTextureRegion(&texDst, 0, 0, 0, &texSrc, nullptr); // Perform copy to the back-buffer
-
-	// Transition back to standard-use resources
-	copyBarriers[0].Transition.StateBefore = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_DEST;
-	copyBarriers[0].Transition.StateAfter = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_PRESENT;
-	copyBarriers[1].Transition.StateBefore = D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE;
-	copyBarriers[1].Transition.StateAfter = displayTexLDR.resrcState;
-	renderCmdList->ResourceBarrier(2, copyBarriers);
-	renderCmdList->Close(); // End generic graphics submissions
-}
-
-Renderer::~Renderer(){}
-
-void Renderer::Render(Direct3D* d3d)
-{
-	// Perform lens-sampling
-	renderQueue->ExecuteCommandLists(1, (ID3D12CommandList**)lensList.GetAddressOf());
-
-	// Perform path-tracing
-	///////////////////////
-
-	// Access per-bounce counter data by caching an integer pointer to the readback buffer
-	GPUMessenger* gpuMsg = AthruGPU::GPU::AccessGPUMessenger();
-
-	// Prepare counter copy barriers (needed for before/after outputting data to the readback buffer)
-	D3D12_RESOURCE_BARRIER ctrBarriers[2] = { AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_SOURCE, rndrBuff.resrc.Get(), rndrBuff.resrcState),
-											  AthruGPU::TransitionBarrier(rndrBuff.resrcState, rndrBuff.resrc.Get(), D3D12_RESOURCE_STATE_COPY_SOURCE) };
-
-	// Cache a reference to the readback buffer resource
-	const Microsoft::WRL::ComPtr<ID3D12Resource> rdbkResrc = gpuMsg->AccessReadbackBuf();
-
-	// Prepare command-list array for bounce staging
-	ID3D12CommandList* bounceCmds[2] = { traceCmdList.Get(), surfCmdList.Get() };
+	// Prepare small UAV barriers to separate tracing/sampling from dispatch generation
+	// (since afaik there's no easy way to make indirect dispatch arguments scale with shader threads/group otherwise)
+	// All rendering shaders write to the Philox state buffer immediately before exiting
+	D3D12_RESOURCE_BARRIER dispEditBarriers[2] = { AthruGPU::UAVBarrier(randState.resrc),
+												   AthruGPU::UAVBarrier(randState.resrc) };
 
 	// Prepare path-tracing commands
-	traceCmdList->SetPipelineState(tracer.shadingState.Get());
+	ptCmdList->SetDescriptorHeaps(1, viewHeap.GetAddressOf());
+	ptCmdList->SetComputeRootSignature(tracer.rootSig.Get()); // Tracing and sampling passes share the same descriptor layout
+	ptCmdList->SetComputeRootDescriptorTable(0, baseRndrDescriptor);
 	for (int i = 0; i < GraphicsStuff::MAX_NUM_BOUNCES; i += 1)
 	{
 		// Perform ray-tracing/marching
-		traceCmdList->SetDescriptorHeaps(1, d3d->GetGPUMem().GetShaderViewMem().GetAddressOf());
-		traceCmdList->SetComputeRootSignature(tracer.rootSig.Get());
+		ptCmdList->SetPipelineState(tracer.shadingState.Get());
 		if (i > 0)
 		{
-			// Scale tracing dispatches by remaining paths after the zeroth bounce
-			u4Byte rays = gpuMsg->DataFromGPU<u4Byte>(0);
-			traceCmdList->Dispatch(rays / 256, 1, 1); // Linear dispatch, simpler and more precise than multi-dimensional
+			// Match tracing dispatches to remaining paths after the zeroth bounce
+			ptCmdList->ExecuteIndirect(ptCmdSignature.Get(), 1, dispAxesArgs.resrc.Get(), 0, nullptr, NULL);
 		}
 		else
 		{
 			// Use a standard full-screen dispatch when counters are uninitialized
-			traceCmdList->Dispatch(GraphicsStuff::TILING_AREA, 1, 1);
+			ptCmdList->Dispatch(GraphicsStuff::TILING_AREA / 256, 1, 1);
 		}
 
-		// Update CPU-side sampler counters
-		traceCmdList->ResourceBarrier(1, ctrBarriers); // Consider issuing both elements and using split barriers here
-		traceCmdList->CopyBufferRegion(rdbkResrc.Get(), 4, rndrBuff.resrc.Get(), counterOffset, 24);
-		traceCmdList->ResourceBarrier(1, &(ctrBarriers[1]));
-		traceCmdList->Close();
-		renderQueue->ExecuteCommandLists(1, (ID3D12CommandList**)traceCmdList.GetAddressOf()); // Submit tracing work to the graphics queue
-		traceCmdList->Reset(traceCmdAllocator.Get(), tracer.shadingState.Get());
+		// Generate sampling dispatch axes
+		ptCmdList->ResourceBarrier(1, dispEditBarriers);
+		ptCmdList->SetPipelineState(dispEditor.shadingState.Get());
+		ptCmdList->Dispatch(1, 1, 1);
 
-		// Wait for tracing commands to execute before copying out material counters
-		d3d->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
+		// Update sampler counters
+		if (i == 0) { ptCmdList->ResourceBarrier(1, dispBarriers); } // Consider issuing both elements and using split barriers here
+		else { ptCmdList->ResourceBarrier(2, dispBarriers); }
+		ptCmdList->CopyBufferRegion(dispAxesArgs.resrc.Get(), 0, rndrBuff.resrc.Get(), (u8Byte)(offsets[7]) + 12, 12);
+		ptCmdList->ResourceBarrier(2, dispBarriers + 2);
 
-		// Perform surface sampling
-		surfCmdList->SetDescriptorHeaps(1, d3d->GetGPUMem().GetShaderViewMem().GetAddressOf());
-		std::array<u4Byte, 6> ctrs;
-		gpuMsg->DataFromGPU<decltype(ctrs)>(4);
-		if (i == 0) { surfCmdList->SetPipelineState(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::DIFFU].shadingState.Get()); }
-		surfCmdList->SetComputeRootSignature(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::DIFFU].rootSig.Get());
-		surfCmdList->Dispatch(ctrs[0] / 256, 1, 1); // Perform diffuse sampling (overlaps other sampling dispatches)
-		surfCmdList->SetPipelineState(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::MIRRO].shadingState.Get());
-		surfCmdList->SetComputeRootSignature(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::MIRRO].rootSig.Get());
-		surfCmdList->Dispatch(ctrs[1] / 256, 1, 1); // Perform specular metallic sampling (overlaps other sampling dispatches)
-		surfCmdList->SetPipelineState(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::REFRA].shadingState.Get());
-		surfCmdList->SetComputeRootSignature(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::REFRA].rootSig.Get());
-		surfCmdList->Dispatch(ctrs[2] / 256, 1, 1); // Perform specular dielectric sampling (overlaps other sampling dispatches)
-		surfCmdList->SetPipelineState(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::SNOWW].shadingState.Get());
-		surfCmdList->SetComputeRootSignature(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::SNOWW].rootSig.Get());
-		surfCmdList->Dispatch(ctrs[3] / 256, 1, 1); // Perform snow sampling (overlaps other sampling dispatches)
-		surfCmdList->SetPipelineState(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::SSURF].shadingState.Get());
-		surfCmdList->SetComputeRootSignature(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::SSURF].rootSig.Get());
-		surfCmdList->Dispatch(ctrs[4] / 256, 1, 1); // Perform generic subsurface sampling (overlaps other sampling dispatches)
-		surfCmdList->SetPipelineState(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::FURRY].shadingState.Get());
-		surfCmdList->SetComputeRootSignature(bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::FURRY].rootSig.Get());
-		surfCmdList->Dispatch(ctrs[5] / 256, 1, 1); // Perform fur sampling (overlaps other sampling dispatches)
+		// Perform surface sampling & generate traceable dispatch axes
+		ptCmdList->SetPipelineState(surfSampler.shadingState.Get());
+		ptCmdList->ExecuteIndirect(ptCmdSignature.Get(), 1, dispAxesArgs.resrc.Get(), 0, nullptr, NULL);
+		ptCmdList->ResourceBarrier(1, dispEditBarriers + 1);
+		ptCmdList->SetPipelineState(dispEditor.shadingState.Get());
+		ptCmdList->Dispatch(1, 1, 1);
 
 		// Update ray-tracing/marching counters (tracing/marching occurs as a full-screen pass in the zeroth iteration)
-		surfCmdList->ResourceBarrier(1, ctrBarriers); // Consider issuing both elements and using split barriers here
-		surfCmdList->CopyBufferRegion(rdbkResrc.Get(), 0, rndrBuff.resrc.Get(), ((u8Byte)counterOffset) + 24, 4);
-		surfCmdList->ResourceBarrier(1, &(ctrBarriers[1]));
-		surfCmdList->Close();
-		renderQueue->ExecuteCommandLists(1, (ID3D12CommandList**)surfCmdList.GetAddressOf()); // Submit sampling work to the graphics queue
-		surfCmdList->Reset(surfCmdAllocator.Get(), bxdfs[(u4Byte)GraphicsStuff::SUPPORTED_SURF_BXDDFS::DIFFU].shadingState.Get());
+		ptCmdList->ResourceBarrier(2, dispBarriers); // Consider issuing both elements and using split barriers here
+		ptCmdList->CopyBufferRegion(dispAxesArgs.resrc.Get(), 0, rndrBuff.resrc.Get(), offsets[7], 12);
+		ptCmdList->ResourceBarrier(2, dispBarriers + 2);
+	}
+	ptCmdList->Close();
 
-		// Wait for surface sampling to finish before starting on tracing
-		d3d->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
+	// Create post-processing command allocator
+	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+								   __uuidof(postCmdAllocator),
+								   (void**)&postCmdAllocator);
+
+	// Prepare static data for presentation barriers
+	D3D12_RESOURCE_BARRIER copyBarriers[4];
+	copyBarriers[0] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_DEST,
+												  nullptr,
+												  D3D12_RESOURCE_STATE_PRESENT);
+	copyBarriers[1] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATES::D3D12_RESOURCE_STATE_COPY_SOURCE,
+												  displayTexLDR.resrc,
+												  displayTexLDR.resrcState);
+	copyBarriers[2] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_PRESENT,
+												  nullptr,
+												  D3D12_RESOURCE_STATE_COPY_DEST);
+	copyBarriers[3] = copyBarriers[1];
+	copyBarriers[3].Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_SOURCE;
+	copyBarriers[3].Transition.StateAfter = displayTexLDR.resrcState;
+
+	// Prepare commands to post-process + present each buffer in the swap-chain
+	Direct3D* d3d = AthruGPU::GPU::AccessD3D();
+	for (u4Byte i = 0; i < AthruGPU::NUM_SWAPCHAIN_BUFFERS; i += 1)
+	{
+		// Create a command-list for the current back-buffer
+		device->CreateCommandList(0x1,
+								  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+								  postCmdAllocator.Get(),
+								  post.shadingState.Get(),
+								  __uuidof(postCmdLists[i]),
+								  (void**)(&postCmdLists[i]));
+
+		// Prepare post-processing commands
+		postCmdLists[i]->SetDescriptorHeaps(1, viewHeap.GetAddressOf());
+		// -- No pixel resource barrier here, sampled colors are staged per-path and copied onto the display texture during post-processing --
+		postCmdLists[i]->SetComputeRootSignature(post.rootSig.Get());
+		postCmdLists[i]->SetComputeRootDescriptorTable(0, baseRndrDescriptor);
+		postCmdLists[i]->Dispatch(disp.x, disp.y, disp.z);
+
+		// Prepare presentation commands
+		////////////////////////////////
+
+		// Copy the the display texture into the current back-buffer
+		// Direct copies don't seem to work (can only access the zeroth back-buffer index?), should ask
+		// CGSE about options here
+		// Lots of stack-local logic here, might need to move those into persistent rendering state
+		D3D12_TEXTURE_COPY_LOCATION texSrc;
+		texSrc.pResource = displayTexLDR.resrc.Get();
+		texSrc.Type = D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+		texSrc.SubresourceIndex = 0; // No mip-maps on the display texture
+		D3D12_TEXTURE_COPY_LOCATION texDst;
+		Microsoft::WRL::ComPtr<ID3D12Resource> backBufTx;
+		d3d->GetBackBuf(backBufTx, i);
+		texDst.pResource = backBufTx.Get();
+		texDst.SubresourceIndex = 0; // No mip-maps on the back-buffer
+		texDst.Type = D3D12_TEXTURE_COPY_TYPE::D3D12_TEXTURE_COPY_TYPE_SUBRESOURCE_INDEX;
+
+		// Transition to copyable resources & perform copy to the back-buffer
+		copyBarriers[0].Transition.pResource = backBufTx.Get();
+		postCmdLists[i]->ResourceBarrier(2, copyBarriers);
+		postCmdLists[i]->CopyTextureRegion(&texDst, 0, 0, 0, &texSrc, nullptr); // Perform copy to the back-buffer
+
+		// Transition back to standard-use resources
+		copyBarriers[2].Transition.pResource = backBufTx.Get();
+		postCmdLists[i]->ResourceBarrier(2, copyBarriers + 2);
+		postCmdLists[i]->Close(); // End generic graphics submissions
 	}
 
-	// Perform post-processing
-	renderQueue->ExecuteCommandLists(1, (ID3D12CommandList**)renderCmdList.GetAddressOf());
+	// Compose command-list sets for batched submission
+	for (u4Byte i = 0; i < AthruGPU::NUM_SWAPCHAIN_BUFFERS; i += 1)
+	{
+		rnderCmdSets[i][0] = lensList;
+		rnderCmdSets[i][1] = ptCmdList;
+		rnderCmdSets[i][2] = postCmdLists[i];
+	}
+}
+
+Renderer::~Renderer()
+{
+	// Wait for the graphics queue before freeing memory
+	AthruGPU::GPU::AccessD3D()->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
+
+	// Release shader data
+	lensSampler.~ComputePass();
+	tracer.~ComputePass();
+	surfSampler.~ComputePass();
+	post.~ComputePass();
+}
+
+void Renderer::Render(Direct3D* d3d)
+{
+	// Execute prepared commands
+	renderQueue->ExecuteCommandLists(AthruGPU::NUM_SWAPCHAIN_BUFFERS, (ID3D12CommandList**)rnderCmdSets[rnderFrameCtr % 3]);
+	rnderFrameCtr += 1;
+	d3d->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
 
 	// Publish traced results to the display
 	// No UAV barrier, because presentation includes a transition barrier that should cause a similar wait

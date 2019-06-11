@@ -12,9 +12,6 @@
 #define DF_TYPE_LENS 4
 #define DF_TYPE_NULL 5
 
-// [Figure] struct + figure-buffer, modularized for sharing between volume rasterization + rendering
-#include "FigureBuffer.hlsli"
-
 // Rasterized volume atlas for the current system + plants/animals on the local planet
 //Buffer<float> rasterAtlas : register(t1);
 
@@ -289,7 +286,7 @@ float3 PtToPlanet(float3 pt,
 }
 
 // Small debug switch, replaces planetary surfaces with spheres for simpler shading debugging
-//#define PLANET_DEBUG
+#define PLANET_DEBUG
 
 // Return distance + surface information for the nearest planet
 float2x3 PlanetDF(float3 pt,
@@ -385,7 +382,7 @@ float3 PlanetGrad(float3 samplePoint,
                   Figure fig)
 {
     #ifdef PLANET_DEBUG
-        return normalize(samplePoint); // Points expected to be in local surface space
+        return normalize(PtToPlanet(samplePoint, fig.scale.x)); // Points expected to be in local surface space
     #endif
     #ifdef APPROX_PLANET_GRAD
         return tetGrad(samplePoint, fig, 0.1f).xyz;

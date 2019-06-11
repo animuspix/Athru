@@ -78,9 +78,6 @@
     <ClInclude Include="GradientMapper.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="ResrcContext.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -115,24 +112,6 @@
     <FxCompile Include="RasterPrep.hlsl">
       <Filter>Shaders\Filtering, post-processing, presentation</Filter>
     </FxCompile>
-    <FxCompile Include="DiffuSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="FurrySampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="RefraSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="SnowwSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="SsurfSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="MirroSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
     <FxCompile Include="LensSampler.hlsl">
       <Filter>Shaders\Materials &amp; Sampling</Filter>
     </FxCompile>
@@ -140,6 +119,12 @@
       <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="RayMarch.hlsl">
+      <Filter>Shaders</Filter>
+    </FxCompile>
+    <FxCompile Include="SurfSampler.hlsl">
+      <Filter>Shaders\Materials &amp; Sampling</Filter>
+    </FxCompile>
+    <FxCompile Include="RnderDispEditor.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>

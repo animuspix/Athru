@@ -43,63 +43,39 @@ class Direct3D
 		AthruGPU::GPUMemory& GetGPUMem();
 
         // Map the swap-chain's backbuffer onto a D3D resource
-        // Might edit this to return UWP display surface instead and control back-buffer copies myself
-        void GetBackBuf(const Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx);
-
-		// Retrieve a reference to the active graphics pipeline-state & compute pipeline-state
-		const Microsoft::WRL::ComPtr<ID3D12PipelineState>& GetGraphicsState();
-		const Microsoft::WRL::ComPtr<ID3D12PipelineState>& GetComputeState();
+        void GetBackBuf(const Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx, const u4Byte bufNdx);
 
 		// Retrieve the device + main command queues without incrementing their reference
 		// counts (also retrieve their command-lists + allocators)
 		const Microsoft::WRL::ComPtr<ID3D12Device>& GetDevice();
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetGraphicsQueue(); // Path-tracing & image/mesh processing here
-		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& GetGraphicsCmdList();
-		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetGraphicsCmdAllocator();
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetComputeQueue(); // Physics & ecosystem updates go here
-		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& GetComputeCmdList();
-		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetComputeCmdAllocator();
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetCopyQueue(); // System->GPU or GPU->System copies (useful for UI & things like
 																		  // radar, camera modes, etc.)
-		const Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList>& GetCopyCmdList();
-		const Microsoft::WRL::ComPtr<ID3D12CommandAllocator> GetCopyCmdAllocator();
-
 		// Retrieve a constant reference to information about the video adapter
-		const DXGI_ADAPTER_DESC3& GetAdapterInfo();
+		const DXGI_ADAPTER_DESC1& GetAdapterInfo();
 
 	private:
 		// Stores information about the video adapter
-		DXGI_ADAPTER_DESC3 adapterInfo;
+		DXGI_ADAPTER_DESC1 adapterInfo;
 
-		// Swap-chain & device
+		// Swap-chain, device, DXGI factory, and DXGI debug interface
 		Microsoft::WRL::ComPtr<IDXGISwapChain1> swapChain;
 		Microsoft::WRL::ComPtr<ID3D12Device> device;
 
-		// Active graphics/compute pipeline-states
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> activeGraphicsState;
-		Microsoft::WRL::ComPtr<ID3D12PipelineState> activeComputeState;
-
-		// Significant command queues & command lists
+		// Graphics/compute/copy commmand-queues
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> graphicsQueue;
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> graphicsCmdList;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> computeQueue;
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> computeCmdList;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> copyQueue;
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> copyCmdList;
 
-		// Graphics/compute/copy command-allocators
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> graphicsCmdAlloc;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> computeCmdAlloc;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> copyCmdAlloc;
-
-		// The DX12 debug-device
-		Microsoft::WRL::ComPtr<ID3D12Debug> debugDevice;
+		// The DX12 debug layer
+		Microsoft::WRL::ComPtr<ID3D12Debug> debugLayer;
 
 		// DX12 fence interfaces for GPU/CPU synchronization, also separate fence
 		// values for each back-buffer surface + command-queue
 		// + WinAPI event handles to capture fence updates
 		Microsoft::WRL::ComPtr<ID3D12Fence> sync[3];
-		u8Byte syncValues[AthruGPU::NUM_SWAPCHAIN_BUFFERS * 3];
+		u8Byte syncValues[AthruGPU::NUM_SWAPCHAIN_BUFFERS];
 		HANDLE syncEvt[3];
 
 		// Index of the current back-buffer surface at each frame
