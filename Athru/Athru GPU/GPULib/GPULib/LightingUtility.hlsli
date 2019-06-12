@@ -268,14 +268,12 @@ float MISWeight(float samplesDistroA,
 // [w]
 // [rayOri] carries the ray origin in [xyz] and the SDF epsilon value for
 // the current frame in [w]
-// Planetary surface variance is much too high for ordinary ray offsets to work, so
-// occlusion rays are traced backwards from the ray destination instead
 #define MAX_OCC_MARCHER_STEPS 256
-float3x4 OccTest(float4 rayOri,
+float3x4 OccTest(float3 rayOri,
                  float4 rayDir,
                  float eps)
 {
-    float currRayDist = 0.0f;
+    float currRayDist = eps;
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;
@@ -287,7 +285,7 @@ float3x4 OccTest(float4 rayOri,
                                          rayOri.xyz,
                                          false,
                                          FILLER_SCREEN_ID,
-                                         rayOri.w);
+                                         eps);
         bool hitDest = (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target figure
         if (sceneField[0].x < eps ||
             (hitDest && sceneField[0].x < eps))
@@ -337,14 +335,15 @@ float4 DiffuLiGather(float4 dirPDF,
 					 float3 sysOri,
                      uint figID,
                      float eps,
-                     float2 uv01)
+                     float3 uvw01)
 {
     // Perform source sampling
-    float3 stellarSurfPos = StellarSurfPos(float4(sysOri,
+    float3 stellarSurfPos = //sysOri + (uvw01 * starScale);
+                            StellarSurfPos(float4(sysOri,
                                                   starScale),
-                                           uv01,
+                                           uvw01.xy,
                                            pt);
-    float3x4 srcOccData = OccTest(float4(pt, eps),
+    float3x4 srcOccData = OccTest(pt,
                                   float4(normalize(stellarSurfPos - pt), STELLAR_FIG_ID),
                                   eps);
     float3 srcGatherRGB = Emission(STELLAR_RGB,
@@ -353,13 +352,13 @@ float4 DiffuLiGather(float4 dirPDF,
                           abs(dot(n, srcOccData[0].xyz));
 
     // Perform surface-sampling + MIS for next-event-estimation
-    float3x4 occData = OccTest(float4(pt, figID),
-                               float4(mul(dirPDF.xyz, nSpace), STELLAR_FIG_ID),
-                               eps);
-    float3 neeSrfRGB = Emission(STELLAR_RGB,
-                                STELLAR_BRIGHTNESS,
-                                occData[0].w) *
-                       abs(dot(n, occData[0].xyz));
+    //float3x4 occData = OccTest(float4(pt, figID),
+    //                           float4(mul(dirPDF.xyz, nSpace), STELLAR_FIG_ID),
+    //                           eps);
+    //float3 neeSrfRGB = Emission(STELLAR_RGB,
+    //                            STELLAR_BRIGHTNESS,
+    //                            occData[0].w) *
+    //                   abs(dot(n, occData[0].xyz));
     float3 neeRGB = 0.0f.xxx;
     if (!srcOccData[1].w) // Process source gathers with MIS
     {
@@ -367,19 +366,19 @@ float4 DiffuLiGather(float4 dirPDF,
                   DiffuseBRDF(surf,
                               float3x3(srcOccData[0].yzw,
                                        n,
-                                       wo)) /
-                  MISWeight(1, srcPDF,
-                            1, dirPDF.w);
+                                       wo)) / srcPDF;// /
+                  //MISWeight(1, srcPDF,
+                  //          1, dirPDF.w);
     }
-    if (!occData[1].w) // Process surface gathers with MIS
-    {
-        neeRGB += neeSrfRGB *
-                  DiffuseBRDF(surf,
-                              float3x3(dirPDF.xyz,
-                                       n,
-                                       wo)) /
-                  MISWeight(1, srcPDF,
-                            1, dirPDF.w);
-    }
-    return float4(neeRGB, srcOccData[1].w && occData[1].w);
+    //if (!occData[1].w) // Process surface gathers with MIS
+    //{
+    //    neeRGB += neeSrfRGB *
+    //              DiffuseBRDF(surf,
+    //                          float3x3(dirPDF.xyz,
+    //                                   n,
+    //                                   wo)) /
+    //              MISWeight(1, srcPDF,
+    //                        1, dirPDF.w);
+    //}
+    return float4(neeRGB, srcOccData[1].w/* && occData[1].w*/);
 }

@@ -24,7 +24,7 @@ namespace GraphicsStuff
 	extern constexpr u4Byte SCREEN_RECT_INDEX_COUNT = 6;
 	extern constexpr u4Byte MAX_NUM_BOUNCES = 7;
 	extern constexpr u4Byte MAX_NUM_SSURF_BOUNCES = 512;
-	extern constexpr u4Byte NUM_AA_SAMPLES = 256;//8192
+	extern constexpr u4Byte NUM_AA_SAMPLES = 8192;
 	extern constexpr u4Byte TILE_WIDTH = 2;
 	extern constexpr u4Byte TILE_HEIGHT = 2;
 	extern constexpr u4Byte TILE_AREA = TILE_WIDTH * TILE_HEIGHT;

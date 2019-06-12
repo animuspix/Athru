@@ -40,14 +40,14 @@ void main(uint3 groupID : SV_GroupID,
             dispAxes[3] = 0.0f;
             dispAxes[4] = 0.0f;
             dispAxes[5] = 0.0f;
+            traceCtr[0] = 0;
+            diffuCtr[0] = 0;
+            mirroCtr[0] = 0;
+            refraCtr[0] = 0;
+            snowwCtr[0] = 0;
+            ssurfCtr[0] = 0;
+            furryCtr[0] = 0;
         }
-        traceCtr[0] = 0;
-        diffuCtr[0] = 0;
-        mirroCtr[0] = 0;
-        refraCtr[0] = 0;
-        snowwCtr[0] = 0;
-        ssurfCtr[0] = 0;
-        furryCtr[0] = 0;
     }
 
     // Generate per-frame pixel coordinate, sample texel

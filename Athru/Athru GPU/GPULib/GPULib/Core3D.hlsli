@@ -286,7 +286,7 @@ float3 PtToPlanet(float3 pt,
 }
 
 // Small debug switch, replaces planetary surfaces with spheres for simpler shading debugging
-#define PLANET_DEBUG
+//#define PLANET_DEBUG
 
 // Return distance + surface information for the nearest planet
 float2x3 PlanetDF(float3 pt,
@@ -381,14 +381,12 @@ float4 tetGrad(float3 samplePoint,
 float3 PlanetGrad(float3 samplePoint,
                   Figure fig)
 {
-    #ifdef PLANET_DEBUG
-        return normalize(PtToPlanet(samplePoint, fig.scale.x)); // Points expected to be in local surface space
-    #endif
     #ifdef APPROX_PLANET_GRAD
         return tetGrad(samplePoint, fig, 0.1f).xyz;
+    #else
+        return JuliaGrad(fig.distCoeffs[0],
+                         samplePoint);
     #endif
-    return JuliaGrad(fig.distCoeffs[0],
-                     samplePoint);
 }
 
 // Heterogeneity-preserving figure union function

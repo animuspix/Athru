@@ -34,13 +34,15 @@ ConsumeStructuredBuffer<uint> ssurfIsections : register(u22);
 ConsumeStructuredBuffer<uint> furryIsections : register(u23);
 
 void SampleDiffu(uint ndx, float3x3 normSpace, float3 n, float3 wo,
-				 float4 rand, float eps, float3 pt, uint figID, float starScale,
-				 float2 pix)
+				 float4 rand, inout PhiloStrm randStrm, float eps, 
+				 float3 pt, uint figID, float starScale, float2 pix)
 {
 	// Perform sampling for next-event-estimation
 	float4 surf = float4(SurfRGB(wo, n), SurfAlpha(pt, 0u));
 	float diffuP = DiffuChance(pt);
-	float4 nee = DiffuLiGather(DiffuseDir(wo, n, rand.xy) / float4(1.0f.xxx, diffuP),
+	float4 neeDir = DiffuseDir(wo, n, rand.xy) / float4(1.0f.xxx, diffuP);
+	rand = iToFloatV(philoxPermu(randStrm));
+	float4 nee = DiffuLiGather(neeDir,
 							   surf,
 							   n,
 							   wo,
@@ -51,37 +53,30 @@ void SampleDiffu(uint ndx, float3x3 normSpace, float3 n, float3 wo,
 							   gpuInfo.systemOri.xyz,
 							   figID,
 							   eps,
-							   rand.zw);
-	//float4 iDir = DiffuseDir(wo,
-	//						 n,
-	//						 rand.xy);
-	//iDir.xyz = mul(iDir.xyz, normSpace); // Trace along the bounce direction
-	//iDir.w /= diffuP; // Scale surface PDFs by selection probability for the chosen
-	//				  // material primitive
-	//rays[ndx] = //float2x3(pt, -normalize(pt));//iDir.xyz);
-	//			float2x3(pt, iDir.xyz);
-	//displayTex[pix] *= float4(dot(n, -wo).xxx, 1.0f);
-	//traceables.Append(ndx);
-	//return;
+							   rand.xyz);
+	displayTex[pix] *= float4(nee.rgb, 1.0f);
+	return;
 	// Prepare for the next bounce, but only if next-event-estimation fails
-	if (!nee.a)
+	if (nee.a)
 	{
 		// Sample an incoming ray direction for light-transport
+		rand = iToFloatV(philoxPermu(randStrm));
 		float4 iDir = DiffuseDir(wo,
 								 n,
-								 rand.zw);
+								 rand.xy);
 		iDir.xyz = mul(iDir.xyz, normSpace); // Trace along the bounce direction
-		iDir.w /= diffuP; // Scale surface PDFs by selection probability for the chosen
+		iDir.w /= diffuP; // Scale surface PDFs by selection probability for the chose`n
 						  // material primitive
 
 		// Shade with the expected incoming direction
 		float3 rgb = DiffuseBRDF(surf,
 								 float3x3(iDir.xyz,
 								 		  n,
-								 		  wo)) / ZERO_PDF_REMAP(iDir.w);// *
-								 //abs(dot(n, -wo));
-		displayTex[pix] *= float4(rgb, 1.0f);
-		if (dot(rgb, 1.0f.xxx) > 0.0f) // Only propagate paths with nonzero brightnesss
+								 		  wo)) / ZERO_PDF_REMAP(iDir.w) *
+								 abs(dot(n, -wo));
+		float3 rho = displayTex[pix].rgb * rgb;					 
+		displayTex[pix] *= float4(rho, 1.0f);
+		if (dot(rho, 1.0f.xxx) > 0.0f) // Only propagate paths with nonzero brightnesss
 		{
 			// Update current direction + position, also previous position
 			// (diffuse bounce, incident and exitant positions are equivalent)
@@ -161,16 +156,11 @@ void main(uint3 groupID : SV_GroupID,
     // Cache intersections + shift outside the local figure
     float2x3 ray = float2x3(rayOris[ndx],
 							rays[ndx][1]);
-    float3 pt = ray[0];
-    #ifndef APPROX_PLANET_GRAD
-        pt = PtToPlanet(pt, figures[figIDs[ndx]].scale.x),
-    #endif
-    pt -= ray[1] * eps;
+    float3 pt = ray[0] - ray[1] * eps;
 
     // Generate + cache the local gradient
-    Figure star = figures[STELLAR_FIG_ID];
     uint figID = figIDs[ndx];
-    float3 n = PlanetGrad(pt,
+    float3 n = PlanetGrad(pt, 
                           figures[figID]); // Placeholder gradient, will use figure-adaptive normals later...
 
     // Generate + cache the local tangent-space matrix
@@ -178,13 +168,15 @@ void main(uint3 groupID : SV_GroupID,
 
 	// Match an intersected material to the current thread, then sample it
 	// Minimal divergence impact because all threads in a group should sample the same material primitive
+    Figure star = figures[STELLAR_FIG_ID];
 	switch (matID)
 	{
 		case 0:
 			SampleDiffu(ndx, normSpace, n, ray[1],
-					    rand, eps, pt, figID, star.scale.x,
+					    rand, randStrm, eps, pt, figID, star.scale.x,
 					    pix); // Perform diffuse sampling
-			//displayTex[pix] *= float4(1.0f, 0.5f, 0.25f, 0.125f);
+			//displayTex[pix] *= float4(abs(normalize(rayOris[ndx])), 1.0f);
+							   //float4(1.0f, 0.5f, 0.25f, 0.125f);
 			break;
 		case 1:
 			displayTex[pix] *= float4(0.8f, 0.0f.xx, 1.0f); // Mirrorlike reflections unimplemented atm, output bright red shading instead

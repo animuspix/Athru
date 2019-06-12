@@ -17,11 +17,11 @@ RWStructuredBuffer<PhiloStrm> randBuf : register(u0);
 RWStructuredBuffer<float2x3> rays : register(u1);
 
 // Incident (previous) position + output direction at each bounce
-RWBuffer<float3> rayOris : register(u2);
-RWBuffer<float3> outDirs : register(u3);
+RWStructuredBuffer<float3> rayOris : register(u2);
+RWStructuredBuffer<float3> outDirs : register(u3);
 
 // Most recent index of refraction/absorption per-bounce
-RWBuffer<float2> iors : register(u4);
+RWStructuredBuffer<float2> iors : register(u4);
 
 // Figure IDs at the last intersection, used for figure-specific gradients + material queries
 // during shading/bounce preparation

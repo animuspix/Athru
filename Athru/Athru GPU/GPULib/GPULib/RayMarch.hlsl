@@ -138,12 +138,13 @@ void main(uint3 groupID : SV_GroupID,
                 // Set incident position for the current bounce (exitant position depends on the intersected surface,
                 // so we avoid setting that until after we've evaluated materials at [rayVec])
                 rayOris[ndx] = rayVec;
-    
+
                 // Cache incident SDF type + figure-ID
                 figIDs[ndx] = sceneField[0].z;
 
                 // Choose a material for the current position, then pass the
                 // current ray to a per-material output stream
+                //rgba = float4(abs(normalize(rayVec)), 1.0f);
                 uint matPrim = MatPrimAt(rayVec, rand.z);
                 switch (matPrim)
                 {
