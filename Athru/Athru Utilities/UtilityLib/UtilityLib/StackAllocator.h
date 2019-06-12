@@ -33,7 +33,15 @@ class StackAllocator
 		void DeAlloc(MemoryStuff::MARKER_INDEX_TYPE markerIndex);
 
 		// Retrieve the top-most address from the stack
-		address GetTop();
+		// All allocations related to [stackTop] should go through [AlignedAlloc(...)]
+		// or [ByteAlloc(...)], so this returns immutably
+		const address& GetTop();
+
+		// Retrieve the global heap offset for the Athru memory stack
+		// All allocations become untraceable if [start] is changed after
+		// the iniital [malloc], so this returns an immutable reference
+		// (similarly to [GetTop()])
+		const address& GetStart();
 
 		// Retrieve the number of active markers
 		u2Byte GetActiveMarkerCount();

@@ -5,6 +5,7 @@
 #include <tuple>
 #include "Typedefs.h"
 #include "leakChecker.h"
+#include "AppGlobals.h"
 #include <windows.h>
 
 class Logger
@@ -265,6 +266,15 @@ class Logger
 			Log(msg.c_str(), destination, label);
 			for (u2Byte i = 0; i < arrayLength; i += 1)
 			{ Log(dataLogging[i], destination); }
+		}
+
+		// Log a memory dump; can be useful for occupancy debugging (essentially, how densely packed is our memory? Can we trim
+		// sub-allocations to support the same amount of data with less memory overhead?)
+		void LogMem(const address& stackStart)
+		{
+			std::ofstream ostrm("athru.mem", std::ios::out | std::ios_base::binary);
+			ostrm.write((const char*)stackStart, MemoryStuff::STARTING_HEAP_ALLOC); // Might be able to replace this with a [memcpy]
+			ostrm.close();
 		}
 
 		// Overload the standard allocation/de-allocation operators

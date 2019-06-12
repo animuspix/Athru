@@ -48,8 +48,6 @@ float FresMirr(float2 etaKap, // Surface indices of refraction (x) and extinctio
 // + incoming angle-of-incidence
 // Uses the dielectric Fresnel function from
 // Physically Based Rendering (Pharr, Jakob, Humphreys), page 518
-// Spectral Fresnel coefficient returned in [rgb], incoming/outgoing [eta] ratio
-// returned in [a]
 float2 FresDiel(float2 etaIO, // Incoming/outgoing indices of refraction
                			      // Vectorized indices are possible, but cause significant
                			      // dispersion that I'd rather avoid here
@@ -95,10 +93,12 @@ float3 GGXMicroNorml(float vari,
 }
 
 // Small function to generate BXDF ID's for a figure given a figure ID,
-// a figure-space position, and a vector of BXDF weights
+// a figure-space position, and a set of BXDF weights
+// Will eventually work from volume-texture samples instead of array
+// input
 // Selection function from the accepted answer at:
 // https://stackoverflow.com/questions/1761626/weighted-random-numbers
-uint MatBXDFID(float4 bxdfFreqs,
+uint MatBXDFID(float bxdfFreqs[6],
                float u01)
 {
     // Scan through available material weights and perform a weighted
@@ -124,73 +124,45 @@ uint MatBXDFID(float4 bxdfFreqs,
     return 0u; // Default to diffuse surfaces
 }
 
-// Per-vertex material synthesizer
-// Light materials are implict in [DirIllumRadiance]/[Emission]
-// so there's no reason to generate them here
-float4x4 MatGen(float3 coord,
-                float3 wo,
-                float3 norml,
-                float2 ambFres,
-                uint dfType,
-                inout PhiloStrm randStrm)
+// Access material probabilities at the given coordinate
+// Will eventually update for volumetric materials (fur, subsurface-scattering volumes, cloudy media);
+// will also eventually be asset-driven, fixed diffuse-only atm
+float DiffuChance(float3 coord) { return 1.0f; }
+float MirroChance(float3 coord) { return 0.0f; }
+float RefraChance(float3 coord) { return 0.0f; }
+float SnowwChance(float3 coord) { return 0.0f; }
+float SsurfChance(float3 coord) { return 0.0f; }
+float FurryChance(float3 coord) { return 0.0f; }
+
+// Choose a material primitive for the given coordinate
+// Will eventually be asset-driven, fixed diffuse-only atm
+uint MatPrimAt(float3 coord, float u01)
 {
-    // Just a basic generalized planetary/stellar function now, will create
-    // plant/critter variants when neccessary
-    switch (dfType)
-    {
-        // Cases for plants & animals will go here
-        default:
-            // Cache material probabilities
-            // Will eventually update [matStats] for volumetric materials (fur, subsurface-scattering volumes, cloudy media)
-            float4 matStats = float4(1.0f, 0.0f, 0.0f.xx);
+    float freqs[6] = { 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    return MatBXDFID(freqs,
+                     u01);
+}
 
-            // Cache the current surface/volume type
-            float4 rand = iToFloatV(philoxPermu(randStrm));
-            uint bxdfID = MatBXDFID(matStats,
-                                    rand.x);
+// Per-vertex roughness
+// Prefer rough values for diffuse surfaces and smooth values for specular
+// Will eventually reference a volume texture associated with each in-game asset
+float SurfAlpha(float3 coord, uint bxdfID)
+{
+    return (bxdfID == BXDF_ID_DIFFU) ? 1.0f : 0.4f;
+}
 
-            // Cache surface roughness
-            // Prefer rough values for diffuse surfaces and smooth values for specular
-            float alpha = (bxdfID == BXDF_ID_DIFFU) ? 1.0f : 0.4f;
+// Per-vertex reflective color
+// Will eventually reference a volume texture
+float3 SurfRGB(float3 wo, float3 norml)
+{
+    return float3(abs(cross(wo, norml)).r, 0.5f, 0.5f);
+           //1.0f.xxx;
+           //wo;
+           //norml;
+}
 
-            // Generate a GGX microsurface normal for specular reflection/refraction
-            float3 muNorml = GGXMicroNorml(alpha,
-                                           rand.yz);
-
-            // Generate conductor/dielectric probabilities
-            float fresP1 = abs(sin(coord.y));
-            float fresP2 = (1.0f - fresP1);
-
-            // Cache (fixed atm) indices of refraction/absorption
-            float2 etaKap = float2(1.33f, 1.1f);
-
-            // Evaluate + cache Fresnel values appropriately
-            bool metal = true; //rand.w > fresP1;
-            float2 fres = 1.0f.xx;
-            if (metal)
-            {
-                fres.x = FresMirr(etaKap,
-                                  float2x3(wo,
-                                           muNorml));
-                // Metals won't refract light at the macroscale, so merge refractive probability
-                // into the chance for mirror reflection (matStats.y) before zeroing the original
-                // value (matStats.z)
-                matStats.y += matStats.z;
-                matStats.z = 0.0f;
-            }
-            else
-            {
-                fres = FresDiel(float2(etaKap.x, ambFres.x),
-                                float2x3(wo,
-                                         muNorml));
-                matStats.y *= fres.x; // Scale mirror probability for dielectrics
-                matStats.z *= (1.0f - fres.x); // Scale refractive probability for dielectrics
-            }
-            float3 rgb = float3(abs(cross(wo, norml)).r, 0.5f, 0.5f);
-                         //1.0f.xxx;
-            return float4x4(matStats,
-                            rgb, alpha, // Procedural color, fixed surface roughness
-                            fres, bxdfID, 0.0f, // Fresnel values in [xy], surface/volume type in [z], [w] is unused
-                            muNorml, 0.0f.x); // Microsurface normal in [xyz], [w] is unused
-    }
+// Per-vertex (fixed atm) indices of refraction/absorption
+float2 SurfEtaKappa()
+{
+    return float2(1.33f, 1.1f);
 }

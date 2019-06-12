@@ -1,34 +1,13 @@
 
 // Only include GPU utilities if they haven't already
 // been included by another header
-#ifndef UTILITIES_LINKED
-    #include "GenericUtility.hlsli"
+#ifndef RENDER_BINDS_LINKED
+    #include "RenderBinds.hlsli"
 #endif
 
 // Small flag to mark whether [this] has already been
 // included somewhere in the build process
 #define ANTI_ALIASING_LINKED
-
-// Samples + counter variables for each pixel
-// (needed for temporal smoothing)
-struct PixHistory
-{
-    float4 currSampleAccum; // Current + incomplete set of [NUM_AA_SAMPLES] samples/filter-coefficients
-    float4 prevSampleAccum; // Accumulated + complete set of [NUM_AA_SAMPLES] samples/filter-coefficients
-    uint4 sampleCount; // Cumulative number of samples at the start/end of each frame
-    float4 incidentLight; // Incidental samples collected from light paths bouncing off the
-                          // scene before reaching the lens; exists because most light
-                          // sub-paths enter the camera through pseudo-random sensors rather
-                          // than reaching the sensor (i.e. thread) associated with their
-                          // corresponding camera sub-path
-                          // Separate to [sampleAccum] to prevent simultaneous writes during
-                          // path filtering/anti-aliasing
-};
-
-// Buffer carrying anti-aliasing image samples
-// (Athru AA is performed over time rather than space to
-// reduce per-frame GPU loading)
-RWStructuredBuffer<PixHistory> aaBuffer : register(u2);
 
 // Texture giving approach velocity for the data imaged at each pixel; data quickly moving away
 // from the camera are sampled less than static data to minimize ghosting (controllable with a motion-blur value

@@ -28,9 +28,6 @@
       <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
       <Extensions>h;hh;hpp;hxx;hm;inl;inc;xsd</Extensions>
     </Filter>
-    <Filter Include="Shaders\Dispatch scaling">
-      <UniqueIdentifier>{e9ef92d1-4ea7-4459-ae27-9d205231b693}</UniqueIdentifier>
-    </Filter>
     <Filter Include="Shaders\Render Tiling">
       <UniqueIdentifier>{ae778b17-2bbb-4910-bf35-a7f04b2bd33c}</UniqueIdentifier>
     </Filter>
@@ -39,31 +36,10 @@
     <ClInclude Include="targetver.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AthruTexture2D.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Camera.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Direct3D.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Mesh.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PlanarUnwrapper.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PostVertex.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="SceneVertex.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="PipelineShader.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ComputeShader.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="GPUServiceCentre.h">
@@ -72,37 +48,13 @@
     <ClInclude Include="SceneFigure.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GPURand.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ScreenPainter.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GPUMessenger.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="GPUUpdateManager.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="UpdateShader.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PixHistory.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="AthruBuffer.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="Renderer.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="ViewFinder.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="AthruRect.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="FigureRaster.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
     <ClInclude Include="PhiloStrm.h">
@@ -114,6 +66,18 @@
     <ClInclude Include="LiBounce.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="GPUMemory.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="AthruResrc.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="ComputePass.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="GradientMapper.h">
+      <Filter>C++\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -122,79 +86,34 @@
     <ClCompile Include="Direct3D.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="PipelineShader.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ComputeShader.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GPUServiceCentre.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="SceneFigure.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GPURand.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ScreenVertex.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="ScreenPainter.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="GPUMessenger.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="GPUUpdateManager.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="UpdateShader.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
     <ClCompile Include="Renderer.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="ViewFinder.cpp">
+    <ClCompile Include="GPUMemory.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="FigureRaster.cpp">
+    <ClCompile Include="ComputePass.cpp">
+      <Filter>C++\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="GradientMapper.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <FxCompile Include="PresentationColors.hlsl">
-      <Filter>Shaders\Filtering, post-processing, presentation</Filter>
-    </FxCompile>
-    <FxCompile Include="PresentationVerts.hlsl">
-      <Filter>Shaders\Filtering, post-processing, presentation</Filter>
-    </FxCompile>
     <FxCompile Include="RasterPrep.hlsl">
       <Filter>Shaders\Filtering, post-processing, presentation</Filter>
     </FxCompile>
-    <FxCompile Include="DiffuSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="FurrySampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="RefraSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="SnowwSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="SsurfSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="MirroSampler.hlsl">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
     <FxCompile Include="LensSampler.hlsl">
       <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="BouncePrep.hlsl">
-      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="PlanetRaster.hlsl">
       <Filter>Shaders</Filter>
@@ -202,14 +121,11 @@
     <FxCompile Include="RayMarch.hlsl">
       <Filter>Shaders</Filter>
     </FxCompile>
-    <FxCompile Include="dispScale128.hlsl">
-      <Filter>Shaders\Dispatch scaling</Filter>
+    <FxCompile Include="SurfSampler.hlsl">
+      <Filter>Shaders\Materials &amp; Sampling</Filter>
     </FxCompile>
-    <FxCompile Include="dispScale256.hlsl">
-      <Filter>Shaders\Dispatch scaling</Filter>
-    </FxCompile>
-    <FxCompile Include="dispScale512.hlsl">
-      <Filter>Shaders\Dispatch scaling</Filter>
+    <FxCompile Include="RnderDispEditor.hlsl">
+      <Filter>Shaders</Filter>
     </FxCompile>
   </ItemGroup>
   <ItemGroup>
@@ -228,9 +144,6 @@
     <None Include="MatSynth.hlsli">
       <Filter>Shaders\Materials &amp; Sampling</Filter>
     </None>
-    <None Include="MIS.hlsli">
-      <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </None>
     <None Include="Core3D.hlsli">
       <Filter>Shaders</Filter>
     </None>
@@ -246,26 +159,20 @@
     <None Include="GeometricUtility.hlsli">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="Lighting.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
     <None Include="LightingUtility.hlsli">
       <Filter>Shaders</Filter>
     </None>
-    <None Include="PhiloBuf.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="RenderUtilityCore.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="RenderUtility.hlsli">
-      <Filter>Shaders</Filter>
-    </None>
-    <None Include="DispatchScale.hlsli">
-      <Filter>Shaders\Dispatch scaling</Filter>
-    </None>
     <None Include="TileMapper.hlsli">
       <Filter>Shaders\Render Tiling</Filter>
+    </None>
+    <None Include="RenderBinds.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="PhiloInit.hlsli">
+      <Filter>Shaders</Filter>
+    </None>
+    <None Include="GenericBinds.hlsli">
+      <Filter>Shaders</Filter>
     </None>
   </ItemGroup>
 </Project>

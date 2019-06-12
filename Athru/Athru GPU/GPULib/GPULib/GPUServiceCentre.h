@@ -1,12 +1,10 @@
 #pragma once
 
 #include "Direct3D.h"
+#include "GPUMemory.h"
 #include "Renderer.h"
-#include "GPUUpdateManager.h"
 #include "GPUMessenger.h"
-#include "FigureRaster.h"
-#include "GPURand.h"
-#include "PlanarUnwrapper.h"
+#include "GradientMapper.h"
 #include "UtilityServiceCentre.h"
 #include "GPUGlobals.h"
 
@@ -24,8 +22,7 @@ namespace AthruGPU
 			if (AthruCore::Utility::AccessMemory() == nullptr)
 			{
 				// Allocation assumes Athru will use 255 megabytes at most
-				const u8Byte STARTING_HEAP = 255000000;
-				AthruCore::Utility::Init(STARTING_HEAP);
+				AthruCore::Utility::Init(MemoryStuff::STARTING_HEAP_ALLOC);
 				internalInit = true;
 			}
 			else
@@ -36,19 +33,17 @@ namespace AthruGPU
 			// Initialise the Direct3D handler class, the GPU messenger, the GPU-side random number generator,
 			// and the dispatch argument trimmers
 			d3DPttr = DEBUG_NEW Direct3D(AthruCore::Utility::AccessApp()->GetHWND());
-			gpuMessengerPttr = new GPUMessenger(d3DPttr->GetDevice());
-			gpuRand = new GPURand(d3DPttr->GetDevice());
+			GPUMemory& gpuMem = d3DPttr->GetGPUMem();
+            const Microsoft::WRL::ComPtr<ID3D12Device>& device = d3DPttr->GetDevice();
+			gpuMessengerPttr = new GPUMessenger(device, gpuMem);
 
 			// Initialize the SDF rasterizer
 			HWND winHandle = AthruCore::Utility::AccessApp()->GetHWND();
-			rasterPttr = new FigureRaster(d3DPttr->GetDevice(), winHandle);
+			//rasterPttr = new GradientMapper(device, gpuMem, winHandle);
 
 			// Initialise the rendering manager + the GPU update manager
-			rendererPttr = new Renderer(winHandle,
-										d3DPttr->GetDevice(),
-										d3DPttr->GetDeviceContext());
-
-			//gpuUpdateManagerPttr = new GPUUpdateManager();
+			rendererPttr = new Renderer(winHandle, gpuMem,
+										device, d3DPttr->GetGraphicsQueue());
 		}
 
 		static void DeInit()
@@ -57,16 +52,8 @@ namespace AthruGPU
 			rendererPttr->~Renderer();
 			rendererPttr = nullptr;
 
-			// Clean-up the GPU update manager
-			//gpuUpdateManagerPttr->~GPUUpdateManager();
-			//gpuUpdateManagerPttr = nullptr;
-
-			// Clean-up data associated with the GPU
-			// random-number generator
-			gpuRand->~GPURand();
-
 			// Clean-up data associated with the SDF rasterizer
-			rasterPttr->~FigureRaster();
+			//rasterPttr->~GradientMapper();
 
 			// Clean-up data associated with the GPU messenger
 			gpuMessengerPttr->~GPUMessenger();
@@ -96,26 +83,15 @@ namespace AthruGPU
 			return gpuMessengerPttr;
 		}
 
-		static FigureRaster* AccessRasterizer()
-		{
-			return rasterPttr;
-		}
+		//static GradientMapper* AccessRasterizer()
+		//{
+		//	return rasterPttr;
+		//}
 
 		static Renderer* AccessRenderer()
 		{
 			return rendererPttr;
 		}
-
-		//static GPUUpdateManager* AccessGPUUpdateManager()
-		//{
-		//	return gpuUpdateManagerPttr;
-		//}
-
-		static const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& AccessGPURandView()
-		{
-			return gpuRand->gpuRandState.view();
-		}
-
 	private:
 		// General GPU interfacing
 		static Direct3D* d3DPttr;
@@ -124,18 +100,13 @@ namespace AthruGPU
 		// CPU and GPU figure data
 		static GPUMessenger* gpuMessengerPttr;
 
-		// Volume rasterization object, used for preparing SDF textures when players travel between systems
-		// (planet rasterization) or planets (animal/plant rasterization)
-		static FigureRaster* rasterPttr;
+		// Volume rasterization object, generates gradient fields for faster ray/scene intersections
+		// during rendering
+		//static GradientMapper* rasterPttr;
 
 		// Visibility/lighting calculations, also
 		// post-production and presentation
 		static Renderer* rendererPttr;
-
-		// GPU updates for highly-parallel data
-		// (animal cells, plant/animal predation,
-		// physics processing, etc)
-		//static GPUUpdateManager* gpuUpdateManagerPttr;
 
 		// Simple switch describing the application
 		// associated with [this] was initialized
@@ -144,9 +115,5 @@ namespace AthruGPU
 		// before the Direct3D handler + the texture
 		// manager + the render manager were created)
 		static bool internalInit;
-
-		// Wrapper around a state buffer designed for
-		// improved GPU random number generation
-		static GPURand* gpuRand;
 	};
 };

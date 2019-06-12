@@ -46,6 +46,7 @@ SceneFigure::Figure* Scene::CollectLocalFigures()
 	currFigures[7] = planets[6]->GetCoreFigure();
 	currFigures[8] = planets[7]->GetCoreFigure();
 	currFigures[9] = planets[8]->GetCoreFigure();
+	memset(currFigures + 10, NULL, SceneStuff::ALIGNED_PARAMETRIC_FIGURES_PER_SYSTEM - 9); // Per-planet plant species are undefined atm
 	return currFigures;
 }
 

@@ -17,9 +17,8 @@ class HiLevelServiceCentre
 
 		static void StartUp()
 		{
-			// Allocation assumes Athru will use 255 megabytes at most
-			const u8Byte STARTING_HEAP = 255000000;
-			AthruCore::Utility::Init(STARTING_HEAP);
+			// Initialize utilities
+			AthruCore::Utility::Init(MemoryStuff::STARTING_HEAP_ALLOC);
 
 			// Attemp to create and register rendering services
 			// (the render-manager + the texture-manager)

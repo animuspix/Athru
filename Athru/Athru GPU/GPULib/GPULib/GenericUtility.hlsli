@@ -36,12 +36,23 @@
 #define STELLAR_FIG_ID 0
 
 // Useful shader input data
-cbuffer GPUInput : register(b0)
+struct GPUInput
 {
-    float4 tInfo; // Delta-time in [x], current time (seconds) in [y], frame count in [z],
-                  // nothing in [w]
-    float4 systemOri; // Origin for the current star-system; useful for predicting figure
-                      // positions during ray-marching/tracing (in [xyz], [w] is unused)
+	float4 tInfo; // Time info for each frame;
+				  // delta-time in [x], current total time (seconds) in [y],
+				  // frame count in [z], nothing in [w]
+	float4 systemOri; // Origin for the current star-system; useful for predicting figure
+					  // positions during ray-marching/tracing (in [xyz], [w] is unused)
+	float4 cameraPos; // Camera position in [xyz], [w] is unused
+	float4x4 viewMat; // View matrix
+	float4x4 iViewMat; // Inverse view matrix
+	float4 bounceInfo; // Maximum number of bounces in [x], number of supported surface BXDFs in [y],
+					   // tracing epsilon value in [z]; [w] is unused
+	uint4 resInfo; // Resolution info carrier; contains app resolution in [xy],
+				   // AA sampling rate in [z], and display area in [w]
+	uint4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
+	uint4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
+	float4 excess; // DX12 constant buffers are 256-byte aligned; padding allocated here
 };
 
 // Linearly scales the rotational part of the given quaternion
@@ -53,7 +64,7 @@ float4 QtnRotationalScale(float scaleBy, float4 qtn)
     // numerical accuracy
 
     float halfAngleRads = acos(qtn.w);
-    float epsilon = 0.0000001f;
+    const float epsilon = 0.0000001f;
     float halfAngleSine = sin(halfAngleRads + EPSILON_MIN);
     float3 vec = float3(qtn.x / halfAngleSine,
                         qtn.y / halfAngleSine,

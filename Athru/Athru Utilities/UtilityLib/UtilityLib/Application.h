@@ -25,6 +25,8 @@ class Application
 		// Retrieve the window handle
 		HWND GetHWND();
 
+		// Retrieve the monitor dimensions (allows fullscreen on arbitrary system monitors)
+		void GetMonitorRes(u4Byte* x, u4Byte* y);
 	private:
 		// Initialise game window
 		void BuildWindow(const int& screenWidth, const int& screenHeight);
@@ -42,6 +44,9 @@ class Application
 		// Value used by Windows to identify the interactive aspect of the
 		// application (referred to as a "form" within Windows itself)
 		HWND appForm;
+
+		// Size of the output monitor
+		u4Byte monitorRes[2];
 
 		// A windows message structure; used for storing formatted copies of
 		// raw messages received from the OS event queue

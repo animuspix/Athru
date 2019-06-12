@@ -3,7 +3,7 @@
 #include <chrono>
 #include <math.h>
 #include <assert.h>
-#include <d3d11.h>
+#include <d3d12.h>
 #include "Typedefs.h"
 #include <wrl\client.h>
 
@@ -23,7 +23,7 @@ namespace TimeStuff
 
 	inline float FPS()
 	{
-		return std::round(1.0f / deltaTime());
+		return (float)round(1.0f / deltaTime());
 	}
 
 	inline float time()
@@ -46,6 +46,10 @@ namespace MemoryStuff
 
 	// Maximum supported number of memory-markers
 	constexpr uByte MAX_MARKER_COUNT = 120;
+
+	// Maximum supported footprint for Athru-controlled CPU-side memory
+	// Allocation assumes Athru will use 255 megabytes at most
+	const u8Byte STARTING_HEAP_ALLOC = 255000000;
 
 	// Small compile-time function returning whether or
 	// not the current target platform is 64-bit
@@ -149,10 +153,12 @@ namespace GraphicsStuff
 namespace SceneStuff
 {
 	extern constexpr u4Byte SYSTEM_COUNT = 100;
-	extern constexpr u4Byte PLANETS_PER_SYSTEM = 10;
+	extern constexpr u4Byte BODIES_PER_SYSTEM = 10;
 	extern constexpr u4Byte PLANTS_PER_PLANET = 100;
+	extern constexpr u4Byte ALIGNED_PARAMETRIC_FIGURES_PER_SYSTEM = 1024; // Total number of parameteric figures/system (number of plants * number
+																		  // of bodies, animal forms are defined explicitly with volumes in Athru)
+																		  // Aligned to the nearest power of two for simpler buffer management
+																		  // (+ at 64 bytes/figure 1024 figures should match exactly to the 65536-byte
+																		  // resource alignment requirement in d3d12)
 	extern constexpr u4Byte ANIMALS_PER_PLANET = 100;
-	extern constexpr u4Byte MAX_NUM_SCENE_FIGURES = PLANETS_PER_SYSTEM +
-													PLANTS_PER_PLANET +
-													ANIMALS_PER_PLANET;
 }

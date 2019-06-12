@@ -1,124 +1,132 @@
 #pragma once
 
-#include <d3d11.h>
-#include "AthruBuffer.h"
+#include <d3d12.h>
+#include <functional>
+#include "AthruResrc.h"
 #include "PixHistory.h"
-#include "ComputeShader.h"
-#include "ScreenPainter.h"
+#include "ComputePass.h"
 #include "Camera.h"
 #include "LiBounce.h"
+#include "PhiloStrm.h"
 
 class Renderer
 {
 	public:
 		Renderer(HWND windowHandle,
-				 const Microsoft::WRL::ComPtr<ID3D11Device>& device,
-				 const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& d3dContext);
+				 AthruGPU::GPUMemory& gpuMem,
+				 const Microsoft::WRL::ComPtr<ID3D12Device>& device,
+				 const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rndrCmdQueue);
 		~Renderer();
-		void Render(Camera* camera);
+		void Render(Direct3D* d3d);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
 		void operator delete(void* target);
 
 	private:
-		// Lens sampler
-		void SampleLens(DirectX::XMVECTOR& cameraPosition,
-						DirectX::XMMATRIX& viewMatrix,
-						const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexRW);
+		// Per-frame lens sampler
+		ComputePass lensSampler;
 
-		// Ray/scene intersector & volumetric sampler
-		void Trace();
+		// The intersection shader (traces/marches rays through the scene)
+		ComputePass tracer;
 
-		// Bounce preparation; next-event-estimation & material synthesis, also surface sampling
-		void Bounce(const Microsoft::WRL::ComPtr<ID3D11UnorderedAccessView>& displayTexRW);
+		// The dispatch generator; used to convert ray/material counters to indirect
+		// dispatch arguments (assumes 256 threads/group)
+		ComputePass dispEditor;
 
-		// Filter/tonemap rendered images before denoising/rasterization in [Present]
-		void Prepare();
-
-		// Present the scene to the player through the DirectX geometry pipeline
-		// (would love a more direct way to do this)
-		void Present(ViewFinder* viewFinder);
-
-		// Small array of tracing shaders; [0] contains the lens-sampler (finds outgoing directions,
-		// initializes light paths), [1] contains the intersection shader (traces/marches rays through
-		// the scene)
-		ComputeShader tracers[2];
-
-		// Bounce preparation shader (material synthesis + export)
-		ComputeShader bouncePrep;
-
-		// Small array of sampling shaders; each element performs sampling + shading for a different
-		// surface type (support for diffuse, mirrorlike, refractive, subsurface/snowy, generic subsurface, and furry
-		// is expected; only diffuse and mirrorlike are supported at the moment)
-		ComputeShader samplers[6];
+		// Surface sampling megakernel; every individual group is coherent, but batches of groups are
+		// deployed against different materials
+		ComputePass surfSampler;
 
 		// Small shader for filtering & tonemapping (denoising works well with texture sampling, so that runs
 		// directly inside the presentation shader)
-		ComputeShader post;
+		ComputePass post;
 
-		// Rasterization shader, needed for mostly-compute graphics under DX11 (afaik);
-		// also performs denoising
-		ScreenPainter screenPainter;
+		// Buffer of rendering data, sections accessed by different projections declared below
+		AthruGPU::AthruResrc<uByte, AthruGPU::RWResrc<AthruGPU::Buffer>> rndrBuff;
 
-		// Useful shaders for indirect dispatch, designed to trim dispatch arguments to match a chosen thread
-		// count (128-thread version divides dispatch arguments by [128], 256-thread version divides dispatch arguments
-		// by [256], and so on)
-		// Defined here instead of globally so I can use rendering-specific resource bindings (avoiding rebinding everything
-		// each time I adjust the counter-buffer)
-		ComputeShader dispatchScale512;
-		ComputeShader dispatchScale256;
-		ComputeShader dispatchScale128;
+		// Path information projections, updated per-bounce
+		struct float2x3 { DirectX::XMFLOAT3 r0; DirectX::XMFLOAT3 r1; };
+		AthruGPU::AthruResrc<float2x3, AthruGPU::RWResrc<AthruGPU::Buffer>> rays;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3, AthruGPU::RWResrc<AthruGPU::Buffer>> rayOris;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3, AthruGPU::RWResrc<AthruGPU::Buffer>> outDirs;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT2, AthruGPU::RWResrc<AthruGPU::Buffer>> iors;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> figIDs;
 
-		// Rendering-specific input struct
-		struct RenderInput
-		{
-			DirectX::XMVECTOR cameraPos; // Camera position in [xyz], [w] is unused
-			DirectX::XMMATRIX viewMat; // View matrix
-			DirectX::XMMATRIX iViewMat; // Inverse view matrix
-			DirectX::XMFLOAT4 bounceInfo; // Maximum number of bounces in [x], number of supported surface BXDFs in [y],
-										  // tracing epsilon value in [z]; [w] is unused
-			DirectX::XMUINT4 resInfo; // Resolution info carrier; contains app resolution in [xy],
-									  // AA sampling rate in [z], and display area in [w]
-			DirectX::XMUINT4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
-			DirectX::XMUINT4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
-		};
-
-		// A reference to the rendering-specific input/constant buffer (with layout defined by [RenderInput])
-		AthruGPU::AthruBuffer<RenderInput, AthruGPU::CBuffer> renderInputBuffer;
-
-		// Small buffer letting us restrict path-tracing dispatches to paths persisting after
+		// Small projection letting us restrict path-tracing dispatches to paths persisting after
 		// each tracing/processing/sampling iteration
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> traceables;
+		// Each element is a pixel index
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> traceables;
 
-		// Surface intersection buffer (carries successful intersections across for next-event-estimation + material synthesis)
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> surfIsections;
+		// Material intersection projections
+		// Each element is a pixel index
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> diffuIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> mirroIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> refraIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> snowwIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> ssurfIsections;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::AppBuffer> furryIsections;
 
-		// Material intersection buffers
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> diffuIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> mirroIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> refraIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> snowwIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> ssurfIsections;
-		AthruGPU::AthruBuffer<LiBounce, AthruGPU::AppBuffer> furryIsections;
+		// Path-tracing RNG state projection; each chunk of state is a separate Philox stream
+		// (see [PhiloStrm.h])
+		AthruGPU::AthruResrc<PhiloStrm, AthruGPU::RWResrc<AthruGPU::Buffer>> randState;
 
-		// Generic counter buffer, carries dispatch axis sizes per-material in 0-17,
-		// generic axis sizes in 18-20, thread count assumed for dispatch axis sizes
-		// in [21], and a light bounce counter in [22]
-		// Also raw generic append-buffer lengths in [23], and material append-buffer
-		// lengths in 24-29
-		AthruGPU::AthruBuffer<u4Byte, AthruGPU::CtrBuffer> ctrBuf;
+		// External counters for append/consume projections
+		// Declared in separate memory for easier packing (counters are 4096-byte aligned)
+		// and to avoid creating inaccessible memory within [rndrBuff]
+		AthruGPU::AthruResrc<uByte, AthruGPU::RWResrc<AthruGPU::Buffer>> ctrBuff;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> traceCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> diffuCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> mirroCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> refraCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> snowwCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> ssurfCtr;
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> furryCtr;
 
-		// [rndrCtr] layout referencess
-		const u4Byte RNDR_CTR_OFFSET_GENERIC = (GraphicsStuff::NUM_SUPPORTED_SURF_BXDFS * AthruGPU::DISPATCH_ARGS_SIZE);
+		// Set of shader-visible tracing/sampling dispatch axes exposed each frame
+		// Successful intersections are recorded here for sampling, and recorded again if they
+		// pass through sampling without being absorbed by the scene or hitting a light source
+		AthruGPU::AthruResrc<u4Byte, AthruGPU::RWResrc<AthruGPU::Buffer>> dispAxesWrite;
+
+		// Argument buffer for indirect tracing + sampling dispatches
+		// Axes recorded by [dispAxesWrite] are copied in here before launching tracing/sampling passes;
+		// this allows indirectly dispatched passes to emit more indirect threads themselves (like a tracing
+		// pass processing persistent rays from a previous sampling pass, while feeding successful intersections
+		// into another sampling pass within the same bounce)
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3, AthruGPU::IndirArgBuffer> dispAxesArgs;
 
 		// Anti-aliasing integration buffer, allows jittered samples to slowly integrate
 		// into coherent images over time
-		AthruGPU::AthruBuffer<PixHistory, AthruGPU::GPURWBuffer> aaBuffer;
+		AthruGPU::AthruResrc<PixHistory,
+							 AthruGPU::RWResrc<AthruGPU::Buffer>> aaBuffer;
 
-		// A reference to the presentation-only input/constant buffer (with layout equivalent to [DirectX::XMFLOAT4])
-		AthruGPU::AthruBuffer<DirectX::XMFLOAT4, AthruGPU::CBuffer> displayInputBuffer;
+		// Render output texture, copied to the back-buffer each frame
+		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
+							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexHDR;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
+							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexLDR;
 
-		// Reference to the Direct3D device context
-		const Microsoft::WRL::ComPtr<ID3D11DeviceContext>& context;
+		// References to Athru's main rendering command-queue
+		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;
+
+		// Specialized lens-sampling command-list + command-allocator
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lensList;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> lensAlloc;
+
+		// Specialized path-tracing command-lists + command-allocators
+		// (also command signature for indirect dispatch)
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> ptCmdList;
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> ptCmdAllocator;
+		Microsoft::WRL::ComPtr<ID3D12CommandSignature> ptCmdSignature;
+
+		// Specialized post-processing command-lists + command allocator
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> postCmdLists[AthruGPU::NUM_SWAPCHAIN_BUFFERS]; // One command-list for each swap-chain buffer
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> postCmdAllocator;
+
+		// Array of command-list sets to fire for each swap-chain buffer
+		// (batched version of lensList/ptCmdList/postCmdList[0...2] for neater command submission)
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> rnderCmdSets[3][3];
+
+		// Not every frame is a rendering frame, so internally keep track of render frames here
+		u4Byte rnderFrameCtr;
 };

@@ -5,42 +5,10 @@
 #ifndef MATERIALS_LINKED
     #include "Materials.hlsli"
 #endif
-#ifndef GEOMETRIC_UTILITIES_LINKED
-    #include "GeometricUtility.hlsli"
-#endif
 
 // Small flag to mark whether [this] has already been
 // included somewhere in the build process
 #define LIGHTING_UTILITIES_LINKED
-
-// Maximum allowed number of bounces/path
-// (required for BDPT vertex caching so that
-// connection strategies can be performed between
-// every scatter site in the camera sub-path +
-// every scatter site in the light sub-path)
-#define MAX_BOUNCES_PER_SUBPATH 7
-
-// A generic background color; used for contrast against dark surfaces in
-// space environments with no ambient environmental light sources besides
-// the local star
-// Development only, release builds should use a constant [0.0f.xxx] background color
-// (no human-visible light in space beyond emittance from the local star)
-#define AMB_RGB 0.0f.xxx
-
-// Small object to represent path state during/after ray integration
-struct Path
-{
-    float distToPrev; // Distance between the current path-tracing vertex and the most recent
-                      // vertex in the scene
-    float2x3 attens; // Attenuation at the foremost vertex + the previous vertex
-    float4x4 mat; // Local material properties
-    float4 rd; // Outgoing ray direction (xyz) and figure-ID (w)
-    float3 ro; // Ray origin
-    float3 norml; // Local surface normal
-    float3 p; // Position for the latest vertex in the path
-    float3 srfP; // Origin for the surface incident with the ray at [p]
-    float2 ambFrs; // Ambient Fresnel value during path-tracing
-};
 
 // PDF associated with [StellarSurfPos(...), represents the probability of
 // selecting any position within the (hemispheric) distribution described
@@ -262,6 +230,31 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
     return offset;
 }
 
+// Evaluate the power heuristic for Multiple Importance Sampling (MIS);
+// used to balance importance-sampled radiances taken with different
+// sampling strategies (useful for e.g. sampling arbitrary materials
+// where some materials (like specular surfaces) respond better to
+// BSDF sampling whereas others (like diffuse surfaces) respond better
+// if you sample light sources directly)
+// This implementation is from Physically Based Rendering: From Theory
+// to Implementation (Pharr, Jakob, Humphreys)
+// We're working in high-performance shader code, so variadic functions
+// aren't really a thing; that means this is only good for sampling
+// strategies with exactly two distributions. Strategies with arbitrary
+// distributions (like e.g. BDPT vertex integration) should use
+// hard-coded MIS implementations instead
+float MISWeight(float samplesDistroA,
+                float distroAPDF,
+                float samplesDistroB,
+                float distroBPDF)
+{
+    float distroA = samplesDistroA * distroAPDF;
+    float distroB = samplesDistroB * distroBPDF;
+    float distroASqr = distroA * distroA;
+    float distroBSqr = distroB * distroB;
+    return distroASqr / (distroASqr + distroBSqr);
+}
+
 // Simple occlusion function, traces a shadow ray between two points to test
 // for visiblity (needed to validate generic sub-path connections in BDPT)
 // [0].xyz contains the tracing direction, [0].w contains the distance
@@ -275,14 +268,12 @@ float RayOffset(float4 rayOri, // Ray origin in [xyz], figure-ID in [w]
 // [w]
 // [rayOri] carries the ray origin in [xyz] and the SDF epsilon value for
 // the current frame in [w]
-// Planetary surface variance is much too high for ordinary ray offsets to work, so
-// occlusion rays are traced backwards from the ray destination instead
 #define MAX_OCC_MARCHER_STEPS 256
-float3x4 OccTest(float4 rayOri,
+float3x4 OccTest(float3 rayOri,
                  float4 rayDir,
                  float eps)
 {
-    float currRayDist = 0.0f;
+    float currRayDist = eps;
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;
@@ -294,7 +285,7 @@ float3x4 OccTest(float4 rayOri,
                                          rayOri.xyz,
                                          false,
                                          FILLER_SCREEN_ID,
-                                         rayOri.w);
+                                         eps);
         bool hitDest = (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target figure
         if (sceneField[0].x < eps ||
             (hitDest && sceneField[0].x < eps))
@@ -328,4 +319,66 @@ float3x4 OccTest(float4 rayOri,
                     endPos,
                     occ,
                     nearID.xxxx);
+}
+
+// Compute a diffuse light gather
+// (specializing these per-material to avoid branching in bxdf shaders)
+// Color in [rgb], intersection status in [w]
+float4 DiffuLiGather(float4 dirPDF,
+                     float4 surf,
+                     float3 n,
+                     float3 wo,
+                     float3 pt,
+                     float srcPDF,
+                     float3x3 nSpace,
+                     float starScale,
+					 float3 sysOri,
+                     uint figID,
+                     float eps,
+                     float3 uvw01)
+{
+    // Perform source sampling
+    float3 stellarSurfPos = //sysOri + (uvw01 * starScale);
+                            StellarSurfPos(float4(sysOri,
+                                                  starScale),
+                                           uvw01.xy,
+                                           pt);
+    float3x4 srcOccData = OccTest(pt,
+                                  float4(normalize(stellarSurfPos - pt), STELLAR_FIG_ID),
+                                  eps);
+    float3 srcGatherRGB = Emission(STELLAR_RGB,
+                                   STELLAR_BRIGHTNESS,
+                                   srcOccData[0].w) *
+                          abs(dot(n, srcOccData[0].xyz));
+
+    // Perform surface-sampling + MIS for next-event-estimation
+    //float3x4 occData = OccTest(float4(pt, figID),
+    //                           float4(mul(dirPDF.xyz, nSpace), STELLAR_FIG_ID),
+    //                           eps);
+    //float3 neeSrfRGB = Emission(STELLAR_RGB,
+    //                            STELLAR_BRIGHTNESS,
+    //                            occData[0].w) *
+    //                   abs(dot(n, occData[0].xyz));
+    float3 neeRGB = 0.0f.xxx;
+    if (!srcOccData[1].w) // Process source gathers with MIS
+    {
+        neeRGB += srcGatherRGB *
+                  DiffuseBRDF(surf,
+                              float3x3(srcOccData[0].yzw,
+                                       n,
+                                       wo)) / srcPDF;// /
+                  //MISWeight(1, srcPDF,
+                  //          1, dirPDF.w);
+    }
+    //if (!occData[1].w) // Process surface gathers with MIS
+    //{
+    //    neeRGB += neeSrfRGB *
+    //              DiffuseBRDF(surf,
+    //                          float3x3(dirPDF.xyz,
+    //                                   n,
+    //                                   wo)) /
+    //              MISWeight(1, srcPDF,
+    //                        1, dirPDF.w);
+    //}
+    return float4(neeRGB, srcOccData[1].w/* && occData[1].w*/);
 }

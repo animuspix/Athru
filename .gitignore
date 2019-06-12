@@ -10,3 +10,5 @@ AthruRewrite/Athru/Athru/x64/
 *.db
 *.idb
 *.obj
+
+Athru/Athru/log\.txt

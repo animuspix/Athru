@@ -4,6 +4,7 @@
 StackAllocator::StackAllocator(const u8Byte& expectedMemoryUsage)
 {
 	stackStart = malloc(expectedMemoryUsage); // Perform initial allocation
+	memset(stackStart, 0, expectedMemoryUsage); // Initially zero allocated memory (simplifies occupancy profiling)
 	stackTop = stackStart; // Initialize the stack-offset to zero (no internal allocations have occurred)
 	availMem = expectedMemoryUsage; // No internal allocations, so the available-memory tracker can safely
 									// initialize to [expectedMemoryUsage]
@@ -47,6 +48,11 @@ address StackAllocator::PtrAdjuster(address srcPtr,
 
 	// Return the adjusted memory
 	return alignedMemory;
+}
+
+const address& StackAllocator::GetStart()
+{
+	return stackStart;
 }
 
 address StackAllocator::AlignedAlloc(u8Byte bytes,
@@ -140,7 +146,7 @@ void StackAllocator::DeAlloc(MemoryStuff::MARKER_INDEX_TYPE markerIndex)
 	}
 }
 
-address StackAllocator::GetTop()
+const address& StackAllocator::GetTop()
 {
 	return stackTop;
 }

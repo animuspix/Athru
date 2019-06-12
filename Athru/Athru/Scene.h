@@ -41,6 +41,8 @@ class Scene
 
 		// Transfer array used to move data out of the "scene" and into the GPU for
 		// highly-parallel updates/rendering
-		SceneFigure::Figure currFigures[SceneStuff::MAX_NUM_SCENE_FIGURES];
+		// Strictly used for planets + vegetation; animals are represented with population textures
+		// (for planetary distribution) and volume atlases (for morphology)
+		SceneFigure::Figure currFigures[SceneStuff::ALIGNED_PARAMETRIC_FIGURES_PER_SYSTEM];
 };
 
