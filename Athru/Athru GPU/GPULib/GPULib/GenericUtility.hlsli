@@ -64,7 +64,7 @@ float4 QtnRotationalScale(float scaleBy, float4 qtn)
     // numerical accuracy
 
     float halfAngleRads = acos(qtn.w);
-    float epsilon = 0.0000001f;
+    const float epsilon = 0.0000001f;
     float halfAngleSine = sin(halfAngleRads + EPSILON_MIN);
     float3 vec = float3(qtn.x / halfAngleSine,
                         qtn.y / halfAngleSine,

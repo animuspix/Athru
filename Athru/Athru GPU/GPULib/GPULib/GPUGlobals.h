@@ -32,8 +32,8 @@ namespace GraphicsStuff
 	extern constexpr u4Byte TILING_HEIGHT = DISPLAY_HEIGHT / TILE_HEIGHT;
 	extern constexpr u4Byte TILING_AREA = TILING_WIDTH * TILING_HEIGHT;
 	extern constexpr uByte NUM_SUPPORTED_SURF_BXDFS = 6;
-	extern constexpr float EPSILON_MIN = 0.0001f;
-	extern constexpr float EPSILON_MAX = 0.1f;
+	extern constexpr float EPSILON_MIN = 0.00000001f;
+	extern constexpr float EPSILON_MAX = 0.0001f;
 
 	// Default Athru texture clear color
 	extern constexpr float DEFAULT_TEX_CLEAR_VALUE[4] = { 1.0f, 0.5f, 0.25f, 1.0f };

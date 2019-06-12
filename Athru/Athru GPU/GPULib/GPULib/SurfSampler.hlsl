@@ -161,7 +161,8 @@ void main(uint3 groupID : SV_GroupID,
     // Generate + cache the local gradient
     uint figID = figIDs[ndx];
     float3 n = PlanetGrad(pt, 
-                          figures[figID]); // Placeholder gradient, will use figure-adaptive normals later...
+                          figures[figID],
+						  eps); // Placeholder gradient, will use figure-adaptive normals later...
 
     // Generate + cache the local tangent-space matrix
     float3x3 normSpace = NormalSpace(n);

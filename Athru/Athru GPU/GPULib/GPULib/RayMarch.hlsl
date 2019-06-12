@@ -90,7 +90,7 @@ void main(uint3 groupID : SV_GroupID,
     float4 rgba = 1.0f.xxxx;
     Figure star = figures[STELLAR_FIG_ID];
     float2x3 ray = rays[ndx];
-    bool relaxed = false;
+    bool relaxed = true;
     for (uint i = 0u; i < MAX_VIS_MARCHER_STEPS; i += 1u)
     {
         // Scale rays through the scene, add bounce/emission origin
@@ -104,18 +104,18 @@ void main(uint3 groupID : SV_GroupID,
                                          eps);
 
         // Revert to standard sphere-tracing on excessive relaxation
-        //if (prevF + sceneField[0].x < prevDt && relaxed)
-        //{
-        //    relaxed = false;
-        //    t += prevDt * 1.0f - w;
-        //    rayVec = float3(t * ray[1]) + ray[0];
-        //    sceneField = SceneField(rayVec,
-        //                            ray[1],
-        //                            true,
-        //                            FILLER_SCREEN_ID,
-        //                            eps);
-        //    w = 1.0f;
-        //}
+        if (prevF + sceneField[0].x < prevDt && relaxed)
+        {
+            relaxed = false;
+            t += prevDt * 1.0f - w;
+            rayVec = float3(t * ray[1]) + ray[0];
+            sceneField = SceneField(rayVec,
+                                    ray[1],
+                                    true,
+                                    FILLER_SCREEN_ID,
+                                    eps);
+            w = 1.0f;
+        }
 
         // Process intersections
         if (sceneField[0].x < eps)
@@ -203,9 +203,9 @@ void main(uint3 groupID : SV_GroupID,
         else // Update ray-marching values
         {
             prevF = sceneField[0].x; // Update most-recent scene distance
-            prevDt = prevF;// * w; // Update most-recent ray offset
+            prevDt = prevF * w; // Update most-recent ray offset
             t += prevDt; // Offset rays at each step
-            //if (relaxed) { w = lerp(1.0f, maxW, pow(0.9f, sceneField[0].x)); } // Scale [w] closer to [maxW] as rays approach the threshold distance from the scene
+            if (relaxed) { w = lerp(1.0f, maxW, pow(0.9f, sceneField[0].x)); } // Scale [w] closer to [maxW] as rays approach the threshold distance from the scene
         }
     }
     // Apply primary-ray shading

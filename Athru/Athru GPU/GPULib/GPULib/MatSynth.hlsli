@@ -155,7 +155,7 @@ float SurfAlpha(float3 coord, uint bxdfID)
 // Will eventually reference a volume texture
 float3 SurfRGB(float3 wo, float3 norml)
 {
-    return float3(abs(cross(wo, norml)).g, 0.5f, 0.5f);
+    return float3(abs(cross(wo, norml)).r, 0.5f, 0.5f);
            //1.0f.xxx;
            //wo;
            //norml;

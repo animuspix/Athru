@@ -379,10 +379,11 @@ float4 tetGrad(float3 samplePoint,
 // Planet-specific gradient; just outputs analytical Julia gradient for now,
 // will update for physical displacement later
 float3 PlanetGrad(float3 samplePoint,
-                  Figure fig)
+                  Figure fig,
+                  float eps)
 {
     #ifdef APPROX_PLANET_GRAD
-        return tetGrad(samplePoint, fig, 0.1f).xyz;
+        return tetGrad(samplePoint, fig, eps).xyz;
     #else
         return JuliaGrad(fig.distCoeffs[0],
                          samplePoint);
