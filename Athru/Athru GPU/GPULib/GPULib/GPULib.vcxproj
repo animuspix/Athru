@@ -159,7 +159,6 @@
     <ClInclude Include="GPUGlobals.h" />
     <ClInclude Include="GPUMemory.h" />
     <ClInclude Include="GPUServiceCentre.h" />
-    <ClInclude Include="LiBounce.h" />
     <ClInclude Include="PhiloStrm.h" />
     <ClInclude Include="PixHistory.h" />
     <ClInclude Include="Renderer.h" />

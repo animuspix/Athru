@@ -54,8 +54,6 @@ void SampleDiffu(uint ndx, float3x3 normSpace, float3 n, float3 wo,
 							   figID,
 							   eps,
 							   rand.xyz);
-	displayTex[pix] *= float4(nee.rgb, 1.0f);
-	return;
 	// Prepare for the next bounce, but only if next-event-estimation fails
 	if (nee.a)
 	{
@@ -74,9 +72,9 @@ void SampleDiffu(uint ndx, float3x3 normSpace, float3 n, float3 wo,
 								 		  n,
 								 		  wo)) / ZERO_PDF_REMAP(iDir.w) *
 								 abs(dot(n, -wo));
-		float3 rho = displayTex[pix].rgb * rgb;					 
-		displayTex[pix] *= float4(rho, 1.0f);
-		if (dot(rho, 1.0f.xxx) > 0.0f) // Only propagate paths with nonzero brightnesss
+		float4 rho = displayTex[pix] * float4(rgb, 1.0f);					 
+		displayTex[pix] = rho;
+		if (dot(rho.rgb, 1.0f.xxx) > 0.0f) // Only propagate paths with nonzero brightnesss
 		{
 			// Update current direction + position, also previous position
 			// (diffuse bounce, incident and exitant positions are equivalent)

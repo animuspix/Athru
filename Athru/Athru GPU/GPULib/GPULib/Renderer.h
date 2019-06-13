@@ -6,7 +6,6 @@
 #include "PixHistory.h"
 #include "ComputePass.h"
 #include "Camera.h"
-#include "LiBounce.h"
 #include "PhiloStrm.h"
 
 class Renderer

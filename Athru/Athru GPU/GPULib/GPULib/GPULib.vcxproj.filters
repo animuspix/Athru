@@ -63,9 +63,6 @@
     <ClInclude Include="GPUGlobals.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="LiBounce.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="GPUMemory.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
