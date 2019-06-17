@@ -105,26 +105,26 @@ class Renderer
 		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
 							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexLDR;
 
-		// References to Athru's main rendering command-queue
-		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& renderQueue;
+		// Reference to Athru's main rendering command-queue
+		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rnderQueue;
+
+		// A shared rendering command-allocator
+		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> rnderAlloc;
 
 		// Specialized lens-sampling command-list + command-allocator
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lensList;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> lensAlloc;
 
 		// Specialized path-tracing command-lists + command-allocators
 		// (also command signature for indirect dispatch)
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> ptCmdList;
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> ptCmdAllocator;
 		Microsoft::WRL::ComPtr<ID3D12CommandSignature> ptCmdSignature;
 
 		// Specialized post-processing command-lists + command allocator
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> postCmdLists[AthruGPU::NUM_SWAPCHAIN_BUFFERS]; // One command-list for each swap-chain buffer
-		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> postCmdAllocator;
 
 		// Array of command-list sets to fire for each swap-chain buffer
 		// (batched version of lensList/ptCmdList/postCmdList[0...2] for neater command submission)
-		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> rnderCmdSets[3][3];
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> rnderCmdSets[3][AthruGPU::NUM_SWAPCHAIN_BUFFERS];
 
 		// Not every frame is a rendering frame, so internally keep track of render frames here
 		u4Byte rnderFrameCtr;

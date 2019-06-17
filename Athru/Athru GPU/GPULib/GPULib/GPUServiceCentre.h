@@ -4,7 +4,6 @@
 #include "GPUMemory.h"
 #include "Renderer.h"
 #include "GPUMessenger.h"
-#include "GradientMapper.h"
 #include "UtilityServiceCentre.h"
 #include "GPUGlobals.h"
 
@@ -52,9 +51,6 @@ namespace AthruGPU
 			rendererPttr->~Renderer();
 			rendererPttr = nullptr;
 
-			// Clean-up data associated with the SDF rasterizer
-			//rasterPttr->~GradientMapper();
-
 			// Clean-up data associated with the GPU messenger
 			gpuMessengerPttr->~GPUMessenger();
 			gpuMessengerPttr = nullptr;
@@ -83,11 +79,6 @@ namespace AthruGPU
 			return gpuMessengerPttr;
 		}
 
-		//static GradientMapper* AccessRasterizer()
-		//{
-		//	return rasterPttr;
-		//}
-
 		static Renderer* AccessRenderer()
 		{
 			return rendererPttr;
@@ -99,10 +90,6 @@ namespace AthruGPU
 		// GPU figure sync, maintains equivalence between
 		// CPU and GPU figure data
 		static GPUMessenger* gpuMessengerPttr;
-
-		// Volume rasterization object, generates gradient fields for faster ray/scene intersections
-		// during rendering
-		//static GradientMapper* rasterPttr;
 
 		// Visibility/lighting calculations, also
 		// post-production and presentation

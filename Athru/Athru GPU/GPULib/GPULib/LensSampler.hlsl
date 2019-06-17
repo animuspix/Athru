@@ -116,9 +116,10 @@ void main(uint3 groupID : SV_GroupID,
                            aaBuffer[tilePx.x].sampleCount.x + 1,
                            rand.xy);
 
-    // Prepare zeroth "bounce" for the core tracing/intersection shader
+    // Prepare zeroth bounce for the core tracing/intersection shader
     rays[tilePx.x][0] = gpuInfo.cameraPos.xyz;
     rays[tilePx.x][1] = pRay.xyz;
+    dispAxes[6] = gpuInfo.resInfo.w;
     traceables.Append(tilePx.x);
 
     // Update PRNG state

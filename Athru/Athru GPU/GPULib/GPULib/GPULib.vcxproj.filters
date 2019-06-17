@@ -72,9 +72,6 @@
     <ClInclude Include="ComputePass.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="GradientMapper.h">
-      <Filter>C++\Header Files</Filter>
-    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -101,9 +98,6 @@
     <ClCompile Include="ComputePass.cpp">
       <Filter>C++\Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="GradientMapper.cpp">
-      <Filter>C++\Source Files</Filter>
-    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <FxCompile Include="RasterPrep.hlsl">
@@ -111,9 +105,6 @@
     </FxCompile>
     <FxCompile Include="LensSampler.hlsl">
       <Filter>Shaders\Materials &amp; Sampling</Filter>
-    </FxCompile>
-    <FxCompile Include="PlanetRaster.hlsl">
-      <Filter>Shaders</Filter>
     </FxCompile>
     <FxCompile Include="RayMarch.hlsl">
       <Filter>Shaders</Filter>

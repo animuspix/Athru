@@ -43,20 +43,9 @@ void main(uint3 groupID : SV_GroupID,
     // Automatically dispatched threads can still outnumber data available;
     // mask those cases here
     uint rayID = threadID + groupID.x * 256; // Assumes one-dimensional dispatches
-    uint numRays;
-    if (!dispAxes[6]) // Mask against tiled fullscreen ray-count on the zeroth bounce,
-                      // and against tracing dispatch axes otherwise
-    {
-	    numRays = gpuInfo.tilingInfo.z;
-        if (rayID >= numRays) { return; }
-    }
-    else
-    {
-	    numRays = dispAxes[6];
-        if (rayID >= numRays) { return; }
-    }
+    if (rayID >= dispAxes[6]) { return; }
 
-    // [Consume()] a pixel from the end of [traceables]
+    // Map ray-marching threads to pixels
     uint ndx = traceables.Consume();
 
     // Extract a Philox-permutable value from [randBuf]
@@ -66,12 +55,6 @@ void main(uint3 groupID : SV_GroupID,
 
     // Cache input epsilon values
     float eps = gpuInfo.bounceInfo.z;
-
-    // Generate a parameterized path culling weight
-    const float minCull = 0.01f; // Could optionally set this through [RenderInput]
-    const float maxCull = 0.15f; // Could optionally set this through [RenderInput]
-    float m = numRays / gpuInfo.bounceInfo.x;
-    float cullWeight = 0.0f;//lerp(minCull, maxCull, m); // Per-tile counters could allow more dynamic culling here
 
     // Baseline ray distance
     // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
@@ -90,6 +73,7 @@ void main(uint3 groupID : SV_GroupID,
     float4 rgba = 1.0f.xxxx;
     Figure star = figures[STELLAR_FIG_ID];
     float2x3 ray = rays[ndx];
+    float fSamples[4] = { 0.0f,0.0f,0.0f,0.0f };
     bool relaxed = true;
     for (uint i = 0u; i < MAX_VIS_MARCHER_STEPS; i += 1u)
     {
@@ -132,53 +116,40 @@ void main(uint3 groupID : SV_GroupID,
                        // + sampling
             }
 
-            // Stochastically cancel paths with [cullWeight]; prepare surviving intersections for next-event-estimation + sampling
-            if (rand.x > cullWeight)
-            {
-                // Set incident position for the current bounce (exitant position depends on the intersected surface,
-                // so we avoid setting that until after we've evaluated materials at [rayVec])
-                rayOris[ndx] = rayVec;
+             // Set incident position for the current bounce (exitant position depends on the intersected surface,
+            // so we avoid setting that until after we've evaluated materials at [rayVec])
+            rayOris[ndx] = rayVec;
 
-                // Cache incident SDF type + figure-ID
-                figIDs[ndx] = sceneField[0].z;
+            // Cache incident SDF type + figure-ID
+            figIDs[ndx] = sceneField[0].z;
 
-                // Choose a material for the current position, then pass the
-                // current ray to a per-material output stream
-                //rgba = float4(abs(normalize(rayVec)), 1.0f);
-                uint matPrim = MatPrimAt(rayVec, rand.z);
-                switch (matPrim)
-                {
-                    case 0:
-                        diffuIsections.Append(ndx);
-                        break;
-                    case 1:
-                        mirroIsections.Append(ndx);
-                        break;
-                    case 2:
-                        refraIsections.Append(ndx);
-                        break;
-                    case 3:
-                        snowwIsections.Append(ndx);
-                        break;
-                    case 4:
-                        ssurfIsections.Append(ndx);
-                        break;
-                    case 5:
-                        furryIsections.Append(ndx);
-                        break;
-                    default:
-                        abort();
-                        break; // Unknown material
-                }
-            }
-            else
+            // Choose a material for the current position, then pass the
+            // current ray to a per-material output stream
+            //rgba = float4(abs(normalize(rayVec)), 1.0f);
+            uint matPrim = MatPrimAt(rayVec, rand.z);
+            switch (matPrim)
             {
-                //#define CULL_HIGHLIGHT
-                #ifdef CULL_HIGHLIGHT
-                    rgba = float4(0.1f, 0.75f, 0.2f, 1.0f);
-                #else
-                    rgba = float4(0.0f.xxx, 1.0f);
-                #endif
+                case 0:
+                    diffuIsections.Append(ndx);
+                    break;
+                case 1:
+                    mirroIsections.Append(ndx);
+                    break;
+                case 2:
+                    refraIsections.Append(ndx);
+                    break;
+                case 3:
+                    snowwIsections.Append(ndx);
+                    break;
+                case 4:
+                    ssurfIsections.Append(ndx);
+                    break;
+                case 5:
+                    furryIsections.Append(ndx);
+                    break;
+                default:
+                    abort();
+                    break; // Unknown material
             }
 
             // Exit the marching loop
@@ -202,10 +173,22 @@ void main(uint3 groupID : SV_GroupID,
         }
         else // Update ray-marching values
         {
+            fSamples[i % 4] = sceneField[0].x;
+            float s = fSamples[0] + fSamples[1] +
+                      fSamples[2] + fSamples[3];
+            float m = s * 0.25f;
+            float deltas = 0.0f;
+            for (uint i = 0u; i < 4u; i += 1u)
+            {
+                float d = fSamples[i] - m;
+                deltas += d * d;
+            }
+            float vari = min(deltas / 3.0f, 1.0f); // Clamp variance to the range (0...1)
+            float dw = 1.0f - vari; // [w] scaling found experimentally
             prevF = sceneField[0].x; // Update most-recent scene distance
-            prevDt = prevF * w; // Update most-recent ray offset
+            prevDt = prevF * (w + dw); // Update most-recent ray offset
             t += prevDt; // Offset rays at each step
-            if (relaxed) { w = lerp(1.0f, maxW, pow(0.9f, sceneField[0].x)); } // Scale [w] closer to [maxW] as rays approach the threshold distance from the scene
+            if (relaxed) { w = min(lerp(1.0f, maxW, pow(0.9f, prevF)), maxW); } // Scale [w] closer to [maxW] with magic (found through experimentation)
         }
     }
     // Apply primary-ray shading

@@ -32,7 +32,7 @@ Renderer::Renderer(HWND windowHandle,
 				 "RasterPrep.cso",
 				 1, 1, 17),
 			// Cache a reference to the rendering command queue
-			renderQueue(rndrCmdQueue),
+			rnderQueue(rndrCmdQueue),
 			rnderFrameCtr(0) // Rendering starts on the zeroth back-buffer
 {
 	// Initialize rendering buffer
@@ -96,21 +96,18 @@ Renderer::Renderer(HWND windowHandle,
 	// prepare rendering commands
 	//////////////////////////
 
-	// Create lens-sampling command list + allocator
+	// Create shared rendering allocator
 	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-								   __uuidof(lensAlloc),
-								   (void**)&lensAlloc);
-	device->CreateCommandList(0x1,
-							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-							  lensAlloc.Get(),
-							  lensSampler.shadingState.Get(),
-							  __uuidof(lensList),
-							  (void**)&lensList);
+								   __uuidof(rnderAlloc),
+								   (void**)&rnderAlloc);
 
 	// Prepare lens-sampling commands
-	// Lens sampling in Athru/DX11 wrote to the counter buffer; no reason to do that in Athru/DX12
-	// Also no reason for lens sampling to append elements into [traceables]; can just index path
-	// data per-thread before tracing the zeroth bounce
+	device->CreateCommandList(0x1,
+							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+							  rnderAlloc.Get(),
+							  lensSampler.shadingState.Get(),
+							  __uuidof(lensList),
+							  (void**)& lensList);
 	const Microsoft::WRL::ComPtr<ID3D12DescriptorHeap> viewHeap = gpuMem.GetShaderViewMem();
 	lensList->SetDescriptorHeaps(1, viewHeap.GetAddressOf());
 	lensList->SetComputeRootSignature(lensSampler.rootSig.Get());
@@ -121,19 +118,16 @@ Renderer::Renderer(HWND windowHandle,
 	lensList->Dispatch(disp.x, disp.y, disp.z);
 	lensList->Close(); // End lens-sampling submissions
 
-	// Create path-tracing command list + allocator
-	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-								   __uuidof(ptCmdAllocator),
-								   (void**)&ptCmdAllocator);
+	// Record path-tracing commands
+	///////////////////////////////
+
+	// Create path-tracing command list
 	device->CreateCommandList(0x1,
 							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-							  ptCmdAllocator.Get(),
+							  rnderAlloc.Get(),
 							  tracer.shadingState.Get(),
 							  __uuidof(ptCmdList),
 							  (void**)&ptCmdList);
-
-	// Record path-tracing commands
-	///////////////////////////////
 
 	// Prepare command signature for indirect dispatch
 	D3D12_INDIRECT_ARGUMENT_DESC indirArgDesc;
@@ -201,11 +195,6 @@ Renderer::Renderer(HWND windowHandle,
 	}
 	ptCmdList->Close();
 
-	// Create post-processing command allocator
-	device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-								   __uuidof(postCmdAllocator),
-								   (void**)&postCmdAllocator);
-
 	// Prepare static data for presentation barriers
 	D3D12_RESOURCE_BARRIER copyBarriers[4];
 	copyBarriers[0] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_DEST,
@@ -228,7 +217,7 @@ Renderer::Renderer(HWND windowHandle,
 		// Create a command-list for the current back-buffer
 		device->CreateCommandList(0x1,
 								  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
-								  postCmdAllocator.Get(),
+								  rnderAlloc.Get(),
 								  post.shadingState.Get(),
 								  __uuidof(postCmdLists[i]),
 								  (void**)(&postCmdLists[i]));
@@ -293,7 +282,7 @@ Renderer::~Renderer()
 void Renderer::Render(Direct3D* d3d)
 {
 	// Execute prepared commands
-	renderQueue->ExecuteCommandLists(AthruGPU::NUM_SWAPCHAIN_BUFFERS, (ID3D12CommandList**)rnderCmdSets[rnderFrameCtr % 3]);
+	rnderQueue->ExecuteCommandLists(3, (ID3D12CommandList**)rnderCmdSets[rnderFrameCtr % 3]);
 	rnderFrameCtr += 1;
 	d3d->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
 

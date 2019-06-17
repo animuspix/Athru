@@ -277,6 +277,7 @@ float3x4 OccTest(float3 rayOri,
     bool occ = true;
     float3 endPos = rayOri.xyz;
     uint nearID = 0x11;
+
     // March occlusion rays
     for (int i = 0; i < MAX_OCC_MARCHER_STEPS; i += 1)
     {
@@ -286,10 +287,12 @@ float3x4 OccTest(float3 rayOri,
                                          false,
                                          FILLER_SCREEN_ID,
                                          eps);
-        bool hitDest = (sceneField[0].z == rayDir.w); // Check if [rayVec] has intersected the target figure
-        if (sceneField[0].x < eps ||
-            (hitDest && sceneField[0].x < eps))
+
+        // Check if [rayVec] has intersected a surface
+        bool hitDest = (sceneField[0].z == rayDir.w); 
+        if (sceneField[0].x < eps)
         {
+            // Check if [rayVec] has intersected the target figure
             if (hitDest)
             {
                 // Assume rays that reach the target figure-ID are un-occluded and return
