@@ -58,7 +58,6 @@ namespace AthruGPU
 	// Considering predicated dispatch for optimized ray masking: https://docs.microsoft.com/en-us/windows/desktop/direct3d12/predication
 	template <typename ContentType,
 			  typename AthruResrcType, // Restrict to defined Athru resource types when possible... (see Concepts in C++20)
-			  ContentType* initDataPttr = nullptr, // Specify initial resource data; only accessed for buffers atm
 			  bool crossCmdQueues = false, // Specify a resource may be shared across command queues
 			  bool crossGPUs = false> // Specify a resource may be shared across system GPUs
 	struct AthruResrc
@@ -160,6 +159,7 @@ namespace AthruGPU
 			}
 
 			// Initialize an append/consume buffer resource
+			// Athru assumes no initial data for append-consume buffers
 			void InitAppBuf(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							GPUMemory& gpuMem,
 							const Microsoft::WRL::ComPtr<ID3D12Resource>& ctrResrc,
@@ -229,6 +229,7 @@ namespace AthruGPU
 				viewDesc.Buffer.NumElements = width;
 				viewDesc.Buffer.StructureByteStride = 0;
 				if constexpr (std::is_class<ContentType>::value &&
+							  !std::is_same<ContentType, uByte4>::value &&
 							  !std::is_same<ContentType, DirectX::XMFLOAT4>::value &&
 							  !std::is_same<ContentType, DirectX::XMVECTOR>::value)
 				{ viewDesc.Buffer.StructureByteStride = sizeof(ContentType); }
@@ -258,6 +259,7 @@ namespace AthruGPU
 						width,
 						height,
 						depth,
+						nullptr,
 						viewFmt,
 						clearRGBA);
 			}
@@ -265,20 +267,20 @@ namespace AthruGPU
 			// Initialize a read-only texture resource
 			void InitRTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 						  GPUMemory& gpuMem,
-						  // Assumed no base data for textures (may be neater to format planetary/animal data with
-						  // structured buffers instead of textures, afaik DX resources are zeroed by default)
+						  ContentType* initDataPttr,
 						  u4Byte width = 1,
 						  u4Byte height = 1,
 						  u4Byte depth = 1,
 						  DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
 						  const float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE,
-                          D3D12_SHADER_COMPONENT_MAPPING shaderChannelMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
+                          D3D12_SHADER_COMPONENT_MAPPING shaderChannelMapping = (D3D12_SHADER_COMPONENT_MAPPING)D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
 			{
 				InitTex(device,
 						gpuMem,
 						width,
 						height,
 						depth,
+						initDataPttr,
 						viewFmt,
 						clearRGBA,
 						shaderChannelMapping);
@@ -292,27 +294,14 @@ namespace AthruGPU
 							 const u4Byte& ctrEltOffs = 0)
 			{
 				// Allocate buffer memory
-				if constexpr (initDataPttr == nullptr)
-				{
-					HRESULT hr = gpuMem.AllocBuf(device,
-												 width * sizeof(ContentType),
-												 bufResrcDesc(width * sizeof(ContentType), viewFmt),
-												 resrcState,
-												 resrc,
-				                                 bufHeapType());
-					assert(SUCCEEDED(hr));
-				}
-				else if constexpr (initDataPttr != nullptr)
-				{
-					// Allocate buffer + upload initial data to the main adapter
-					HRESULT hr = gpuMem.ArrayToGPUBuffer<ContentType, bufHeapType()>(initDataPttr,
-																	                 width * sizeof(ContentType),
-																	                 bufResrcDesc(width, viewFmt1),
-																	                 resrcState,
-																	                 device,
-																	                 resrc.Get());
-					assert(SUCCEEDED(hr));
-				}
+				HRESULT hr = gpuMem.AllocBuf(device,
+											 width * sizeof(ContentType),
+											 bufResrcDesc(width * sizeof(ContentType), viewFmt),
+											 resrcState,
+											 resrc,
+				                             bufHeapType());
+				assert(SUCCEEDED(hr));
+
 				// Allocate buffer descriptor/view
 				// Just provide view-descriptions here, tracking for descriptor offsets + view creation should happen within [GPUMemory]
 				// Should provide one descriptor table for rendering, one for physics, and one for ecological simulation
@@ -384,15 +373,15 @@ namespace AthruGPU
 						 u4Byte width,
 						 u4Byte height,
 						 u4Byte depth,
-						 // Assumed no base data for textures (may be neater to format planetary/animal data with
-						 // structured buffers instead of textures, afaik DX resources are zeroed by default)
+						 ContentType* initDataPttr,
 						 DXGI_FORMAT viewFmt = DXGI_FORMAT_R32G32B32A32_FLOAT,
 						 const float* clearRGBA = GraphicsStuff::DEFAULT_TEX_CLEAR_VALUE,
 						 D3D12_SHADER_COMPONENT_MAPPING shaderChannelMapping = (D3D12_SHADER_COMPONENT_MAPPING)D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING)
 			{
 				// Allocate texture memory
 				HRESULT hr = gpuMem.AllocTex(device,
-											 width * sizeof(ContentType),
+											 width * height * depth * sizeof(ContentType),
+											 (uByte*)initDataPttr,
 											 texResrcDesc(width, height, depth, viewFmt),
 											 resrcState,
 											 resrc);
@@ -447,10 +436,12 @@ namespace AthruGPU
                     { viewDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE2D; }
                     else if (width > 1 && height > 1 && depth > 1)
                     { viewDesc.ViewDimension = D3D12_SRV_DIMENSION::D3D12_SRV_DIMENSION_TEXTURE3D; }
+					viewDesc.Texture2D.MostDetailedMip = 0; // No mipmaps in Athru
+					viewDesc.Texture2D.MipLevels = 1;
 
                     // Allocate read-only textures
 					gpuMem.AllocSRV(device,
-									viewDesc,
+									&viewDesc,
 									resrc);
 				}
 			}

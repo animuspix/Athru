@@ -8,6 +8,10 @@ typedef signed char sByte;
 // An eight-bit unsigned type
 typedef unsigned char uByte;
 
+// An 8bpc unsigned vector type
+// (designed for image input/output)
+struct uByte4 { uByte data[4]; };
+
 // A generic byte type for C++ file operations, with no specified signedness
 typedef char nsByte;
 

@@ -29,18 +29,14 @@ namespace AthruGPU
 				internalInit = false;
 			}
 
-			// Initialise the Direct3D handler class, the GPU messenger, the GPU-side random number generator,
-			// and the dispatch argument trimmers
+			// Initialise the Direct3D handler class & the GPU messenger
 			d3DPttr = DEBUG_NEW Direct3D(AthruCore::Utility::AccessApp()->GetHWND());
 			GPUMemory& gpuMem = d3DPttr->GetGPUMem();
             const Microsoft::WRL::ComPtr<ID3D12Device>& device = d3DPttr->GetDevice();
 			gpuMessengerPttr = new GPUMessenger(device, gpuMem);
 
-			// Initialize the SDF rasterizer
+			// Initialise the rendering system
 			HWND winHandle = AthruCore::Utility::AccessApp()->GetHWND();
-			//rasterPttr = new GradientMapper(device, gpuMem, winHandle);
-
-			// Initialise the rendering manager + the GPU update manager
 			rendererPttr = new Renderer(winHandle, gpuMem,
 										device, d3DPttr->GetGraphicsQueue());
 		}

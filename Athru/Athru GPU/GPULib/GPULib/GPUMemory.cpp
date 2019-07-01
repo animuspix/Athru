@@ -1,4 +1,5 @@
 #include "GPUMemory.h"
+#include "GPUServiceCentre.h"
 #include "UtilityServiceCentre.h"
 
 AthruGPU::GPUMemory::GPUMemory(const Microsoft::WRL::ComPtr<ID3D12Device>& device)
@@ -80,24 +81,45 @@ HRESULT AthruGPU::GPUMemory::AllocBuf(const Microsoft::WRL::ComPtr<ID3D12Device>
 
 HRESULT AthruGPU::GPUMemory::AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 									  const u4Byte& texSize,
+									  uByte* initDataPttr,
 									  const D3D12_RESOURCE_DESC texDesc,
 									  const D3D12_RESOURCE_STATES initState,
 									  const Microsoft::WRL::ComPtr<ID3D12Resource>& texPttr)
 {
 	// Optimizing aligned memory usage for textures is very awkward, so prefer committed resources here
+	///////////////////////////////////////////////////////////////////////////////////////////////////
+
+	// Create target resource
 	D3D12_HEAP_PROPERTIES heapProps;
-	heapProps.Type = D3D12_HEAP_TYPE_DEFAULT;
+	if (initDataPttr != nullptr)
+	{ heapProps.Type = D3D12_HEAP_TYPE_CUSTOM; }
+	else
+	{ heapProps.Type = D3D12_HEAP_TYPE_DEFAULT; }
 	heapProps.VisibleNodeMask = 0x1;
 	heapProps.CreationNodeMask = 0x1;
-	heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN;
-	heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN;
-	return device->CreateCommittedResource(&heapProps,
-										   D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
-										   &texDesc,
-										   initState,
-										   nullptr,
-										   __uuidof(ID3D12Resource),
-										   (void**)texPttr.GetAddressOf());
+	if (initDataPttr != nullptr)
+	{ heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_WRITE_BACK; }
+	else
+	{ heapProps.CPUPageProperty = D3D12_CPU_PAGE_PROPERTY_UNKNOWN; }
+	if (initDataPttr != nullptr)
+	{ heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_L0; }
+	else
+	{ heapProps.MemoryPoolPreference = D3D12_MEMORY_POOL_UNKNOWN; }
+	Microsoft::WRL::ComPtr<ID3D12Resource> uploPttr;
+	HRESULT hr = device->CreateCommittedResource(&heapProps,
+												 D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
+												 &texDesc,
+												 initState,
+												 nullptr,
+												 __uuidof(ID3D12Resource),
+												 (void**)texPttr.GetAddressOf());
+	assert(SUCCEEDED(hr));
+	if (initDataPttr != nullptr)
+	{
+		u4Byte bytesPerPx = (u4Byte)(texSize / (texDesc.Width * texDesc.Height));
+		hr = texPttr->WriteToSubresource(0, nullptr, initDataPttr, (u4Byte)(texDesc.Width * bytesPerPx), 0);
+	}
+	return hr;
 }
 
 D3D12_CPU_DESCRIPTOR_HANDLE AthruGPU::GPUMemory::AllocCBV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,

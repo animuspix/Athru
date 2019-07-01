@@ -3,10 +3,10 @@
 
 Input::Input()
 {
-	// Un-press every key in on the keyboard
+	// Leave keys undefined until Athru starts processing Windows messages
 	for (u2Byte keySetter = 0; keySetter < 256; keySetter += 1)
 	{
-		keys[keySetter] = false;
+		keys[keySetter] = KEY_STATES::NUL;
 	}
 
 	// Initialise the flag storing whether or not the application
@@ -20,28 +20,36 @@ Input::Input()
 	leftMouseDown = false;
 }
 
-Input::~Input()
-{
-}
+Input::~Input() {}
 
 void Input::KeyDown(u4Byte input)
 {
 	// If a key is pressed then save that state in the key array.
-	keys[input] = true;
-	return;
+	keys[input] = KEY_STATES::DOWN;
 }
 
 void Input::KeyUp(u4Byte input)
 {
 	// If a key is released then clear that state in the key array.
-	keys[input] = false;
-	return;
+	keys[input] = KEY_STATES::UP;
 }
 
-bool Input::IsKeyDown(u4Byte key)
+bool Input::KeyHeld(u4Byte key)
 {
-	// Return what state the key is in (pressed/not pressed).
-	return keys[key];
+	return keys[key] == KEY_STATES::DOWN;
+}
+
+bool Input::KeyTapped(u4Byte key)
+{
+	return keys[key] == KEY_STATES::UP;
+}
+
+void Input::KeyReset()
+{
+	for (u4Byte i = 0; i < 256; i += 1)
+	{
+		keys[i] = (keys[i] == KEY_STATES::UP) ? KEY_STATES::NUL : keys[i];
+	}
 }
 
 void Input::SetCloseFlag()
@@ -79,7 +87,6 @@ DirectX::XMFLOAT2 Input::GetMousePos()
 {
 	return mousePos;
 }
-
 
 // Push constructions for this class through Athru's custom allocator
 void* Input::operator new(size_t size)

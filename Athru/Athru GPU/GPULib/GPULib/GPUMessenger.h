@@ -2,6 +2,7 @@
 
 #include <d3d12.h>
 #include <functional>
+#include <thread>
 #include "SceneFigure.h"
 #include "AthruResrc.h"
 #include "ComputePass.h"
@@ -23,6 +24,35 @@ class GPUMessenger
 		// Pass per-frame inputs along to the GPU
 		void InputsToGPU(const DirectX::XMFLOAT4& sysOri,
                          const Camera* camera);
+
+		// Expose interfaces to lodepng, the png encoding/decoding library used by Athru
+		// Saved textures are expected LDR/4-channel; copies into readback memory should have occurred before
+		// [SaveTexture(...)] is invoked (-> saves [GPUMessenger] having to maintain a separate command-list
+		// for every possible texture export)
+		// lodepng is distributed by Lode Vandevenne (thanks! :D) under the zlib license, which reads
+		// as follows:
+		//	Copyright(c) 2005 - 2018 Lode Vandevenne
+		//
+		//	This software is provided 'as-is', without any express or implied
+		//	warranty.In no event will the authors be held liable for any damages
+		//	arising from the use of this software.
+		//
+		//	Permission is granted to anyone to use this software for any purpose,
+		//	including commercial applications, and to alter itand redistribute it
+		//	freely, subject to the following restrictions :
+		//
+		//	1. The origin of this software must not be misrepresented; you must not
+		//	claim that you wrote the original software.If you use this software
+		//	in a product, an acknowledgment in the product documentation would be
+		//	appreciated but is not required.
+		//
+		//	2. Altered source versions must be plainly marked as such, and must not be
+		//	misrepresented as being the original software.
+		//
+		//	3. This notice may not be removed or altered from any source
+		//	distribution.
+		void SaveTexture(const char* file, u4Byte width, u4Byte height);
+		void LoadTexture(const char* file, u4Byte width, u4Byte height, uByte** output);
 
 		// Access data copied into the read-back buffer at a given offset, in a given format
 		template<typename DataFmt>
@@ -55,16 +85,15 @@ class GPUMessenger
 									 // frame count in [z], nothing in [w]
 			DirectX::XMFLOAT4 systemOri; // Origin for the current star-system; useful for predicting figure
 										 // positions during ray-marching/tracing (in [xyz], [w] is unused)
-			DirectX::XMVECTOR cameraPos; // Camera position in [xyz], [w] is unused
+			DirectX::XMVECTOR cameraPos; // Camera position in [xyz], tracing epsilon value in [w]
 			DirectX::XMMATRIX viewMat; // View matrix
 			DirectX::XMMATRIX iViewMat; // Inverse view matrix
-			DirectX::XMFLOAT4 bounceInfo; // Maximum number of bounces in [x], number of supported surface BXDFs in [y],
-										  // tracing epsilon value in [z]; [w] is unused
 			DirectX::XMUINT4 resInfo; // Resolution info carrier; contains app resolution in [xy],
 									  // AA sampling rate in [z], and display area in [w]
 			DirectX::XMUINT4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
 			DirectX::XMUINT4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
-			DirectX::XMFLOAT4 excess; // DX12 constant buffers are 256-byte aligned; padding allocated here
+			DirectX::XMFLOAT4 denoiseInfo; // Baseline denoise filter width in [0].x, number of filter passes in [0].y; [z]/[w] are unused
+			DirectX::XMFLOAT4 excess; // Padding out to 256-byte alignment
 		};
         // + CPU-side mapping point
         GPUInput* gpuInput;
@@ -85,7 +114,16 @@ class GPUMessenger
 		// + CPU-side mapping point
 		uByte* gpuReadable;
 
-		// Messaging command-list + allocator
+		// Core messaging command-list + shared messaging allocator
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> msgCmds;
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> msgAlloc;
+
+		// Specialty thread for file output (output wrapper declared as a free-function within
+		// [GPUMessenger.cpp])
+		std::thread fileWriter;
+
+		// Intermediate CPU-side storage for file output
+		// Defined as an array instead of a pointer so that storage can be contiguous with class data
+		// within Athru's memory allocator
+		uByte tmpFileStorage[AthruGPU::EXPECTED_SHARED_GPU_RDBK_MEM];
 };

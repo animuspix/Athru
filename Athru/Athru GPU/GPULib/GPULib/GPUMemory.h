@@ -33,96 +33,11 @@ namespace AthruGPU
 			// [GPUMemory] expects aligned Buffer/Texture/View allocations
 			HRESULT AllocTex(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 							 const u4Byte& bufSize,
+							 uByte* initDataPttr,
 							 const D3D12_RESOURCE_DESC texDesc,
 							 const D3D12_RESOURCE_STATES initState,
 							 const Microsoft::WRL::ComPtr<ID3D12Resource>& texPttr);
 
-			template<typename BufType,
-                     AthruGPU::HEAP_TYPES bufHeapType>
-			void ArrayToGPUBuffer(const BufType* bufArr,
-								  const u4Byte& size,
-								  const D3D12_RESOURCE_DESC* bufDesc,
-								  const D3D12_RESOURCE_STATES initState,
-								  const Microsoft::WRL::ComPtr<ID3D12Device>& device,
-								  const Microsoft::WRL::ComPtr<ID3D12Resource>& bufPttr)
-			{
-				// - Construct temporary upload heap/resource through [CreateCommittedResource]
-				Microsoft::WRL::ComPtr<ID3D12Resource> uplo;
-                HRESULT hr;
-                if constexpr (bufHeapType == AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY)
-                {
-				    D3D12_HEAP_PROPERTIES heapProps;
-				    heapProps.Type = D3D12_HEAP_TYPE_UPLOAD;
-				    heapProps.VisibleNodeMask = 0x1;
-				    heapProps.CreationNodeMask = 0x1;
-				    hr = device->CreateCommittedResource(heapProps,
-				    							         D3D12_HEAP_FLAG_ALLOW_ALL_BUFFERS_AND_TEXTURES,
-				    							         bufDesc,
-				    							         initState,
-				    							         nullptr,
-				    							         __uuidof(ID3D12Resource),
-				    							         (void**)uplo);
-                }
-                else if constexpr (bufHeapType == AthruGPU::HEAP_TYPES::UPLO)
-                {
-				    // - Create application-lifetime buffer within [uploMem]
-				    u4Byte offs = uploMem.offs;
-				    uploMem.offs += bufSize;
-				    hr = device->CreatePlacedResource(uploMem.mem.Get(),
-				    								  offs,
-				    								  bufDesc,
-				    								  initState,
-				    								  nullptr,
-				    								  __uuidof(ID3D12Resource),
-				    								  (void**)bufPttr.GetAddressOf());
-                }
-				assert(SUCCEEDED(hr));
-
-				// - Populate with array data through [Map]
-				BufType* uploStart;
-				D3D12_RANGE readRange;
-				readRange.Begin = 0;
-				readRange.End = 0; // No readback during buffer upload
-                if constexpr (bufHeapType == AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY)
-                { assert(SUCCEEDED(uplo->Map(0, &readRange, (void**)uploStart))); }
-                if constexpr (bufHeapType == AthruGPU::HEAP_TYPES::UPLO)
-                { assert(SUCCEEDED(bufPttr->Map(0, &readRange, (void**)uploStart))); } // Populate CPU-accessible resources directly
-                memcpy(uploStart, bufArr, size);
-				D3D12_RANGE writeRange;
-				writeRange.Begin = 0;
-				writeRange.End = size;
-                if constexpr (bufHeapType == AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY)
-                { assert(SUCCEEDED(uplo->Unmap(0, &writeRange))); }
-                if constexpr (bufHeapType == AthruGPU::HEAP_TYPES::UPLO)
-                { assert(SUCCEEDED(bufPttr->Unmap(0, &writeRange))); }
-
-                // Only create GPU-only resource and perform final copy when CPU access is not expected after initialization
-                if constexpr (bufHeapType == AthruGPU::HEAP_TYPES::GPU_ACCESS_ONLY)
-                {
-				    // - Create application-lifetime default resource within [resrcMem]
-				    u4Byte offs = resrcMem.offs;
-				    resrcMem.offs += bufSize;
-				    hr = device->CreatePlacedResource(resrcMem.mem.Get(),
-				    								  offs,
-				    								  bufDesc,
-				    								  initState,
-				    								  nullptr,
-				    								  __uuidof(ID3D12Resource),
-				    								  (void**)bufPttr.GetAddressOf());
-				    assert(SUCCEEDED(hr));
-
-				    // - Copy between the temporary upload heap/resource and [bufPttr] (allocated within [resrcMem])
-				    const Microsoft::WRL::ComPtr<ID3D12CommandList>& copyCmdList = AthruGPU::GPU::AccessD3D()->GetCopyCmdList();
-				    assert(SUCCEEDED(copyCmdList->Reset(AthruGPU::GPU::AccessD3D()->GetCopyCmdAllocator(),
-				    									AthruGPU::GPU::AccessD3D()->GetComputeState().Get())));
-				    assert(SUCCEEDED(copyCmdList->CopyResource(bufPttr, uplo)));
-				    assert(SUCCEEDED(copyCmdList->Close()));
-				    assert(SUCCEEDED(AthruGPU::GPU::AccessD3D()->GetCopyCmdQueue()->ExecuteCommandLists(1, copyCmdList.GetAddressOf())));
-				    // Try to avert clearing the upload buffer before its data's moved into [bufPttr]
-				    AthruGPU::GPU::AccessD3D()->WaitForQueue<D3D12_COMMAND_LIST_TYPE_COPY>();
-                }
-				// -- Allow temporary data to release as it passes out of scope--
-			}
 			// Allocate a shader view over a resource described by [viewDesc], and return a handle to the allocated view
 			D3D12_CPU_DESCRIPTOR_HANDLE GPUMemory::AllocCBV(const Microsoft::WRL::ComPtr<ID3D12Device>& device,
 															const D3D12_CONSTANT_BUFFER_VIEW_DESC* viewDesc);
@@ -209,7 +124,7 @@ namespace AthruGPU
 							   // Defined in bytes for [uploMem] and [resrcMem], multiples of cbv/uav/srv descriptor size for [shaderViewMem]
 				Microsoft::WRL::ComPtr<HeapType> mem;
 			};
-			GPUStackedMem<ID3D12Heap> resrcMem; // Main buffer/texture/queue/list memory
+			GPUStackedMem<ID3D12Heap> resrcMem; // Main buffer memory
 			GPUStackedMem<ID3D12Heap> uploMem; // CPU->GPU intermediate upload memory (used for planetary load-in + cbuffers)
 											   // Animal memory could easily be too dense to be wholly GPU-resident, so stream that in through tiled resources instead
             GPUStackedMem<ID3D12Heap> rdbkMem; // GPU->CPU intermediate readback memory (mainly used for tracking path counts between shading stages; Athru's path-tracing

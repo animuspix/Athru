@@ -83,12 +83,6 @@ Direct3D::Direct3D(HWND hwnd)
 	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)&computeQueue);
 	assert(SUCCEEDED(hr));
 
-	// Create the copy command queue
-	cmdQueueDesc.Type = D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_COPY;
-	// Otherwise same settings as the compute command queue
-	hr = device->CreateCommandQueue(&cmdQueueDesc, __uuidof(ID3D12CommandQueue), (void**)&copyQueue);
-	assert(SUCCEEDED(hr));
-
 	// Describe + construct the swap-chain
 	DXGI_SWAP_CHAIN_DESC1 swapChainDesc = {};
 	if (GraphicsStuff::FULL_SCREEN) // Eventually import this from a settings file
@@ -202,11 +196,6 @@ const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& Direct3D::GetGraphicsQueue()
 const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& Direct3D::GetComputeQueue()
 {
 	return computeQueue;
-}
-
-const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& Direct3D::GetCopyQueue()
-{
-	return copyQueue;
 }
 
 const DXGI_ADAPTER_DESC1& Direct3D::GetAdapterInfo()

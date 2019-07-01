@@ -31,6 +31,12 @@
     <Filter Include="Shaders\Render Tiling">
       <UniqueIdentifier>{ae778b17-2bbb-4910-bf35-a7f04b2bd33c}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Third Party\Source Files">
+      <UniqueIdentifier>{fb46864e-3a2d-4fff-93bd-aef374c20acb}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Third Party\Header Files">
+      <UniqueIdentifier>{f51d09ee-a121-46cd-bcd1-58e7478362f3}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="targetver.h">
@@ -72,6 +78,9 @@
     <ClInclude Include="ComputePass.h">
       <Filter>C++\Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\..\Third Party\Lode Vandevenne\lodepng-master\lodepng.h">
+      <Filter>Third Party\Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Camera.cpp">
@@ -97,6 +106,9 @@
     </ClCompile>
     <ClCompile Include="ComputePass.cpp">
       <Filter>C++\Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\..\Third Party\Lode Vandevenne\lodepng-master\lodepng.cpp">
+      <Filter>Third Party\Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>

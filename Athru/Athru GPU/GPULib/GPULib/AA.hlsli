@@ -50,36 +50,25 @@ float3 FrameSmoothing(float3 rgb,
 
     // Check if the (un-updated) sample-count is exactly modulo-[numAASamples] and update
     // [prevSampleAccum] (+ reset [currSampleAccum]) if appropriate
-    float4 prevAccum = pixHistory.prevSampleAccum;
-    if (sampleCount % numAASamples == 0 &&
-        sampleCount != 0)
-    {
-        currAccum -= pixHistory.currSampleAccum;
-        prevAccum = pixHistory.currSampleAccum;
-    }
-    else if (sampleCount < numAASamples)
-    {
-        // Prevent current/previous sample blending until the previous sample is well-defined
-        // (i.e. until at least one full set of [numAASamples]-samples have been computed,
-        // elided from [currSampleAccum], and passed into [prevSampleAccum])
-        prevAccum = pixHistory.currSampleAccum;
-    }
-
-    // Interpolate between the most-recent/current sample-sets/filter-coefficients
-    // Only apply interpolation to the displayed color, not the sample actually cached
-    // in [aaBuffer]
-    float4 retRGBW = lerp(prevAccum, currAccum, ((float)sampleCount / (float)numAASamples) % 1.0f);
+    if (sampleCount / numAASamples >= 1)
+    { currAccum -= pixHistory.currSampleAccum / numAASamples; } // Assume every sample has the same magnitude, then remove
+                                                                // one sample from [currAccum] for every new sample taken
+                                                                // from the scene
+                                                                // Works because assuming every sample has the same magnitude
+                                                                // and removing one sample gives the same result as removing
+                                                                // the mean value, which will be a good approximation for most
+                                                                // samples because it's weighted by the most common values in
+                                                                // each subpixel
 
     // Pass the updated pixel history back into the AA buffer
     // (also update the pixel's sample-set to include the current sample)
     aaBuffer[linPixID].currSampleAccum = currAccum;
-    aaBuffer[linPixID].prevSampleAccum = prevAccum;
     aaBuffer[linPixID].sampleCount = sampleCount.xxxx;
 
     // Return the updated sample
     // Some filter functions can push average values below zero; counter this clamping out negative channels
     // with [max(...)]
-    return max(retRGBW.rgb / retRGBW.w, 0.0f.xxx);
+    return max(currAccum.rgb / currAccum.w, 0.0f.xxx);
 }
 
 // Small functions returning the Blackman-Harris filter coefficient

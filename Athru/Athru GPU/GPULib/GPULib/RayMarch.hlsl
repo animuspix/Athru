@@ -10,27 +10,27 @@
 // Per-bounce indirect dispatch axes
 // (tracing axes in (0...2), sampling axes in (3...5), input traceable
 // count in [6], input sampling count in [7]
-RWBuffer<uint> dispAxes : register(u9);
+RWBuffer<uint> dispAxes : register(u12);
 
 // Append/consume counters for traceables + material primitives
-RWBuffer<uint> traceCtr : register(u10);
-RWBuffer<uint> diffuCtr : register(u11);
-RWBuffer<uint> mirroCtr : register(u12);
-RWBuffer<uint> refraCtr : register(u13);
-RWBuffer<uint> snowwCtr : register(u14);
-RWBuffer<uint> ssurfCtr : register(u15);
-RWBuffer<uint> furryCtr : register(u16);
+RWBuffer<uint> traceCtr : register(u13);
+RWBuffer<uint> diffuCtr : register(u14);
+RWBuffer<uint> mirroCtr : register(u15);
+RWBuffer<uint> refraCtr : register(u16);
+RWBuffer<uint> snowwCtr : register(u17);
+RWBuffer<uint> ssurfCtr : register(u18);
+RWBuffer<uint> furryCtr : register(u19);
 
 // Buffer carrying intersections across ray-march iterations
-ConsumeStructuredBuffer<uint> traceables : register(u17);
+ConsumeStructuredBuffer<uint> traceables : register(u20);
 
 // Material intersection buffers
-AppendStructuredBuffer<uint> diffuIsections : register(u18);
-AppendStructuredBuffer<uint> mirroIsections : register(u19);
-AppendStructuredBuffer<uint> refraIsections : register(u20);
-AppendStructuredBuffer<uint> snowwIsections : register(u21);
-AppendStructuredBuffer<uint> ssurfIsections : register(u22);
-AppendStructuredBuffer<uint> furryIsections : register(u23);
+AppendStructuredBuffer<uint> diffuIsections : register(u21);
+AppendStructuredBuffer<uint> mirroIsections : register(u22);
+AppendStructuredBuffer<uint> refraIsections : register(u23);
+AppendStructuredBuffer<uint> snowwIsections : register(u24);
+AppendStructuredBuffer<uint> ssurfIsections : register(u25);
+AppendStructuredBuffer<uint> furryIsections : register(u26);
 
 // The maximum number of steps allowed for the primary
 // ray-marcher
@@ -48,23 +48,21 @@ void main(uint3 groupID : SV_GroupID,
     // Map ray-marching threads to pixels
     uint ndx = traceables.Consume();
 
-    // Extract a Philox-permutable value from [randBuf]
-    // Also cache the accessor value used to retrieve that value in the first place
-    PhiloStrm randStrm = randBuf[ndx];
-    float4 rand = iToFloatV(philoxPermu(randStrm));
-
     // Cache input epsilon values
-    float eps = gpuInfo.bounceInfo.z;
+    float eps = gpuInfo.cameraPos.w;
 
     // Baseline ray distance
     // Maximum ray distance is stored inside the [MAX_RAY_DIST] constant within [Core3D.hlsli]
     float t = (eps * 2.0f);
 
     // Relevant values for distance relaxation
-    float w = 1.0f; // Moving relaxation factor
-    const float maxW = 1.2f; // Upper relaxation limit
+    float w = 1.0f;
     float prevF = 0.0f; // Most recent distance at each step
     float prevDt = 0.0f; // Most recent offset at each step
+
+    // Extract a Philox-permutable value from [randBuf]
+    PhiloStrm randStrm = randBuf[ndx];
+    float4 rand = iToFloatV(philoxPermu(randStrm));
 
     // Controls debug shading for stellar intersections + escaped rays
     //#define LOST_RAY_DEBUG
@@ -73,7 +71,10 @@ void main(uint3 groupID : SV_GroupID,
     float4 rgba = 1.0f.xxxx;
     Figure star = figures[STELLAR_FIG_ID];
     float2x3 ray = rays[ndx];
-    float fSamples[4] = { 0.0f,0.0f,0.0f,0.0f };
+    float fSamples[4] = { 0, 0, 0, 0 };
+    float fMean = 0.0f;
+    float fDeltas = 0.0f;
+    float fDeltaSet[4] = { 0, 0, 0, 0 };
     bool relaxed = true;
     for (uint i = 0u; i < MAX_VIS_MARCHER_STEPS; i += 1u)
     {
@@ -98,7 +99,6 @@ void main(uint3 groupID : SV_GroupID,
                                     true,
                                     FILLER_SCREEN_ID,
                                     eps);
-            w = 1.0f;
         }
 
         // Process intersections
@@ -116,7 +116,7 @@ void main(uint3 groupID : SV_GroupID,
                        // + sampling
             }
 
-             // Set incident position for the current bounce (exitant position depends on the intersected surface,
+            // Set incident position for the current bounce (exitant position depends on the intersected surface,
             // so we avoid setting that until after we've evaluated materials at [rayVec])
             rayOris[ndx] = rayVec;
 
@@ -173,27 +173,44 @@ void main(uint3 groupID : SV_GroupID,
         }
         else // Update ray-marching values
         {
-            fSamples[i % 4] = sceneField[0].x;
-            float s = fSamples[0] + fSamples[1] +
-                      fSamples[2] + fSamples[3];
-            float m = s * 0.25f;
-            float deltas = 0.0f;
-            for (uint i = 0u; i < 4u; i += 1u)
-            {
-                float d = fSamples[i] - m;
-                deltas += d * d;
-            }
-            float vari = min(deltas / 3.0f, 1.0f); // Clamp variance to the range (0...1)
-            float dw = 1.0f - vari; // [w] scaling found experimentally
+            // Maintain running distance average & sum of squared residuals
+            // (needed to compute variance along each ray)
+            float prevFSample = fSamples[i % 4];
+            fSamples[i % 4] = sceneField[0].x / 4.0f;
+            fMean += fSamples[i % 4] - prevFSample;
+            float d = sceneField[0].x - fMean;
+            float prevFDelta = fDeltaSet[i % 4];
+            fDeltaSet[i % 4] = d * d;
+            fDeltas += fDeltaSet[i % 4] - prevFDelta;
+
+            // Compute variance and clamp to the range (0...1)
+            float vari = min(fDeltas / 3.0f, 1.0f);
+
+            // Shift change in relaxation inversely to variance (more for smooth areas, less for rough ones)
+            float dw = 1.0f - vari;
+
+            // Cache most-recent step distance + ray offset, offset rays for each step
             prevF = sceneField[0].x; // Update most-recent scene distance
-            prevDt = prevF * (w + dw); // Update most-recent ray offset
-            t += prevDt; // Offset rays at each step
-            if (relaxed) { w = min(lerp(1.0f, maxW, pow(0.9f, prevF)), maxW); } // Scale [w] closer to [maxW] with magic (found through experimentation)
+            float ddw = dw * vari;
+            //ddw = pow(ddw, 16.0f);
+            w = 1.0f + ddw; // Magic! Scaling the relaxation factor by plain variance allows overstepping for
+                            // highly-stable geometry ((1.0 - 0.1) * 0.9 = 0.81) but prevents skipping geometry
+                            // much more aggressively as variance tends towards 1 ((1.0 - 0.9) * 0.1 = 0.09)
+                            // Raising to an exponent increases intensity again for stable areas while reducing
+                            // it for variant rays, but the default version works well for most cases
+                            // Graphical curve available over here:
+                            // https://www.desmos.com/calculator/xys3ltrxym
+            prevDt = prevF * w; // Update most-recent ray offset
+            t += prevDt;
+
+            // Increase epsilon every step so that deeply iterated rays gradually attract towards the scene
+            // surface
+            eps *= 1.175f;
         }
     }
     // Apply primary-ray shading
     displayTex[uint2(ndx % gpuInfo.resInfo.x, ndx / gpuInfo.resInfo.x)] *= rgba;
 
-    // Update Philox key/state for the current path
+    // Update RNG history
     randBuf[ndx] = randStrm;
 }

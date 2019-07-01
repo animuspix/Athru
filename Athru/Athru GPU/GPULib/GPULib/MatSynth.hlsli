@@ -158,7 +158,7 @@ float3 SurfRGB(float3 wo, float3 norml)
     return float3(abs(cross(wo, norml)).r, 0.5f, 0.5f);
            //1.0f.xxx;
            //wo;
-           //norml;
+           //abs(norml);
 }
 
 // Per-vertex (fixed atm) indices of refraction/absorption

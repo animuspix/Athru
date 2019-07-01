@@ -289,7 +289,7 @@ float3x4 OccTest(float3 rayOri,
                                          eps);
 
         // Check if [rayVec] has intersected a surface
-        bool hitDest = (sceneField[0].z == rayDir.w); 
+        bool hitDest = (sceneField[0].z == rayDir.w);
         if (sceneField[0].x < eps)
         {
             // Check if [rayVec] has intersected the target figure
@@ -315,6 +315,7 @@ float3x4 OccTest(float3 rayOri,
 
         // Continue marching through the scene
         currRayDist += sceneField[0].x;
+        eps *= 1.05f;
     }
     // Return occlusion information for the given context
     return float3x4(rayDir.xyz,
@@ -327,61 +328,49 @@ float3x4 OccTest(float3 rayOri,
 // Compute a diffuse light gather
 // (specializing these per-material to avoid branching in bxdf shaders)
 // Color in [rgb], intersection status in [w]
-float4 DiffuLiGather(float4 dirPDF,
-                     float4 surf,
+float4 DiffuLiGather(float4 surf,
+                     float diffuP,
                      float3 n,
                      float3 wo,
                      float3 pt,
-                     float srcPDF,
                      float3x3 nSpace,
                      float starScale,
 					 float3 sysOri,
                      uint figID,
                      float eps,
-                     float3 uvw01)
+                     float4 rand01)
 {
-    // Perform source sampling
-    float3 stellarSurfPos = //sysOri + (uvw01 * starScale);
-                            StellarSurfPos(float4(sysOri,
-                                                  starScale),
-                                           uvw01.xy,
-                                           pt);
-    float3x4 srcOccData = OccTest(pt,
-                                  float4(normalize(stellarSurfPos - pt), STELLAR_FIG_ID),
-                                  eps);
-    float3 srcGatherRGB = Emission(STELLAR_RGB,
-                                   STELLAR_BRIGHTNESS,
-                                   srcOccData[0].w) *
-                          abs(dot(n, srcOccData[0].xyz));
-
-    // Perform surface-sampling + MIS for next-event-estimation
-    //float3x4 occData = OccTest(float4(pt, figID),
-    //                           float4(mul(dirPDF.xyz, nSpace), STELLAR_FIG_ID),
-    //                           eps);
-    //float3 neeSrfRGB = Emission(STELLAR_RGB,
-    //                            STELLAR_BRIGHTNESS,
-    //                            occData[0].w) *
-    //                   abs(dot(n, occData[0].xyz));
-    float3 neeRGB = 0.0f.xxx;
-    if (!srcOccData[1].w) // Process source gathers with MIS
+    // Choose between surface & source sampling, assume surface by default
+    float4 gatherDir = DiffuseDir(wo, n, rand01.xy);
+    float srcPDF = StellarPosPDF();
+    float mis = MISWeight(1, srcPDF,
+                          1, gatherDir.w / diffuP);
+    if (rand01.z > mis)
     {
-        neeRGB += srcGatherRGB *
-                  DiffuseBRDF(surf,
-                              float3x3(srcOccData[0].yzw,
-                                       n,
-                                       wo)) / srcPDF;// /
-                  //MISWeight(1, srcPDF,
-                  //          1, dirPDF.w);
+        float3 stellarSurfPos = StellarSurfPos(float4(sysOri,
+                                                      starScale),
+                                               rand01.wz,
+                                               pt);
+        gatherDir = float4(normalize(stellarSurfPos - pt), srcPDF);
     }
-    //if (!occData[1].w) // Process surface gathers with MIS
-    //{
-    //    neeRGB += neeSrfRGB *
-    //              DiffuseBRDF(surf,
-    //                          float3x3(dirPDF.xyz,
-    //                                   n,
-    //                                   wo)) /
-    //              MISWeight(1, srcPDF,
-    //                        1, dirPDF.w);
-    //}
-    return float4(neeRGB, srcOccData[1].w/* && occData[1].w*/);
+    else
+    {
+        gatherDir.xyz = mul(gatherDir.xyz, nSpace);
+        if (!BoundingSphereTrace(pt, pt - gatherDir.xyz * eps, float4(sysOri, starScale)).z)
+        { return float4(0.0f.xxx, 1.0f); } // Filter out diffuse rays that never intersect the system star
+    }
+
+    // Perform sampling for next-event-estimation
+    float3x4 occData = OccTest(pt,
+                               float4(gatherDir.xyz, STELLAR_FIG_ID),
+                               eps);
+    float3 neeRGB = Emission(STELLAR_RGB,
+                             STELLAR_BRIGHTNESS,
+                             occData[0].w) *
+                    abs(dot(n, occData[0].xyz));
+    float3 brdf = DiffuseBRDF(surf,
+                              float3x3(occData[0].yzw,
+                                       n,
+                                       wo)) / gatherDir.w;
+    return float4(neeRGB * brdf, occData[1].w); // MIS weighting already applied through random source/surface selection for sampling
 }

@@ -13,7 +13,7 @@
 #define DF_TYPE_NULL 5
 
 // Rasterized volume atlas for the current system + plants/animals on the local planet
-//Buffer<float> rasterAtlas : register(t1);
+//Buffer<float> rasterAtlas : register(t2);
 
 // The maximum possible number of discrete figures within the
 // scene

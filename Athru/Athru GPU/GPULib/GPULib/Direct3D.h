@@ -20,23 +20,16 @@ class Direct3D
 		// Present generated imagery to the output monitor/Win64 surface
 		void Present();
 
-		// Execute a busy spinner until GPU work finishes for the compute/graphics/copy-queues
-		template<D3D12_COMMAND_LIST_TYPE critQueue> // Should restrict this to [TYPE_DIRECT], [TYPE_COMPUTE], and [TYPE_COPY] with C++20
-													// concepts
-		void WaitForQueue()
+		// Execute a busy spinner until GPU work finishes for the given queue
+		void WaitForQueue(const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& queue)
 		{
-			Microsoft::WRL::ComPtr<ID3D12CommandQueue>& queue = graphicsQueue;
-			constexpr u4Byte sel = (u4Byte)(critQueue);
-			const Microsoft::WRL::ComPtr<ID3D12Fence>& fence = sync[sel];
+			u4Byte sel = TimeStuff::frameCtr % 3;
 			u8Byte& fenceVal = syncValues[sel];
-			if constexpr (sel == 1)
-			{ queue = computeQueue; }
-			else if constexpr (sel == 2)
-			{ queue = copyQueue; }
+			const Microsoft::WRL::ComPtr<ID3D12Fence>& fence = sync[sel];
 			assert(SUCCEEDED(queue->Signal(fence.Get(), fenceVal)));
 			assert(SUCCEEDED(fence->SetEventOnCompletion(syncValues[sel], syncEvt[sel])));
 			DWORD dw = WaitForSingleObject(syncEvt[sel], INFINITE); // Allow infinite silent waiting for GPU operations
-			fenceVal = (fenceVal + 1) % 2; // Alternate fence values between [1] and [0]
+			fenceVal = (fenceVal + 1); // Alternate fence values between [1] and [0]
 		}
 
 		// Retrieve a reference to the GPU memory manager
@@ -46,12 +39,11 @@ class Direct3D
         void GetBackBuf(const Microsoft::WRL::ComPtr<ID3D12Resource>& backBufTx, const u4Byte bufNdx);
 
 		// Retrieve the device + main command queues without incrementing their reference
-		// counts (also retrieve their command-lists + allocators)
+		// counts
 		const Microsoft::WRL::ComPtr<ID3D12Device>& GetDevice();
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetGraphicsQueue(); // Path-tracing & image/mesh processing here
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetComputeQueue(); // Physics & ecosystem updates go here
-		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& GetCopyQueue(); // System->GPU or GPU->System copies (useful for UI & things like
-																		  // radar, camera modes, etc.)
+
 		// Retrieve a constant reference to information about the video adapter
 		const DXGI_ADAPTER_DESC1& GetAdapterInfo();
 
@@ -66,7 +58,6 @@ class Direct3D
 		// Graphics/compute/copy commmand-queues
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> graphicsQueue;
 		Microsoft::WRL::ComPtr<ID3D12CommandQueue> computeQueue;
-		Microsoft::WRL::ComPtr<ID3D12CommandQueue> copyQueue;
 
 		// The DX12 debug layer
 		Microsoft::WRL::ComPtr<ID3D12Debug> debugLayer;

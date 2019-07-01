@@ -43,16 +43,15 @@ struct GPUInput
 				  // frame count in [z], nothing in [w]
 	float4 systemOri; // Origin for the current star-system; useful for predicting figure
 					  // positions during ray-marching/tracing (in [xyz], [w] is unused)
-	float4 cameraPos; // Camera position in [xyz], [w] is unused
+	float4 cameraPos; // Camera position in [xyz], tracing epsilon value in [w]
 	float4x4 viewMat; // View matrix
 	float4x4 iViewMat; // Inverse view matrix
-	float4 bounceInfo; // Maximum number of bounces in [x], number of supported surface BXDFs in [y],
-					   // tracing epsilon value in [z]; [w] is unused
 	uint4 resInfo; // Resolution info carrier; contains app resolution in [xy],
 				   // AA sampling rate in [z], and display area in [w]
 	uint4 tilingInfo; // Tiling info carrier; contains spatial tile counts in [x]/[y] and cumulative tile area in [z] ([w] is unused)
 	uint4 tileInfo; // Per-tile info carrier; contains tile width/height in [x]/[y] and per-tile area in [z] ([w] is unused)
-	float4 excess; // DX12 constant buffers are 256-byte aligned; padding allocated here
+	float4 denoiseInfo; // Baseline denoise filter width in [0].x, number of filter passes in [0].y; [z]/[w] are unused
+    float4 excess; // Padding out to 256-byte alignment
 };
 
 // Linearly scales the rotational part of the given quaternion

@@ -37,7 +37,7 @@ Camera::Camera()
 	viewMatrix = DirectX::XMMatrixLookAtLH(position, lookAt, localUp);
 
 	// Initialise the spin-speed modifier for mouse-look
-	spinSpeed = 0.5f;
+	spinSpeed = 50.0f;
 
 	// Initialise the mouse position to the window centre
 	SetCursorPos(GetSystemMetrics(SM_CXSCREEN) / 2,
@@ -53,44 +53,49 @@ void Camera::Update()
 
 	// Translate the view in-game with WASD
 	float dt = (float)TimeStuff::deltaTime();
-	float speed = 250000.0f;
-	if (localInput->IsKeyDown(87))
+	float speed = 400000.0f;
+	if (localInput->KeyHeld(87))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, speed * dt, 0, 0), coreRotationQuaternion));
 	}
 
-	if (localInput->IsKeyDown(65))
+	if (localInput->KeyHeld(65))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, (speed * dt) * -1), coreRotationQuaternion));
 	}
 
-	if (localInput->IsKeyDown(83))
+	if (localInput->KeyHeld(83))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, (speed * dt) * -1, 0, 0), coreRotationQuaternion));
 	}
 
-	if (localInput->IsKeyDown(68))
+	if (localInput->KeyHeld(68))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, 0, speed * dt), coreRotationQuaternion));
 	}
 
-	if (localInput->IsKeyDown(32))
+	if (localInput->KeyHeld(32))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, speed * dt, 0), coreRotationQuaternion));
 	}
 
-	if (localInput->IsKeyDown(17))
+	if (localInput->KeyHeld(17))
 	{
 		this->Translate(DirectX::XMVector3Rotate(_mm_set_ps(0, 0, (speed * dt) * -1, 0), coreRotationQuaternion));
 	}
 
 	// Rotate the view with mouse input
-	// (if enabled)
-	if (mouseLookActive)
-	{
-		this->MouseLook(localInput);
-	}
-
+	// (if enabled, turning mouse look off can be useful for debugging)
+	//#define MOUSE_LOOK
+	#ifdef MOUSE_LOOK
+		// Even if mouse-look is enabled, only apply it when the game window is in the foreground
+		HWND athruHandle = AthruCore::Utility::AccessApp()->GetHWND();
+		HWND currHandle = GetForegroundWindow();
+		if (currHandle == athruHandle)
+		{
+			this->MouseLook(localInput, athruHandle);
+		}
+	#endif
 	// Update the view matrix to reflect
 	// the translation + rotationQtn above
 	this->RefreshViewData();
@@ -127,7 +132,7 @@ DirectX::XMFLOAT3 Camera::GetRotationEuler() const
 	return coreRotationEuler;
 }
 
-void Camera::MouseLook(Input* inputPttr)
+void Camera::MouseLook(Input* inputPttr, HWND hwnd)
 {
 	// Retrieve mouse position from the input processor
 	DirectX::XMFLOAT2 currMousePos = inputPttr->GetMousePos();
@@ -150,10 +155,10 @@ void Camera::MouseLook(Input* inputPttr)
 	// Move the cursor back to the window centre
 	RECT rc = {};
 	LPRECT lpRc = &rc;
-	BOOL err = GetWindowRect(AthruCore::Utility::AccessApp()->GetHWND(), lpRc);
+	BOOL err = GetWindowRect(hwnd, lpRc);
 	assert(err);
 	SetCursorPos(rc.left + (std::abs(rc.right - rc.left) / 2),
-				 rc.bottom + (std::abs(rc.top - rc.bottom) / 2));
+				 rc.bottom - (std::abs(rc.top - rc.bottom) / 2));
 }
 
 void Camera::RefreshViewData()

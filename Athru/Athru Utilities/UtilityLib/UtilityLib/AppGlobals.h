@@ -148,6 +148,8 @@ namespace GraphicsStuff
 	extern constexpr u4Byte DISPLAY_AREA = DISPLAY_WIDTH * DISPLAY_HEIGHT;
 	extern constexpr float DISPLAY_ASPECT_RATIO = (float)GraphicsStuff::DISPLAY_WIDTH /
 												  (float)GraphicsStuff::DISPLAY_HEIGHT;
+	// ASCII key ID for the screenshot button (F)
+	extern constexpr u4Byte SCREENSHOT_KEY = 0x46;
 }
 
 namespace SceneStuff

@@ -14,34 +14,52 @@ Renderer::Renderer(HWND windowHandle,
             lensSampler(ComputePass(device,
 								    windowHandle,
 								    "LensSampler.cso",
-									1, 1, 18)),
+									1, 2, 21)),
 			tracer{ ComputePass(device,
 					 			windowHandle,
 					 			"RayMarch.cso",
-								1, 1, 24) },
+								1, 2, 27) },
 			dispEditor { ComputePass(device,
 									 windowHandle,
 									 "RnderDispEditor.cso",
-									 1, 1, 24) },
+									 1, 2, 27) },
 			surfSampler{ ComputePass(device,
 								     windowHandle,
 								     "SurfSampler.cso",
-								     1, 1, 24) },
+								     1, 2, 27) },
 			post(device,
 				 windowHandle,
 				 "RasterPrep.cso",
-				 1, 1, 17),
+				 1, 2, 20),
 			// Cache a reference to the rendering command queue
 			rnderQueue(rndrCmdQueue),
 			rnderFrameCtr(0) // Rendering starts on the zeroth back-buffer
 {
+	// Upload blue-noise dither texture
+	GPUMessenger* gpuMsg = AthruGPU::GPU::AccessGPUMessenger();
+	uByte* ditherMemRaw; // 128*128-wide image, loaded as four channels/texel
+	gpuMsg->LoadTexture("Third Party/Moments In Graphics/LDR_RG01_0.png", 128, 128, &ditherMemRaw);
+	DirectX::XMFLOAT2* ditherMem = new DirectX::XMFLOAT2[128 * 128];
+	for (u4Byte i = 0; i < 128 * 128 * 4; i += 4)
+	{
+		ditherMem[i / 4] = DirectX::XMFLOAT2(ditherMemRaw[i] / 256.0f, ditherMemRaw[i + 1] / 256.0f);
+	}
+	free(ditherMemRaw);
+	ditherMemRaw = nullptr;
+	ditherTex.InitRTex(device, gpuMem, ditherMem, 128, 128, 1u, DXGI_FORMAT_R32G32_FLOAT);
+	delete[] ditherMem;
+	ditherMem = nullptr;
+
 	// Initialize rendering buffer
-	constexpr u4Byte sizes[15] = { (AthruGPU::NUM_RAND_PT_STREAMS * sizeof(PhiloStrm)),
+	constexpr u4Byte sizes[18] = { (AthruGPU::NUM_RAND_PT_STREAMS * sizeof(PhiloStrm)),
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(float2x3)),
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(DirectX::XMFLOAT3)),
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(DirectX::XMFLOAT3)),
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(float)),
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(u4Byte)),
+								   (GraphicsStuff::DISPLAY_AREA * sizeof(DirectX::XMFLOAT3)),
+								   (GraphicsStuff::DISPLAY_AREA * sizeof(DirectX::XMFLOAT3)),
+								   GraphicsStuff::DISPLAY_AREA * 4, // Four 8-bit channels/pixel
 								   (GraphicsStuff::DISPLAY_AREA * sizeof(PixHistory)),
 								   (8 * sizeof(u4Byte)),
 								   (GraphicsStuff::TILING_AREA * sizeof(u4Byte)),
@@ -52,14 +70,14 @@ Renderer::Renderer(HWND windowHandle,
 								   (GraphicsStuff::TILING_AREA * sizeof(u4Byte)),
 								   (GraphicsStuff::TILING_AREA * sizeof(u4Byte)) };
 	u4Byte rndrMem = 0;
-	for (u4Byte i = 0; i < 15; i += 1)
+	for (u4Byte i = 0; i < 18; i += 1)
 	{ rndrMem += sizes[i]; }
 	rndrMem += 65536 - (rndrMem % 65536); // Adjust rendering memory footprint toward 64KB alignment
 	rndrBuff.InitRawRWBuf(device, gpuMem, rndrMem);
-	u4Byte offsets[15];
+	u4Byte offsets[18];
 	offsets[0] = 0;
 	offsets[1] = sizes[0];
-	for (u4Byte i = 2; i < 15; i += 1)
+	for (u4Byte i = 2; i < 18; i += 1)
 	{ offsets[i] = offsets[i - 1] + sizes[i - 1]; }
 	randState.InitRWBufProj(device, gpuMem, rndrBuff.resrc, AthruGPU::NUM_RAND_PT_STREAMS);
 	rays.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[1]);
@@ -67,11 +85,13 @@ Renderer::Renderer(HWND windowHandle,
 	outDirs.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[3]);
 	iors.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[4]);
 	figIDs.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[5], DXGI_FORMAT_R32_UINT);
-	displayTexHDR.InitRWTex(device, gpuMem, GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT); // Initialize the display texture here so UAV layout
-																										  // matches shader code
+	denoisePositions.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[6]);
+	denoiseNormals.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[7]);
+	displayTexHDR.InitRWTex(device, gpuMem, GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT, 1u, DXGI_FORMAT_R32G32B32A32_FLOAT);
 	displayTexLDR.InitRWTex(device, gpuMem, GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT, 1u, DXGI_FORMAT_R8G8B8A8_UNORM);
-	aaBuffer.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[6]);
-	dispAxesWrite.InitRWBufProj(device, gpuMem, rndrBuff.resrc, 8, offsets[7], DXGI_FORMAT_R32_UINT);
+	displayTexExportable.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[8], DXGI_FORMAT_R8G8B8A8_UNORM);
+	aaBuffer.InitRWBufProj(device, gpuMem, rndrBuff.resrc, GraphicsStuff::DISPLAY_AREA, offsets[9]);
+	dispAxesWrite.InitRWBufProj(device, gpuMem, rndrBuff.resrc, 8, offsets[10], DXGI_FORMAT_R32_UINT);
 	dispAxesArgs.InitRawRWBuf(device, gpuMem, AthruGPU::MINIMAL_D3D12_ALIGNED_BUFFER_MEM); // Allocate aligned argument buffer separately to main rendering data
 																						   // so we can keep rendering data as [D3D12_RESOURCE_STATES_UNORDERED_ACCESS]
 																						   // while dispatch arguments transition to [D3D12_RESOURCE_STATES_INDIRECT_ARGUMENT]
@@ -84,13 +104,13 @@ Renderer::Renderer(HWND windowHandle,
 	snowwCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 16384, DXGI_FORMAT_R32_UINT);
 	ssurfCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 20480, DXGI_FORMAT_R32_UINT);
 	furryCtr.InitRWBufProj(device, gpuMem, ctrBuff.resrc.Get(), 1, 24576, DXGI_FORMAT_R32_UINT);
-	traceables.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 0, offsets[8]);
-	diffuIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 4096, offsets[9]);
-	mirroIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 8192, offsets[10]);
-	refraIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 12288, offsets[11]);
-	snowwIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 16384, offsets[12]);
-	ssurfIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 20480, offsets[13]);
-	furryIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 24576, offsets[14]);
+	traceables.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 0, offsets[11]);
+	diffuIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 4096, offsets[12]);
+	mirroIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 8192, offsets[13]);
+	refraIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 12288, offsets[14]);
+	snowwIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 16384, offsets[15]);
+	ssurfIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 20480, offsets[16]);
+	furryIsections.InitAppProj(device, gpuMem, rndrBuff.resrc, ctrBuff.resrc, GraphicsStuff::TILING_AREA, 24576, offsets[17]);
 
 	// Create specialized work submission/synchronization interfaces,
 	// prepare rendering commands
@@ -178,7 +198,7 @@ Renderer::Renderer(HWND windowHandle,
 		// Update sampler counters
 		if (i == 0) { ptCmdList->ResourceBarrier(1, dispBarriers); } // Consider issuing both elements and using split barriers here
 		else { ptCmdList->ResourceBarrier(2, dispBarriers); }
-		ptCmdList->CopyBufferRegion(dispAxesArgs.resrc.Get(), 0, rndrBuff.resrc.Get(), (u8Byte)(offsets[7]) + 12, 12);
+		ptCmdList->CopyBufferRegion(dispAxesArgs.resrc.Get(), 0, rndrBuff.resrc.Get(), (u8Byte)(offsets[10]) + 12, 12);
 		ptCmdList->ResourceBarrier(2, dispBarriers + 2);
 
 		// Perform surface sampling & generate traceable dispatch axes
@@ -190,7 +210,7 @@ Renderer::Renderer(HWND windowHandle,
 
 		// Update ray-tracing/marching counters (tracing/marching occurs as a full-screen pass in the zeroth iteration)
 		ptCmdList->ResourceBarrier(2, dispBarriers); // Consider issuing both elements and using split barriers here
-		ptCmdList->CopyBufferRegion(dispAxesArgs.resrc.Get(), 0, rndrBuff.resrc.Get(), offsets[7], 12);
+		ptCmdList->CopyBufferRegion(dispAxesArgs.resrc.Get(), 0, rndrBuff.resrc.Get(), offsets[10], 12);
 		ptCmdList->ResourceBarrier(2, dispBarriers + 2);
 	}
 	ptCmdList->Close();
@@ -265,12 +285,31 @@ Renderer::Renderer(HWND windowHandle,
 		rnderCmdSets[i][1] = ptCmdList;
 		rnderCmdSets[i][2] = postCmdLists[i];
 	}
+
+	// Prepare separate screenshot command-list (context-dependant, can't easily batch with per-frame rendering work)
+	device->CreateCommandList(0x1,
+							  D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+							  rnderAlloc.Get(),
+							  nullptr,
+							  __uuidof(screenShotCmds),
+							  (void**)&screenShotCmds);
+	D3D12_RESOURCE_BARRIER sshotOutputBarriers[2];
+	sshotOutputBarriers[0] = AthruGPU::TransitionBarrier(D3D12_RESOURCE_STATE_COPY_SOURCE,
+														 rndrBuff.resrc,
+														 D3D12_RESOURCE_STATE_COMMON);
+	sshotOutputBarriers[1] = AthruGPU::TransitionBarrier(rndrBuff.resrcState,
+														 rndrBuff.resrc,
+														 D3D12_RESOURCE_STATE_COMMON);
+	screenShotCmds->ResourceBarrier(1, sshotOutputBarriers);
+	screenShotCmds->CopyBufferRegion(gpuMsg->AccessReadbackBuf().Get(), 0, rndrBuff.resrc.Get(), offsets[8], GraphicsStuff::DISPLAY_AREA * 4); // Four channels/pixel, one byte each
+	screenShotCmds->ResourceBarrier(1, sshotOutputBarriers + 1);
+	screenShotCmds->Close();
 }
 
 Renderer::~Renderer()
 {
 	// Wait for the graphics queue before freeing memory
-	AthruGPU::GPU::AccessD3D()->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
+	AthruGPU::GPU::AccessD3D()->WaitForQueue(rnderQueue);
 
 	// Release shader data
 	lensSampler.~ComputePass();
@@ -283,12 +322,22 @@ void Renderer::Render(Direct3D* d3d)
 {
 	// Execute prepared commands
 	rnderQueue->ExecuteCommandLists(3, (ID3D12CommandList**)rnderCmdSets[rnderFrameCtr % 3]);
-	rnderFrameCtr += 1;
-	d3d->WaitForQueue<D3D12_COMMAND_LIST_TYPE_DIRECT>();
+
+	// Optionally copy-out screenshot memory
+	if (AthruCore::Utility::AccessInput()->KeyTapped(GraphicsStuff::SCREENSHOT_KEY))
+	{
+		rnderQueue->ExecuteCommandLists(1, (ID3D12CommandList**)screenShotCmds.GetAddressOf());
+		d3d->WaitForQueue(rnderQueue); // Not waiting as expected, need to ask/debug
+									   // ...might need to reset completion event here...
+		AthruGPU::GPU::AccessGPUMessenger()->SaveTexture("screenshot.png", GraphicsStuff::DISPLAY_WIDTH, GraphicsStuff::DISPLAY_HEIGHT);
+	}
+	else
+	{ d3d->WaitForQueue(rnderQueue); }
 
 	// Publish traced results to the display
 	// No UAV barrier, because presentation includes a transition barrier that should cause a similar wait
 	d3d->Present();
+	rnderFrameCtr += 1;
 }
 
 // Push constructions for this class through Athru's custom allocator

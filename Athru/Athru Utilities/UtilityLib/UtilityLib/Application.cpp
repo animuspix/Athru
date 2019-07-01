@@ -23,12 +23,20 @@ Application::~Application()
 
 void Application::RelayOSMessages()
 {
-	// Remove older messages from memory by zeroing
-	// the contents of the message structure
-	ZeroMemory(&msg, sizeof(MSG));
+	// Reset key states before each frame
+	Input* localInput = AthruCore::Utility::AccessInput();
+	localInput->KeyReset();
+
+	// Update the cached mouse position
+	POINT mousePoint;
+	GetCursorPos(&mousePoint);
+	ScreenToClient(appForm, &mousePoint);
+	localInput->CacheMousePos((float)mousePoint.x,
+							  (float)mousePoint.y);
 
 	// Handle OS messages with [WndProc]
-	if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE))
+	ZeroMemory(&msg, sizeof(MSG));
+	while (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE) > 0) // Try to flush accumulated messages every frame
 	{
 		TranslateMessage(&msg);
 		DispatchMessage(&msg);
@@ -58,8 +66,7 @@ LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM me
 			return 0;
 		}
 
-		// Check if either WM_CLOSE or WM_DESTROY ran successfully
-		// and nullified the window handle
+		// Exit on quit messages
 		case WM_QUIT:
 		{
 			localInput->SetCloseFlag();
@@ -80,17 +87,6 @@ LRESULT CALLBACK Application::WndProc(HWND windowHandle, UINT message, WPARAM me
 			// If a key is released, send it to the input object so it can unset the state for that key
 			localInput->KeyUp((u4Byte)messageParamA);
 			return 0;
-		}
-
-		// Check for mouse movement
-		case WM_MOUSEMOVE:
-		{
-			// If the mouse has moved, store its coordinates in the input handler
-			POINT mousePoint;
-			GetCursorPos(&mousePoint);
-			ScreenToClient(windowHandle, &mousePoint);
-			localInput->CacheMousePos((float)mousePoint.x,
-									  (float)mousePoint.y);
 		}
 
 		// Check if the left-mouse-button has been pressed

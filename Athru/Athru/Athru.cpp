@@ -1,10 +1,5 @@
 #include "HiLevelServiceCentre.h"
 
-#include <DXGItype.h>
-#include <dxgi1_2.h>
-#include <dxgi1_3.h>
-#include <DXProgrammableCapture.h>
-
 void GameLoop()
 {
 	// Cache local references to utility services
@@ -15,14 +10,8 @@ void GameLoop()
 	// Implicitly prepares first few generic resources
 	GPUMessenger* athruGPUMessenger = AthruGPU::GPU::AccessGPUMessenger();
 
-	// Cache a local reference to the SDF rasterizer
-	//GradientMapper* athruSDFRaster = AthruGPU::GPU::AccessRasterizer();
-
 	// Cache a local reference to the render-manager
 	Renderer* athruRendering = AthruGPU::GPU::AccessRenderer();
-
-	// Cache a local reference to the GPU update manager
-	//GPUUpdateManager* athruGPUUpdates = AthruGPU::GPUServiceCentre::AccessGPUUpdateManager();
 
 	// Cache a local reference to the high-level scene representation
 	Scene* athruScene = HiLevelServiceCentre::AccessScene();
@@ -30,14 +19,8 @@ void GameLoop()
     // Cache a local reference to the Direct3D handler object
     Direct3D* d3d = AthruGPU::GPU::AccessD3D();
 
-    // Cache a local reference to the Direct3D command list
-
-	// Declare DX11 capture interface
-	//#define DEBUG_FIRST_FRAME
-	#ifdef DEBUG_FIRST_FRAME
-		IDXGraphicsAnalysis* analysis;
-		HRESULT valid = DXGIGetDebugInterface1(0, __uuidof(analysis), (void**)&analysis);
-	#endif
+	// Iterate the game loop
+	// Single-threaded input now, but should multi-thread in future for smoother player/camera controls
 	bool gameExiting = false;
 	while (!gameExiting)
 	{
@@ -45,7 +28,7 @@ void GameLoop()
 		athruApp->RelayOSMessages();
 
 		// Check for closing conditions
-		const bool localCloseFlag = athruInput->IsKeyDown(VK_ESCAPE) || athruInput->GetCloseFlag();
+		const bool localCloseFlag = athruInput->KeyTapped(VK_ESCAPE) || athruInput->GetCloseFlag();
 		if (localCloseFlag)
 		{
 			gameExiting = true;
@@ -55,19 +38,8 @@ void GameLoop()
 		// Update engine clock (needed to evaluate delta-time/FPS)
 		TimeStuff::lastFrameTime = std::chrono::steady_clock::now();
 
-		// Log frame count
-		//AthruUtilities::UtilityServiceCentre::AccessLogger()->Log(TimeStuff::frameCtr);
-
 		// Update the game
 		athruScene->Update();
-
-		// Optionally begin debug capture
-		#ifdef DEBUG_FIRST_FRAME
-			if (TimeStuff::frameCtr == 0)
-			{
-				analysis->BeginCapture();
-			}
-		#endif
 
 		// Upload system data, rasterize gradient volumes on the zeroth frame + whenever the player hits a new system
 		bool sysLoaded = false;
@@ -80,9 +52,6 @@ void GameLoop()
 		// Pass the scene to the gpu whenever planets aren't being rasterized
 		if (!sysLoaded)
 		{
-			// Pass the read-only SDF raster-atlas along to the GPU every frame
-			//athruSDFRaster->RasterToGPU(AthruGPU::GPU::AccessD3D()->GetDeviceContext());
-
 			// Pass generic input data along to the GPU
 			//DirectX::XMVECTOR v = athruScene->GetGalaxy()->GetCurrentSystem(athruScene->GetMainCamera()->GetTranslation())->GetPos();
 			//DirectX::XMFLOAT4 p =;
@@ -100,15 +69,6 @@ void GameLoop()
 			// Render the scene
 			athruRendering->Render(d3d);
 		}
-
-		// End the debug capture started above
-		#ifdef DEBUG_FIRST_FRAME
-			if (TimeStuff::frameCtr == 0)
-			{
-				analysis->EndCapture();
-				analysis->Release();
-			}
-		#endif
 
 		// FPS reading/logging
 		// Small penalty from output, but useful for performance measurement when graphics debugging isn't available

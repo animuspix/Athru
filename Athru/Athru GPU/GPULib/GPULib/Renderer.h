@@ -37,8 +37,7 @@ class Renderer
 		// deployed against different materials
 		ComputePass surfSampler;
 
-		// Small shader for filtering & tonemapping (denoising works well with texture sampling, so that runs
-		// directly inside the presentation shader)
+		// Small post-processing shader
 		ComputePass post;
 
 		// Buffer of rendering data, sections accessed by different projections declared below
@@ -100,10 +99,32 @@ class Renderer
 							 AthruGPU::RWResrc<AthruGPU::Buffer>> aaBuffer;
 
 		// Render output texture, copied to the back-buffer each frame
+		// HDR staging texture is full-resolution for now (like the intermediate PT buffers above) but might tile
+		// for better memory usage/access in future builds
 		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
 							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexHDR;
 		AthruGPU::AthruResrc<DirectX::XMFLOAT4,
 							 AthruGPU::RWResrc<AthruGPU::Texture>> displayTexLDR;
+
+		// 128x128 tiled blue-noise dither texture for lens sampling; separates LDS iterations for different pixels
+		// to allow convergent sampling without sacrificing parallelism
+		// Part of a collection of blue-noise textures licensed to the public domain by Moments In Graphics; the original release
+		// is available here :
+		// http://momentsingraphics.de/?p=127
+		AthruGPU::AthruResrc<DirectX::XMFLOAT2,
+							 AthruGPU::RResrc<AthruGPU::Texture>> ditherTex;
+
+		// A screenshot buffer, updated from the LDR display texture per-frame
+		AthruGPU::AthruResrc<uByte4,
+							 AthruGPU::RWResrc<AthruGPU::Buffer>> displayTexExportable;
+
+		// Position + normal buffers for edge-avoiding wavelet denoise
+		// (from http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.672.3796&rep=rep1&type=pdf and
+		//	https://www.shadertoy.com/view/ldKBzG)
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3,
+							 AthruGPU::RWResrc<AthruGPU::Buffer>> denoisePositions;
+		AthruGPU::AthruResrc<DirectX::XMFLOAT3,
+							 AthruGPU::RWResrc<AthruGPU::Buffer>> denoiseNormals;
 
 		// Reference to Athru's main rendering command-queue
 		const Microsoft::WRL::ComPtr<ID3D12CommandQueue>& rnderQueue;
@@ -111,20 +132,24 @@ class Renderer
 		// A shared rendering command-allocator
 		Microsoft::WRL::ComPtr<ID3D12CommandAllocator> rnderAlloc;
 
-		// Specialized lens-sampling command-list + command-allocator
+		// Specialized lens-sampling command-list
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> lensList;
 
-		// Specialized path-tracing command-lists + command-allocators
-		// (also command signature for indirect dispatch)
+		// Specialized path-tracing command-list
+		// (+ command signature for indirect dispatch)
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> ptCmdList;
 		Microsoft::WRL::ComPtr<ID3D12CommandSignature> ptCmdSignature;
 
-		// Specialized post-processing command-lists + command allocator
+		// Specialized post-processing command-lists
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> postCmdLists[AthruGPU::NUM_SWAPCHAIN_BUFFERS]; // One command-list for each swap-chain buffer
 
 		// Array of command-list sets to fire for each swap-chain buffer
 		// (batched version of lensList/ptCmdList/postCmdList[0...2] for neater command submission)
 		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> rnderCmdSets[3][AthruGPU::NUM_SWAPCHAIN_BUFFERS];
+
+		// Screenshot command list
+		// (isolated from main rendering work since screenshot copy-out to readback memory may/may-not happen per-frame)
+		Microsoft::WRL::ComPtr<ID3D12GraphicsCommandList> screenShotCmds;
 
 		// Not every frame is a rendering frame, so internally keep track of render frames here
 		u4Byte rnderFrameCtr;

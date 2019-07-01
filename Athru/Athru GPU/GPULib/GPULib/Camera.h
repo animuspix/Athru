@@ -1,5 +1,6 @@
 #pragma once
 
+#include <windows.h>
 #include <directxmath.h>
 
 struct CameraLookData
@@ -41,7 +42,7 @@ class Camera
 		// horizontally (about local-Y) when the mouse moves
 		// horizontally in screen space, and vertically (about local-X)
 		// when the mouse moves vertically in screen space :)
-		void MouseLook(Input* inputPttr);
+		void MouseLook(Input* inputPttr, HWND hwnd);
 
 		// Overload the standard allocation/de-allocation operators
 		void* operator new(size_t size);
@@ -64,15 +65,8 @@ class Camera
 		// simulated depth of field
 		CameraLookData lookInfo;
 
-		// Whether or not to enable mouselook; settable because the current voxel grid width
-		// (100 units, so volume is 100^3) is taxing enough that free look becomes super
-		// laggy and unpredictable (because movement messages are still being buffered in
-		// after you take your hand off the mouse, so after a while the scene begins to slowly
-		// spin "by itself" and prevent users from actually exploring the colored voxel grid)
-		bool mouseLookActive;
-
 		// How quickly the camera should rotate after accounting
-		// for displacement and deltatime (only used by MouseLook(...))
+		// for displacement and deltatime
 		float spinSpeed;
 };
 

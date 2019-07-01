@@ -6,25 +6,13 @@
 
 namespace GraphicsStuff
 {
-	// DirectX setup information
-	extern constexpr float SCREEN_FAR = 1.0f;
-	extern constexpr float SCREEN_NEAR = 0.1f;
-	extern constexpr float VERT_FIELD_OF_VIEW_RADS = MathsStuff::PI * 0.5f;
-	// Move these to in-engine/in-game settings when possible
-	extern constexpr float HORI_FIELD_OF_VIEW_RADS = 2.0f * 1.0565311988f; // No trig allowed in [constexpr] functions; second factor precomputed from
-																		   // [atan(tan(VERT_FIELD_OF_VIEW_RADS * 0.5f) * DISPLAY_ASPECT_RATIO)]
-	extern constexpr float FRUSTUM_WIDTH_AT_NEAR = (2 * GraphicsStuff::SCREEN_NEAR); // No trig allowed in [constexpr] functions; second factor precomputed from
-																					 // [tan(VERT_FIELD_OF_VIEW_RADS * 0.5f)]
-	extern constexpr float FRUSTUM_HEIGHT_AT_NEAR = FRUSTUM_WIDTH_AT_NEAR / DISPLAY_ASPECT_RATIO;
-
 	// Each shader gets one megabyte of local memory for bytecode
 	extern constexpr u4Byte SHADER_DXIL_ALLOC = 1048576;
 
 	// Rendering information
-	extern constexpr u4Byte SCREEN_RECT_INDEX_COUNT = 6;
 	extern constexpr u4Byte MAX_NUM_BOUNCES = 7;
 	extern constexpr u4Byte MAX_NUM_SSURF_BOUNCES = 512;
-	extern constexpr u4Byte NUM_AA_SAMPLES = 8192;
+	extern constexpr u4Byte NUM_AA_SAMPLES = 4;
 	extern constexpr u4Byte TILE_WIDTH = 2;
 	extern constexpr u4Byte TILE_HEIGHT = 2;
 	extern constexpr u4Byte TILE_AREA = TILE_WIDTH * TILE_HEIGHT;
@@ -34,6 +22,10 @@ namespace GraphicsStuff
 	extern constexpr uByte NUM_SUPPORTED_SURF_BXDFS = 6;
 	extern constexpr float EPSILON_MIN = 0.00000001f;
 	extern constexpr float EPSILON_MAX = 0.0001f;
+
+	// Denoising settings
+	extern constexpr float DENOISE_WIDTH = 3.0f;
+	extern constexpr u4Byte NUM_DENOISE_PASSES = 1;
 
 	// Default Athru texture clear color
 	extern constexpr float DEFAULT_TEX_CLEAR_VALUE[4] = { 1.0f, 0.5f, 0.25f, 1.0f };
@@ -73,11 +65,13 @@ namespace AthruGPU
 	// Expected maximum shared GPU memory usage (for resource upload)
 	extern constexpr u4Byte EXPECTED_SHARED_GPU_UPLO_MEM = MINIMAL_D3D12_ALIGNED_BUFFER_MEM;
 
+	// Memory requirement for each 8bpc output texture (backbuffer & screenshot data)
+	extern constexpr u4Byte LDR_OUTPUT_TEX_MEM = GraphicsStuff::DISPLAY_AREA * 4;
+
 	// Expected maximum shared GPU memory usage (for resource download/readback)
-	// Includes (DISPLAY_AREA * 12) bytes worth of screenshot memory (one set of 32-bit RGB values/pixel) + ~44KB of
-	// padding so that the full allocation is 65536-byte aligned
-	// Screenshots will be exported as PNG using the lodepng library: https://github.com/lvandeve/lodepng
-	extern constexpr u4Byte EXPECTED_SHARED_GPU_RDBK_MEM = (GraphicsStuff::DISPLAY_AREA * 12) + 45056;
+	// Includes (DISPLAY_AREA * 4) bytes worth of screenshot memory (one set of 8bpc RGB values/pixel) + padding to meet
+	// 64KB alignment
+	extern constexpr u4Byte EXPECTED_SHARED_GPU_RDBK_MEM = (LDR_OUTPUT_TEX_MEM) + (65536 - LDR_OUTPUT_TEX_MEM % 65536);
 
 	// Expected maximum number of shader-visible resource views
 	// Likely to grow after I implement physics + ecology systems

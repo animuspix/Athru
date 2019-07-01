@@ -17,54 +17,6 @@ float4 QtnProduct2(float4 qtnA, float4 qtnB)
 // for the quaternionic Julia distance estimator
 #define ITERATIONS_JULIA 8
 #define BAILOUT_JULIA_DE 256.0f
-#define BAILOUT_JULIA_ESCAPE 4.0f
-
-// Analytical Julia normal generator; original from:
-// https://www.shadertoy.com/view/MsfGRr
-// by [iq]. Thanks! :D
-float3 JuliaGrad(float4 juliaCoeffs,
-                 float3 coord)
-{
-    // Initialise iteration point (z) and Julia constant (c)
-    float4 z = float4(coord, juliaCoeffs.w);
-    float4 c = juliaCoeffs;
-
-    // Initialize the Jacobian matrix [j]; used to compute the
-    // gradient at [z] (i.e. the analytical normal)
-    // We need a Jacobian matrix here because [dz] captures
-    // average rate of change near [z], whereas the quality we
-    // want (the gradient) is defined as the direction of
-    // *greatest* change at the same point, which depends on
-    // the rates of change along every direction near [z]
-    // (=> the partial derivatives in the Jacobian)
-    float4x4 j = float4x4(1.0f, 0.0f, 0.0f, 0.0f,
-                          0.0f, 1.0f, 0.0f, 0.0f,
-                          0.0f, 0.0f, 1.0f, 0.0f,
-                          0.0f, 0.0f, 0.0f, 1.0f);
-    // Iterate the fractal
-    int i = 0;
-    float sqrBailout = BAILOUT_JULIA_DE;
-    while (i < ITERATIONS_JULIA &&
-           dot(z, z) < sqrBailout)
-    {
-        // Update the Jacobian term [j]
-        float3 w = z.yzw * -1.0f.xxx;
-        j = j * float4x4(z.x, w.x, w.y, w.z,
-                         z.y, z.x, 0.0f, 0.0f,
-                         z.z, 0.0f, z.x, 0.0f,
-                         z.w, 0.0f, 0.0f, z.x);
-
-        // Displace the Julia coordinate [z]
-        z = QtnProduct2(z, z) + c;
-
-        // Update the iteration count
-        i += 1;
-    }
-
-    // Extract local gradient from the iterated Jacobian, then
-    // return
-    return normalize(mul(j, z).xyz);
-}
 
 // Quaternionic Julia iteration function (designed for distance estimation)
 float Julia(float4 juliaCoeffs,
@@ -77,7 +29,7 @@ float Julia(float4 juliaCoeffs,
     float4 c = juliaCoeffs;
 
     // Iterate the fractal
-    int i = 0;
+    float i = 0;
     float sqrBailout = BAILOUT_JULIA_DE;
     while (i < ITERATIONS_JULIA &&
            dot(z, z) < sqrBailout)
@@ -89,7 +41,7 @@ float Julia(float4 juliaCoeffs,
         z = QtnProduct2(z, z) + c;
 
         // Update the iteration count
-        i += 1;
+        i += 1.0f;
     }
 
     // Return relevant values (number of iterations, terminal
