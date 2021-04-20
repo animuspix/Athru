@@ -114,7 +114,7 @@ void main(uint3 groupID : SV_GroupID,
 	{ matID = 5; } // Sample a furry subsurface scattering integrator
 
     // Cache intersection info for the sample point
-    uint ndx;
+    uint ndx = 0;
 	switch (matID)
 	{
 		case 0:
@@ -136,8 +136,8 @@ void main(uint3 groupID : SV_GroupID,
 	 		ndx = furryIsections.Consume();
 			break;
 		default:
-			abort(); // Material IDs are only well-defined for the range (0...5)
-	}
+            ndx = 0; //abort(); // Material IDs are only well-defined for the range (0...5)
+    }
 	uint2 pix = uint2(ndx % gpuInfo.resInfo.x, ndx / gpuInfo.resInfo.x);
 
     // Extract a Philox-permutable value from [randBuf]
@@ -199,8 +199,9 @@ void main(uint3 groupID : SV_GroupID,
 			displayTex[pix] *= float4(0.0f, 0.8f, 0.8f, 1.0f); // Furry subsurface scattering unimplemented atm, output turquoise shading instead
 			break;
 		default:
-			abort(); // Material IDs are only well-defined for the range (0...5)
-	}
+            displayTex[pix] *= 0.0f.xxxx; // Zero shading for bad surface indices
+
+    }
 
 	// Update Philox key/state for the current path
 	randBuf[ndx] = randStrm;

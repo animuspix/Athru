@@ -148,7 +148,7 @@ void main(uint3 groupID : SV_GroupID,
                     furryIsections.Append(ndx);
                     break;
                 default:
-                    abort();
+                    matPrim = 0; //abort();
                     break; // Unknown material
             }
 
